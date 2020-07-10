@@ -1,0 +1,32 @@
+Package: discaRd
+Type: Package
+Title: Cochran bycatch estimation
+Version: 1.1
+Date: 2016-11-02
+Author: Benjamin Galuardi, Daniel Linden, Brant McAfee
+Maintainer: <benjamin.galuardi@noaa.gov>
+Description: functions for calculating Cochran bycatch estimator and CV
+License: GPL-3
+Depends:
+	plyr,
+	dplyr,
+	tidyr,
+	scales,
+	reshape2,
+	lubridate,
+	xtable,
+	DT,
+	foreach,
+	doParallel,
+	parallel
+Suggests:
+	tree,
+	rpart,
+	gbm,
+	ggplot2,
+	RODBC
+NeedsCompilation: no
+ByteCompile: yes
+LazyData: FALSE
+RoxygenNote: 5.0.1
+VignetteBuilder: knitr

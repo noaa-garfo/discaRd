@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Benjamin Galuardi" />
+
+
+<title>discaRd example using eflalo</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+<div class="fluid-row" id="header">
+
+
+<h1 class="title">discaRd example using eflalo</h1>
+<h4 class="author"><em>Benjamin Galuardi</em></h4>
+<h4 class="date"><em>Documented on: 2016-12-22</em></h4>
+
+</div>
+
+
+<div id="load-trip-data-dm" class="section level2">
+<h2>Load trip data (dm)</h2>
+<p>We include European fisheries data (<em>eflalo</em>) to demonstrate the major capabilities of the discaRd package. This original data is courtesy of ICES (<a href="http://ices.dk/Pages/default.aspx">www.ices.dk</a>)and Niels Hintzen, and can be found in the <a href="http://nielshintzen.github.io/vmstools/">vmstools package for R</a></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(discaRd)
+<span class="kw">data</span>(eflalo, <span class="dt">package =</span> <span class="st">'discaRd'</span>)</code></pre></div>
+</div>
+<div id="using-the-make.obs.flag.dat-function-any-level-of-observer-covereage-as-well-as-other-discard-species-assumptions-may-be-made-by-changing-this-criteria." class="section level2">
+<h2>Using the <em>make.obs.flag.dat</em> function, any level of observer covereage, as well as other discard species assumptions, may be made by changing this criteria.</h2>
+<p>This function modifies the eflalo dataset to include columns necessary to work with discaRd functions. It also assigns a percentage of trips as observed (e.g. 10%).</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dm =<span class="st"> </span><span class="kw">make.obs.flag.dat</span>(eflalo, <span class="dt">obs_level =</span> .<span class="dv">1</span>)
+<span class="kw">str</span>(dm)</code></pre></div>
+<pre><code>## 'data.frame':    358581 obs. of  44 variables:
+##  $ VE_REF       : chr  &quot;238&quot; &quot;731&quot; &quot;742&quot; &quot;742&quot; ...
+##  $ VE_FLT       : chr  &quot;TBB&quot; &quot;TBB&quot; &quot;TBB&quot; &quot;TBB&quot; ...
+##  $ VE_COU       : chr  &quot;Atlantis&quot; &quot;Atlantis&quot; &quot;Atlantis&quot; &quot;Atlantis&quot; ...
+##  $ VE_LEN       : num  24 23 22.1 22.1 23 ...
+##  $ VE_KW        : num  221 221 221 221 221 ...
+##  $ VE_TON       : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ FT_REF       : chr  &quot;271253&quot; &quot;271268&quot; &quot;271270&quot; &quot;271270&quot; ...
+##  $ FT_DCOU      : chr  &quot;nld&quot; &quot;nld&quot; &quot;nld&quot; &quot;nld&quot; ...
+##  $ FT_DHAR      : chr  &quot;SCH&quot; &quot;SL&quot; &quot;SCH&quot; &quot;SCH&quot; ...
+##  $ FT_DDAT      : chr  &quot;01/05/1800&quot; &quot;01/05/1800&quot; &quot;01/05/1800&quot; &quot;01/05/1800&quot; ...
+##  $ FT_DTIME     : chr  &quot;08:00:00&quot; &quot;15:00:00&quot; &quot;04:00:00&quot; &quot;04:00:00&quot; ...
+##  $ FT_LCOU      : chr  &quot;nld&quot; &quot;nld&quot; &quot;nld&quot; &quot;nld&quot; ...
+##  $ FT_LHAR      : chr  &quot;SL&quot; &quot;SL&quot; &quot;SL&quot; &quot;SL&quot; ...
+##  $ FT_LDAT      : chr  &quot;01/05/1800&quot; &quot;02/05/1800&quot; &quot;02/05/1800&quot; &quot;02/05/1800&quot; ...
+##  $ FT_LTIME     : chr  &quot;23:00:00&quot; &quot;07:00:00&quot; &quot;04:00:00&quot; &quot;04:00:00&quot; ...
+##  $ LE_ID        : chr  &quot;271253-TBB-32F3&quot; &quot;271268-TBB-33F2&quot; &quot;271270-TBB-32F3&quot; &quot;271270-TBB-33F4&quot; ...
+##  $ LE_CDAT      : chr  &quot;01/05/1800&quot; &quot;01/05/1800&quot; &quot;01/05/1800&quot; &quot;01/05/1800&quot; ...
+##  $ LE_STIME     : chr  NA NA NA NA ...
+##  $ LE_ETIME     : chr  NA NA NA NA ...
+##  $ LE_SLAT      : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ LE_SLON      : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ LE_ELAT      : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ LE_ELON      : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ LE_GEAR      : chr  &quot;TBB&quot; &quot;TBB&quot; &quot;TBB&quot; &quot;TBB&quot; ...
+##  $ LE_MSZ       : num  80 80 80 80 80 80 80 80 80 80 ...
+##  $ LE_RECT      : chr  &quot;32F3&quot; &quot;33F2&quot; &quot;32F3&quot; &quot;33F4&quot; ...
+##  $ LE_DIV       : chr  &quot;IVc&quot; &quot;IVc&quot; &quot;IVc&quot; &quot;IVc&quot; ...
+##  $ LE_MET_level6: chr  &quot;TBB_DEF_70-99_0_0&quot; &quot;TBB_DEF_70-99_0_0&quot; &quot;TBB_DEF_70-99_0_0&quot; &quot;TBB_DEF_70-99_0_0&quot; ...
+##  $ LE_UNIT      : Factor w/ 1 level &quot;KWDAYS&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ LE_EFF       : num  139.2 148.1 23.9 197.1 72.9 ...
+##  $ LE_EFF_VMS   : logi  NA NA NA NA NA NA ...
+##  $ OBSFLAG      : num  0 0 1 0 0 0 0 0 0 0 ...
+##  $ NESPP3       : chr  &quot;LE_KG_ANE&quot; &quot;LE_KG_ANE&quot; &quot;LE_KG_ANE&quot; &quot;LE_KG_ANE&quot; ...
+##  $ LIVE_POUNDS  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ CALCLIVEWT   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ CATDISP      : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ DOCID        : chr  &quot;271253&quot; &quot;271268&quot; &quot;271270&quot; &quot;271270&quot; ...
+##  $ STRATA       : chr  &quot;TBB_DEF_70-99_0_0&quot; &quot;TBB_DEF_70-99_0_0&quot; &quot;TBB_DEF_70-99_0_0&quot; &quot;TBB_DEF_70-99_0_0&quot; ...
+##  $ DATESAIL     : POSIXct, format: &quot;1800-05-01 08:00:00&quot; &quot;1800-05-01 15:00:00&quot; ...
+##  $ DATELAND     : POSIXct, format: &quot;1800-05-01 23:00:00&quot; &quot;1800-05-02 07:00:00&quot; ...
+##  $ DATE_TRIP    : POSIXct, format: &quot;1800-05-01 23:00:00&quot; &quot;1800-05-02 07:00:00&quot; ...
+##  $ FY           : num  1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 ...
+##  $ yday         : int  1 2 2 2 1 2 7 9 9 9 ...
+##  $ fday         : int  1 2 2 2 1 2 7 9 9 9 ...</code></pre>
+</div>
+<div id="set-up-data-for-cochran-estimator" class="section level2">
+<h2>Set up data for Cochran estimator</h2>
+<p>We assume an arbitrary bycatch species, European seabass (<em>Dicentrarchus labrax</em>). All species names are based on <a href="https://datacollection.jrc.ec.europa.eu/wordef/fao">FAO species codes</a></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">bspec =<span class="st"> 'LE_KG_BSS'</span> <span class="co"># European seabass (FAO code BSS)</span>
+
+<span class="co"># Observed subset</span>
+bdat =<span class="st"> </span><span class="kw">ddply</span>(dm[dm$OBSFLAG==<span class="dv">1</span>,], <span class="st">'STRATA'</span> ,function(x) <span class="kw">get.bydat</span>(x, <span class="dt">aggfact =</span> <span class="st">'DOCID'</span>,<span class="dt">load =</span> F, <span class="dt">bspec =</span> bspec, <span class="dt">catch_disp =</span> <span class="dv">1</span>))
+
+<span class="co"># All trips</span>
+ddat =<span class="st"> </span>dm[,<span class="kw">c</span>(<span class="st">'FY'</span>,<span class="st">'STRATA'</span>,<span class="st">'DOCID'</span>,<span class="st">'DATE_TRIP'</span>,<span class="st">'fday'</span>,<span class="st">'yday'</span>,<span class="st">'NESPP3'</span>,<span class="st">'LIVE_POUNDS'</span>)]</code></pre></div>
+</div>
+<div id="run-the-cochran-estimator" class="section level2">
+<h2>Run the Cochran estimator</h2>
+<p>Follow the same process as the GARFO peer review (see <a href="https://www.greateratlantic.fisheries.noaa.gov/aps/discard/review/index.html">here</a>)</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># setup the unique strata in full dataset</span>
+strata_complete =<span class="st">  </span><span class="kw">unique</span>(<span class="kw">c</span>(bdat$STRATA, ddat$STRATA))
+
+<span class="co"># set a year of interest</span>
+focal_year =<span class="st"> </span><span class="dv">1801</span>
+
+bydat_focal =<span class="st"> </span><span class="kw">subset</span>(bdat, FY ==<span class="st"> </span>focal_year)
+bydat_prev =<span class="st"> </span><span class="kw">subset</span>(bdat, FY ==<span class="st"> </span>focal_year -<span class="st"> </span><span class="dv">1</span>)
+trips_focal =<span class="st"> </span><span class="kw">subset</span>(ddat, FY ==<span class="st"> </span>focal_year)
+trips_prev =<span class="st"> </span><span class="kw">subset</span>(ddat, FY ==<span class="st"> </span>focal_year -<span class="st"> </span><span class="dv">1</span>)
+
+<span class="co"># first day of the fishing year with a commerical trip</span>
+minday =<span class="st"> </span><span class="kw">min</span>(<span class="kw">c</span>(<span class="kw">unique</span>(<span class="kw">subset</span>(bdat, FY==focal_year)$fday)), <span class="kw">unique</span>(<span class="kw">subset</span>(ddat, FY==focal_year)$fday))
+
+dest_y1 &lt;-<span class="st"> </span><span class="kw">get.cochran.ss.by.strat</span>(bydat_focal, trips_focal, <span class="dt">targCV =</span>.<span class="dv">3</span>, <span class="dt">strata_name =</span> <span class="st">&quot;STRATA&quot;</span>, <span class="dt">strata_complete =</span> strata_complete)
+
+<span class="co"># previous year</span>
+dest_y0 &lt;-<span class="st"> </span><span class="kw">get.cochran.ss.by.strat</span>(bydat_prev, trips_prev, <span class="dt">targCV =</span>.<span class="dv">3</span>, <span class="dt">strata_name =</span> <span class="st">&quot;STRATA&quot;</span>, <span class="dt">strata_complete =</span> strata_complete)
+
+<span class="co"># compare the two years total discard rate</span>
+<span class="kw">data.frame</span>(<span class="dt">r =</span> <span class="kw">c</span>(dest_y0$rTOT, dest_y1$rTOT)
+, <span class="dt">CVTOT =</span> <span class="kw">c</span>(dest_y0$CVTOT, dest_y1$CVTOT)
+, <span class="dt">row.names =</span> <span class="kw">c</span>(<span class="st">'y0'</span>,<span class="st">'y1'</span>)
+)</code></pre></div>
+<pre><code>##               r     CVTOT
+## y0 0.0001661184 0.6367363
+## y1 0.0026797830 0.3556311</code></pre>
+</div>
+<div id="run-with-a-transition-rate" class="section level2">
+<h2>Run with a transition rate</h2>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Use the Cochran Trans function</span>
+    dest &lt;-<span class="st"> </span><span class="kw">cochran.trans.calc</span>(<span class="dt">bydat_focal =</span> bydat_focal, <span class="dt">trips_focal =</span> trips_focal, <span class="dt">bydat_prev =</span> bydat_prev, <span class="dt">trips_prev =</span> trips_prev, <span class="dt">CV_target =</span>.<span class="dv">3</span>, <span class="dt">strata_name =</span> <span class="st">&quot;STRATA&quot;</span>, <span class="dt">strata_complete =</span> strata_complete, <span class="dt">time_span =</span> <span class="kw">c</span>(minday, <span class="dv">365</span>))
+
+<span class="kw">str</span>(dest$D)</code></pre></div>
+<p>num [1:20, 1:365] 0 0 0 53.3 48.3 … - attr(*, “dimnames”)=List of 2 ..$ : chr [1:20] “DRB_MOL_0_0_0” “FPO_CRU_0_0_0” “GNS_DEF_0_0_0” “GNS_DEF_100-119_0_0” … ..$ : chr [1:365] “1” “2” “3” “4” …</p>
+</div>
+<div id="plot-the-total-discard" class="section level2">
+<h2>Plot the total discard</h2>
+<p><img src="data:image/png;base64,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" alt /></p>
+</div>
+<div id="bootstrap-example-100-iterations-in-parallel-not-run" class="section level2">
+<h2>Bootstrap example: 100 iterations in parallel (NOT RUN)</h2>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    nboot =<span class="st"> </span><span class="dv">100</span>
+    ncores =<span class="st"> </span><span class="kw">detectCores</span>()
+    cl =<span class="st"> </span><span class="kw">makeCluster</span>(ncores)
+    <span class="kw">registerDoParallel</span>(cl, <span class="dt">cores =</span> ncores)
+    
+    (<span class="dt">t1 =</span><span class="kw">Sys.time</span>())
+    <span class="kw">print</span>(<span class="kw">paste0</span>(<span class="st">'Bootstrapping '</span>, nboot, <span class="st">' times using '</span>, ncores, <span class="st">' cores'</span>))
+    bout.list =<span class="st"> </span><span class="kw">foreach</span>(<span class="dv">1</span>:nboot) %dopar%<span class="st"> </span>{
+    <span class="kw">library</span>(discaRd)
+    discaRd::<span class="kw">bootr.strat</span>(<span class="dt">bdat =</span> bdat, <span class="dt">ddat =</span> ddat, <span class="dt">focal_year =</span> focal_year, <span class="dt">strata_name =</span> <span class="st">'STRATA'</span>, <span class="dt">strata_complete =</span> strata_complete, <span class="dt">time_inter =</span> <span class="dv">7</span>, <span class="dt">trans_method =</span> <span class="st">&quot;ntrips&quot;</span>, <span class="dt">time_span =</span> <span class="kw">c</span>(minday, <span class="dv">365</span>))
+    }
+    (<span class="dt">t2 =</span> <span class="kw">Sys.time</span>()-t1)
+    
+    <span class="co"># Stop cluster</span>
+    <span class="kw">stopCluster</span>(cl)</code></pre></div>
+</div>
+<div id="plot-bootstrapped-results-not-run" class="section level2">
+<h2>Plot bootstrapped results (NOT RUN)</h2>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
