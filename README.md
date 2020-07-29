@@ -7,9 +7,13 @@ This package was developed as part of the GARFO discard peer review in 2016. Mor
 ## Install
 `remotes` is the small part of `devtools` for loading remote data so either work
 
+```
 library(remotes)
 install_github("NOAA-Fisheries-Greater-Atlantic-Region/discaRd")
+```
 
 ## Use
 
+```
 library(discaRd)
+```
