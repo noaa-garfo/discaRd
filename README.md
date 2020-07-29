@@ -14,6 +14,13 @@ install_github("NOAA-Fisheries-Greater-Atlantic-Region/discaRd")
 
 ## Use
 
+The `discaRd` package does not set the stratifications. The functions take the stratifications as an input argument from the user.
+
+To see an example vignette:
+
 ```
 library(discaRd)
+vignette("eflalo_demo")
 ```
+
+One of the main functions is `get.cochran.ss.by.strat()`. To see the instructions for this run `?get.cochran.ss.by.strat` in R. (NO HELP FILE FOR THIS CURRENTLY - ADDING GITHUB ISSUE)
