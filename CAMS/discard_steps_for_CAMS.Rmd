@@ -1,0 +1,119 @@
+---
+title: "DiscaRd steps for CAMS"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
+											message = FALSE, cache = FALSE,
+											progress = TRUE, verbose = FALSE, comment = F
+											, error = FALSE, dev = 'png', dpi = 200)
+```
+
+```{r setup, eval = F}
+
+setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd")
+
+library(odbc)
+# library(RODBC)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+library(rgdal)
+library(raster)
+library(config)
+library(stringr)
+
+dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = dw_apsd$dsn, 
+									UID = dw_apsd$uid, 
+									PWD = dw_apsd$pwd)
+
+
+```
+
+```{r create tables using dbplyr}
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+cdat = tbl(bcon, sql("
+select a.ACTIVITY_CODE
+		, a.AREA
+		, a.DATE_TRIP
+		, a.DLR_STATE,
+		a.FISHING_YEAR
+		, a.LINK
+		, a.NESPP3
+		, a.NESPP4, 
+		a.pounds
+		, a.MESH
+		, a.MONTH
+		, a.PERMIT, 
+		a.SECGEARFISH
+		, a.YEAR
+		, a.ID
+		, b.NEGEAR
+		, (CASE WHEN b.negear IN ('070') THEN 'Beach Seine'
+			    WHEN b.negear IN ('020', '021') THEN 'Handline'
+  			   	WHEN b.negear IN ('010') THEN 'Longline'
+				WHEN b.negear IN ('170', '370') THEN 'Mid-water Trawl, Paired and Single'
+				WHEN b.negear IN ('350','050') THEN 'Otter Trawl'
+				WHEN b.negear IN ('057') THEN 'Otter Trawl, Haddock Separator'
+				WHEN b.negear IN ('054') THEN 'Otter Trawl, Ruhle'
+				WHEN b.negear IN ('053') THEN 'Otter Trawl, Twin'
+				WHEN b.negear IN ('181') THEN 'Pots+Traps, Fish'
+				WHEN b.negear IN ('186') THEN 'Pots+Traps, Hagfish'
+				WHEN b.negear IN ('120','121', '123') THEN 'Purse Seine'
+				WHEN b.negear IN ('132') THEN 'Scallop Dredge'
+				WHEN b.negear IN ('052') THEN 'Scallop Trawl'
+				WHEN b.negear IN ('058') THEN 'Shrimp Trawl'
+				WHEN b.negear IN ('100', '105','110', '115','116', '117','500') THEN 'Sink, Anchor, Drift Gillnet'
+				WHEN b.negear NOT IN 
+				('070','020', '021','010','170','370','350','050','057','054','053','181',
+				'186','120','121', '123','132','052','058','100', '105', '110','115','116', '117','500') THEN 'Other' 
+				WHEN b.negear IS NULL THEN 'Unknown'
+				END) as  geartype
+,                 
+(CASE WHEN a.mesh < 5.5 AND b.negear IN ('050','054','057','100','105','115','116','117','350','500') THEN 'sm'
+	  WHEN a.mesh BETWEEN 5.5 AND 7.99 AND b.negear IN ('050','054','057','100','105','115','116','117','350','500') THEN 'lg'
+	  WHEN a.mesh >= 8 AND b.negear IN ('050','054','057','100','105','115','116','117','350','500') THEN 'xlg'
+	  ELSE NULL
+	  END)  as meshgroup
+  from apsd.dmis_all_years a
+   LEFT OUTER JOIN vtr.vlgear b
+  ON a.secgearfish = b.GEARCODE
+  WHERE a.DATE_TRIP BETWEEN '01-JAN-19' and '31-DEC-19'
+  AND a.secgearfish <> 'CAR'
+  OR a.secgearfish IS NULL
+
+					")
+)
+
+
+cdat %>% 
+	mutate(MESHGROUP = case_when(NEGEAR %in% c('054','057') ~ 'lg'
+														)
+				 , GEARTYPE = case_when( GEARTYPE == 'Unknown' & is.na(GEARTYPE) ~ 'Other'
+				 					              , NESPP3 == 800 & GEARTYPE == 'Unknown' & is.na(GEARTYPE) ~ 'Scallop Dredge')
+				 ) %>%
+	filter(NESPP3 == 800) %>% 
+	group_by(GEARTYPE, MESHGROUP) %>% 
+	summarise(psum = sum(POUNDS, na.rm = T))
+
+# UPDATE bg_total_landings_1 a
+# SET a.geartype = 'Scallop Dredge'
+# WHERE a.nespp3 = '800' 
+# AND a.geartype = 'Unknown'
+# AND a.gearcode IS NULL	
+# /
+# UPDATE bg_total_landings_1 a
+# SET a.geartype = 'Other'
+# WHERE a.geartype = 'Unknown'
+# AND a.gearcode IS NULL	
+
+```
+
