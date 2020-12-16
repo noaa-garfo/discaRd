@@ -28,15 +28,24 @@ library(discaRd)
 
 # load('SAW_2018_discaRd_test.Rdata')
 
+# connect to database
+
+dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = dw_apsd$dsn, 
+									UID = dw_apsd$uid, 
+									PWD = dw_apsd$pwd)
+
 ```
 
 ```{r read in the gear table}
 # change this path as needed
 
-setwd('C:/Users/benjamin.galuardi/Documents/CAMS/')
+setwd("~/GitHub/discaRd/CAMS")
 
 # change this path as needed
-mgear = readxl::read_xlsx('C:/Users/benjamin.galuardi/Documents/CAMS/GAR master gear codes.xlsx', sheet = 1)
+mgear = readxl::read_xlsx('GAR master gear codes.xlsx', sheet = 1)
 
 # make it a long table.. no need!
 
