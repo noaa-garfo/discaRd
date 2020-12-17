@@ -1,15 +1,27 @@
-select *
-from apsd.dmis_all_years
-;
+/*
+BEN GALUARDI
 
-select count(distinct(vtrserno))
-, count(distinct(docid))
-, dmis_trip_id
-from apsd.cams_apport
-group by dmis_trip_id
-;
+12/16/20
 
-create table catch_link1_temp as 
+CREATE MOCKUP OF CATCH TABLE FROM MAPS USING DMIS_TRIP_ID AND JOINING TO LINK1
+
+*/
+
+
+--select *
+--from apsd.dmis_all_years
+--;
+--
+--select count(distinct(vtrserno))
+--, count(distinct(docid))
+--, dmis_trip_id
+--from apsd.cams_apport
+--group by dmis_trip_id
+--;
+
+DROP TABLE catch_link1_temp ;
+
+CREATE TABLE catch_link1_temp as 
 with mtrips as (
 select dmis_trip_id
     from (
@@ -25,6 +37,7 @@ select dmis_trip_id
 --, obs_cams as ( 
      select d.permit
         , d.dmis_trip_id
+        , extract(year from d.record_land) as year
         , d.docid
         , d.vtrserno
         , d.gearcode
@@ -44,6 +57,7 @@ select dmis_trip_id
     
     group by 
         d.permit
+        , extract(year from d.record_land)
         , d.dmis_trip_id
         , d.docid
         , d.vtrserno
@@ -55,6 +69,15 @@ select dmis_trip_id
     
 ;
 
+grant all on catch_link1_temp to maps
+
+;
+
+grant all on stat_areas_def to MAPS
+
+;
+
+/*
 select  T.GEARCAT
     ,t.program
     ,t.year
@@ -99,3 +122,5 @@ select  T.GEARCAT
     select *
 --    from obdbs.obspp@nova
     from obdbs.obtrp@nova
+    
+    */
