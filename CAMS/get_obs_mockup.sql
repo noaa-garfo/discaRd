@@ -9,11 +9,13 @@ idea is to get d, k, and kall by link 1 (obs trip)... maybe by link 3 (haul)
 
 */
 
+drop table maps.BG_OBS_KALL_MOCK
+/
 
 create table maps.BG_OBS_KALL_MOCK as 
 
 select a.*
-, SUM(hailwt) OVER(PARTITION BY link1) as kept_all
+, SUM(hailwt) OVER(PARTITION BY link3) as kept_all
 from (
 select 
         permit1 as permit
@@ -24,6 +26,7 @@ select
       , min(year) as year
       , nespp3
       , hailwt
+      , negear
       , sum(case when catdisp = 1 then hailwt else 0 end) as kept
       , sum(case when  catdisp = 0 then hailwt else 0 end) as discard
 --      , SUM(hailwt) OVER(PARTITION BY link1) as kept_all
@@ -46,6 +49,7 @@ SELECT
 --  ,s.drflag
 --  ,s.wgttype
   ,s.hailwt
+  ,h.negear
   
   from
   (
@@ -57,10 +61,10 @@ SELECT
   ) t 
   LEFT OUTER JOIN
   (
-    select  link1, year, link3 , obsrflag
+    select  link1, year, link3 , obsrflag, negear
       from obdbs.obhau@nova 
     union all 
-    select link1, year, link3, obsrflag
+    select link1, year, link3, obsrflag, negear
       from obprelim.ophau@nova 
     ) h ON t.link1 = h.link1
   LEFT OUTER JOIN
@@ -83,7 +87,7 @@ and s.fishdisp <> 039
 order by dateland desc
 )
 
-group by link1, permit1, nespp3, hailwt, link3
+group by link1, permit1, nespp3, hailwt, link3, negear
 --having sum(case when nespp3 = 801 then hailwt else 0 end) >= 2501
 order by date_trip
 ) a
