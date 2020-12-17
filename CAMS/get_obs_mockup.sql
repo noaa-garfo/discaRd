@@ -10,6 +10,8 @@ idea is to get d, k, and kall by link 1 (obs trip)... maybe by link 3 (haul)
 */
 
 
+create table maps.BG_OBS_KALL_MOCK as 
+
 select a.*
 , SUM(hailwt) OVER(PARTITION BY link1) as kept_all
 from (
@@ -85,4 +87,9 @@ group by link1, permit1, nespp3, hailwt, link3
 --having sum(case when nespp3 = 801 then hailwt else 0 end) >= 2501
 order by date_trip
 ) a
+;
+
+grant all on maps.BG_OBS_KALL_MOCK to apsd;
+grant all on maps.BG_OBS_KALL_MOCK to dmis;
+grant all on maps.BG_OBS_KALL_MOCK to bgaluardi;
 

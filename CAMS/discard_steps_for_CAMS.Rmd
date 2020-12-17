@@ -36,64 +36,58 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```
 
-```{r create tables using dbplyr}
+```{r get obs and catch data from oracle}
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-cdat = tbl(bcon, sql("
-select a.ACTIVITY_CODE
-		, a.AREA
-		, a.DATE_TRIP
-		, a.DLR_STATE,
-		a.FISHING_YEAR
-		, a.LINK
-		, a.NESPP3
-		, a.NESPP4, 
-		a.pounds
-		, a.MESH
-		, a.MONTH
-		, a.PERMIT, 
-		a.SECGEARFISH
-		, a.YEAR
-		, a.ID
-		, b.NEGEAR
-		, (CASE WHEN b.negear IN ('070') THEN 'Beach Seine'
-			    WHEN b.negear IN ('020', '021') THEN 'Handline'
-  			   	WHEN b.negear IN ('010') THEN 'Longline'
-				WHEN b.negear IN ('170', '370') THEN 'Mid-water Trawl, Paired and Single'
-				WHEN b.negear IN ('350','050') THEN 'Otter Trawl'
-				WHEN b.negear IN ('057') THEN 'Otter Trawl, Haddock Separator'
-				WHEN b.negear IN ('054') THEN 'Otter Trawl, Ruhle'
-				WHEN b.negear IN ('053') THEN 'Otter Trawl, Twin'
-				WHEN b.negear IN ('181') THEN 'Pots+Traps, Fish'
-				WHEN b.negear IN ('186') THEN 'Pots+Traps, Hagfish'
-				WHEN b.negear IN ('120','121', '123') THEN 'Purse Seine'
-				WHEN b.negear IN ('132') THEN 'Scallop Dredge'
-				WHEN b.negear IN ('052') THEN 'Scallop Trawl'
-				WHEN b.negear IN ('058') THEN 'Shrimp Trawl'
-				WHEN b.negear IN ('100', '105','110', '115','116', '117','500') THEN 'Sink, Anchor, Drift Gillnet'
-				WHEN b.negear NOT IN 
-				('070','020', '021','010','170','370','350','050','057','054','053','181',
-				'186','120','121', '123','132','052','058','100', '105', '110','115','116', '117','500') THEN 'Other' 
-				WHEN b.negear IS NULL THEN 'Unknown'
-				END) as  geartype
-,                 
-(CASE WHEN a.mesh < 5.5 AND b.negear IN ('050','054','057','100','105','115','116','117','350','500') THEN 'sm'
-	  WHEN a.mesh BETWEEN 5.5 AND 7.99 AND b.negear IN ('050','054','057','100','105','115','116','117','350','500') THEN 'lg'
-	  WHEN a.mesh >= 8 AND b.negear IN ('050','054','057','100','105','115','116','117','350','500') THEN 'xlg'
-	  ELSE NULL
-	  END)  as meshgroup
-  from apsd.dmis_all_years a
-   LEFT OUTER JOIN vtr.vlgear b
-  ON a.secgearfish = b.GEARCODE
-  WHERE a.DATE_TRIP BETWEEN '01-JAN-19' and '31-DEC-19'
-  AND a.secgearfish <> 'CAR'
-  OR a.secgearfish IS NULL
+# get catch and matched obs data together
 
+c_o_dat = tbl(bcon, sql("
+	with obs as (
+select link1
+, nespp3
+, discard
+, NVL(sum(discard)/max(kept_all),0) as dk
+, max(kept_all) obs_kall
+from maps.BG_OBS_KALL_MOCK
+-- where year = 2019
+group by link1, nespp3, discard
+)
+
+select c.*
+, o.nespp3
+, o.discard
+, o.obs_kall
+, o.dk
+from apsd.catch_link1_temp c
+left join (
+ select * from obs where nespp3 = 212 
+) o
+on o.link1 = c.link1
 					")
 )
 
+```
 
+```{r subset obs trips for a species}
+
+stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def')) %>% 
+	filter(nespp3 == '212') %>% 
+	dplyr::select(stat_area) %>% 
+	distinct() %>% 
+	collect()
+
+odat = c_o_dat %>% 
+	filter(!is.na(LINK1) & NESPP3 == '212' & AREA %in% local(stat_area_sp[["stat_area"]])) %>% 
+	group_by(YEAR, GEARCODE) %>% 
+	summarise(dk_gear = sum(DISCARD, na.rm = T)/sum(OBS_KALL, na.rm = T))
+	
+
+
+```
+
+
+```{r munge?}
 cdat %>% 
 	mutate(MESHGROUP = case_when(NEGEAR %in% c('054','057') ~ 'lg'
 														)

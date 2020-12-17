@@ -237,5 +237,17 @@ ggsave(filename = paste0("./maps/Stat Areas for ",spp,".png"),height=11,width=8.
 
 ```
 
+```{r upload stat area table}
+
+stat_area_df = read.csv('H:/DLINDEN/CAMS/stat_areas_defined.csv')
+
+dbWriteTable(conn = bcon, name = 'stat_areas_def', value = stat_area_df)
+
+dbSendQuery(bcon, 'grant all on apsd.stat_areas_def to MAPS')
+
+stat_area_df = tbl(bcon, sql('select * from apsd.stat_areas_def'))
+
+```
+
 
 
