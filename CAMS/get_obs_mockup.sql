@@ -27,6 +27,10 @@ select
       , nespp3
       , hailwt
       , negear
+      , codmsize
+      , linermsize
+      , meshsize_abb
+      , source
       , sum(case when catdisp = 1 then hailwt else 0 end) as kept
       , sum(case when  catdisp = 0 then hailwt else 0 end) as discard
 --      , SUM(hailwt) OVER(PARTITION BY link1) as kept_all
@@ -50,6 +54,10 @@ SELECT
 --  ,s.wgttype
   ,s.hailwt
   ,h.negear
+  , m.codmsize
+  , m.linermsize
+  , m.meshsize_abb
+  , m.source
   
   from
   (
@@ -77,6 +85,21 @@ SELECT
            when fishdisp like '1%' then 1 end) as  catdisp
   from obprelim.opcatch@nova 
   ) s ON h.link3 = s.link3
+  
+  LEFT OUTER JOIN
+  (
+--  select * from maps.BG_OBS_MESH_MOCK
+    select o.*
+        , SUM(o.hailwt) OVER(PARTITION BY o.link3) as obs_kall
+        , substr(nespp4, 1, 3) as NESPP3
+      from (
+         select * from apsd.BG_OBDBS_TABLES_5_2018
+         union all
+         select * from apsd.BG_OBDBS_TABLES_5_2019
+        )
+     o
+
+  ) m ON h.link3 = m.link3
 
 WHERE
   t.year BETWEEN 2018 AND 2019 --= 2011
@@ -87,13 +110,31 @@ and s.fishdisp <> 039
 order by dateland desc
 )
 
-group by link1, permit1, nespp3, hailwt, link3, negear
+group by link1
+        , permit1
+        , nespp3
+        , hailwt
+        , link3
+        , negear
+        ,codmsize
+          , linermsize
+          , meshsize_abb
+          , source
 --having sum(case when nespp3 = 801 then hailwt else 0 end) >= 2501
 order by date_trip
 ) a
-;
 
+/
 grant all on maps.BG_OBS_KALL_MOCK to apsd;
 grant all on maps.BG_OBS_KALL_MOCK to dmis;
 grant all on maps.BG_OBS_KALL_MOCK to bgaluardi;
+
+;
+
+select * from maps.BG_OBS_KALL_MOCK
+;
+
+drop table maps.BG_OBS_KALL_MOCK
+
+
 
