@@ -69,7 +69,8 @@ on o.link1 = c.link1
 
 
 odat2 = tbl(bcon, sql('
-							select o.*
+							with obs as (
+							 select o.*
 							, SUM(case when catdisp = 0 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as discard
 							, SUM(o.hailwt) OVER(PARTITION BY o.link3) as obs_kall
 							, substr(nespp4, 1, 3) as NESPP3
@@ -79,6 +80,15 @@ odat2 = tbl(bcon, sql('
 							 select * from apsd.BG_OBDBS_TABLES_5_2019
 							)
 							 o
+							)
+					select c.*
+						, o.*
+						from apsd.catch_link1_temp c
+						left join (
+						 select * from obs where nespp3 = 212 
+						) o
+						on o.link1 = c.link1		
+							
 							'
 							)) %>% 
 	   dplyr::select(YEAR, LINK1, LINK3, AREA, DATELAND, DATESAIL, FISHDISP, CATDISP, GEARCAT, HAILWT, LIVEWT, OBS_KALL, DISCARD, NESPP4, NESPP3, NEGEAR,MESHSIZE, MESHGROUP, GEARTYPE, ACCESSAREA, VMSCODE) 
@@ -107,6 +117,12 @@ stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def')) %>%
 # tbl(bcon, sql('SELECT link1, link3, program, year, negear, codmsize, linermsize FROM obdbs.obotgh@nova where year = 2019 and program <> 000'))
 
 
+stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
+
+dk_gear_mesh <- odat2 %>% 
+
+
+# -------------------------------------------
 
 dk_gear_mesh <- odat2 %>% 
 	filter(!is.na(LINK1) & NESPP3 == 800 & AREA %in% local(stat_area_sp[["STAT_AREA"]]) ) %>% 
@@ -116,9 +132,58 @@ dk_gear_mesh <- odat2 %>%
 						) %>% 
 	collect()
 
+
 dk_gear_mesh %>% 
 	tidyr::pivot_wider(values_from = 'dk_gear', names_from = 'NEGEAR') %>% 
 	arrange(YEAR, MESHGROUP)
+# ---------------------------------------------
+
+```
+
+```{r look at parking hauls within a subtrip byt matching gear and mesh}
+
+h3dat <- tbl(bcon, sql('
+	with obs as (
+	--        select o.*
+	select o.link3
+	    , link1
+	    , o.area as obs_area
+	    , o.negear as obs_gear
+	    , round(o.meshsize, 0) as obs_mesh
+	    , o.meshgroup
+	        , SUM(case when catdisp = 0 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as discard
+	        , SUM(case when catdisp = 1 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as obs_haul_kall
+	        , substr(nespp4, 1, 3) as NESPP3
+	    from (
+	        select * from apsd.BG_OBDBS_TABLES_5_2018
+	        union all
+	        select * from apsd.BG_OBDBS_TABLES_5_2019
+	    )
+	    o
+	)
+	    select c.*
+	    , o.link3
+	    , o.obs_area
+	    , o.nespp3
+	    , o.discard
+	    , o.obs_haul_kall
+	    , o.obs_gear 
+	    , o.obs_mesh
+	    , o.meshgroup
+	from apsd.catch_link1_temp c
+	    left outer join (
+	        select * from obs -- where nespp3 = 212 
+	    ) o
+	on o.link1 = c.link1 AND c.mesh = o.obs_mesh											 
+											 ')
+	)
+
+
+h3dat %>% 
+	group_by(VTRSERNO, NESPP3) %>% 
+	summarise(discard = sum(DISCARD, na.rm = T)
+						)
+
 
 ```
 
