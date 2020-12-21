@@ -26,6 +26,13 @@ select o.link3
     )
     o
 )
+, mgear as (
+    select gear_code_fid
+    , RIGHT('000' + negear, 3) as negear
+    , vtr_gear_code
+    from apsd.master_gear
+)
+
     select c.*
     , o.link3
     , o.obs_area
@@ -35,8 +42,11 @@ select o.link3
     , o.obs_gear 
     , o.obs_mesh
     , o.meshgroup
+    , m.GEAR_CODE_FID
 from apsd.catch_link1_temp c
     left outer join (
         select * from obs -- where nespp3 = 212 
     ) o
-on o.link1 = c.link1 AND c.mesh = o.obs_mesh
+on o.link1 = c.link1 AND c.mesh = o.obs_mesh 
+left join (SELECT * from mgear) m
+on (c.GEARCODE = m.VTR_GEAR_CODE) --o.obs_gear = m.NEGEAR AND AND c.GEARCODE = m.VTR_GEAR_CODEto_char(o.obs_gear) = to_char(m.NEGEAR) 

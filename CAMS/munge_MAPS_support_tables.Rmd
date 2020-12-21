@@ -47,6 +47,13 @@ setwd("~/GitHub/discaRd/CAMS")
 # change this path as needed
 mgear = readxl::read_xlsx('GAR master gear codes.xlsx', sheet = 1)
 
+dbWriteTable(conn = bcon, name = 'MASTER_GEAR', value = mgear)
+
+dbSendQuery(bcon, 'grant all on APSD.MASTER_GEAR to MAPS')
+
+mgear = tbl(bcon, sql('select * from apsd.master_gear'))
+
+
 # make it a long table.. no need!
 
 # mgear_long = reshape2::melt(data = mgear, c('NEGEAR','VTR_GEAR_CODE'))
