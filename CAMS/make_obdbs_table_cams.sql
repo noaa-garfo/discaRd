@@ -21,6 +21,8 @@ stock area, region, half of year may all be dropped or modified in subsequent st
 
 DEF year = 2020
 
+DROP TABLE bg_obdbs_cams_mock
+
 DROP TABLE bg_obtables_join_1_&year
 /
 
@@ -379,4 +381,24 @@ drop table bg_obdbs_tables_4_&year
 ;
 
 select * from bg_obdbs_cams_mock
+;
+
+select area
+, nemarea
+, fleet_type, gearcat
+, hailwt
+, link1
+, link3
+, negear
+, linermsize
+, meshsize
+, geartype
+, meshgroup
+, accessarea
+, tripcategory
+, program
+, nespp4
+, substr(nespp4, 1, 3) as nespp3
+, keptall
+from bg_obdbs_cams_mock
 
