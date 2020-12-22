@@ -57,6 +57,19 @@ select * from obdbs.OBMSZ@nova
 select all_tables from NOVA where owner = 'OBDBS'
 ;
 
+desc APSD.MASTER_GEAR
+;
+
+select * from apsd.master_gear
+
+;
+
+--select negear from apsd.master_gear
+
+--SELECT REPLICATE('0', 3-LEN(negear)) + negear AS negear_new
+Select RIGHT('000' + to_char(negear), 3)
+from apsd.master_gear
+;
 with obs as (
 --        select o.*
 select o.link3
