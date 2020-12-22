@@ -29,7 +29,7 @@ select dmis_trip_id
          count(distinct(vtrserno)) nvtr
         , count(distinct(docid)) ndocid
         , dmis_trip_id
-        from apsd.cams_apport
+        from apsd.cams_apport_20201222
         group by dmis_trip_id
     ) a
     where a.nvtr > 1
@@ -47,7 +47,7 @@ select dmis_trip_id
         , round(sum(d.live)) as cams_kall
     , o.link1
     from mtrips m
-    left join apsd.cams_apport d on m.dmis_trip_id = d.dmis_trip_id
+    left join apsd.cams_apport_20201222 d on m.dmis_trip_id = d.dmis_trip_id
 --    from apsd.cams_apport d
     left join (
      select *
