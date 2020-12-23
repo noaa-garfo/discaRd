@@ -99,12 +99,12 @@ odat2 = tbl(bcon, sql('
 ```
 
 ```{r subset obs trips for a species}
-
-stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def')) %>% 
-	filter(NESPP3 == '212') %>% 
-	dplyr::select(STAT_AREA) %>% 
-	distinct() %>% 
-	collect()
+# 
+# stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def')) %>% 
+# 	filter(NESPP3 == '212') %>% 
+# 	dplyr::select(STAT_AREA) %>% 
+# 	distinct() %>% 
+# 	collect()
 
 # odat = c_o_dat %>% 
 # 	filter(!is.na(LINK1) & NESPP3 == '212' & AREA %in% local(stat_area_sp[["stat_area"]])) %>% 
@@ -141,6 +141,20 @@ dk_gear_mesh %>%
 ```
 
 ```{r look at parking hauls within a subtrip byt matching gear and mesh}
+
+# need to add gear here
+
+# mgear = readxl::read_xlsx('C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/GAR master gear codes.xlsx')
+
+mgear = tbl(bcon, sql('select * from apsd.master_gear'))
+
+mgear = mgear %>% 
+	group_by(VTR_GEAR_CODE) %>% 
+	distinct(NEGEAR, VTR_GEAR_CODE) %>% 
+  ungroup() %>% 
+	collect()
+
+# 
 
 h3dat <- tbl(bcon, sql('
 	with obs as (
@@ -179,8 +193,9 @@ h3dat <- tbl(bcon, sql('
 	)
 
 
-h3dat %>% 
-	group_by(VTRSERNO, NESPP3) %>% 
+obs_trip_discard = h3dat %>% 
+	filter(!is.na(NESPP3)) %>% 
+	group_by(VTRSERNO, NESPP3, OBS_GEAR, GEARCODE, MESHGROUP) %>% 
 	summarise(discard = sum(DISCARD, na.rm = T)
 						)
 
