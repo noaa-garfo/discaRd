@@ -13,17 +13,18 @@ with obs as (
 --        select o.*
 select o.link3
     , link1
+    , o.obsrflag
     , o.area as obs_area
     , o.negear as obs_gear
     , round(o.meshsize, 0) as obs_mesh
     , o.meshgroup
-        , SUM(case when catdisp = 0 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as discard
+    , SUM(case when catdisp = 0 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as discard
         , SUM(case when catdisp = 1 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as obs_haul_kall
         , substr(nespp4, 1, 3) as NESPP3
     from (
-        select * from apsd.BG_OBDBS_TABLES_5_2018
+        select * from apsd.bg_obdbs_cams_mock2018
         union all
-        select * from apsd.BG_OBDBS_TABLES_5_2019
+        select * from apsd.bg_obdbs_cams_mock2019
     )
     o
 )
@@ -152,7 +153,7 @@ SELECT a.dmis_trip_id
 --                      THEN 'OPEN'
 --				ELSE 'Unknown'
 --				END) as accessarea              
-FROM apsd.cams_apport_20201222 a LEFT OUTER JOIN vtr.vlgear b
+FROM apsd.cams_apport_20201230 a LEFT OUTER JOIN vtr.vlgear b
 ON a.GEARCODE = b.GEARCODE
 
 /
@@ -200,6 +201,10 @@ now merge as before with obdbs
 
 */
 
+drop table bg_obs_cams_tmp1
+/
+
+create table bg_obs_cams_tmp1 as 
 with mtrips as (
 select dmis_trip_id
     from (
@@ -250,29 +255,29 @@ select dmis_trip_id
         , d.carea
         , o.link1
 )
-
-, obs as (
---        select o.*
-select o.link3
-    , link1
-    , o.area as obs_area
-    , o.negear as obs_gear
-    , round(o.meshsize, 0) as obs_mesh
-    , o.meshgroup
-    , substr(nespp4, 1, 3) as NESPP3
-    , o.hailwt
-    , o.catdisp
-    , SUM(case when catdisp = 1 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as obs_haul_kall
-    , case when catdisp = 0 then o.hailwt else 0 end  as discard
-
-    from (
-        select * from apsd.BG_OBDBS_TABLES_5_2018
-        union all
-        select * from apsd.BG_OBDBS_TABLES_5_2019
-    ) o
-    
-
-)
+, obs as (select * from obs_cams_prorate)
+--, obs as (
+----        select o.*
+--select o.link3
+--    , link1
+--    , o.area as obs_area
+--    , o.negear as obs_gear
+--    , round(o.meshsize, 0) as obs_mesh
+--    , o.meshgroup
+--    , substr(nespp4, 1, 3) as NESPP3
+--    , o.hailwt
+--    , o.catdisp
+--    , SUM(case when catdisp = 1 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as obs_haul_kall
+--    , case when catdisp = 0 then o.hailwt else 0 end  as discard
+--
+--    from (
+--        select * from apsd.BG_OBDBS_TABLES_5_2018
+--        union all
+--        select * from apsd.BG_OBDBS_TABLES_5_2019
+--    ) o
+--    
+--
+--)
 , mgear as (
     select gear_code_fid
     , RIGHT('000' + negear, 3) as negear
@@ -284,8 +289,8 @@ select o.link3
     , o.link3
     , o.obs_area as obs_area
     , o.nespp3
-    , o.discard
-    , o.obs_haul_kall
+    , o.discard_prorate as discard
+    , o.obs_haul_kept
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , o.meshgroup as obs_meshgroup
@@ -294,6 +299,27 @@ from trips c
     left outer join (
         select * from obs -- where nespp3 = 212 
     ) o
-on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.AREA = o.OBS_AREA)
+on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
 left join (SELECT * from mgear) m
 on (c.GEARCODE = m.VTR_GEAR_CODE) 
+
+/
+
+select *
+from bg_obs_cams_tmp1
+
+--/
+--select listagg(GEARCODE, ',') within group (order by dmis_trip_id) multi_gears
+--, dmis_trip_id--* --count(distinct(dmis_trip_id))
+---- , count(distinct(vtrserno))
+--from (select dmis_trip_id, distinct(GEARCODE) from bg_obs_cams_tmp1 group by dmis_trip_id)
+--group by dmis_trip_id
+;
+
+select dmis_trip_id
+, count(distinct(GEARCODE))
+, count(distinct(MESHGROUP))
+, count(distinct(AREA))
+from bg_obs_cams_tmp1 
+group by dmis_trip_id
+
