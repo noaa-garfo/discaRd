@@ -1,32 +1,21 @@
-/*
+--select *
+--from obdbs.obfishdisp@nova
+--;
+--
+--select count(*)
+--from bg_obtables_join_1_2020
+--
+--;
 
-Script used in SMB and mid-atlantic QM discard estimation.
-this script build the observer table information for stratification etc.
-
-incorporates NEFOP, ASM
-accounts for mesh size & liner use
-adds factors for trip type, access area (scallops), GenCat/LA (scallop), meshgroup (sm, M, LG, XLG)
-aggregated atth species/haul level
-
-originally written by Jay Hermsen
-
-Ben Galuardi
-
-12/18/20
-
-this process could run on a cron job and have one table/calendar year
-stock area, region, half of year may all be dropped or modified in subsequent steps
-
-*/
-
-DEF year = 2020
-
-DROP TABLE bg_obdbs_cams_mock
-
+DEF year = 2018
+/
+DROP TABLE bg_obdbs_cams_mock&year
+/
 DROP TABLE bg_obtables_join_1_&year
 /
 
 CREATE TABLE bg_obtables_join_1_&year AS
+
 SELECT a.FLEET_TYPE, 
 a.DATELAND, 
 a.DATESAIL, 
@@ -66,31 +55,29 @@ s.hailwt,
 s.nespp4,  
 s.program, 
 s.wgttype
-FROM obdbs.obtrp@nova a, obdbs.obhau@nova b, obdbs.obspp@nova s, obdbs.obfishdisp@nova e--, obdbs.obspec@nova i
-WHERE a.LINK1 = b.LINK1
---AND b.LINK3 = s.LINK3
-AND s.FISHDISP = e.FISHDISP
---AND i.nespp4 = s.nespp4
-AND a.YEAR = '&year'
+FROM obdbs.obtrp@nova a
+left join (select * from obdbs.obhau@nova) b
+on a.LINK1 = b.LINK1
+left join (select * from obdbs.obspp@nova) s
+on b.LINK3 = s.LINK3
+left join (select * from obdbs.obfishdisp@nova) e
+on s.FISHDISP = e.FISHDISP
+where a.YEAR = '&year'
 AND b.YEAR = '&year'
 AND s.fishdisp <> '039'
---AND b.OBSRFLAG = '1'
+--AND b.OBSRFLAG <> '1' -- this contorls observed vs unobserved hauls
 AND s.program <> '127'
 AND a.tripext IN ('C', 'X')
---AND i.inc IS NULL --exclude incidental takes
-/
-DROP TABLE bg_obtables_join_1a_&year
-/
-CREATE TABLE bg_obtables_join_1a_&year AS
-SELECT s.*, s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb livewt
-FROM bg_obtables_join_1_&year s LEFT OUTER JOIN obdbs.obspecconv@nova c
-ON s.nespp4 = c.nespp4_obs
-AND s.catdisp = c.catdisp_code
-AND s.drflag = c.drflag_code
+
 /
 ---Pull data from the ASM tables in the OBDBS tables on NOVA  
-DROP TABLE bg_asmtables_join_1_&year 
+
 /
+
+DROP TABLE bg_asmtables_join_1_&year 
+
+/
+
 CREATE TABLE bg_asmtables_join_1_&year AS
 SELECT a.FLEET_TYPE, 
 a.DATELAND, 
@@ -131,18 +118,36 @@ s.hailwt,
 s.nespp4,  
 s.program, 
 s.wgttype
-FROM obdbs.asmtrp@nova a, obdbs.asmhau@nova b, obdbs.asmspp@nova s, obdbs.obfishdisp@nova e--, obdbs.obspec@nova i
-WHERE a.LINK1 = b.LINK1
---AND b.LINK3 = s.LINK3
-AND s.FISHDISP = e.FISHDISP
---AND i.nespp4 = s.nespp4
-AND a.YEAR = '&year'
+
+FROM obdbs.asmtrp@nova a
+left join (select * from obdbs.asmhau@nova) b
+on a.LINK1 = b.LINK1
+left join (select * from obdbs.asmspp@nova) s
+on b.LINK3 = s.LINK3
+left join (select * from obdbs.obfishdisp@nova) e
+on s.FISHDISP = e.FISHDISP
+where a.YEAR = '&year'
 AND b.YEAR = '&year'
 AND s.fishdisp <> '039'
---AND b.OBSRFLAG = '1'
+--AND b.OBSRFLAG <> '1' -- this contorls observed vs unobserved hauls
 AND s.program <> '127'
 AND a.tripext IN ('C', 'X')
+
+--
+--FROM obdbs.asmtrp@nova a, obdbs.asmhau@nova b, obdbs.asmspp@nova s, obdbs.obfishdisp@nova e--, obdbs.obspec@nova i
+--WHERE a.LINK1 = b.LINK1
+----AND b.LINK3 = s.LINK3
+--AND s.FISHDISP = e.FISHDISP
+----AND i.nespp4 = s.nespp4
+--AND a.YEAR = '&year'
+--AND b.YEAR = '&year'
+--AND s.fishdisp <> '039'
+----AND b.OBSRFLAG = '1'
+--AND s.program <> '127'
+--AND a.tripext IN ('C', 'X')
 --AND i.inc IS NULL --exclude incidental takes
+/
+
 /
 DROP TABLE bg_asmtables_join_1a_&year
 /
@@ -259,8 +264,10 @@ WHERE a.YEAR = '&year'
 --Add info on mesh liner. If a mesh liner was used, the mesh size supplants
 ---the mesh size used from the actual net. If no liner is used
 ---the mesh size defaults to the net, i.e. the smaller of the two mesh sizes is used if a liner is present.
+/
 DROP TABLE bg_obdbs_tables_4_&year
 /
+
 CREATE TABLE bg_obdbs_tables_4_&year
 AS SELECT a.*, 
 b.CODLINERUSD, 
@@ -268,6 +275,8 @@ b.CODMSIZE,
 b.LINERMSIZE
 FROM bg_obdbs_tables_3_&year a LEFT OUTER JOIN bg_obdbs_meshsize1_&year b
 ON a.link3 = b.link3 
+
+
 /
 DROP TABLE bg_obdbs_tables_5_&year
 /
@@ -361,11 +370,12 @@ from (
  ) c 
 /
 
+/
 -- drop temp columns
 ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, meshgroup1, meshgroup2, accessarea1)
 /
 
-CREATE TABLE bg_obdbs_cams_mock as select * from bg_obdbs_tables_5_&year
+CREATE TABLE bg_obdbs_cams_mock&year as select * from bg_obdbs_tables_5_&year
 /
 drop table bg_obdbs_tables_5_&year
 /
@@ -381,26 +391,4 @@ drop table bg_obdbs_tables_4_&year
 ;
 
 select count(*) 
-from bg_obdbs_cams_mock
-
-;
-
---select area
---, nemarea
---, fleet_type, gearcat
---, hailwt
---, link1
---, link3
---, negear
---, linermsize
---, meshsize
---, geartype
---, meshgroup
---, accessarea
---, tripcategory
---, program
---, nespp4
---, substr(nespp4, 1, 3) as nespp3
---, keptall
---from bg_obdbs_cams_mock
-
+from bg_obdbs_cams_mock&year
