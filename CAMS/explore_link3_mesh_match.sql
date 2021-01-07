@@ -205,6 +205,8 @@ drop table bg_obs_cams_tmp1
 /
 
 create table bg_obs_cams_tmp1 as 
+-- this part selects trips with more than one subtrip
+
 with mtrips as (
 select dmis_trip_id
     from (
@@ -217,7 +219,9 @@ select dmis_trip_id
     ) a
     where a.nvtr > 1
 )
---, obs_cams as ( 
+
+-- this part grabs the catch/trip info from the apportionment table, but only for trips with >1 subtrip
+
 , trips as (  
        select d.permit
         , d.dmis_trip_id
@@ -235,7 +239,7 @@ select dmis_trip_id
     from mtrips m
     left join apsd.bg_cams_catch_mock d on m.dmis_trip_id = d.dmis_trip_id
 --    from apsd.cams_apport d
-    left join (
+    left join (  --adds observer link field
      select *
      from dmis.d_match_obs_link
     ) o
@@ -255,6 +259,9 @@ select dmis_trip_id
         , d.carea
         , o.link1
 )
+
+-- this part gets observer data
+
 , obs as (select * from obs_cams_prorate)
 --, obs as (
 ----        select o.*
@@ -278,6 +285,9 @@ select dmis_trip_id
 --    
 --
 --)
+
+-- this would link to the master gear table
+
 , mgear as (
     select gear_code_fid
     , RIGHT('000' + negear, 3) as negear
