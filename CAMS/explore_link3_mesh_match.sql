@@ -199,7 +199,7 @@ select * from bg_cams_catch_mock
 
 now merge as before with obdbs
 
-*/
+*/  
 
 drop table bg_obs_cams_tmp1
 /

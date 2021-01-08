@@ -42,8 +42,17 @@ bcon <- dbConnect(odbc::odbc(),
 
 # get catch and matched obs data together
 
-c_o_dat = tbl(bcon, sql('select * from apsd.bg_obs_cams_tmp1')) %>% 
-	collect()
+c_o_dat = tbl(bcon, sql('select * from apsd.bg_obs_cams_tmp1')) 
+
+# %>% 
+# 	collect()
+
+# catch only
+
+dat = tbl(bcon, sql('select * from bg_cams_catch_mock'))
+
+# %>% 
+# 	collect()
 
 
 
