@@ -1,0 +1,99 @@
+---
+title: "Steps for making tables for CAMS discard tables"
+author: Ben Galuardi
+date: "`r lubridate::today()`"
+output:
+  pdf_document: 
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+  bookdown::pdf_book:
+    includes:
+      in_header: header.tex
+      after_body: doc_suffix.tex
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    keep_tex: yes
+  html_document:
+    df_print: paged
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+urlcolor: cyan
+---
+
+\newpage
+
+## Discard Rate Current Method Summary (J. Michael Lanning summary)
+
+1) Rates determine by observer reported values (gear, area, etc)
+2) Incomplete observed trips have missing 'hauls' prorated by observed information from that trip
+3) Trips with observer get reported/calculated observed discards   of that specific trip
+4) Unobserved trips get discards from the rate calculated from 1)
+5) QM is only interested in the summary total of discards for each trip, not subtrips. Often the interested number is a summary of trips, ie. the herring total of bycatch for an area/season or a sector's season's total of GB Cod.
+
+6) Other others are driven by regs. Here I would place transition rates and EM methods.
+
+I recommend separating out issues such as mismatching gear and area for the future QA data system. 
+
+And of course, any change management must be worked through proper and transparent interaction with all end users and clients including council and  SFD.
+
+
+## Tables created and steps to date
+
+**Rates determine by observer reported values (gear, area, etc)**
+Observed discards
+
+`make_obdbs_table_cams_v2.sql`
+
+created: 
+
+* `apsd.bg_obdbs_cams_mock2018`
+* `apsd.bg_obdbs_cams_mock2019`
+* `apsd.bg_obdbs_cams_mock2020`
+
+**Incomplete observed trips have missing 'hauls' prorated by observed information from that trip**
+
+Prorate observed discards on unobserved hauls within a subtrip.
+This is done by applying a ratio of kept all on the entire trip to kept all on the unobserved hauls only
+
+$$d_{total} = d_{observedhauls}*(1+KALL_{unobserved hauls}/KALL_{subtrip})$$
+
+`make_obdbs_prorate.sql`
+
+created:
+
+* `apsd.obs_cams_prorate`  
+	+ this table was made using  `apsd.bg_obdbs_cams_mock2018` and `apsd.bg_obdbs_cams_mock2019`
+
+**Trips with observer get reported/calculated observed discards of that specific trip**
+
+Match observed hauls to subtrips
+
+`explore_link3_mesh_match.sql`
+
+This step matches on `AREA`, `GEAR` and `MESHGROUP` (sm, lg, xlg). This is a hard match and will go awry if there is a mismatch in the data.
+
+
+created: 
+
+* `apsd.bg_cams_catch_mock`
+	+ follows the steps layed out for mid-Atlantic discard estimation. Gear, mesh and area CASE statements should be replaced at some point with table driven code.  
+	+ Utilizes the current apportionment table: `apsd.cams_apport_20201230`
+* `apsd.bg_obs_cams_tmp1`
+	+ links to `dmis.d_match_obs_link` and `apsd.bg_cams_catch_mock`
+* to date (`r lubridate::today()`), this is only using trips that have **multiple** subtrips. These are the only cases where the pro-ration step matters. 
+
+
+<!-- **Unobserved trips get discards from the rate calculated from 1)** -->
+
+
+
+
+```{r}
+
+```
+

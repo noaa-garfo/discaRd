@@ -1,11 +1,17 @@
---select *
---from obdbs.obfishdisp@nova
---;
---
---select count(*)
---from bg_obtables_join_1_2020
---
---;
+/*
+
+Create table of discarded speceis for a calendar year 
+this follows the steps used in Mid-Atlantic discard estaimtion for year end reports
+
+The eventual goal is to replace the CASE code for gear, mesh and area with tale based joins. 
+
+Created by: Ben Galuardi, modified from Jay Hermsen's code
+
+12-23-20
+
+The year variable can be defined, and then the entire script run (F5 in sqldev)
+
+*/
 
 DEF year = 2018
 /

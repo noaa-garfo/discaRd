@@ -40,6 +40,7 @@ library(rgdal)
 library(raster)
 library(config)
 library(stringr)
+library(discaRd)
 
 dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
@@ -69,6 +70,9 @@ dat = tbl(bcon, sql('select * from bg_cams_catch_mock'))
 # %>% 
 # 	collect()
 
+# Stat areas table
+
+stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
 
 
 
@@ -149,31 +153,106 @@ dat = tbl(bcon, sql('select * from bg_cams_catch_mock'))
 # 
 # tbl(bcon, sql('SELECT link1, link3, program, year, negear, codmsize, linermsize FROM obdbs.obotgh@nova where year = 2019 and program <> 000'))
 
-
-stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
-
-dk_gear_mesh <- odat2 %>% 
+	
 
 
 # -------------------------------------------
 
-dk_gear_mesh <- odat2 %>% 
-	filter(!is.na(LINK1) & NESPP3 == 800 & AREA %in% local(stat_area_sp[["STAT_AREA"]]) ) %>% 
-	group_by(YEAR, NEGEAR, MESHGROUP) %>% 
-	summarise(dk_gear = sum(HAILWT, na.rm = T)/sum(OBS_KALL, na.rm = T)
-						, OBS_KALL = sum(OBS_KALL, na.rm = T)
+dk_gear_mesh <- c_o_dat %>% 
+	# filter(!is.na(LINK1) & NESPP3 == 801 & AREA %in% local(stat_area_sp[["STAT_AREA"]]) ) %>%
+	filter(!is.na(LINK1) & NESPP3 == 801)  %>%   #& AREA %in% stat_area_sp$STAT_AREA)
+	group_by(YEAR, OBS_GEAR, OBS_MESHGROUP) %>% 
+	summarise(dk_gear = sum(DISCARD, na.rm = T)/sum(OBS_HAUL_KEPT, na.rm = T)
+						, OBS_KALL = sum(OBS_HAUL_KEPT, na.rm = T)
 						) %>% 
 	collect()
 
+# SQUID EXAMPLE
+# pull table as is for a species
+# this can be used to assign discard directly to subtrip
 
-dk_gear_mesh %>% 
-	tidyr::pivot_wider(values_from = 'dk_gear', names_from = 'NEGEAR') %>% 
-	arrange(YEAR, MESHGROUP)
-# ---------------------------------------------
+bdat <- c_o_dat %>% 
+	filter(!is.na(LINK1) & NESPP3 == 801) %>% 
+	# mutate(SEADAYS = 0
+	# 			 , DISCARD = sum(DISCARD, na.rm = T)
+	# 			 , KALL = sum(OBS_HAUL_KEPT, na.rm = T)
+	# 			 ) %>% 
+	collect()
 
+# Use this to park discard into subtrips..
+obs_discard = bdat %>% 
+	group_by(LINK1, OBS_GEAR, OBS_MESHGROUP) %>% 
+	summarise(KALL = sum(CAMS_KALL), DISCARD = sum(DISCARD), dk = sum(DISCARD, na.rm = T)/sum(CAMS_KALL, na.rm = T))
+	
+# Make an assumed rate by gear/mesh
+
+assumed_discard = bdat %>% 
+	group_by(OBS_GEAR, OBS_MESHGROUP) %>% 
+	summarise(KALL = sum(CAMS_KALL), DISCARD = sum(DISCARD), dk = sum(DISCARD, na.rm = T)/sum(CAMS_KALL, na.rm = T))
+	
+# set up bdat for discaRd
+bdat_focal <- bdat %>% 
+	filter(YEAR == 2019) %>% 
+	mutate(STRATA = paste(OBS_GEAR, OBS_MESHGROUP, sep = '_')) %>% 
+	# group_by(YEAR, OBS_GEAR, OBS_MESHGROUP, AREA) %>% 
+	mutate(KALL = sum(CAMS_KALL), BYCATCH = sum(DISCARD))
+
+
+ddat_focal <- dat %>% 
+		filter(YEAR == 2019) %>% 
+		mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_')) %>% 
+		# group_by(DMIS_TRIP_ID) %>%
+		dplyr::group_by(DMIS_TRIP_ID, YEAR, GEARNM, GEARCODE, NEGEAR, MESHGROUP, CAREA, STRATA) %>% 
+		summarise(LIVE_POUNDS = sum(POUNDS, na.rm = T)) %>% 
+		collect()
+	
+ddat_focal = ddat_focal %>% 
+	mutate(DOCID = DMIS_TRIP_ID)
+
+	
+# Get complete strata
+strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
+
+allest = get.cochran.ss.by.strat(bydat = bdat_focal, trips = ddat_focal, strata_name = 'STRATA', targCV = .3, strata_complete = strata_complete)		
+
+# discard rates by strata
+dest_strata = allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+# plug in estimated rates to the unobserved
+ddat_rate = ddat_focal
+ddat_rate$DISC_RATE = dest_strata$drate[match(ddat_rate$STRATA, dest_strata$STRATA)]	
+
+# substitute assumed rate where we can
+assumed_discard = assumed_discard %>% 
+	mutate(STRATA = paste(OBS_GEAR, OBS_MESHGROUP, sep = '_'))
+
+ddat_rate = ddat_rate %>% 
+	mutate(STRATA_ASSUMED = paste(NEGEAR, MESHGROUP, sep = '_')) %>% 
+	mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA)) 
+
+# ddat_rate$ARATE_IDX[is.na(ddat_rate$ARATE_IDX)] = 0
+ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
+
+# %>% 
+# 	mutate(ARATE = assumed_discard[ARATE_IDX])
+
+
+# ddat_rate <- 
+	ddat_rate %>% 
+	mutate(DISC_RATE = case_when((is.na(DISC_RATE) & !is.na(ARATE_IDX)) ~ assumed_discard$dk[ARATE_IDX]
+															 , DISC_RATE))
+
+	
 ```
 
-```{r look at parking hauls within a subtrip byt matching gear and mesh}
+```{r load master gear table if needed}
 
 # need to add gear here
 
@@ -186,51 +265,6 @@ mgear = mgear %>%
 	distinct(NEGEAR, VTR_GEAR_CODE) %>% 
   ungroup() %>% 
 	collect()
-
-# 
-
-h3dat <- tbl(bcon, sql('
-	with obs as (
-	--        select o.*
-	select o.link3
-	    , link1
-	    , o.area as obs_area
-	    , o.negear as obs_gear
-	    , round(o.meshsize, 0) as obs_mesh
-	    , o.meshgroup
-	        , SUM(case when catdisp = 0 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as discard
-	        , SUM(case when catdisp = 1 then o.hailwt else 0 end) OVER(PARTITION BY o.link3) as obs_haul_kall
-	        , substr(nespp4, 1, 3) as NESPP3
-	    from (
-	        select * from apsd.BG_OBDBS_TABLES_5_2018
-	        union all
-	        select * from apsd.BG_OBDBS_TABLES_5_2019
-	    )
-	    o
-	)
-	    select c.*
-	    , o.link3
-	    , o.obs_area
-	    , o.nespp3
-	    , o.discard
-	    , o.obs_haul_kall
-	    , o.obs_gear 
-	    , o.obs_mesh
-	    , o.meshgroup
-	from apsd.catch_link1_temp c
-	    left outer join (
-	        select * from obs -- where nespp3 = 212 
-	    ) o
-	on o.link1 = c.link1 AND c.mesh = o.obs_mesh											 
-											 ')
-	)
-
-
-obs_trip_discard = h3dat %>% 
-	filter(!is.na(NESPP3)) %>% 
-	group_by(VTRSERNO, NESPP3, OBS_GEAR, GEARCODE, MESHGROUP) %>% 
-	summarise(discard = sum(DISCARD, na.rm = T)
-						)
 
 
 ```
