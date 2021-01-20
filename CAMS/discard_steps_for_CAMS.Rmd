@@ -187,26 +187,38 @@ obs_discard = bdat %>%
 # Make an assumed rate by gear/mesh
 
 assumed_discard = bdat %>% 
-	group_by(OBS_GEAR, OBS_MESHGROUP) %>% 
-	summarise(KALL = sum(CAMS_KALL), DISCARD = sum(DISCARD), dk = sum(DISCARD, na.rm = T)/sum(CAMS_KALL, na.rm = T))
+	dplyr::group_by(OBS_GEAR, OBS_MESHGROUP) %>% 
+	dplyr::summarise(KALL = sum(CAMS_KALL), DISCARD = sum(DISCARD), dk = sum(DISCARD, na.rm = T)/sum(CAMS_KALL, na.rm = T))
 	
-# set up bdat for discaRd
+# set up bdat for discaRd: rolled up by sub-trip
 bdat_focal <- bdat %>% 
 	filter(YEAR == 2019) %>% 
 	mutate(STRATA = paste(OBS_GEAR, OBS_MESHGROUP, sep = '_')) %>% 
-	# group_by(YEAR, OBS_GEAR, OBS_MESHGROUP, AREA) %>% 
-	mutate(KALL = sum(CAMS_KALL), BYCATCH = sum(DISCARD))
+  dplyr::group_by(DMIS_TRIP_ID, OBS_GEAR, OBS_MESHGROUP, AREA, STRATA) %>% 
+  dplyr::summarise(KALL = sum(CAMS_KALL), BYCATCH = sum(DISCARD))
 
+#---------------------------------------------------------------------------------------#
+# trips data: rolled up by sub-trip
+# This could be a generic table of KALL by subtrip..
+#---------------------------------------------------------------------------------------#
+
+
+#---------------------------------------------------------------------------------------#
+# Here is where various stratification would make sense
+#---------------------------------------------------------------------------------------#
 
 ddat_focal <- dat %>% 
 		filter(YEAR == 2019) %>% 
+	  collect() %>% 
 		mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_')) %>% 
+		# collect() %>% 
 		# group_by(DMIS_TRIP_ID) %>%
 		dplyr::group_by(DMIS_TRIP_ID, YEAR, GEARNM, GEARCODE, NEGEAR, MESHGROUP, CAREA, STRATA) %>% 
-		summarise(LIVE_POUNDS = sum(POUNDS, na.rm = T)) %>% 
-		collect()
+		dplyr::summarise(LIVE_POUNDS = sum(LIVE_POUNDS, na.rm = T))
+
 	
 ddat_focal = ddat_focal %>% 
+	ungroup() %>% 
 	mutate(DOCID = DMIS_TRIP_ID)
 
 	
