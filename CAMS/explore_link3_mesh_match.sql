@@ -234,7 +234,7 @@ select dmis_trip_id
         , d.meshgroup
         , d.area
         , d.carea
-        , round(sum(d.pounds)) as cams_kall
+        , round(sum(d.pounds)) as subtrip_kall
     , o.link1
     from mtrips m
     left join apsd.bg_cams_catch_mock d on m.dmis_trip_id = d.dmis_trip_id
@@ -301,6 +301,7 @@ select dmis_trip_id
     , o.nespp3
     , o.discard_prorate as discard
     , o.obs_haul_kept
+    , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , o.meshgroup as obs_meshgroup
