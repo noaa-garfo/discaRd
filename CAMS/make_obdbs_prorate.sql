@@ -41,8 +41,9 @@ select a.*
 --     , SUM(a.obs_haul_kept) OVER(PARTITION BY a.link1) / SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.link1) as prorate
        , SUM(a.obs_haul_kept) OVER(PARTITION BY a.link1) / NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.link1),0) as prorate
     from (
-        select o.link3
+ select o.link3
             , link1
+            , extract(year from datesail) as year
             , o.obsrflag
             , o.area as obs_area
             , o.negear as obs_gear
@@ -66,12 +67,14 @@ select a.*
             , round(o.meshsize, 0)
             , o.meshgroup
             , substr(nespp4, 1, 3)
+            , extract(year from datesail)
 ) a
 --where link1 = '230201801N54002'
 ) b
 
 group by link3
             , link1
+            , year
             , obsrflag
             , obs_area
             , obs_gear
