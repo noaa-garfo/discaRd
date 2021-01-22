@@ -327,6 +327,106 @@ from bg_obs_cams_tmp1
 --group by dmis_trip_id
 ;
 
+-- now make a bigger table that has all trips.. not just ones with multpile subtrips
+drop table bg_obs_cams_tmp2
+/
+create table bg_obs_cams_tmp2 as 
+-- this part selects trips with more than one subtrip
+--
+--with mtrips as (
+--select dmis_trip_id
+--    from (
+--        select
+--         count(distinct(vtrserno)) nvtr
+--        , count(distinct(docid)) ndocid
+--        , dmis_trip_id
+--        from apsd.bg_cams_catch_mock
+--        group by dmis_trip_id
+--    ) a
+--    where a.nvtr > 1
+--)
+
+-- this part grabs the catch/trip info from the apportionment table, but only for trips with >1 subtrip
+
+with trips as (  
+       select d.permit
+        , d.dmis_trip_id
+        , extract(year from d.record_land) as year
+        , d.docid
+        , d.vtrserno
+        , d.gearcode
+        , d.geartype
+        , d.negear
+        , d.mesh
+        , d.meshgroup
+        , d.area
+        , d.carea
+        , round(sum(d.pounds)) as subtrip_kall
+    , o.link1
+    from apsd.bg_cams_catch_mock d
+--    from apsd.cams_apport d
+    left join (  --adds observer link field
+     select *
+     from dmis.d_match_obs_link
+    ) o
+    on o.dmis_trip_id = d.dmis_trip_id
+    
+    group by 
+        d.permit
+        , extract(year from d.record_land)
+        , d.dmis_trip_id
+        , d.docid
+        , d.vtrserno
+        , d.gearcode
+        , d.geartype
+        , d.negear
+        , d.mesh
+        , d.meshgroup
+        , d.area
+        , d.carea
+        , o.link1
+)
+
+-- this part gets observer data
+
+, obs as (select * from obs_cams_prorate)
+
+, mgear as (
+    select gear_code_fid
+    , RIGHT('000' + negear, 3) as negear
+    , vtr_gear_code
+    from apsd.master_gear
+)
+
+    select c.*
+    , o.link3
+    , o.obs_area as obs_area
+    , o.nespp3
+    , o.discard_prorate as discard
+    , o.obs_haul_kept
+    , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
+    , o.obs_gear as obs_gear
+    , o.obs_mesh as obs_mesh
+    , o.meshgroup as obs_meshgroup
+    , m.GEAR_CODE_FID
+from trips c
+    left outer join (
+        select * from obs 
+    ) o
+on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
+left join (SELECT * from mgear) m
+on (c.GEARCODE = m.VTR_GEAR_CODE) 
+
+/
+
+select *
+from bg_obs_cams_tmp2
+
+;
+
+
+
+
 select dmis_trip_id
 , count(distinct(GEARCODE))
 , count(distinct(MESHGROUP))
