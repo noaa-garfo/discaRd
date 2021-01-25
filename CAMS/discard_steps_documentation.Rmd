@@ -87,6 +87,7 @@ created:
 	+ links to `dmis.d_match_obs_link` and `apsd.bg_cams_catch_mock`
 * to date (`r lubridate::today()`), this is only using trips that have **multiple** subtrips. These are the only cases where the pro-ration step matters. 
 
+*  `apsd.bg_obs_cams_tmp2` is used in the `squid example` and include all trips. 
 
 <!-- **Unobserved trips get discards from the rate calculated from 1)** -->
 

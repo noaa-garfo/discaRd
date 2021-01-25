@@ -27,9 +27,9 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 											, error = FALSE, dev = 'png', dpi = 200)
 ```
 
-```{r setup, eval = F}
+```{r setup, eval = T}
 
-setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd")
+setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
 
 library(odbc)
 # library(RODBC)
@@ -58,7 +58,7 @@ bcon <- dbConnect(odbc::odbc(),
 
 # get catch and matched obs data together
 
-c_o_dat = tbl(bcon, sql('select * from apsd.bg_obs_cams_tmp1')) 
+# c_o_dat = tbl(bcon, sql('select * from apsd.bg_obs_cams_tmp1')) 
 
 
 # get another version that rolls up by trip..
@@ -275,9 +275,11 @@ obs_discard %>%
 
 ```
 
-### notes on squid example
+## Squid Example
 
-The discard estimation runs normally using `r discaRd`. 
+**NOTES:**
+
+The discard estimation runs normally using `discaRd`. 
 
 The stratification scheme for this example was simplified to use only gear and mesh. 
 
@@ -293,11 +295,35 @@ the total number of observed trips is comparable in the newly created tables but
 ACL report: 4299
 total from new table: 4210
 total in imported table 4000
-total from `r discaRd` is `r  dest_strata$n %>% sum()` (2660)
+total from `discaRd` is `r  dest_strata$n %>% sum()`
+
+```{r print some summary tables}
+
+assumed_discard %>% knitr::kable(caption = 'Assumed discard. This could be a generalized rate from current year. This could also be built from previous years discard info.')
+
+dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
+
+# out_tab %>% head() %>% 
+	# knitr::kable(format= 'markdown', caption = "Exampe of tabular output")
+
+```
+
+### example of output table
+
+This can be modified to perhaps save only the `dmis_trip_id`, `strata`, and `discard estimate`. 
+
+```{r example of output table}
+out_tab %>% 
+	head() %>% 
+	DT::datatable(., filter = "top")
+
+```
 
 
 
-```{r load master gear table if needed}
+
+
+```{r load master gear table if needed, eval = F}
 
 # need to add gear here
 
@@ -315,7 +341,7 @@ mgear = mgear %>%
 ```
 
 
-```{r munge?}
+```{r munge?, eval = F}
 cdat %>% 
 	mutate(MESHGROUP = case_when(NEGEAR %in% c('054','057') ~ 'lg'
 														)
