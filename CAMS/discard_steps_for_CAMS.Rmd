@@ -285,7 +285,7 @@ For Quota Monitoring ACL accounting, region (North/south), time of year, and (us
 
 Observed Discard is not typically assigned.. 
 
-I seem to be getting much lower trip and obs trip counts than what exists in the ACL annual reports. This may be due to the apportionament processing.. 
+I seem to be getting much lower trip and obs trip counts than what exists in the ACL annual reports. This may be due to the apportionment processing.. 
 
 I am using subtrip as the `N` unit. 
 
