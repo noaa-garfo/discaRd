@@ -192,6 +192,8 @@ AND meshgroup = 'xlg'
 ;
 
 select * from bg_cams_catch_mock
+/
+select distinct(gearnm) from bg_cams_catch_mock
 
 ;
 
@@ -330,6 +332,7 @@ from bg_obs_cams_tmp1
 -- now make a bigger table that has all trips.. not just ones with multpile subtrips
 drop table bg_obs_cams_tmp2
 /
+
 create table bg_obs_cams_tmp2 as 
 -- this part selects trips with more than one subtrip
 --
@@ -358,7 +361,7 @@ with trips as (
         , d.geartype
         , d.negear
         , d.mesh
-        , d.meshgroup
+        , NVL(d.meshgroup, 'na') as meshgroup
         , d.area
         , d.carea
         , round(sum(d.pounds)) as subtrip_kall
@@ -381,7 +384,7 @@ with trips as (
         , d.geartype
         , d.negear
         , d.mesh
-        , d.meshgroup
+        , NVL(d.meshgroup, 'na')
         , d.area
         , d.carea
         , o.link1
@@ -407,20 +410,57 @@ with trips as (
     , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
-    , o.meshgroup as obs_meshgroup
+    , NVL(o.meshgroup, 'none') as obs_meshgroup
     , m.GEAR_CODE_FID
 from trips c
     left outer join (
         select * from obs 
     ) o
-on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
-left join (SELECT * from mgear) m
+--on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
+on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
+
+left outer join (SELECT * from mgear) m
 on (c.GEARCODE = m.VTR_GEAR_CODE) 
 
 /
+/*
 
 select *
 from bg_obs_cams_tmp2
+
+/
+
+select distinct(nespp3)
+from bg_obs_cams_tmp2
+
+/
+
+select distinct(geartype)
+from bg_obs_cams_tmp2
+where discard > 0
+
+/
+
+select obs_gear --geartype
+--, count(distinct(dmis_trip_id)) n_trips
+, count(distinct(link1)) n_obs
+--from bg_obs_cams_tmp2
+from obs_cams_prorate
+where year = 2019
+group by obs_gear --geartype
+*/
+/
+
+select sum(subtrip_kall)
+, sum(discard)
+--, nespp3
+, geartype
+, obs_gear
+, meshgroup
+from bg_obs_cams_tmp2
+where nespp3 is not null
+and year = 2019
+group by geartype, obs_gear, meshgroup
 
 ;
 
@@ -431,6 +471,6 @@ select dmis_trip_id
 , count(distinct(GEARCODE))
 , count(distinct(MESHGROUP))
 , count(distinct(AREA))
-from bg_obs_cams_tmp1 
+from bg_obs_cams_tmp2
 group by dmis_trip_id
 
