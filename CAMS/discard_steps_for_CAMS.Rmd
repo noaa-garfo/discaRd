@@ -324,6 +324,182 @@ out_tab %>%
 
 ```
 
+```{r do a few species}
+make_bdat_cams <- function(input_table = c_o_dat2, species_nespp3 = '802') {
+	
+	bdat <- input_table %>% 
+	# group_by(DMIS_TRIP_ID, NESPP3) %>% 
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) %>% 
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
+
+
+ bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
+
+ bdat
+ 
+ }
+
+# Use this to park discard into subtrips..
+get_obs_disc_vals <- function(bdat){
+
+obs_discard = bdat %>% 
+	group_by(YEAR
+					 , VTRSERNO
+					 # , NEGEAR
+					 , GEARTYPE
+					 , MESHGROUP
+					 ) %>% 
+	dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
+
+obs_discard
+	
+}
+
+# Make an assumed rate by gear/mesh
+
+make_assumed_rate <- function(bdat, year = 2019){
+ assumed_discard = bdat %>% 
+	filter(YEAR == year) %>% 
+	dplyr::group_by(YEAR
+									# , NEGEAR
+									, GEARTYPE
+									, MESHGROUP) %>% 
+	dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
+ 
+ assumed_discard
+
+}	
+
+# set up bdat for discaRd: rolled up by sub-trip
+# may need to change this to OBS table explicitly!!!! just like everything else... 
+
+make_bdat_focal <- function(bdat, year = 2019){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+bdat_focal <- bdat %>% 
+	filter(YEAR == year) %>% 
+	mutate(STRATA = paste(NEGEAR, MESHGROUP, AREA, sep = '_')) %>%
+	# mutate(STRATA = strata) %>% 
+  dplyr::group_by(DMIS_TRIP_ID
+  								# , NEGEAR
+  								# , GEARTYPE
+  								# , MESHGROUP
+  								, STRATA
+  								) %>% 
+  dplyr::summarise(KALL = sum(SUBTRIP_KALL), BYCATCH = sum(SPECIES_DISCARD))
+
+bdat_focal
+}
+
+
+ddat_focal <- ddat_focal %>% 
+	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, CAREA, sep = '_'))
+
+run_discard <- function(obstab, ddat, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+	bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
+	bdat_focal = make_bdat_focal(bdat)
+	obs_discard = get_obs_disc_vals(bdat)
+	assumed_rate = make_assumed_rate(bdat, year = year)
+	
+	# Get complete strata
+strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
+
+allest = get.cochran.ss.by.strat(bydat = bdat_focal, trips = ddat_focal, strata_name = 'STRATA', targCV = .3, strata_complete = strata_complete)		
+
+# discard rates by strata
+dest_strata = allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+# plug in estimated rates to the unobserved
+ddat_rate = ddat_focal
+ddat_rate$DISC_RATE = dest_strata$drate[match(ddat_rate$STRATA, dest_strata$STRATA)]	
+ddat_rate$CV = dest_strata$CV[match(ddat_rate$STRATA, dest_strata$STRATA)]	
+
+
+# substitute assumed rate where we can
+assumed_discard = assumed_discard %>% 
+	mutate(STRATA = paste(GEARTYPE, MESHGROUP, sep = '_'))
+# mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
+
+ddat_rate = ddat_rate %>% 
+	mutate(STRATA_ASSUMED = paste(GEARTYPE, MESHGROUP, sep = '_')) %>% 
+	# mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
+	mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA)) 
+
+# ddat_rate$ARATE_IDX[is.na(ddat_rate$ARATE_IDX)] = 0
+ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
+
+
+# incorporate teh assumed rate into the calculated discard rates
+ddat_rate <- ddat_rate %>% 
+	mutate(CRATE = coalesce(DISC_RATE, ARATE)) %>%
+	mutate(CRATE = replace_na(CRATE, 0)) 
+
+
+# merge observed discards with estimated discards
+# Use the observer tables created, NOT the merged trips/obs table.. 
+# match on VTRSERNO? 
+
+out_tab = obs_discard %>% 
+	ungroup() %>% 
+	dplyr::select(VTRSERNO, DISCARD) %>% 
+	right_join(x = ., y = ddat_rate, by = 'VTRSERNO') %>% 
+  mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>% 
+	mutate(DISCARD = if_else(!is.na(DISCARD), DISCARD, EST_DISCARD)
+				 ) 
+
+list(species = species_nespp3
+		 , allest = allest
+		 , res = out_tab
+ )
+	
+}
+
+# ddat_focal is run by itself since it takes a longtime.. and can be repeated
+
+run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = '802')
+
+
+spec_list = c('801','802','212','800','125')
+
+out_list = list()
+
+ii = 1
+
+for(i in spec_list){
+	print(paste0('Estimating discaRd for NESPP3 ', i))
+	out_list[[ii]] = run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = i)
+	out_list[[ii]]$res$NESPP3 = i
+	ii = ii+1
+	
+}
+
+names(out_list) = spec_list
+
+
+# pull out list parts and rearrange
+
+out_res = out_list[[1]]$res %>% 
+	dplyr::select(DMIS_TRIP_ID, NESPP3 , DISCARD)
+
+for(i in 2:length(out_list)){
+	tmp = out_list[[i]]$res %>% 
+		dplyr::select(DMIS_TRIP_ID, NESPP3 , DISCARD)
+	
+	out_res = rbind(out_res, tmp)
+	
+}
+
+
+out_res %>% 
+	group_by(NESPP3) %>% 
+	dplyr::summarise(sum(DISCARD, na.rm = T))
+
+```
 
 
 
