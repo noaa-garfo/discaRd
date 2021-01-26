@@ -142,6 +142,9 @@ bdat <- c_o_dat2 %>%
 	# 			 ) %>% 
 	# collect()
 
+bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
+
+
 # Use this to park discard into subtrips..
 obs_discard = bdat %>% 
 	group_by(YEAR
@@ -296,6 +299,8 @@ ACL report: 4299
 total from new table: 4210
 total in imported table 4000
 total from `discaRd` is `r  dest_strata$n %>% sum()`
+
+hard match on `LINK1, NEGEAR, MESHGROUP, CAREA` is causing some obs trips to drop.. Example: scallop dredge has a total of 562 observed trips in the 2019 final ACL accounting but here there are only 515. I think this is likely due to CAREA more than anything. 
 
 ```{r print some summary tables}
 
