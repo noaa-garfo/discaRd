@@ -398,3 +398,6 @@ drop table bg_obdbs_tables_4_&year
 
 select count(*) 
 from bg_obdbs_cams_mock&year
+
+;
+
