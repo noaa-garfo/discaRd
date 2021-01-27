@@ -146,29 +146,33 @@ stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
 # pull table as is for a species
 # this can be used to assign discard directly to subtrip
 
-bdat <- c_o_dat2 %>% 
-	# group_by(DMIS_TRIP_ID, NESPP3) %>% 
-	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD)) %>% 
-	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
-	# filter(NESPP3 == 802) %>% 
-	# mutate(SEADAYS = 0
-	# 			 , DISCARD = sum(DISCARD, na.rm = T)
-	# 			 , KALL = sum(OBS_HAUL_KEPT, na.rm = T)
-	# 			 ) %>% 
-	# collect()
+# bdat <- c_o_dat2 %>% 
+# 	# group_by(DMIS_TRIP_ID, NESPP3) %>% 
+# 	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD)) %>% 
+# 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
+# 	# filter(NESPP3 == 802) %>% 
+# 	# mutate(SEADAYS = 0
+# 	# 			 , DISCARD = sum(DISCARD, na.rm = T)
+# 	# 			 , KALL = sum(OBS_HAUL_KEPT, na.rm = T)
+# 	# 			 ) %>% 
+# 	# collect()
 
-bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
+# bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
 
 
 # Use this to park discard into subtrips..
-obs_discard = bdat %>% 
+obs_discard = c_o_dat2 %>% 
+	# group_by(DMIS_TRIP_ID, NESPP3) %>% 
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD)) %>% 
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>%  
 	group_by(YEAR
 					 , VTRSERNO
 					 # , NEGEAR
 					 , GEARTYPE
 					 , MESHGROUP
 					 ) %>% 
-	dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
+	dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T)) %>% 
+	ungroup()
 	
 # Make an assumed rate by gear/mesh
 
@@ -310,11 +314,19 @@ out_tab = obs_discard %>%
 				 ) 
 
 # check how much discard is observed directly vs. estimated
+
+obs_discard %>% 
+	ungroup() %>% 
+	dplyr::select(VTRSERNO, DISCARD) %>% 
+	right_join(x = ., y = ddat_rate, by = 'VTRSERNO') %>% 
+  mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>% dplyr::select(DISCARD, EST_DISCARD) %>% colSums(na.rm = T)
+
+# not a good way to do this... 
 out_tab %>%
 	dplyr::summarise(d = sum(DISCARD, na.rm = T)
 						,est_d = sum(EST_DISCARD, na.rm = T)
 						, OBS_DISCARD = sum(DISCARD, na.rm = T) - sum(EST_DISCARD, na.rm = T)) %>% 
-		knitr::kable(format = 'markdown', col.names = c('Total Discard','Portion that was Estimated','Portion that was assigned'))
+		knitr::kable(format = 'markdown', col.names = c('Total Discard','Portion that was Estimated','Difference between estimated and observed on observed trips only'))
 
 # compare to obs_discard standalone table
 obs_discard %>% 
@@ -376,16 +388,37 @@ out_tab %>%
 ```
 
 ```{r make functions out of the process}
-make_bdat_cams <- function(input_table = c_o_dat2, species_nespp3 = '802') {
+make_bdat_cams <- function(input_table = bdat, species_nespp3 = '802') {
 	
-	bdat <- input_table %>% 
-	# group_by(DMIS_TRIP_ID, NESPP3) %>% 
-	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) %>% 
-	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
-
-
- bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
-
+	# this need to sue the obs table explicitly.. 
+	
+# 	bdat <- input_table %>% 
+# 	# group_by(DMIS_TRIP_ID, NESPP3) %>% 
+# 	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) %>% 
+# 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
+# 
+# 
+#  bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
+# 
+#  bdat
+#  
+ 
+ 
+ bdat = input_table %>% 
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+  dplyr::group_by(LINK1
+  								# , NEGEAR
+  								, GEARTYPE
+  								, MESHGROUP
+  								, STRATA
+  								) %>% 
+	# be careful here... need to take the max values since they are repeated..
+  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 	              mutate(KALL = replace_na(KALL, 0)
+				        , BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	ungroup()
+ 
  bdat
  
  }
