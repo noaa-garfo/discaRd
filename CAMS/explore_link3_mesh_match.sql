@@ -153,8 +153,11 @@ SELECT a.dmis_trip_id
 --                      THEN 'OPEN'
 --				ELSE 'Unknown'
 --				END) as accessarea              
-FROM apsd.cams_apport_20201230 a LEFT OUTER JOIN vtr.vlgear b
+FROM apsd.cams_apport_ntrip_20200106  a 
+--FROM apsd.dmis_all_years  a 
+    LEFT OUTER JOIN vtr.vlgear b
 ON a.GEARCODE = b.GEARCODE
+--where a.year = 2019
 
 /
 UPDATE bg_cams_catch_mock a
@@ -354,7 +357,13 @@ create table bg_obs_cams_tmp2 as
 with trips as (  
        select d.permit
         , d.dmis_trip_id
-        , extract(year from d.record_land) as year
+        , d.year
+        , d.month
+        , case when d.carea < 600 then 'N'
+               else 'S' end as region
+        , case when d.month in (1,2,3,4,5,6) then 1
+             when d.month in (7,8,9,10,11,12) then 2
+             end as halfofyear
         , d.docid
         , d.vtrserno
         , d.gearcode
@@ -376,7 +385,13 @@ with trips as (
     
     group by 
         d.permit
-        , extract(year from d.record_land)
+        , d.year
+        , d.month
+        , case when d.carea < 600 then 'N'
+               else 'S' end 
+        , case when d.month in (1,2,3,4,5,6) then 1
+             when d.month in (7,8,9,10,11,12) then 2
+             end 
         , d.dmis_trip_id
         , d.docid
         , d.vtrserno

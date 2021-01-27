@@ -30,6 +30,11 @@ create table obs_cams_prorate as
 -- ;
 
 select b.*
+ , case when month in (1,2,3,4,5,6) then 1
+		   when month in (7,8,9,10,11,12) then 2
+		   end as HALFOFYEAR
+,  case when obs_area < 600 then 'N'
+               else 'S' end as region           
 , round(sum(b.discard*b.prorate)) as discard_prorate
 from 
 (
@@ -44,9 +49,11 @@ select a.*
  select o.link3
             , link1
             , extract(year from datesail) as year
+            , o.month
             , o.obsrflag
             , o.area as obs_area
             , o.negear as obs_gear
+            , o.geartype
             , round(o.meshsize, 0) as obs_mesh
             , o.meshgroup
             , substr(nespp4, 1, 3) as NESPP3
@@ -61,8 +68,10 @@ select a.*
             o
           group by  o.link3
             , link1
+            , o.month
             , o.obsrflag
             , o.area 
+            , o.geartype
             , o.negear 
             , round(o.meshsize, 0)
             , o.meshgroup
@@ -75,9 +84,11 @@ select a.*
 group by link3
             , link1
             , year
+            , month
             , obsrflag
             , obs_area
             , obs_gear
+            , geartype
             , obs_mesh
             , meshgroup
             , NESPP3
@@ -86,3 +97,15 @@ group by link3
             , obs_haul_kall_trip
             , obs_nohaul_kall_trip
             , prorate
+            , case when month in (1,2,3,4,5,6) then 1
+		      when month in (7,8,9,10,11,12) then 2
+		      end
+,  case when obs_area < 600 then 'N'
+               else 'S' end
+;
+
+
+
+
+            
+            
