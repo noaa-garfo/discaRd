@@ -1,8 +1,24 @@
 ---
 title: "DiscaRd steps for CAMS"
-output: html_document
+output:
+  pdf_document: 
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+  bookdown::pdf_book:
+    includes:
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    keep_tex: yes
+  html_document:
+    df_print: paged
+    toc: yes
 editor_options: 
   chunk_output_type: console
+urlcolor: cyan
 ---
 
 Discard Rate Current Method Summary
@@ -140,7 +156,7 @@ stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
 
 ```
 
-```{r subset obs trips for a species of squid}
+```{r subset obs trips for a species of squid, eval = F}
 
 # SQUID EXAMPLE
 # pull table as is for a species
@@ -176,29 +192,9 @@ obs_discard = c_o_dat2 %>%
 	
 # Make an assumed rate by gear/mesh
 
-assumed_discard = bdat %>% 
-	filter(YEAR == 2019) %>% 
-	dplyr::group_by(YEAR
-									# , NEGEAR
-									, GEARTYPE
-									, MESHGROUP) %>% 
-	dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
-	
-# set up bdat for discaRd: rolled up by sub-trip
-# may need to change this to OBS table explicitly!!!! just like everything else... 
-bdat_focal <- bdat %>% 
-	filter(YEAR == 2019) %>% 
-	# mutate(REGION = ifelse(AREA < 600, 'N', 'S')) %>% 
-	# mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_')) %>% 
-	mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
-  dplyr::group_by(DMIS_TRIP_ID
-  								# , NEGEAR
-  								, GEARTYPE
-  								, MESHGROUP
-  								, STRATA
-  								) %>% 
-  dplyr::summarise(KALL = sum(SUBTRIP_KALL), BYCATCH = sum(SPECIES_DISCARD))
+```
 
+```{r set up bdat for discaRd: rolled up by sub-trip}
 
 ## Use OBS table directly... not the joined catch/obs
 
@@ -209,33 +205,9 @@ bdat <- obs %>%
 
 bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
 
- 
-# choose species here
-bdat_focal = bdat %>% 
-	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD_PRORATE)) %>% 
-	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
-		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
-  dplyr::group_by(LINK1
-  								# , NEGEAR
-  								, GEARTYPE
-  								, MESHGROUP
-  								, STRATA
-  								) %>% 
-	# be careful here... need to take the max values since they are repeated..
-  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 	              mutate(KALL = replace_na(KALL, 0)
-				        , BYCATCH = replace_na(BYCATCH, 0)) %>% 
-	ungroup()
-
-
-#---------------------------------------------------------------------------------------#
-# trips data: rolled up by sub-trip
-# This could be a generic table of KALL by subtrip..
-#---------------------------------------------------------------------------------------#
-
 ```
 
-
-```{r get trip data from oracle table}
+```{r get trip data from oracle table, eval = T}
 #---------------------------------------------------------------------------------------#
 # Here is where various stratification would make sense
 # DOCID is hard coded in discaRd.. in this case, CV is calculated using  N = subtrips
@@ -256,7 +228,53 @@ ddat_focal <- dat %>%
 ```
 
 
-```{r run discaRd for one species}
+```{r get bdat_focal, eval = F}
+# choose species here
+bdat_focal = bdat %>% 
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD_PRORATE)) %>% 
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+  dplyr::group_by(LINK1
+  								# , NEGEAR
+  								, GEARTYPE
+  								, MESHGROUP
+  								, STRATA
+  								) %>% 
+	# be careful here... need to take the max values since they are repeated..
+  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE, na.rm = T)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	ungroup()
+
+
+#---------------------------------------------------------------------------------------#
+# trips data: rolled up by sub-trip
+# This could be a generic table of KALL by subtrip..
+#---------------------------------------------------------------------------------------#
+
+```
+
+```{r make background rate assumed discard, eval = F}
+
+# this may need to use the previous time period
+
+assumed_discard = bdat_focal %>% 
+  dplyr::group_by(
+  	# LINK1
+  								# , NEGEAR
+  								 GEARTYPE
+  								, MESHGROUP
+  								# , STRATA
+  								) %>% 
+	# be careful here... need to take the max values since they are repeated..
+  dplyr::summarise(KALL = sum(KALL, na.rm = T), BYCATCH = sum(BYCATCH, na.rm = T)) %>% 
+	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	ungroup() %>% 
+	mutate(dk = BYCATCH/KALL)
+
+```
+
+
+```{r run discaRd for one species, eval = F}
 # Get complete strata
 strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
 
@@ -271,6 +289,9 @@ dest_strata = allest$C %>% summarise(STRATA = STRATA
                        , KALL = K, disc_est = round(D)
                        , CV = round(RE_rse, 2)
 										)
+
+# look at the small mesh numbers
+allest$C %>% slice(grep('Otter Trawl_sm*', allest$C$STRATA))
 
 # plug in estimated rates to the unobserved trips
 ddat_rate = ddat_focal
@@ -341,31 +362,8 @@ obs_discard %>%
 
 ```
 
-## Squid Example
 
-**NOTES:**
-
-The discard estimation runs normally using `discaRd`. 
-
-The stratification scheme for this example was simplified to use only gear and mesh. 
-
-For Quota Monitoring ACL accounting, region (North/south), time of year, and (usually) different scallop trip types are designated. 
-
-Observed Discard is not typically assigned.. 
-
-I seem to be getting much lower trip and obs trip counts than what exists in the ACL annual reports. This may be due to the apportionment processing.. 
-
-I am using subtrip as the `N` unit. 
-
-the total number of observed trips is comparable in the newly created tables but something is getting lost on the import step.. 
-ACL report: 4299
-total from new table: 4210
-total in imported table 4000
-total from `discaRd` is `r  dest_strata$n %>% sum()`
-
-hard match on `LINK1, NEGEAR, MESHGROUP, CAREA` is causing some obs trips to drop.. Example: scallop dredge has a total of 562 observed trips in the 2019 final ACL accounting but here there are only 515. I think this is likely due to CAREA more than anything. 
-
-```{r print some summary tables}
+```{r print some summary tables, eval = F}
 
 assumed_discard %>% knitr::kable(caption = 'Assumed discard. This could be a generalized rate from current year. This could also be built from previous years discard info.')
 
@@ -376,19 +374,9 @@ dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
 
 ```
 
-### example of output table
-
-This can be modified to perhaps save only the `dmis_trip_id`, `strata`, and `discard estimate`. 
-
-```{r example of output table}
-out_tab %>% 
-	head() %>% 
-	DT::datatable(., filter = "top")
-
-```
 
 ```{r make functions out of the process}
-make_bdat_cams <- function(input_table = bdat, species_nespp3 = '802') {
+# make_bdat_cams <- function(input_table = bdat, species_nespp3 = '802') {
 	
 	# this need to sue the obs table explicitly.. 
 	
@@ -415,8 +403,8 @@ make_bdat_cams <- function(input_table = bdat, species_nespp3 = '802') {
   								, STRATA
   								) %>% 
 	# be careful here... need to take the max values since they are repeated..
-  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 	              mutate(KALL = replace_na(KALL, 0)
-				        , BYCATCH = replace_na(BYCATCH, 0)) %>% 
+  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+ 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
 	ungroup()
  
  bdat
@@ -424,9 +412,18 @@ make_bdat_cams <- function(input_table = bdat, species_nespp3 = '802') {
  }
 
 # Use this to park discard into subtrips..
-get_obs_disc_vals <- function(bdat){
+get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year = 2019){
 
-obs_discard = bdat %>% 
+	codat <- c_o_tab %>%
+		filter(YEAR == year) %>% 
+	# group_by(DMIS_TRIP_ID, NESPP3) %>%
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) %>%
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
+
+
+ codat$MESHGROUP[codat$MESHGROUP == 'na'] = NA
+
+obs_discard = codat %>% 
 	group_by(YEAR
 					 , VTRSERNO
 					 # , NEGEAR
@@ -441,44 +438,70 @@ obs_discard
 
 # Make an assumed rate by gear/mesh
 
-make_assumed_rate <- function(bdat, year = 2019){
- assumed_discard = bdat %>% 
-	filter(YEAR == year) %>% 
-	dplyr::group_by(YEAR
-									# , NEGEAR
-									, GEARTYPE
-									, MESHGROUP) %>% 
-	dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
+make_assumed_rate <- function(bdat_focal, year = 2019){
+assumed_discard = bdat_focal %>% 
+  dplyr::group_by( GEARTYPE
+  								, MESHGROUP
+  								) %>% 
+	# be careful here... max values already represented from bdat_focal. So, take the sum here
+  dplyr::summarise(KALL = sum(KALL, na.rm = T), BYCATCH = sum(BYCATCH, na.rm = T)) %>% 
+	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	ungroup() %>% 
+	mutate(dk = BYCATCH/KALL)
  
  assumed_discard
 
 }	
 
 # set up bdat for discaRd: rolled up by sub-trip
-# may need to change this to OBS table explicitly!!!! just like everything else... 
+# bdat is acquired outside of the function snce it's a large table of all species
 
-make_bdat_focal <- function(bdat, year = 2019){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
-bdat_focal <- bdat %>% 
-	filter(YEAR == year) %>% 
-	mutate(STRATA = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')) %>%
-	# mutate(STRATA = strata) %>% 
-  dplyr::group_by(DMIS_TRIP_ID
+make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+	
+	# choose species here
+# bdat_focal = bdat %>% 
+# 	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD_PRORATE)) %>% 
+# 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+# 		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+#   dplyr::group_by(LINK1
+#   								# , NEGEAR
+#   								, GEARTYPE
+#   								, MESHGROUP
+#   								, STRATA
+#   								) %>% 
+# 	# be careful here... need to take the max values since they are repeated..
+#   dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE, na.rm = T)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+# 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+# 	ungroup()
+	
+
+
+ bdat_focal = bdat %>% 
+ 	filter(YEAR == year) %>% 
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+  dplyr::group_by(LINK1
   								# , NEGEAR
-  								# , GEARTYPE
-  								# , MESHGROUP
+  								, GEARTYPE
+  								, MESHGROUP
   								, STRATA
   								) %>% 
-  dplyr::summarise(KALL = sum(SUBTRIP_KALL), BYCATCH = sum(SPECIES_DISCARD))
+	# be careful here... need to take the max values since they are repeated..
+  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+ 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	ungroup()
 
-bdat_focal
+ bdat_focal
+
 }
 
 
-run_discard <- function(obstab, ddat_focal, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
-	bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
-	bdat_focal = make_bdat_focal(bdat)
-	obs_discard = get_obs_disc_vals(bdat)
-	assumed_rate = make_assumed_rate(bdat, year = year)
+run_discard <- function(bdat, ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+	# bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
+	bdat_focal = make_bdat_focal(bdat, year = year, species_nespp3 = species_nespp3)
+	obs_discard = get_obs_disc_vals(c_o_tab)
+	assumed_rate = make_assumed_rate(bdat_focal, year = year)
 	
 	# Get complete strata
 strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
@@ -546,16 +569,21 @@ list(species = species_nespp3
 # ddat_focal is run by itself since it takes a longtime.. and can be repeated
 
 ddat_focal <- ddat_focal %>% 
-	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, CAREA, sep = '_')
+	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
 	  			 , SEADAYS = 0
 	  			 , DOCID = DMIS_TRIP_ID)
 
-squid_ex = run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = '802')
+# squid_ex = run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = '802')
+squid_ex = run_discard(bdat = bdat, ddat = ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802')
 
 
 squid_ex$res$DISCARD %>% sum(na.rm = T)
 
-spec_list = c('801','802','212','800','125')
+```
+
+
+```{r run discaRd on multiple species at once}
+spec_list = c('801','802','212','051','011', '012', '125')
 
 out_list = list()
 
@@ -563,7 +591,7 @@ ii = 1
 
 for(i in spec_list){
 	print(paste0('Estimating discaRd for NESPP3 ', i))
-	out_list[[ii]] = run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = i)
+	out_list[[ii]] = run_discard(bdat = bdat, ddat = ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = i)
 	out_list[[ii]]$res$NESPP3 = i
 	ii = ii+1
 	
@@ -585,13 +613,61 @@ for(i in 2:length(out_list)){
 	
 }
 
+# get SMB ACL accounting numbers for 2019
+acl_tab = readr::read_csv('H:/Hocking/smb/smb_acl_accounting/smb_acl_2019/summary_table.csv') %>% 
+	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
+
+# get species names
+species = offshoreWind::SPECIES %>% 
+	mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
 
 out_res %>% 
 	group_by(NESPP3) %>% 
-	dplyr::summarise(sum(DISCARD, na.rm = T))
+	dplyr::summarise(`discaRd CAMS` = sum(DISCARD, na.rm = T)) %>% 
+	left_join(., species, by = 'NESPP3') %>% 
+		dplyr::select(1,3,2) %>% 
+	 left_join(acl_tab, by = 'SPPNM') %>% 
+	dplyr::select(1,2,3,7) %>% 
+	dplyr::rename(`ACL Discard` = Discards) %>% 
+	knitr::kable(caption = 'Comaprison of CAMS discaRd and ACL accounting for 2019')
+
 
 ```
 
+## Squid Example
+
+**NOTES:**
+
+The discard estimation runs normally using `discaRd`. 
+
+The stratification scheme for this example was simplified to use only gear and mesh. 
+
+For Quota Monitoring ACL accounting, region (North/south), time of year, and (usually) different scallop trip types are designated. 
+
+Observed Discard is not typically assigned.. 
+
+I seem to be getting much lower trip and obs trip counts than what exists in the ACL annual reports. This may be due to the apportionment processing.. **SOLVED! it's how trips are counted in ACL reports..**
+
+I am using subtrip as the `N` unit. 
+
+the total number of observed trips is comparable in the newly created tables but something is getting lost on the import step.. 
+ACL report: 4299
+total from new table: 4210
+total in imported table 4000
+total from `discaRd` is `r  dest_strata$n %>% sum()`
+
+hard match on `LINK1, NEGEAR, MESHGROUP, CAREA` is causing some obs trips to drop.. Example: scallop dredge has a total of 562 observed trips in the 2019 final ACL accounting but here there are only 515. I think this is likely due to CAREA more than anything. 
+
+### example of output table
+
+This can be modified to perhaps save only the `dmis_trip_id`, `strata`, and `discard estimate`. 
+
+```{r example of output table, eval = F}
+out_tab %>% 
+	head() %>% 
+	DT::datatable(., filter = "top")
+
+```
 
 
 
