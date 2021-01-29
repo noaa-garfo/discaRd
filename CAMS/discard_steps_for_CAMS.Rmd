@@ -83,7 +83,8 @@ bcon <- dbConnect(odbc::odbc(),
 # apsd.bg_obs_cams_tmp2 has all trips.. 
 
 c_o_dat2 <- tbl(bcon, sql('
-	select year
+with obs_cams as (
+   select year
 	, month
 	, region
 	, halfofyear
@@ -106,12 +107,25 @@ c_o_dat2 <- tbl(bcon, sql('
 	, region
 	, halfofyear
 	order by vtrserno desc
+    ) 
+    
+ select o.*
+, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
+from obs_cams o
+left join (select * from apsd.s_nespp3_match_conv) c
+on o.nespp3 = c.nespp3 
 ')) %>% 
 	collect()
 
 # obs only 
 
-obs = tbl(bcon, sql('select * from obs_cams_prorate'))
+obs = tbl(bcon, sql('
+	select o.*
+	, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
+	from obs_cams_prorate o
+	left join (select * from apsd.s_nespp3_match_conv) c
+	on o.nespp3 = c.nespp3'
+))
 
 
 
@@ -194,7 +208,7 @@ obs_discard = c_o_dat2 %>%
 
 ```
 
-```{r set up bdat for discaRd: rolled up by sub-trip}
+```{r set up bdat for discaRd: rolled up by sub-trip, eval = T}
 
 ## Use OBS table directly... not the joined catch/obs
 
@@ -417,7 +431,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year =
 	codat <- c_o_tab %>%
 		filter(YEAR == year) %>% 
 	# group_by(DMIS_TRIP_ID, NESPP3) %>%
-	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) %>%
+	mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD)) %>%
 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
 
 
@@ -478,7 +492,7 @@ make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strat
 
  bdat_focal = bdat %>% 
  	filter(YEAR == year) %>% 
-	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+	mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
 		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
   dplyr::group_by(LINK1
@@ -500,8 +514,8 @@ make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strat
 run_discard <- function(bdat, ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
 	# bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
 	bdat_focal = make_bdat_focal(bdat, year = year, species_nespp3 = species_nespp3)
-	obs_discard = get_obs_disc_vals(c_o_tab)
-	assumed_rate = make_assumed_rate(bdat_focal, year = year)
+	obs_discard = get_obs_disc_vals(c_o_tab, species_nespp3 = species_nespp3, year = year)
+	assumed_discard = make_assumed_rate(bdat_focal, year = year)
 	
 	# Get complete strata
 strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
@@ -579,11 +593,24 @@ squid_ex = run_discard(bdat = bdat, ddat = ddat_focal, c_o_tab = c_o_dat2, year 
 
 squid_ex$res$DISCARD %>% sum(na.rm = T)
 
+# discard rates by strata
+dest_strata = squid_ex$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+dest_strata %>% slice(grep('Otter Trawl_sm*', dest_strata$STRATA))
+
+
 ```
 
 
 ```{r run discaRd on multiple species at once}
-spec_list = c('801','802','212','051','011', '012', '125')
+spec_list = c('801','802','212','051', '012', '125')
 
 out_list = list()
 
@@ -592,7 +619,7 @@ ii = 1
 for(i in spec_list){
 	print(paste0('Estimating discaRd for NESPP3 ', i))
 	out_list[[ii]] = run_discard(bdat = bdat, ddat = ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = i)
-	out_list[[ii]]$res$NESPP3 = i
+	out_list[[ii]]$res$MATCH_NESPP3 = i
 	ii = ii+1
 	
 }
@@ -603,11 +630,11 @@ names(out_list) = spec_list
 # pull out list parts and rearrange
 
 out_res = out_list[[1]]$res %>% 
-	dplyr::select(DMIS_TRIP_ID, NESPP3 , DISCARD)
+	dplyr::select(DMIS_TRIP_ID, MATCH_NESPP3 , DISCARD)
 
 for(i in 2:length(out_list)){
 	tmp = out_list[[i]]$res %>% 
-		dplyr::select(DMIS_TRIP_ID, NESPP3 , DISCARD)
+		dplyr::select(DMIS_TRIP_ID, MATCH_NESPP3 , DISCARD)
 	
 	out_res = rbind(out_res, tmp)
 	
@@ -622,14 +649,16 @@ species = offshoreWind::SPECIES %>%
 	mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
 
 out_res %>% 
+	mutate(NESPP3 = MATCH_NESPP3) %>% 
 	group_by(NESPP3) %>% 
 	dplyr::summarise(`discaRd CAMS` = sum(DISCARD, na.rm = T)) %>% 
 	left_join(., species, by = 'NESPP3') %>% 
 		dplyr::select(1,3,2) %>% 
 	 left_join(acl_tab, by = 'SPPNM') %>% 
 	dplyr::select(1,2,3,7) %>% 
-	dplyr::rename(`ACL Discard` = Discards) %>% 
-	knitr::kable(caption = 'Comaprison of CAMS discaRd and ACL accounting for 2019')
+	dplyr::rename(`ACL Discard` = Discards) 
+# %>% 
+# 	knitr::kable(caption = 'Comaprison of CAMS discaRd and ACL accounting for 2019')
 
 
 ```

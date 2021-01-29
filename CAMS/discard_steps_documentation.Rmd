@@ -99,9 +99,7 @@ make_assumed_rate
 make_bdat_focal
 run_discard
 
-## Output 
 
-\includegraphics{dest_strata_squid_ex.jpg}
 
 
 ```{r}
