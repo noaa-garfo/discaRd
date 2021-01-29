@@ -92,6 +92,16 @@ created:
 <!-- **Unobserved trips get discards from the rate calculated from 1)** -->
 
 
+## R functions
+
+get_obs_disc_vals
+make_assumed_rate
+make_bdat_focal
+run_discard
+
+## Output 
+
+\includegraphics{dest_strata_squid_ex.jpg}
 
 
 ```{r}
