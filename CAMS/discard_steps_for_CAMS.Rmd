@@ -90,22 +90,39 @@ with obs_cams as (
 	, halfofyear
 	, area
 	, vtrserno
+	, link1
 	, docid
 	, dmis_trip_id
 	, nespp3
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
+	, SECTOR_ID
+	, tripcategory
+	, accessarea
+	, activity_code_1
+    , permit_EFP_1
+  , permit_EFP_2
+  , permit_EFP_3
+  , permit_EFP_4
 	, NVL(sum(discard),0) as discard
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
-	from apsd.bg_obs_cams_tmp2
+	from apsd.bg_obs_cams_tmp3
 	where nespp3 is not null
-	group by year, area, vtrserno, nespp3, docid, NEGEAR, GEARTYPE
+	group by year, area, vtrserno, link1, nespp3, docid, NEGEAR, GEARTYPE
 	, MESHGROUP, dmis_trip_id, month
 	, region
 	, halfofyear
+	, sector_id
+	, tripcategory
+	, accessarea
+	, activity_code_1
+    , permit_EFP_1
+  , permit_EFP_2
+  , permit_EFP_3
+  , permit_EFP_4
 	order by vtrserno desc
     ) 
     
@@ -149,11 +166,27 @@ select DMIS_TRIP_ID
 , NEGEAR
 , MESHGROUP
 , CAREA
+, sector_id
+, activity_code_1
+, permit_EFP_1
+, permit_EFP_2
+, permit_EFP_3
+, permit_EFP_4
+, tripcategory
+, accessarea
 , sum(pounds) as live_Pounds
-from bg_cams_catch_mock
+from bg_cams_catch_ta_mock
 group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHGROUP, CAREA, YEAR
 , MONTH
 , REGION
+, sector_id
+, activity_code_1
+, permit_EFP_1
+, permit_EFP_2
+, permit_EFP_3
+, permit_EFP_4
+, tripcategory
+, accessarea
 , case when month in (1,2,3,4,5,6) then 1
 		   when month in (7,8,9,10,11,12) then 2
 		   end
@@ -266,6 +299,31 @@ bdat_focal = bdat %>%
 #---------------------------------------------------------------------------------------#
 
 ```
+
+```{r get bdat ALTERNATE using merged catch obs table}
+
+# choose species here
+bdat_focal = c_o_dat2 %>% 
+	filter(!is.na(LINK1) & YEAR == 2019) %>%
+	mutate(MESHGROUP = ifelse(MESHGROUP == 'na', NA, MESHGROUP)) %>% 
+	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD)) %>% 
+	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+		# mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+	mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, ACCESSAREA, TRIPCATEGORY, sep = '_')) %>% 
+	# mutate(STRATA = paste(GEARTYPE, MESHGROUP, AREA, SECTOR_ID, sep = '_')) %>% 
+  dplyr::group_by(LINK1
+  								# , NEGEAR
+  								# , GEARTYPE
+  								# , MESHGROUP
+  								, STRATA
+  								) %>% 
+	# be careful here... need to take the max values since they are repeated..
+  dplyr::summarise(KALL = max(SUBTRIP_KALL, na.rm = T), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	ungroup()
+
+```
+
 
 ```{r make background rate assumed discard, eval = F}
 
