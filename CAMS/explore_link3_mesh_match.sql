@@ -749,23 +749,25 @@ on (c.GEARCODE = m.VTR_GEAR_CODE)
 /
 
 /
+
 select sum(subtrip_kall)
 , sum(discard)
 --, nespp3
 , geartype
-, obs_gear
-, meshgroup
-, Sector_id
-, accessarea
-, tripcategory
-, carea
+--, obs_gear
+--, meshgroup
+--, Sector_id
+--, accessarea
+--, tripcategory
+--, carea
 from bg_obs_cams_tmp3
 where nespp3 is not null
 and year = 2019
-group by geartype, obs_gear, meshgroup, Sector_id
-, accessarea
-, tripcategory
-, carea
+group by geartype
+--, obs_gear, meshgroup, Sector_id
+--, accessarea
+--, tripcategory
+--, carea
 
 ;
 
@@ -778,4 +780,8 @@ select dmis_trip_id
 , count(distinct(AREA))
 from bg_obs_cams_tmp2
 group by dmis_trip_id
+
+/
+
+
 

@@ -74,13 +74,12 @@ bcon <- dbConnect(odbc::odbc(),
 
 # get catch and matched obs data together
 
-# c_o_dat = tbl(bcon, sql('select * from apsd.bg_obs_cams_tmp1')) 
-
-
-# get another version that rolls up by trip..
+# rolled up by trip..
 
 # apsd.bg_obs_cams_tmp1 has only trips with multiple subtrips
 # apsd.bg_obs_cams_tmp2 has all trips.. 
+
+# in this table, DISACRD is already PRORATED
 
 c_o_dat2 <- tbl(bcon, sql('
 with obs_cams as (
@@ -267,10 +266,11 @@ ddat_focal <- dat %>%
   	ungroup() %>%
     mutate(DOCID = DMIS_TRIP_ID)
 
+# Region, halfof year, sector id ,  etc. already added
 # add REGION is desired..
-	ddat_focal = ddat_focal %>% 
-		mutate(REGION = ifelse(CAREA < 600, 'N', 'S')) %>% 
-		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_'))
+	# ddat_focal = ddat_focal %>% 
+	# 	mutate(REGION = ifelse(CAREA < 600, 'N', 'S')) %>% 
+	# 	mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_'))
 
 ```
 
@@ -318,7 +318,7 @@ bdat_focal = c_o_dat2 %>%
   								, STRATA
   								) %>% 
 	# be careful here... need to take the max values since they are repeated..
-  dplyr::summarise(KALL = max(SUBTRIP_KALL, na.rm = T), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+  dplyr::summarise(KALL = max(OBS_KALL, na.rm = T), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
 	ungroup()
 
@@ -464,24 +464,24 @@ dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
 #  
  
  
- bdat = input_table %>% 
-	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
-	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
-		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
-  dplyr::group_by(LINK1
-  								# , NEGEAR
-  								, GEARTYPE
-  								, MESHGROUP
-  								, STRATA
-  								) %>% 
-	# be careful here... need to take the max values since they are repeated..
-  dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
- 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
-	ungroup()
- 
- bdat
- 
- }
+#  bdat = input_table %>% 
+# 	mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+# 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+# 		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+#   dplyr::group_by(LINK1
+#   								# , NEGEAR
+#   								, GEARTYPE
+#   								, MESHGROUP
+#   								, STRATA
+#   								) %>% 
+# 	# be careful here... need to take the max values since they are repeated..
+#   dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+#  	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+# 	ungroup()
+#  
+#  bdat
+#  
+#  }
 
 # Use this to park discard into subtrips..
 get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year = 2019){
