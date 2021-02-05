@@ -48,6 +48,7 @@ select a.*
     from (
  select o.link3
             , link1
+            , vtrserno
             , extract(year from datesail) as year
             , o.month
             , o.obsrflag
@@ -68,6 +69,7 @@ select a.*
             o
           group by  o.link3
             , link1
+            , vtrserno
             , o.month
             , o.obsrflag
             , o.area 
@@ -83,6 +85,7 @@ select a.*
 
 group by link3
             , link1
+            , vtrserno
             , year
             , month
             , obsrflag

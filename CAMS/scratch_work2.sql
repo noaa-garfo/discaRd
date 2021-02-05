@@ -50,15 +50,45 @@ with cotrips as(
 select geartype
 , sum(subtrip_kall)
 , sum(discard) as discard
-from (
-    select max(subtrip_kall) subtrip_kall
-    , vtrserno
-    , sum(case when nespp3 = 802 then discard else 0 end) as discard
-    , geartype
-    from cotrips
-    group by vtrserno, geartype
-)
+    from (
+        select max(subtrip_kall) subtrip_kall
+        , vtrserno
+        , sum(case when nespp3 = 802 then discard else 0 end) as discard
+        , geartype
+        from cotrips
+        group by vtrserno, geartype
+    )
 group by geartype
 
 ;
+
+-- look at unknown scallop areas and gear
+
+ select round(sum(POUNDs))
+-- , accessarea
+ ,tripcategory
+ , activity_code_1
+ from bg_cams_catch_ta_mock
+ group by  tripcategory
+ , activity_code_1
+ order by  activity_code_1, tripcategory
+
+
+
 ;
+
+with obs as (
+select o.*
+	, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
+	from obs_cams_prorate o
+	left join (select * from apsd.s_nespp3_match_conv) c
+	on o.nespp3 = c.nespp3
+    )
+    
+ select count(distinct(LINK1)  )
+ , GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, YEAR
+ from obs
+ where year = 2019
+ group by 
+ GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, YEAR
+ order by YEAR, GEARTYPE, MESHGROUP, REGION, HALFOFYEAR
