@@ -13,6 +13,7 @@ with obs as (
 --        select o.*
 select o.link3
     , link1
+    , o.vtrserno
     , o.obsrflag
     , o.area as obs_area
     , o.negear as obs_gear
@@ -49,7 +50,8 @@ from apsd.catch_link1_temp c
     left outer join (
         select * from obs -- where nespp3 = 212 
     ) o
-on o.link1 = c.link1 AND c.mesh = o.obs_mesh 
+--on o.link1 = c.link1 AND c.mesh = o.obs_mesh 
+on o.vtrserno = c.vtrserno
 left join (SELECT * from mgear) m
 on (c.GEARCODE = m.VTR_GEAR_CODE) --o.obs_gear = m.NEGEAR AND AND c.GEARCODE = m.VTR_GEAR_CODEto_char(o.obs_gear) = to_char(m.NEGEAR) 
 ;
@@ -426,16 +428,17 @@ with trips as (
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
-    , m.GEAR_CODE_FID
+--    , m.GEAR_CODE_FID
 from trips c
     left outer join (
         select * from obs 
     ) o
 --on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
-on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
-
-left outer join (SELECT * from mgear) m
-on (c.GEARCODE = m.VTR_GEAR_CODE) 
+--on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
+on (o.vtrserno = c.vtrserno)
+--
+--left outer join (SELECT * from mgear) m
+--on (c.GEARCODE = m.VTR_GEAR_CODE) 
 
 /
 /*
@@ -667,7 +670,7 @@ with trips as (
              when d.month in (7,8,9,10,11,12) then 2
              end as halfofyear
         , d.docid
-        , d.vtrserno
+        , substr(d.vtrserno, 1, 13) vtrserno
         , d.gearcode
         , d.geartype
         , d.negear
@@ -694,6 +697,7 @@ with trips as (
      from dmis.d_match_obs_link
     ) o
     on o.dmis_trip_id = d.dmis_trip_id
+--    on o.obs_vtr = d.vtrserno --substr(d.vtrserno, 1, 13)
     
     group by 
         d.permit
@@ -739,6 +743,8 @@ with trips as (
 )
 
     select c.*
+    , o.vtrserno as obsvtr
+    , o.link1 as obs_link1
     , o.link3
     , o.obs_area as obs_area
     , o.nespp3
@@ -748,16 +754,18 @@ with trips as (
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
-    , m.GEAR_CODE_FID
+--    , m.GEAR_CODE_FID
 from trips c
-    left outer join (
+    left join (
         select * from obs 
     ) o
---on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
-on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
+on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
+--on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
+--on (o.vtrserno = c.vtrserno)
+--on (o.link1 = c.link1)
 
-left outer join (SELECT * from mgear) m
-on (c.GEARCODE = m.VTR_GEAR_CODE) 
+--left outer join (SELECT * from mgear) m
+--on (c.GEARCODE = m.VTR_GEAR_CODE) 
 
 /
 
@@ -791,7 +799,7 @@ select dmis_trip_id
 , count(distinct(GEARCODE))
 , count(distinct(MESHGROUP))
 , count(distinct(AREA))
-from bg_obs_cams_tmp2
+from bg_obs_cams_tmp3
 group by dmis_trip_id
 
 /
