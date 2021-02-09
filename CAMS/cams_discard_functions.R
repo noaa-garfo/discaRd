@@ -2,6 +2,8 @@
 # functions for CAMS disacRd
 #----------------------------------------------------------------#
 
+require(dplyr)
+require(tidyr)
 
 # make_bdat_cams <- function(input_table = bdat, species_nespp3 = '802') {
 
@@ -37,7 +39,6 @@
 #  bdat
 #  
 #  }
-
 # Use this to park discard into subtrips..
 get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year = 2019){
 	
@@ -45,7 +46,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year =
 		filter(YEAR == year) %>% 
 		# group_by(DMIS_TRIP_ID, NESPP3) %>%
 		mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD)) %>%
-		mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
+		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 	
 	
 	codat$MESHGROUP[codat$MESHGROUP == 'na'] = NA
@@ -72,7 +73,7 @@ make_assumed_rate <- function(bdat_focal, year = 2019){
 		) %>% 
 		# be careful here... max values already represented from bdat_focal. So, take the sum here
 		dplyr::summarise(KALL = sum(KALL, na.rm = T), BYCATCH = sum(BYCATCH, na.rm = T)) %>% 
-		mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
 		ungroup() %>% 
 		mutate(dk = BYCATCH/KALL)
 	
@@ -83,7 +84,7 @@ make_assumed_rate <- function(bdat_focal, year = 2019){
 # set up bdat for discaRd: rolled up by sub-trip
 # bdat is acquired outside of the function snce it's a large table of all species
 
-make_bdat_focal <- function(obstab = c_o_dat2, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
 	
 	# choose species here
 	# bdat_focal = bdat %>% 
@@ -102,44 +103,22 @@ make_bdat_focal <- function(obstab = c_o_dat2, year = 2019, species_nespp3 = '80
 	# 	ungroup()
 	
 	
-	## using merged Catch/OBS table only
 	
-	bdat_focal = c_o_dat2 %>% 
-		filter(!is.na(LINK1) & YEAR == 2019) %>%
-		mutate(MESHGROUP = ifelse(MESHGROUP == 'na', NA, MESHGROUP)) %>% 
-		mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD)) %>% 
-		mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
-		# mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
-		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, ACCESSAREA, TRIPCATEGORY, sep = '_')) %>% 
-		# mutate(STRATA = paste(GEARTYPE, MESHGROUP, AREA, SECTOR_ID, sep = '_')) %>% 
+	bdat_focal = bdat %>% 
+		filter(YEAR == year) %>% 
+		mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0)) %>% 
+		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
 		dplyr::group_by(LINK1
 										# , NEGEAR
-										# , GEARTYPE
-										# , MESHGROUP
+										, GEARTYPE
+										, MESHGROUP
 										, STRATA
 		) %>% 
 		# be careful here... need to take the max values since they are repeated..
-		dplyr::summarise(KALL = max(OBS_KALL, na.rm = T), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
-		mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
-		ungroup()	
-	
-	## using OBS table only
-	
-	# bdat_focal = bdat %>% 
-	# 	filter(YEAR == year) %>% 
-	# 	mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
-	# 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
-	# 	mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
-	# 	dplyr::group_by(LINK1
-	# 									# , NEGEAR
-	# 									, GEARTYPE
-	# 									, MESHGROUP
-	# 									, STRATA
-	# 	) %>% 
-	# 	# be careful here... need to take the max values since they are repeated..
-	# 	dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
-	# 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
-	# 	ungroup()
+		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
+		ungroup()
 	
 	bdat_focal
 	
@@ -190,7 +169,7 @@ run_discard <- function(bdat, ddat_focal, c_o_tab = c_o_dat2, year = 2019, speci
 	# incorporate teh assumed rate into the calculated discard rates
 	ddat_rate <- ddat_rate %>% 
 		mutate(CRATE = coalesce(DISC_RATE, ARATE)) %>%
-		mutate(CRATE = replace_na(CRATE, 0)) 
+		mutate(CRATE = tidyr::replace_na(CRATE, 0)) 
 	
 	
 	# merge observed discards with estimated discards
@@ -277,6 +256,7 @@ bdat_focal <- c_o_dat2 %>%
 		# , SUBTRIP_KALL = max(SUBTRIP_KALL, na.rm = T)
 		BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
 	ungroup()	%>% 
+	dplyr::rename(KALL = OBS_KALL) %>% 
 	arrange(LINK1)
 
 

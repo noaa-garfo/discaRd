@@ -490,7 +490,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year =
 		filter(YEAR == year) %>% 
 	# group_by(DMIS_TRIP_ID, NESPP3) %>%
 	mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD)) %>%
-	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0))
+	mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 
 
  codat$MESHGROUP[codat$MESHGROUP == 'na'] = NA
@@ -517,7 +517,7 @@ assumed_discard = bdat_focal %>%
   								) %>% 
 	# be careful here... max values already represented from bdat_focal. So, take the sum here
   dplyr::summarise(KALL = sum(KALL, na.rm = T), BYCATCH = sum(BYCATCH, na.rm = T)) %>% 
-	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+	mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
 	ungroup() %>% 
 	mutate(dk = BYCATCH/KALL)
  
@@ -551,7 +551,7 @@ make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strat
  bdat_focal = bdat %>% 
  	filter(YEAR == year) %>% 
 	mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
-	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
+	mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0)) %>% 
 		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
   dplyr::group_by(LINK1
   								# , NEGEAR
@@ -561,7 +561,7 @@ make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strat
   								) %>% 
 	# be careful here... need to take the max values since they are repeated..
   dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
- 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
+ 	mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
 	ungroup()
 
  bdat_focal
@@ -613,7 +613,7 @@ ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
 # incorporate teh assumed rate into the calculated discard rates
 ddat_rate <- ddat_rate %>% 
 	mutate(CRATE = coalesce(DISC_RATE, ARATE)) %>%
-	mutate(CRATE = replace_na(CRATE, 0)) 
+	mutate(CRATE = tidyr::replace_na(CRATE, 0)) 
 
 
 # merge observed discards with estimated discards
