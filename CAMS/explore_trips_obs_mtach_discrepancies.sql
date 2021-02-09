@@ -275,5 +275,22 @@ from obs_cams_prorate
 --300	Otter Trawl	sm	S	1	2019
 --272	Otter Trawl	sm	S	2	2019
  
+ ;
+ -- look at totals
+-- look for missing link1 in dmis matchign table...
+
+select count(distinct(link1)) as nlink1
+, 'dmis_matching' as source
+from dmis.d_match_obs_link
+where extract(year from obs_sail) = 2019
+
+union all
+
+-- obs table    
+select count(distinct(LINK1)  ) as nlink1
+, 'obs' as source
+-- , GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, YEAR
+from obs_cams_prorate
+ where year = 2019
 
  
