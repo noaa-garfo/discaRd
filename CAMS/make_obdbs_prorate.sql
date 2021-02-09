@@ -107,7 +107,7 @@ group by link3
                else 'S' end
 ;
 
-
+--select * from obs_cams_prorate
 
 
             
