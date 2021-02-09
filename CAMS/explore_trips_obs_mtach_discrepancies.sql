@@ -30,12 +30,94 @@
  from dmis.d_match_obs_link
  where link1 is not null
  and obs_vtr is not null
+ and dmis_trip_id in (select distinct(dmis_trip_id) from apsd.cams_apport_20201222 where extract(year from record_land) = 2019)
 group by obs_vtr --dmis_trip_id
  order by nlink1 desc
 
+-- there can be multiple LINK1 for a  subtrip for some reason.. 
+-- 23 records for 2019
 
 ;
 
+-- look at one VTR with multiple LINK1
+select *
+from apsd.dmis_all_years
+where vtrserno like '%14810619081519%'
+--where permit = 148106
+and year = 2019
+
+
+-- looks like LINK1 changes when the mesh size changes..
+-- it looks like the same VTR because of different character lengths between OBS and VTR DBs..
+;
+
+-- look at obdbs at link1 count vs vtrserno count
+select count(distinct(LINK1)) as nlink1
+-- , count(distinct(vtrserno)) as nvtr
+ , vtrserno
+ from obdbs.obtrp@NOVA
+ where year = 2019
+group by vtrserno
+order by nlink1 desc
+
+-- 19 records for 2019 with multiple link1 to VTR... 
+/
+
+
+select link1
+ , count(distinct(vtrserno)) as nvtr
+ from obdbs.obtrp@NOVA
+ where year = 2019
+group by link1
+order by nvtr desc
+
+-- only one VTR per LINK1.. 
+
+
+;
+-- look at the link1 info in obdbs for one VTR w;ith two LINK1
+
+select *
+from obdbs.obtrp@NOVA
+where vtrserno like '%11672729%'
+--where docid like '14810619081519'
+--where permit_nbr = 148106
+/
+
+-- look at all of them (only 19...)
+
+with nvtr as(
+    select count(distinct(LINK1)) as nlink1
+    -- , count(distinct(vtrserno)) as nvtr
+     , vtrserno
+     from obdbs.obtrp@NOVA
+     where year = 2019
+--     and vtrserno > 0
+    group by vtrserno
+    order by nlink1 desc
+)
+
+select *
+from obdbs.obtrp@NOVA
+where vtrserno in (
+    select vtrserno
+    from nvtr
+    where nlink1 > 1
+--    and vtrserno <> 00000000  -- don't do this... everything stops!
+)
+and year = 2019
+order by vtrserno desc
+
+
+
+
+;
+select *
+from obdbs.obtrp@NOVA
+--where vtrserno like  '%25069311102309%'
+where year = 2019
+
+;
 -- join on dmis_trip_id or VTR?? 
 
 with trips as (
@@ -167,4 +249,31 @@ from obs_cams_prorate
   group by 
  GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, YEAR
  order by YEAR, GEARTYPE, MESHGROUP, REGION, HALFOFYEAR
+ 
+-- COUNT(DISTINCT(LINK1))	GEARTYPE	MESHGROUP	REGION	HALFOFYEAR	YEAR
+--122	Otter Trawl	sm	N	1	2019
+--212	Otter Trawl	sm	N	2	2019
+--373	Otter Trawl	sm	S	1	2019
+--432	Otter Trawl	sm	S	2	2019
+ 
+ ;
+ -- use joined table where vtr is used to join
+ select count(distinct(OBS_LINK1)  ) obs_link1
+  , count(distinct(LINK1)  ) link1  
+  , count(distinct(vtrserno)  ) as subtrips
+  , count(distinct(obsvtr)  ) as obs_subtrips
+ , GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, YEAR
+ from bg_obs_cams_tmp3
+ where year = 2019
+  group by 
+ GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, YEAR
+ order by YEAR, GEARTYPE, MESHGROUP, REGION, HALFOFYEAR
+ 
+-- COUNT(DISTINCT(LINK1))	GEARTYPE	MESHGROUP	REGION	HALFOFYEAR	YEAR
+--74	Otter Trawl	sm	N	1	2019
+--180	Otter Trawl	sm	N	2	2019
+--300	Otter Trawl	sm	S	1	2019
+--272	Otter Trawl	sm	S	2	2019
+ 
+
  
