@@ -6,8 +6,24 @@ require(dplyr)
 require(tidyr)
 
 
-# Use this to park discard into subtrips..
-get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year = 2019){
+
+#' Get Observed Discards
+#'
+#' This function is used to get observed discard values on observed trips. These values are used in place of estimated values for those trips that were observed. This is done at the the sub-trip level. 
+#' 
+#' @param c_o_tab table of matched observer and commerical trips
+#' @param species_nespp3 species of interest using NESPP3 code
+#' @param year Year for discard estimation. 
+#' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive. 
+#'
+#' @return a tibble with: YEAR, VTRSERNO, GEARTYPE, MESHGROUP,KALL, DISCARD, dk
+#' The stratification variables don't matter so much as the assignment of discard is done using VTR Serial Number.  
+#' @export
+#'
+#' @examples
+get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year = 2019, stratvars = c('GEARTYPE','meshgroup','region','halfofyear')){
+	
+	stratvars = toupper(stratvars)
 	
 	codat <- c_o_tab %>%
 		filter(YEAR == year) %>% 
@@ -18,12 +34,24 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year =
 	
 	codat$MESHGROUP[codat$MESHGROUP == 'na'] = NA
 	
+	codat <- codat %>% 
+		mutate(STRATA = eval(parse(text = stratvars[1])))
+	
+	if(length(stratvars) >1 ){
+		
+		for(i in 2:length(stratvars)){
+			
+			codat <- codat %>% 
+				mutate(STRATA = paste(STRATA, eval(parse(text = stratvars[i])), sep = '_'))
+		}
+		
+	}
+	
 	obs_discard = codat %>% 
 		group_by(YEAR
 						 , VTRSERNO
 						 # , NEGEAR
-						 , GEARTYPE
-						 , MESHGROUP
+						 , STRATA
 		) %>% 
 		dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
 	
@@ -31,55 +59,53 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year =
 	
 }
 
-# Make an assumed rate by gear/mesh
-
-make_assumed_rate <- function(bdat_focal, year = 2019){
-	assumed_discard = bdat_focal %>% 
-		dplyr::group_by( GEARTYPE
-										 , MESHGROUP
-		) %>% 
-		# be careful here... max values already represented from bdat_focal. So, take the sum here
-		dplyr::summarise(KALL = sum(KALL, na.rm = T), BYCATCH = sum(BYCATCH, na.rm = T)) %>% 
-		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
-		ungroup() %>% 
-		mutate(dk = BYCATCH/KALL)
+#' Get Observed trips for discard year
+#'
+#' @param bdat table of observed trips that can include (and should include) multiple years
+#' @param year Year where discard estimate is needed
+#' @param species_nespp3 species of interest using NESPP3 code
+#' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive. 
+#'
+#' @return a tibble with LINK1, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by LINK1 (subtrip). BYCATCH is the observed discard of the species of interest.
+#' 
+#' This table is used in `discaRd`
+#' 
+#' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it'savailable..)
+#' @export
+#'
+#' @examples
+make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear')){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
 	
-	assumed_discard
+	require(rlang)
 	
-}	
-
-# set up bdat for discaRd: rolled up by sub-trip
-# bdat is acquired outside of the function snce it's a large table of all species
-
-make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
-	
-	# choose species here
-	# bdat_focal = bdat %>% 
-	# 	mutate(SPECIES_DISCARD = case_when(NESPP3 == '802' ~ DISCARD_PRORATE)) %>% 
-	# 	mutate(SPECIES_DISCARD = replace_na(SPECIES_DISCARD, 0)) %>% 
-	# 		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
-	#   dplyr::group_by(LINK1
-	#   								# , NEGEAR
-	#   								, GEARTYPE
-	#   								, MESHGROUP
-	#   								, STRATA
-	#   								) %>% 
-	# 	# be careful here... need to take the max values since they are repeated..
-	#   dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE, na.rm = T)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
-	# 	mutate(KALL = replace_na(KALL, 0), BYCATCH = replace_na(BYCATCH, 0)) %>% 
-	# 	ungroup()
+	stratvars = toupper(stratvars)
 	
 	
 	
 	bdat_focal = bdat %>% 
 		filter(YEAR == year) %>% 
 		mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
-		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0)) %>% 
-		mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')) %>% 
+		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
+	
+	
+	bdat_focal <- bdat_focal %>% 
+		mutate(STRATA = eval(parse(text = stratvars[1])))
+	
+	if(length(stratvars) >1 ){
+		
+		for(i in 2:length(stratvars)){
+			
+			bdat_focal <- bdat_focal %>% 
+				mutate(STRATA = paste(STRATA, eval(parse(text = stratvars[i])), sep = '_'))
+		}
+		
+	}
+	
+	bdat_focal <- bdat_focal %>%
 		dplyr::group_by(LINK1
 										# , NEGEAR
-										, GEARTYPE
-										, MESHGROUP
+										# , GEARTYPE
+										# , MESHGROUP
 										, STRATA
 		) %>% 
 		# be careful here... need to take the max values since they are repeated..
@@ -92,11 +118,64 @@ make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802'){ #, strat
 }
 
 
-run_discard <- function(bdat, ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802'){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+#' Make an assumed rate
+#'
+#'This function is meant to return fallback rates that are more general than a more specific stratification used in `make_bdat_focal`. The discard rates are generated directly to be subsequently substituted where needed. 
+#'
+#' @param bdat table of observed trips that can include (and should include) multiple years
+#' @param year Year where discard estimate is needed
+#' @param species_nespp3 species of interest using NESPP3 code
+#' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive. Thiws should be a subset of those used in `make_bdat_focal`. 
+#' 
+#'
+#' @return a tibbleS with STRATA, KALL (Kept All), BYCATCH (discard of species), dk (discard rate)
+#' @export
+#'
+#' @examples
+make_assumed_rate <- function(bdat, year = 2019, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup')){
+	require(rlang)
+	
+	stratvars = toupper(stratvars)
+	
+	assumed_discard <- make_bdat_focal(bdat, year = 2019, species_nespp3 = species_nespp3 , stratvars = stratvars)
+	
+	assumed_discard = assumed_discard %>% 
+		dplyr::group_by( STRATA) %>% 
+		# be careful here... max values already represented from bdat_focal. So, take the sum here
+		dplyr::summarise(KALL = sum(KALL, na.rm = T), BYCATCH = sum(BYCATCH, na.rm = T)) %>% 
+		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
+		ungroup() %>% 
+		mutate(dk = BYCATCH/KALL)
+	
+	assumed_discard
+	
+}
+
+#' Run discaRd end to end
+#'
+#' @param bdat table of observed trips that can include (and should include) multiple years
+#' @param ddat_focal table of observed trips for discard year
+#' @param c_o_tab matched table of observed and commerical trips
+#' @param year year where discard is needed
+#' @param species_nespp3 species of interest
+#' @param stratvars stratification variables desired
+#' @param aidx subset of `stratvars` for a simplified stratification.
+#'
+#' @return a list of: 
+#' 1) Species, 
+#' 2) discaRd results (summary table, CV, etc), 
+#' 3)Complete table of commercial trips and discard amounts
+#' @export
+#'
+#' @examples
+run_discard <- function(bdat, ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'), aidx = c(1,2)){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+	
+	stratvars = toupper(stratvars)
+	
 	# bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
-	bdat_focal = make_bdat_focal(bdat, year = year, species_nespp3 = species_nespp3)
-	obs_discard = get_obs_disc_vals(c_o_tab, species_nespp3 = species_nespp3, year = year)
-	assumed_discard = make_assumed_rate(bdat_focal, year = year)
+	bdat_focal = make_bdat_focal(bdat, year = year, species_nespp3 = species_nespp3, stratvars = stratvars)
+	obs_discard = get_obs_disc_vals(c_o_tab, species_nespp3 = species_nespp3, year = year, stratvars = stratvars)
+	assumed_discard = make_assumed_rate(bdat, year = year, stratvars = stratvars[aidx])
 	
 	# Get complete strata
 	strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
@@ -120,12 +199,26 @@ run_discard <- function(bdat, ddat_focal, c_o_tab = c_o_dat2, year = 2019, speci
 	
 	
 	# substitute assumed rate where we can
-	assumed_discard = assumed_discard %>% 
-		mutate(STRATA = paste(GEARTYPE, MESHGROUP, sep = '_'))
-	# mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
+	# assumed_discard = assumed_discard %>% 
+	# 	mutate(STRATA = paste(GEARTYPE, MESHGROUP, sep = '_'))
+	# # mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
+	
+	ddat_rate <- ddat_rate %>% 
+		mutate(STRATA_ASSUMED = eval(parse(text = stratvars[aidx[1]])))
+	
+	if(length(aidx) > 1 ){
+		
+		for(i in 2:length(aidx)){
+			
+			ddat_rate <- ddat_rate %>% 
+				mutate(STRATA_ASSUMED = paste(STRATA_ASSUMED, eval(parse(text = stratvars[aidx[i]])), sep = '_'))
+		}
+		
+	}
+	
 	
 	ddat_rate = ddat_rate %>% 
-		mutate(STRATA_ASSUMED = paste(GEARTYPE, MESHGROUP, sep = '_')) %>% 
+		# mutate(STRATA_ASSUMED = paste(GEARTYPE, MESHGROUP, sep = '_')) %>% 
 		# mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
 		mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA)) 
 	
