@@ -44,7 +44,7 @@ library(config)
 library(stringr)
 library(discaRd)
 
-dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
 
 bcon <- dbConnect(odbc::odbc(), 
 									DSN = dw_apsd$dsn, 
@@ -58,7 +58,7 @@ bcon <- dbConnect(odbc::odbc(),
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('cams_discard_functions.R')
+source('CAMS/cams_discard_functions.R')
 
 # get catch and matched obs data together
 
@@ -131,6 +131,12 @@ obs = tbl(bcon, sql('
 	on o.nespp3 = c.nespp3'
 ))
 
+bdat <- obs %>% 
+	# filter(YEAR == 2019) %>% 
+	collect()
+	
+
+bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
 
 
 # catch only
@@ -186,27 +192,8 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 
 stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
 
-
-
 ```
 
-
-```{r set up bdat for discaRd: rolled up by sub-trip, eval = T}
-
-## Use OBS table directly... not the joined catch/obs
-
-bdat <- obs %>% 
-	filter(YEAR == 2019) %>% 
-	collect()
-	
-
-bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
-
-
-source('CAMS/cams_discard_functions.R')
-
-
-```
 
 ```{r subset trip data from oracle table for focal year, eval = T}
 #---------------------------------------------------------------------------------------#
@@ -219,7 +206,7 @@ ddat_focal <- dat %>%
 	  collect() %>% 
 	  # mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, sep = '_')) %>% 
   	ungroup() %>%
-    mutate(DOCID = DMIS_TRIP_ID)
+    mutate(DOCID = VTRSERNO) # need to use VTRSERNO as unique identifier.. 
 
 
 ddat_prev <- dat %>% 
@@ -227,7 +214,8 @@ ddat_prev <- dat %>%
 	  collect() %>% 
 	  # mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, sep = '_')) %>% 
   	ungroup() %>%
-    mutate(DOCID = DMIS_TRIP_ID)
+    mutate(DOCID = VTRSERNO) # need to use VTRSERNO as unique identifier.. 
+
 
 # Region, halfof year, sector id ,  etc. already added
 # add REGION is desired..
@@ -237,10 +225,216 @@ ddat_prev <- dat %>%
 
 ```
 
+```{r run discard functions for Illex}
+# ddat_focal is run by itself since it takes a longtime.. and can be repeated
+
+ddat_focal <- ddat_focal %>% 
+	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
+	  			 , SEADAYS = 0
+	  			 )
+
+# squid_ex = run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = '802')
+# squid_ex = run_discard(bdat = bdat, ddat = ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802')
+
+squid_ex = run_discard(bdat = bdat
+											 , ddat = ddat_focal
+											 , c_o_tab = c_o_dat2
+											 , year = 2019
+											 , species_nespp3 = '802'
+											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
+											 , aidx = c(1,2)
+											 )
+
+squid_ex$res$DISCARD %>% sum(na.rm = T)
+
+# discard rates by strata
+dest_strata = squid_ex$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+dest_strata %>% slice(grep('Otter Trawl_sm*', dest_strata$STRATA))
+
+
+```
+
+
+```{r run discaRd on multiple species at once}
+spec_list = c('801','802','212','051') #, '012', '125'
+
+out_list = list()
+
+ii = 1
+
+for(i in spec_list){
+	print(paste0('Estimating discaRd for NESPP3 ', i))
+	out_list[[ii]] = run_discard(bdat = bdat
+											 , ddat = ddat_focal
+											 , c_o_tab = c_o_dat2
+											 , year = 2019
+											 , species_nespp3 = i
+											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
+											 , aidx = c(1,2)
+											 )
+	out_list[[ii]]$res$MATCH_NESPP3 = i
+	ii = ii+1
+	
+}
+
+names(out_list) = spec_list
+
+
+# pull out list parts and rearrange
+
+out_res = out_list[[1]]$res %>% 
+	dplyr::select(DMIS_TRIP_ID, VTRSERNO, MATCH_NESPP3 , DISCARD)
+
+for(i in 2:length(out_list)){
+	tmp = out_list[[i]]$res %>% 
+		dplyr::select(DMIS_TRIP_ID, VTRSERNO, MATCH_NESPP3 , DISCARD)
+	
+	out_res = rbind(out_res, tmp)
+	
+}
+
+# get SMB ACL accounting numbers for 2019
+acl_tab = readr::read_csv('H:/Hocking/smb/smb_acl_accounting/smb_acl_2019/summary_table.csv') %>% 
+	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
+
+# get species names
+species = tbl(bcon, sql('select * from apsd.NESPP3_FMP')) %>% 
+	collect() %>% 
+	mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
+
+# species = offshoreWind::SPECIES %>% 
+	# mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
+
+out_tab = out_res %>% 
+	mutate(NESPP3 = MATCH_NESPP3) %>% 
+	group_by(NESPP3) %>% 
+	dplyr::summarise(`discaRd CAMS` = sum(DISCARD, na.rm = T)) %>% 
+	left_join(., species, by = 'NESPP3') %>% 
+		dplyr::select(1,3,2) %>% 
+	 left_join(acl_tab, by = 'SPPNM') %>% 
+	dplyr::select(1,2,3,7) %>% 
+	dplyr::rename(`ACL Discard` = Discards) 
+
+```
+
+```{r use a transition rate on incomplete data for target year}
+
+# discaRd::cochran.trans.calc
+
+# function (bydat_focal, trips_focal, bydat_prev, trips_prev, 
+# 	strata_name = "STRATA", strata_complete = NULL, time_span = c(1, 
+# 		365), time_inter = 1, CV_target = 0.3, trans_method = c("ntrips", 
+# 		"ntripsCV", "moving", "none")[1], trans_num = 5, trans_numCV = FALSE) 
+# 	
+
+# bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
+# 	
+# bfocal = make_bdat_focal(bdat, year = 2019, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'))
+# 
+# bprev = make_bdat_focal(bdat, year = 2018, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'))
+
+# import all observer data needed.. 
+	bdat <- obs %>% 
+	# filter(YEAR == 2018) %>% 
+	collect()
+
+# set up trips table for current year
+
+ddat_focal <- ddat_focal %>% 
+	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
+	  			 , SEADAYS = 0
+	  			 )
+
+# set up trips table for previous year
+ddat_prev <- ddat_prev %>% 
+	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
+	  			 , SEADAYS = 0
+	  			 )
+
+
+# Run the discaRd functions on previous year
+d_prev = run_discard(bdat = bdat
+											 , ddat = ddat_prev
+											 , c_o_tab = c_o_dat2
+											 , year = 2018
+											 , species_nespp3 = '802'
+											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
+											 , aidx = c(1,2)
+											 )
+
+
+# Run the discaRd functions on current year
+d_focal = run_discard(bdat = bdat
+											 , ddat = ddat_focal
+											 , c_o_tab = c_o_dat2
+											 , year = 2019
+											 , species_nespp3 = '802'
+											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
+											 , aidx = c(1,2)
+											 )
+
+# summarize each result for convenience
+dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+# substitute transition rates where needed
+trans_rate_df = data.frame(STRATA = dest_strata_f$STRATA
+           , n_obs_trips = dest_strata_f$n
+           , in_season_rate =  dest_strata_f$drate
+           , previous_season_rate = dest_strata_p$drate
+           , trans_rate = get.trans.rate(l_observed_trips = dest_strata_f$n, l_assumed_rate = dest_strata_p$drate, l_inseason_rate = dest_strata_f$drate)
+           )
+
+
+trans_rate_df = trans_rate_df %>% 
+  mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate)) 
+  
+ trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
+
+# compare subbed rate total to in season total. 
+ trans_rate_df %>% 
+   left_join(dest_strata_f, by = 'STRATA') %>% 
+   summarise(in_season_discard = sum(in_season_rate*KALL, na.rm = T)
+             , final_rate_discard = sum(final_rate*KALL, na.rm = T)
+             ) %>% 
+   knitr::kable()
+ 
+```
+
+
+```{r output table, eval = F }
+
+out_tab %>% knitr::kable(caption = 'Comaprison of CAMS discaRd and ACL accounting for 2019')
+
+```
+
 
 ```{r make background rate assumed discard, eval = F}
 
-# this may need to use the previous time period
+# This is taken care of within the run_discard function.. 
 
 assumed_discard = bdat_focal %>% 
   dplyr::group_by(
@@ -359,141 +553,6 @@ dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
 
 ```
 
-
-```{r run discard functions for Illex}
-# ddat_focal is run by itself since it takes a longtime.. and can be repeated
-
-ddat_focal <- ddat_focal %>% 
-	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
-	  			 , SEADAYS = 0
-	  			 , DOCID = DMIS_TRIP_ID)
-
-# squid_ex = run_discard(obstab = c_o_dat2, ddat = ddat_focal, year = 2019, species_nespp3 = '802')
-# squid_ex = run_discard(bdat = bdat, ddat = ddat_focal, c_o_tab = c_o_dat2, year = 2019, species_nespp3 = '802')
-
-squid_ex = run_discard(bdat = bdat
-											 , ddat = ddat_focal
-											 , c_o_tab = c_o_dat2
-											 , year = 2019
-											 , species_nespp3 = '802'
-											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
-											 , aidx = c(1,2)
-											 )
-
-squid_ex$res$DISCARD %>% sum(na.rm = T)
-
-# discard rates by strata
-dest_strata = squid_ex$allest$C %>% summarise(STRATA = STRATA
-                       , N = N
-                       , n = n
-                       , orate = round(n/N, 2)
-                       , drate = RE_mean
-                       , KALL = K, disc_est = round(D)
-                       , CV = round(RE_rse, 2)
-										)
-
-dest_strata %>% slice(grep('Otter Trawl_sm*', dest_strata$STRATA))
-
-
-```
-
-
-```{r run discaRd on multiple species at once}
-spec_list = c('801','802','212','051') #, '012', '125'
-
-out_list = list()
-
-ii = 1
-
-for(i in spec_list){
-	print(paste0('Estimating discaRd for NESPP3 ', i))
-	out_list[[ii]] = run_discard(bdat = bdat
-											 , ddat = ddat_focal
-											 , c_o_tab = c_o_dat2
-											 , year = 2019
-											 , species_nespp3 = i
-											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
-											 , aidx = c(1,2)
-											 )
-	out_list[[ii]]$res$MATCH_NESPP3 = i
-	ii = ii+1
-	
-}
-
-names(out_list) = spec_list
-
-
-# pull out list parts and rearrange
-
-out_res = out_list[[1]]$res %>% 
-	dplyr::select(DMIS_TRIP_ID, MATCH_NESPP3 , DISCARD)
-
-for(i in 2:length(out_list)){
-	tmp = out_list[[i]]$res %>% 
-		dplyr::select(DMIS_TRIP_ID, MATCH_NESPP3 , DISCARD)
-	
-	out_res = rbind(out_res, tmp)
-	
-}
-
-# get SMB ACL accounting numbers for 2019
-acl_tab = readr::read_csv('H:/Hocking/smb/smb_acl_accounting/smb_acl_2019/summary_table.csv') %>% 
-	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
-
-# get species names
-species = tbl(bcon, sql('select * from apsd.NESPP3_FMP')) %>% 
-	collect() %>% 
-	mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
-
-# species = offshoreWind::SPECIES %>% 
-	# mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
-
-out_tab = out_res %>% 
-	mutate(NESPP3 = MATCH_NESPP3) %>% 
-	group_by(NESPP3) %>% 
-	dplyr::summarise(`discaRd CAMS` = sum(DISCARD, na.rm = T)) %>% 
-	left_join(., species, by = 'NESPP3') %>% 
-		dplyr::select(1,3,2) %>% 
-	 left_join(acl_tab, by = 'SPPNM') %>% 
-	dplyr::select(1,2,3,7) %>% 
-	dplyr::rename(`ACL Discard` = Discards) 
-
-```
-
-
-```{r table }
-
-out_tab %>% knitr::kable(caption = 'Comaprison of CAMS discaRd and ACL accounting for 2019')
-
-```
-
-
-```{r use a transition rate on incomplete data for target year}
-
-# discaRd::cochran.trans.calc
-
-function (bydat_focal, trips_focal, bydat_prev, trips_prev, 
-	strata_name = "STRATA", strata_complete = NULL, time_span = c(1, 
-		365), time_inter = 1, CV_target = 0.3, trans_method = c("ntrips", 
-		"ntripsCV", "moving", "none")[1], trans_num = 5, trans_numCV = FALSE) 
-	
-
-	bdat <- obs %>% 
-	# filter(YEAR == 2018) %>% 
-	collect()
-
-bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
-	
-bfocal = make_bdat_focal(bdat, year = 2019, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'))
-
-bprev = make_bdat_focal(bdat, year = 2018, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'))
-
-
-
-
-
-
-```
 
 <!-- ## Squid Example -->
 
