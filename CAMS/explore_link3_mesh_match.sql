@@ -78,6 +78,15 @@ SELECT a.dmis_trip_id
 , a.NESPP4
 , a.LIVE as POUNDS
 , a.MESH
+, a.sector_id
+, a.permit_efp_1
+, a.permit_efp_2
+, a.permit_efp_3
+, a.permit_efp_4
+, a.redfish_exemption
+, a.closed_area_exemption
+, a.sne_smallmesh_exemption
+, a.xlrg_gillnet_exemption
 --, a.MONTH
 , a.PERMIT 
 , extract(year from a.record_land) as year
@@ -155,7 +164,26 @@ SELECT a.dmis_trip_id
 --                      THEN 'OPEN'
 --				ELSE 'Unknown'
 --				END) as accessarea              
-FROM apsd.cams_apport_ntrip_20200106  a 
+--FROM apsd.cams_apport_ntrip_20200106  a 
+FROM (
+    SELECT
+      a.*
+      , ta.sector_id
+      , ta.permit_efp_1
+      , ta.permit_efp_2
+      , ta.permit_efp_3
+      , ta.permit_efp_4
+      , ta.redfish_exemption
+      , ta.closed_area_exemption
+      , ta.sne_smallmesh_exemption
+      , ta.xlrg_gillnet_exemption
+    FROM
+      apsd.cams_apport_20201222 a
+      ,apsd.cams_trip_attribute ta
+    WHERE
+      a.dmis_trip_id = ta.dmis_trip_id
+
+) a
 --FROM apsd.dmis_all_years  a 
     LEFT OUTER JOIN vtr.vlgear b
 ON a.GEARCODE = b.GEARCODE
@@ -375,6 +403,15 @@ with trips as (
         , NVL(d.meshgroup, 'na') as meshgroup
         , d.area
         , d.carea
+        , d.sector_id
+      , d.permit_efp_1
+      , d.permit_efp_2
+      , d.permit_efp_3
+      , d.permit_efp_4
+      , d.redfish_exemption
+      , d.closed_area_exemption
+      , d.sne_smallmesh_exemption
+      , d.xlrg_gillnet_exemption
         , round(sum(d.pounds)) as subtrip_kall
     , o.link1
     from apsd.bg_cams_catch_mock d
@@ -503,6 +540,10 @@ SELECT a.dmis_trip_id
 , permit_EFP_2
 , permit_EFP_3
 , permit_EFP_4
+, redfish_exemption
+, closed_area_exemption
+, sne_smallmesh_exemption
+, xlrg_gillnet_exemption
 , extract(year from a.record_land) as year
 , extract(month from a.record_land) as month
 --, a.YEAR||a.ID yearid
@@ -603,6 +644,10 @@ SELECT a.dmis_trip_id
         , permit_EFP_2
         , permit_EFP_3
         , permit_EFP_4
+        , redfish_exemption
+        , closed_area_exemption
+        , sne_smallmesh_exemption
+        , xlrg_gillnet_exemption
         from 
         apsd.cams_apport_20201222 a,
         apsd.cams_trip_attribute ta
@@ -687,6 +732,10 @@ with trips as (
         , d.permit_EFP_2
         , d.permit_EFP_3
         , d.permit_EFP_4
+        , redfish_exemption
+        , closed_area_exemption
+        , sne_smallmesh_exemption
+        , xlrg_gillnet_exemption
         , d.tripcategory
         , d.accessarea
     , o.link1
@@ -726,6 +775,10 @@ with trips as (
         , d.permit_EFP_2
         , d.permit_EFP_3
         , d.permit_EFP_4
+        , d.redfish_exemption
+        , d.closed_area_exemption
+        , d.sne_smallmesh_exemption
+        , d.xlrg_gillnet_exemption
         , d.tripcategory
         , d.accessarea
         , o.link1
