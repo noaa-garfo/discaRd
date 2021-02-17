@@ -268,7 +268,8 @@ gf_ex = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal
 											 , c_o_tab = c_o_dat2
 											 , year = 2019
-											 , species_nespp3 = '135' # haddock... 
+											 # , species_nespp3 = '147' # haddock... 
+											 , species_nespp3 = '081' #cod... 
 											 , stratvars = c('GEARTYPE', 'MESHGROUP', 'AREA', 'SECTOR_ID')
 											 , aidx = c(1,2)
 											 )
@@ -276,14 +277,12 @@ gf_ex = run_discard(bdat = bdat_gf
 gf_ex$res$DISCARD %>% sum(na.rm = T)
 
 # discard rates by strata
-dest_strata = gf_ex$allest$C %>% 
-	summarise(STRATA = STRATA
+dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
                        , N = N
                        , n = n
                        , orate = round(n/N, 2)
                        , drate = RE_mean
-                       , KALL = K
-						           , disc_est = round(D)
+                       , KALL = K, disc_est = round(D)
                        , CV = round(RE_rse, 2)
 										)
 
