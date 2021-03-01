@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 
 ```{r setup, eval = T}
 
-setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
+# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
 
 library(odbc)
 # library(RODBC)
@@ -44,10 +44,10 @@ library(discaRd)
 
 
 # local run
-dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
 # if on server..
-# dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
+dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
 
 bcon <- dbConnect(odbc::odbc(), 
 									DSN = dw_apsd$dsn, 
@@ -61,7 +61,7 @@ bcon <- dbConnect(odbc::odbc(),
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('CAMS/cams_discard_functions.R')
+source('cams_discard_functions.R')
 
 # get catch and matched obs data together
 
@@ -103,7 +103,7 @@ with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
-	from apsd.bg_obs_cams_tmp3
+	from apsd.bg_cams_obs_catch
 	where nespp3 is not null
 	group by year, area, vtrserno, link1, nespp3, docid, NEGEAR, GEARTYPE
 	, MESHGROUP, dmis_trip_id, month
@@ -184,7 +184,7 @@ select DMIS_TRIP_ID
 , tripcategory
 , accessarea
 , sum(pounds) as live_Pounds
-from bg_cams_catch_ta_mock
+from bg_cams_catch
 group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHGROUP, CAREA, YEAR
 , MONTH
 , RECORD_LAND
@@ -211,9 +211,14 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 
 # Stat areas table
 
-stat_area_sp = tbl(bcon, sql('select * from apsd.stat_areas_def'))
+CAMS_STATAREA_STOCK = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) %>% collect()
+
+# GEAR TABLE
+
+CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% collect()
 
 ```
+
 
 
 ```{r subset trip data from oracle table for focal year, eval = T}
@@ -247,6 +252,32 @@ filter(YEAR >= 2018) %>%
 
 ```
 
+```{r pick species to run}
+species_nespp3 = '081'
+
+# assign trips their appropriate gear groupings.. 
+
+ddat_focal <- CAMS_GEAR_STRATA %>% 
+  filter(NESPP3 == species_nespp3) %>% 
+  mutate(GEARCODE = VTR_GEAR_CODE) %>% 
+  mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
+  group_by(GEARCODE) %>% 
+  dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
+  right_join(ddat_focal, by = 'GEARCODE')
+
+ddat_prev <- CAMS_GEAR_STRATA %>% 
+  filter(NESPP3 == species_nespp3) %>% 
+  mutate(GEARCODE = VTR_GEAR_CODE) %>% 
+  mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
+  group_by(GEARCODE) %>% 
+  dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
+  right_join(ddat_prev, by = 'GEARCODE')
+
+
+
+```
+
+
 ```{r run discard functions for Groundfish}
 # ddat_focal is run by itself since it takes a longtime.. and can be repeated
 
@@ -270,7 +301,7 @@ gf_ex = run_discard(bdat = bdat_gf
 											 , year = 2019
 											 # , species_nespp3 = '147' # haddock... 
 											 , species_nespp3 = '081' #cod... 
-											 , stratvars = c('GEARTYPE', 'MESHGROUP', 'AREA', 'SECTOR_ID')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'AREA', 'SECTOR_ID')
 											 , aidx = c(1,2)
 											 )
 
