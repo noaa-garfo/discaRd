@@ -17,6 +17,8 @@ from obdbs.sectortrp2019@nova
 
 select * --distinct(stock_id)
 from fso.t_observer_mortality_ratio 
+where mortality_ratio < 2
+and stock_id like 'FLW%'
 
 ;
 
@@ -36,8 +38,13 @@ where fishing_year = 2019
 --from fso.t_observer_data_output_2019
 
 ;
-
+--
+--select *
+--from fso.t_observer_species_itis a
+--right join (
 select *
-from fso.t_observer_species_itis
+ from APSD.CAMS_GEARCODE_STRATA
+--) b
+--on a.species_itis = b.species_itis
 
 

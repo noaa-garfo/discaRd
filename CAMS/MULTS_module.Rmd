@@ -57,6 +57,23 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```
 
+```{r define species first}
+
+species_nespp3 = '081'  # cod
+
+# define species stock if needed
+species_stock = 'SNE'  # SNE cod
+
+# unique stat areas for stock ID if needed
+STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
+  filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% 
+  distinct(STAT_AREA) %>% 
+  collect()
+
+```
+
+
+
 ```{r get obs and catch data from oracle}
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -72,18 +89,19 @@ source('cams_discard_functions.R')
 
 # in this table, DISACRD is already PRORATED
 
-c_o_dat2 <- tbl(bcon, sql('
+c_o_dat2 <- tbl(bcon, sql(paste0("
 with obs_cams as (
    select year
 	, month
 	, region
 	, halfofyear
-	, area
+	, carea
 	, vtrserno
 	, link1
 	, docid
 	, dmis_trip_id
 	, nespp3
+    , GEARCODE
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
@@ -104,8 +122,8 @@ with obs_cams as (
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
 	from apsd.bg_cams_obs_catch
-	where nespp3 is not null
-	group by year, area, vtrserno, link1, nespp3, docid, NEGEAR, GEARTYPE
+--	where nespp3 is not null
+	group by year, carea, vtrserno, link1, nespp3, docid, GEARCODE, NEGEAR, GEARTYPE
 	, MESHGROUP, dmis_trip_id, month
 	, region
 	, halfofyear
@@ -121,16 +139,48 @@ with obs_cams as (
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	order by vtrserno desc
+	order by vtrserno asc
     ) 
-    
- select o.*
-, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
-from obs_cams o
-left join (select * from apsd.s_nespp3_match_conv) c
-on o.nespp3 = c.nespp3 
-')) %>% 
-	collect()
+
+, strata as ( 
+     select max(CAMS_GEAR_GROUP_B) CAMS_GEAR_GROUP
+     , VTR_GEAR_CODE
+    from ( 
+     select a.* 
+    , a.VTR_GEAR_CODE as GEARCODE
+    , case when a.VTR_GEAR_CODE = 'HND' then '0' 
+      else a.CAMS_GEAR_GROUP 
+      end as CAMS_GEAR_GROUP_B
+    from APSD.CAMS_GEARCODE_STRATA a    
+    where NESPP3 = ", species_nespp3, "
+    )
+    group by VTR_GEAR_CODE
+)
+--
+--select count(distinct(vtrserno)) n_vtr
+--, count(distinct(DMIS_TRIP_ID)) n_dmisid
+--, count(distinct(LINK1)) n_link1
+--, count(distinct(STRATA)) n_strata
+----select distinct(GEARCODE)
+--from (
+
+     select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
+  , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
+  , o.*
+    , c.match_nespp3
+    , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
+    , NVL(s.CAMS_GEAR_GROUP, '0')||'-'||o.MESHGROUP||'-'||o.REGION||'-'||o.HALFOFYEAR as STRATA
+    , NVL(s.CAMS_GEAR_GROUP, '0') CAMS_GEAR_GROUP
+    from obs_cams o
+    left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3
+    left join (select * from strata) s 
+    ON s.VTR_GEAR_CODE = o.GEARCODE
+"
+    )
+  )
+) 
+# %>% 
+# 	collect()
 
 # obs only 
 
@@ -211,7 +261,8 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 
 # Stat areas table
 
-CAMS_STATAREA_STOCK = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) %>% collect()
+CAMS_STATAREA_STOCK = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) 
+# %>% collect()
 
 # GEAR TABLE
 
@@ -221,11 +272,14 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA'))
 
 
 
-```{r subset trip data from oracle table for focal year, eval = T}
+```{r subset trip data from oracle table for focal year, eval = F}
 #---------------------------------------------------------------------------------------#
 # Here is where various stratification would make sense
 # DOCID is hard coded in discaRd.. in this case, CV is calculated using  N = subtrips
 #---------------------------------------------------------------------------------------#
+
+
+# most likely not using this approach... 
 
 ddat_focal <- dat %>% 
 		filter(YEAR >= 2019) %>% 
@@ -252,26 +306,55 @@ filter(YEAR >= 2018) %>%
 
 ```
 
+```{r subset trip data from combined catch obs table, eval = T}
+#---------------------------------------------------------------------------------------#
+# Here is where various stratification would make sense
+# DOCID is hard coded in discaRd.. in this case, CV is calculated using  N = subtrips
+#---------------------------------------------------------------------------------------#
+
+ddat_focal <- c_o_dat2 %>% 
+  filter(GF_YEAR == 2019) %>% 
+  filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
+  # group_by(STRATA) %>% 
+  collect() %>% 
+  mutate(LIVE_POUNDS = SUBTRIP_KALL)
+
+
+ddat_prev <- c_o_dat2 %>% 
+  filter(GF_YEAR == 2018) %>% 
+  filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
+  # group_by(STRATA) %>% 
+  collect() %>% 
+  mutate(LIVE_POUNDS = SUBTRIP_KALL)
+
+```
+
 ```{r pick species to run}
-species_nespp3 = '081'
+#  all done in SQL above!! 
+
+# species_nespp3 = '081'
+
+# implemented in SQL in first chunk... 
+
 
 # assign trips their appropriate gear groupings.. 
+# done in SQL above.. 
 
-ddat_focal <- CAMS_GEAR_STRATA %>% 
-  filter(NESPP3 == species_nespp3) %>% 
-  mutate(GEARCODE = VTR_GEAR_CODE) %>% 
-  mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
-  group_by(GEARCODE) %>% 
-  dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
-  right_join(ddat_focal, by = 'GEARCODE')
+# ddat_focal <- CAMS_GEAR_STRATA %>% 
+#   filter(NESPP3 == species_nespp3) %>% 
+#   mutate(GEARCODE = VTR_GEAR_CODE) %>% 
+#   mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
+#   group_by(GEARCODE) %>% 
+#   dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
+#   right_join(ddat_focal, by = 'GEARCODE')
 
-ddat_prev <- CAMS_GEAR_STRATA %>% 
-  filter(NESPP3 == species_nespp3) %>% 
-  mutate(GEARCODE = VTR_GEAR_CODE) %>% 
-  mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
-  group_by(GEARCODE) %>% 
-  dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
-  right_join(ddat_prev, by = 'GEARCODE')
+# ddat_prev <- CAMS_GEAR_STRATA %>% 
+#   filter(NESPP3 == species_nespp3) %>% 
+#   mutate(GEARCODE = VTR_GEAR_CODE) %>% 
+#   mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
+#   group_by(GEARCODE) %>% 
+#   dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
+#   right_join(ddat_prev, by = 'GEARCODE')
 
 
 
@@ -282,27 +365,28 @@ ddat_prev <- CAMS_GEAR_STRATA %>%
 # ddat_focal is run by itself since it takes a longtime.. and can be repeated
 
 ddat_focal <- ddat_focal %>% 
-	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, CAREA, SECTOR_ID, sep = '_')
+	  mutate(STRATA2 = paste(CAMS_GEAR_GROUP, MESHGROUP, CAREA, SECTOR_ID, sep = '_')
 	  			 , SEADAYS = 0
+	  			 , NESPP3 = NESPP3_FINAL
 	  			 )
 
 # if using the combined catch/obs table, which seems neccesary for groundfish.. need to roll your own table to use with run_discard function
 
-bdat_gf = c_o_dat2 %>% 
+bdat_gf = ddat_focal %>% 
   mutate(DISCARD_PRORATE = DISCARD
-         , OBS_AREA = AREA
+         , OBS_AREA = CAREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
 
 
 gf_ex = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal
-											 , c_o_tab = c_o_dat2
+											 , c_o_tab = ddat_focal
 											 , year = 2019
 											 # , species_nespp3 = '147' # haddock... 
-											 , species_nespp3 = '081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'AREA', 'SECTOR_ID')
-											 , aidx = c(1,2)
+											 , species_nespp3 = species_nespp3  #'081' #cod... 
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID')
+											 , aidx = c(1,2,3,4)
 											 )
 
 gf_ex$res$DISCARD %>% sum(na.rm = T)
