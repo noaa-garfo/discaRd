@@ -28,7 +28,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2, species_nespp3 = '802', year =
 	codat <- c_o_tab %>%
 		filter(YEAR == year) %>% 
 		# group_by(DMIS_TRIP_ID, NESPP3) %>%
-		mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD)) %>%
+		mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) %>%
 		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 	
 	
@@ -84,7 +84,7 @@ make_bdat_focal <- function(bdat, year = 2019, species_nespp3 = '802', stratvars
 	
 	bdat_focal = bdat %>% 
 		filter(YEAR == year) %>% 
-		mutate(SPECIES_DISCARD = case_when(MATCH_NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+		mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
 		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 	
 	

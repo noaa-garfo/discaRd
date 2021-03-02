@@ -326,9 +326,9 @@ from trips c
     left join (
         select * from obs 
     ) o
-on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
+--on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
 --on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
---on (o.vtrserno = c.vtrserno)
+on (o.vtrserno = c.vtrserno)
 --on (o.link1 = c.link1)
 
 --left outer join (SELECT * from mgear) m
@@ -338,6 +338,73 @@ on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AN
 
 ;
 
+select *
+from bg_cams_obs_catch
+/
+
+-- this is the SQL call in R.. 
+
+with obs_cams as (
+   select year
+	, month
+	, region
+	, halfofyear
+	, area
+	, vtrserno
+	, link1
+	, docid
+	, dmis_trip_id
+	, nespp3
+	, NEGEAR
+	, GEARTYPE
+	, MESHGROUP
+	, SECTOR_ID
+	, tripcategory
+	, accessarea
+	, activity_code_1
+    , permit_EFP_1
+  , permit_EFP_2
+  , permit_EFP_3
+  , permit_EFP_4
+  , redfish_exemption
+	, closed_area_exemption
+	, sne_smallmesh_exemption
+	, xlrg_gillnet_exemption
+	, NVL(sum(discard),0) as discard
+	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
+	, NVL(round(max(obs_kall)),0) as obs_kall
+	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
+	from apsd.bg_cams_obs_catch
+--	where nespp3 is not null
+	group by year, area, vtrserno, link1, nespp3, docid, NEGEAR, GEARTYPE
+	, MESHGROUP, dmis_trip_id, month
+	, region
+	, halfofyear
+	, sector_id
+	, tripcategory
+	, accessarea
+	, activity_code_1
+    , permit_EFP_1
+  , permit_EFP_2
+  , permit_EFP_3
+  , permit_EFP_4
+  , redfish_exemption
+	, closed_area_exemption
+	, sne_smallmesh_exemption
+	, xlrg_gillnet_exemption
+	order by vtrserno desc
+    ) 
+    
+-- select o.*
+--, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
+--from obs_cams o
+--left join (select * from apsd.s_nespp3_match_conv) c
+--on o.nespp3 = c.nespp3
+     select o.*
+    , case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
+    from obs_cams o, apsd.s_nespp3_match_conv c
+
+;
 select sum(subtrip_kall)
 , sum(discard)
 --, nespp3
