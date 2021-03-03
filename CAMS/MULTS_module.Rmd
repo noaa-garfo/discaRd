@@ -335,38 +335,6 @@ ddat_prev <- c_o_dat2 %>%
 
 ```
 
-```{r pick species to run}
-#  all done in SQL above!! 
-
-# species_nespp3 = '081'
-
-# implemented in SQL in first chunk... 
-
-
-# assign trips their appropriate gear groupings.. 
-# done in SQL above.. 
-
-# ddat_focal <- CAMS_GEAR_STRATA %>% 
-#   filter(NESPP3 == species_nespp3) %>% 
-#   mutate(GEARCODE = VTR_GEAR_CODE) %>% 
-#   mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
-#   group_by(GEARCODE) %>% 
-#   dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
-#   right_join(ddat_focal, by = 'GEARCODE')
-
-# ddat_prev <- CAMS_GEAR_STRATA %>% 
-#   filter(NESPP3 == species_nespp3) %>% 
-#   mutate(GEARCODE = VTR_GEAR_CODE) %>% 
-#   mutate(CAMS_GEAR_GROUP = case_when(GEARCODE == 'HND' ~ '0', GEARCODE != 'HND' ~ CAMS_GEAR_GROUP)) %>% 
-#   group_by(GEARCODE) %>% 
-#   dplyr::summarise(CAMS_GEAR_GROUP = max(CAMS_GEAR_GROUP)) %>% 
-#   right_join(ddat_prev, by = 'GEARCODE')
-
-
-
-```
-
-
 ```{r run discard functions for Groundfish}
 
 # need to slice the first record for each observed trip.. these trips are multi rowed whil unobs trips are singel row.. 
@@ -419,57 +387,47 @@ dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
 
 ```{r use a transition rate on incomplete data for target year}
 
-# discaRd::cochran.trans.calc
-
-# function (bydat_focal, trips_focal, bydat_prev, trips_prev, 
-# 	strata_name = "STRATA", strata_complete = NULL, time_span = c(1, 
-# 		365), time_inter = 1, CV_target = 0.3, trans_method = c("ntrips", 
-# 		"ntripsCV", "moving", "none")[1], trans_num = 5, trans_numCV = FALSE) 
-# 	
-
-# bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
-# 	
-# bfocal = make_bdat_focal(bdat, year = 2019, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'))
-# 
-# bprev = make_bdat_focal(bdat, year = 2018, species_nespp3 = '802', stratvars = c('GEARTYPE','meshgroup','region','halfofyear'))
-
-# import all observer data needed.. 
-	bdat <- obs %>% 
-	# filter(YEAR == 2018) %>% 
-	collect()
-
 # set up trips table for current year
+# done above 
 
-ddat_focal <- ddat_focal %>% 
-	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
-	  			 , SEADAYS = 0
-	  			 )
 
 # set up trips table for previous year
-ddat_prev <- ddat_prev %>% 
-	  mutate(STRATA = paste(GEARTYPE, MESHGROUP, REGION, HALFOFYEAR, sep = '_')
-	  			 , SEADAYS = 0
-	  			 )
+ddat_prev_gf = ddat_prev %>% 
+  filter(!is.na(LINK1)) %>% 
+  group_by(LINK1) %>% 
+  slice(1)
 
+ddat_prev_gf = ddat_prev_gf %>% 
+  union_all(ddat_prev %>% filter(is.na(LINK1)))
+
+
+# previous year observer data needed.. 
+bdat_prev_gf = ddat_prev %>% 
+  filter(!is.na(LINK1)) %>% 
+  mutate(DISCARD_PRORATE = DISCARD
+         , OBS_AREA = CAREA
+         , OBS_HAUL_KALL_TRIP = OBS_KALL
+         , PRORATE = 1)
 
 # Run the discaRd functions on previous year
-d_prev = run_discard(bdat = bdat
-											 , ddat = ddat_prev
-											 , c_o_tab = c_o_dat2
-											 , year = 2018
-											 , species_nespp3 = '802'
-											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
+d_prev = run_discard(bdat = bdat_prev_gf
+											 , ddat = ddat_prev_gf
+											 , c_o_tab = ddat_prev
+											 # , year = 2018
+											 , species_nespp3 = species_nespp3
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID')
 											 , aidx = c(1,2)
 											 )
 
 
 # Run the discaRd functions on current year
-d_focal = run_discard(bdat = bdat
-											 , ddat = ddat_focal
-											 , c_o_tab = c_o_dat2
-											 , year = 2019
-											 , species_nespp3 = '802'
-											 , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
+d_focal = run_discard(bdat = bdat_gf
+											 , ddat = ddat_focal_gf
+											 , c_o_tab = ddat_focal
+											 # , year = 2019
+											 # , species_nespp3 = '081' # haddock...
+											 , species_nespp3 = species_nespp3  #'081' #cod... 
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID')
 											 , aidx = c(1,2)
 											 )
 
@@ -493,12 +451,23 @@ dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
 										)
 
 # substitute transition rates where needed
-trans_rate_df = data.frame(STRATA = dest_strata_f$STRATA
-           , n_obs_trips = dest_strata_f$n
-           , in_season_rate =  dest_strata_f$drate
-           , previous_season_rate = dest_strata_p$drate
-           , trans_rate = get.trans.rate(l_observed_trips = dest_strata_f$n, l_assumed_rate = dest_strata_p$drate, l_inseason_rate = dest_strata_f$drate)
-           )
+
+trans_rate_df = dest_strata_f %>% 
+  left_join(., dest_strata_p, by = 'STRATA') %>% 
+  mutate(STRATA = STRATA
+         , n_obs_trips = n.x
+         , in_season_rate = drate.x
+         , previous_season_rate = drate.y
+         , trans_rate = get.trans.rate(l_observed_trips = n_obs_trips
+                                         , l_assumed_rate = previous_season_rate
+                                         , l_inseason_rate = in_season_rate
+                                         )
+         ) %>% 
+  dplyr::select(STRATA
+         , n_obs_trips 
+         , in_season_rate 
+         , previous_season_rate 
+         , trans_rate)
 
 
 trans_rate_df = trans_rate_df %>% 
