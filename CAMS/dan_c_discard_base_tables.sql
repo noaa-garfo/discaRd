@@ -18,7 +18,7 @@ from obdbs.sectortrp2019@nova
 select * --distinct(stock_id)
 from fso.t_observer_mortality_ratio 
 where mortality_ratio < 2
-and stock_id like 'FLW%'
+and stock_id like 'CODGM%'
 
 ;
 
