@@ -1,5 +1,5 @@
 ---
-title: "Groundfish Example"
+title: "Illex Example"
 output:
   pdf_document: 
     highlight: zenburn
@@ -20,6 +20,8 @@ editor_options:
   chunk_output_type: console
 urlcolor: cyan
 ---
+
+## This module is for a single species. It's posible that species with identical CAMS_GEAR_GROUP groupings can be done together. The assigment of this is done in the first step using SQL.  
 
 
 ```{r global_options, include=FALSE}
@@ -58,10 +60,10 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```{r define species first}
 
-species_nespp3 = '081'  # cod
+species_nespp3 = '802'  # Illex squid
 
 # define species stock if needed
-species_stock = 'GOM'  # GOM cod
+# species_stock = 'GOM'  # GOM cod
 
 ```
 
@@ -256,7 +258,8 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 ```{r get Stock Stat Areas }
 # unique stat areas for stock ID if needed
 STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
-  filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% 
+  # filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% 
+  filter(NESPP3 == species_nespp3) %>% 
   distinct(STAT_AREA) %>% 
   collect()
 ```
@@ -269,7 +272,7 @@ STOCK_AREAS = CAMS_STATAREA_STOCK %>%
 #---------------------------------------------------------------------------------------#
 
 ddat_focal <- c_o_dat2 %>% 
-  filter(GF_YEAR == 2019) %>% 
+  filter(YEAR == 2019) %>% 
   filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
   # group_by(STRATA) %>% 
   collect() %>% 
@@ -279,7 +282,7 @@ ddat_focal <- c_o_dat2 %>%
 
 
 ddat_prev <- c_o_dat2 %>% 
-  filter(GF_YEAR == 2018) %>% 
+  filter(YEAR == 2018) %>% 
   filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
   # group_by(STRATA) %>% 
   collect() %>% 
@@ -289,7 +292,10 @@ ddat_prev <- c_o_dat2 %>%
 
 ```
 
-```{r run discard functions for Groundfish}
+```{r set up disacRd elements for Illex}
+
+# setup stratification variables
+stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'HALFOFYEAR', 'REGION')
 
 # need to slice the first record for each observed trip.. these trips are multi rowed whil unobs trips are singel row.. 
 ddat_focal_gf = ddat_focal %>% 
@@ -309,14 +315,14 @@ bdat_gf = ddat_focal %>%
          , OBS_AREA = CAREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
+```
 
+```{r run discaRd}
 gf_ex = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal_gf
 											 , c_o_tab = ddat_focal
-											 # , year = 2019
-											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID')
+											 , stratvars = stratvars
 											 , aidx = c(1,2,3,4)
 											 )
 
@@ -368,7 +374,7 @@ d_prev = run_discard(bdat = bdat_prev_gf
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 , species_nespp3 = species_nespp3
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID')
+											 , stratvars = stratvars
 											 , aidx = c(1,2)
 											 )
 
@@ -378,9 +384,8 @@ d_focal = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal_gf
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
-											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID')
+											 , stratvars = stratvars
 											 , aidx = c(1,2)
 											 )
 
@@ -444,6 +449,38 @@ trans_rate_df = trans_rate_df %>%
              , final_rate_d = sum(final_rate*SUBTRIP_KALL, na.rm = T))
  
 ```
+
+```{r compare to ACL accounting for 2019}
+
+# get SMB ACL accounting numbers for 2019
+# acl_tab = readr::read_csv('H:/Hocking/smb/smb_acl_accounting/smb_acl_2019/summary_table.csv') %>% 
+# 	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
+acl_tab = readr::read_csv('summary_table.csv') %>% 
+	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
+
+# get species names
+species = tbl(bcon, sql('select * from apsd.NESPP3_FMP')) %>% 
+	collect() %>% 
+	mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
+
+# species = offshoreWind::SPECIES %>% 
+	# mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
+
+out_res = d_focal$res %>% 
+	dplyr::select(DMIS_TRIP_ID, VTRSERNO, NESPP3 , DISCARD)
+
+out_tab = out_res %>% 
+	# mutate(NESPP3 = MATCH_NESPP3) %>% 
+	group_by(NESPP3) %>% 
+	dplyr::summarise(`discaRd CAMS` = sum(DISCARD, na.rm = T)) %>% 
+	left_join(., species, by = 'NESPP3') %>% 
+		dplyr::select(1,3,2) %>% 
+	 left_join(acl_tab, by = 'SPPNM') %>% 
+	dplyr::select(1,2,3,7) %>% 
+	dplyr::rename(`ACL Discard` = Discards) 
+
+```
+
 
 
 ```{r print some summary tables, eval = F}
