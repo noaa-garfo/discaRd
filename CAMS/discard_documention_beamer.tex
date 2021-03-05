@@ -82,6 +82,19 @@
   pdfcreator={LaTeX via pandoc}}
 \urlstyle{same} % disable monospaced font for URLs
 \newif\ifbibliography
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -119,6 +132,18 @@ summary)}
   Other others are driven by regs. Here I would place transition rates
   and EM methods.
 \end{enumerate}
+
+\end{frame}
+
+\begin{frame}{discaRd Base and Support tables}
+\protect\hypertarget{discard-base-and-support-tables}{}
+
+\begin{figure}
+\centering
+\includegraphics{discard_documention_beamer_files/figure-beamer/table_flow0-1.pdf}
+\caption{Base tables (rectangle), Intermediary (circle), and Support
+tables (Oval)}
+\end{figure}
 
 \end{frame}
 
@@ -254,11 +279,44 @@ tables created:
 \item
   refresh Oracle tables?
 \item
+  define species
+
+  \begin{itemize}
+  \tightlist
+  \item
+    generates SQL
+  \end{itemize}
+\item
   import to R
+
+  \begin{itemize}
+  \tightlist
+  \item
+    apply CAMS\_GEAR\_GROUP according to SPECIES
+  \item
+    apply STOCK STAT AREA according to SPECIES and stock (if needed)
+  \end{itemize}
 \item
-  define species/year (time period?!?)
+  \texttt{run\_discard}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    STRATA is assigned dynamically by species/stock using elements of
+    the imported data
+  \item
+    If using \texttt{transition\ rates}, two time periods are defined
+  \item
+    Assumed (fallback rates) are defined as a subset of STRATA
+  \end{itemize}
 \item
-  run \texttt{run\_discard}
+  Apply Discard Mortality
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Match by CAMS\_GEAR\_GROUP at the subtrip level
+  \end{itemize}
 \end{itemize}
 
 \end{frame}
@@ -284,22 +342,36 @@ tables created:
 \begin{itemize}
 \tightlist
 \item
-  utilize support tables: \texttt{STRATA} especially..
+  utilize support tables
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{CAMS\_GEAR\_GROUP} \textbf{DONE}
+  \item
+    \texttt{STAT\_AREAS} \textbf{DONE}
+  \end{itemize}
 \item
-  add \texttt{SECTOR} for multispecies (see above)
+  add \texttt{SECTOR} for multispecies (see above) \textbf{DONE}
 \item
   utilize discard mortality table (species/gear/mesh)
+  \textbf{imminent..}
 \item
-  decide on time periods
+  decide on time periods \textbf{Determined by STOCK/SPECIES}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Species with the same tiem period, e.g.~Calendar year, can be
+    imported at once.
+  \end{itemize}
 \item
   decide on criteria for assumed (fallback) rates: how simplified must
   this be?
 \item
-  implement transitions (if using fixed time period)
+  implement transitions (if using fixed time period) \textbf{DONE}
 \item
   refine exact operational process
-\item
-  ?? what else
 \end{itemize}
 
 \end{frame}
