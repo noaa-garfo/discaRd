@@ -8,7 +8,7 @@ output:
     keep_tex: yes
     theme: Singapore
 editor_options:
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 
@@ -24,6 +24,134 @@ editor_options:
 <!-- I recommend separating out issues such as mismatching gear and area for the future QA data system.  -->
 
 <!-- And of course, any change management must be worked through proper and transparent interaction with all end users and clients including council and  SFD. -->
+
+## discaRd Base and Support tables
+
+```{r table_flow0, echo = F, fig.height = 8, fig.width = 10, fig.cap = "Base tables (rectangle), Intermediary (circle), and Support tables (Oval)", warning = F}
+library(DiagrammeR)
+
+grViz("
+digraph boxes_and_circles {
+
+  # a 'graph' statement
+  graph [overlap = false, fontsize = 32, fillcolor = red]
+
+  # several 'node' statements
+  node [shape = box,
+        fontname = Helvetica
+        , fontsize = 32
+        fontcolor = 'darkgreen', 
+        penwidth = 2]
+  'CAMS 
+  Appt'; 
+  
+  'CAMS 
+  trip attr';
+  
+  'NEFOP';
+  
+  'ASM';
+
+ node [shape = oval,
+        fontname = Helvetica
+        , fillcolor = 'Cyan']
+  'CAMS
+  STATAREA
+  STOCK'; 
+  
+  'CAMS
+  GEARCODE
+  STRATA'; 
+  
+  'CAMS
+  DISCARD
+  MORTALITY
+  STOCK';
+
+  node [shape = circle,
+        fixedsize = true,
+        width = 2,  fontsize = 32] // sets as circles
+  'CAMS
+  OBS
+  CATCH'; 
+  
+  'OBS 
+   by YEAR' ; 
+   
+   'CAMS
+   CATCH
+   TA
+   MOCK'; 
+   
+   'OBS
+   CAMS
+   PRORATE';
+  
+  node [shape = diamond,
+        fixedsize = true,
+        width = 2,  fontsize = 32, fontweight = 'bold'] // 
+  'R';
+  
+
+  # several 'edge' statements
+
+  'NEFOP'->'OBS 
+   by YEAR'
+
+  'ASM'->'OBS 
+   by YEAR'
+
+  'OBS 
+   by YEAR'->'OBS
+   CAMS
+   PRORATE'
+  
+  'CAMS 
+  Appt' -> 'CAMS
+   CATCH
+   TA
+   MOCK'
+  'CAMS 
+  trip attr' ->'CAMS
+   CATCH
+   TA
+   MOCK'
+  
+  'CAMS
+   CATCH
+   TA
+   MOCK'->  'CAMS
+  OBS
+  CATCH'
+  
+'OBS
+   CAMS
+   PRORATE'->  'CAMS
+  OBS
+  CATCH'
+  
+  'CAMS
+  OBS
+  CATCH'->'R'
+  
+  'CAMS
+  STATAREA
+  STOCK'-> 'R'
+  
+  'CAMS
+  GEARCODE
+  STRATA'->'R'
+  
+  'CAMS
+  DISCARD
+  MORTALITY
+  STOCK'->'R'
+  
+ 
+}
+")
+
+```
 
 
 ## Tables created and steps to date
@@ -87,9 +215,17 @@ tables created:
 ## Running it 
 
 - refresh Oracle tables?
+- define species
+	+ generates SQL
 - import to R
-- define species/year (time period?!?)
-- run `run_discard`
+	+ apply CAMS_GEAR_GROUP according to SPECIES
+	+ apply STOCK STAT AREA according to SPECIES and stock (if needed)
+- `run_discard`
+	+ STRATA is assigned dynamically by species/stock using elements of the imported data
+	+ If using `transition rates`, two time periods are defined
+	+ Assumed (fallback rates) are defined as a subset of STRATA
+- Apply Discard Mortality 
+	+ Match by CAMS_GEAR_GROUP at the subtrip level
 
 ## output
 
@@ -101,14 +237,19 @@ tables created:
 \includegraphics[width = \textwidth]{CAMS_discaRd_ACL_comparison.jpg}
 
 ## TO DO
-- utilize support tables: `STRATA` especially..
-- add `SECTOR` for multispecies (see above)
-- utilize discard mortality table (species/gear/mesh)
-- decide on time periods
+- utilize support tables
+	+ `CAMS_GEAR_GROUP` **DONE**
+	+ `STAT_AREAS` **DONE**
+- add `SECTOR` for multispecies (see above) **DONE**
+- utilize discard mortality table (species/gear/mesh) **imminent..**
+- decide on time periods **Determined by STOCK/SPECIES**
+	+ Species with the same time period, e.g. Calendar year, can be imported at once. 
 - decide on criteria for assumed (fallback) rates: how simplified must this be?
-- implement transitions (if using fixed time period)
+- implement transitions (if using fixed time period) **DONE**
+- Deal with Exemptions
+- Incorporate stratification for EM trips
 - refine exact operational process
-- ?? what else
+
 
 
 
