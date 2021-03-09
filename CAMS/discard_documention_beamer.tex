@@ -76,8 +76,8 @@
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
 \hypersetup{
-  pdftitle={discaRd steps for CAMS},
-  pdfauthor={Ben Galuardi},
+  pdftitle={CAMS discaRd Update},
+  pdfauthor={Ben Galuardi \& Dan Linden;},
   hidelinks,
   pdfcreator={LaTeX via pandoc}}
 \urlstyle{same} % disable monospaced font for URLs
@@ -100,9 +100,9 @@
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 
-\title{discaRd steps for CAMS}
-\author{Ben Galuardi}
-\date{}
+\title{CAMS discaRd Update}
+\author{Ben Galuardi \& Dan Linden \and \footnote<.->{APSD}}
+\date{2021-03-08}
 
 \begin{document}
 \frame{\titlepage}
@@ -147,29 +147,7 @@ tables (Oval)}
 
 \end{frame}
 
-\begin{frame}[fragile]{Tables created and steps to date}
-\protect\hypertarget{tables-created-and-steps-to-date}{}
-
-\textbf{Rates determine by observer reported values (gear, area, etc)}
-Observed discards
-
-\texttt{make\_obdbs\_table\_cams\_v2.sql}
-
-created:
-
-\begin{itemize}
-\tightlist
-\item
-  \texttt{apsd.bg\_obdbs\_cams\_mock2018}
-\item
-  \texttt{apsd.bg\_obdbs\_cams\_mock2019}
-\item
-  \texttt{apsd.bg\_obdbs\_cams\_mock2020}
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}[fragile]{Prorated discards}
+\begin{frame}{Prorated discards}
 \protect\hypertarget{prorated-discards}{}
 
 \textbf{Incomplete observed trips have missing `hauls' prorated by
@@ -181,92 +159,28 @@ the unobserved hauls only
 
 \[d_{total} = d_{observedhauls}*(1+KALL_{unobserved hauls}/KALL_{subtrip})\]
 
-\texttt{make\_obdbs\_prorate.sql}
+\end{frame}
 
-created:
+\begin{frame}[fragile]{R Process}
+\protect\hypertarget{r-process}{}
+
+\texttt{discaRd} R package built for 2016 Discard Estimation Peer Review
+
+\includegraphics[width = .25\textwidth, height = .25\textheight]{discaRd.png}
+
+New functions for CAMS:
 
 \begin{itemize}
 \tightlist
 \item
-  \texttt{apsd.obs\_cams\_prorate}
-
-  \begin{itemize}
-  \tightlist
-  \item
-    this table was made using \texttt{apsd.bg\_obdbs\_cams\_mock2018}
-    and \texttt{apsd.bg\_obdbs\_cams\_mock2019}
-  \end{itemize}
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}[fragile]{Use prorated observed discard values}
-\protect\hypertarget{use-prorated-observed-discard-values}{}
-
-\textbf{Trips with observer get reported/calculated observed discards of
-that specific trip}
-
-Match observed hauls to subtrips
-
-\texttt{explore\_link3\_mesh\_match.sql}
-
-This step matches on \texttt{AREA}, \texttt{GEAR} and \texttt{MESHGROUP}
-(sm, lg, xlg). This is a hard match and will go awry if there is a
-mismatch in the data.
-
-\end{frame}
-
-\begin{frame}[fragile]{Use prorated observed discard values (cont.)}
-\protect\hypertarget{use-prorated-observed-discard-values-cont.}{}
-
-tables created:
-
-\begin{itemize}
-\tightlist
+  \texttt{make\_assumed\_rate} Calculates `fallback rate' using a subset
+  of \texttt{STRATA} variables
 \item
-  \texttt{apsd.bg\_cams\_catch\_mock}
-
-  \begin{itemize}
-  \tightlist
-  \item
-    follows the steps layed out for mid-Atlantic discard estimation.
-    \texttt{Gear}, \texttt{mesh}, \texttt{region},
-    \texttt{half\ of\ year} CASE statements should be replaced at some
-    point with table driven code.\\
-  \item
-    Utilizes the current apportionment table:
-    \texttt{apsd.cams\_apport\_20201230}
-  \end{itemize}
+  \texttt{make\_bdat\_focal} Constructs data frame of observed trip data
+  for species of interest
 \item
-  \texttt{apsd.bg\_obs\_cams\_tmp1}
-
-  \begin{itemize}
-  \tightlist
-  \item
-    links to \texttt{dmis.d\_match\_obs\_link} and
-    \texttt{apsd.bg\_cams\_catch\_mock}; \textbf{multiple} subtrips
-    only. 
-  \end{itemize}
-\item
-  \texttt{apsd.bg\_obs\_cams\_tmp2} is used in the
-  \texttt{squid\ example} and include all trips.
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}[fragile]{R functions}
-\protect\hypertarget{r-functions}{}
-
-\begin{itemize}
-\tightlist
-\item
-  \texttt{get\_obs\_disc\_vals}
-\item
-  \texttt{make\_assumed\_rate}
-\item
-  \texttt{make\_bdat\_focal}
-\item
-  \texttt{run\_discard}
+  \texttt{run\_discard} Runs these functions in conjucntion with
+  \texttt{discaRd}
 \end{itemize}
 
 \end{frame}
@@ -279,7 +193,7 @@ tables created:
 \item
   refresh Oracle tables?
 \item
-  define species
+  define species and stock (if applicable)
 
   \begin{itemize}
   \tightlist
@@ -295,6 +209,8 @@ tables created:
     apply CAMS\_GEAR\_GROUP according to SPECIES
   \item
     apply STOCK STAT AREA according to SPECIES and stock (if needed)
+  \item
+    join discard mortality by species/stock/CAMS\_GEAR\_GROUP
   \end{itemize}
 \item
   \texttt{run\_discard}
@@ -302,8 +218,8 @@ tables created:
   \begin{itemize}
   \tightlist
   \item
-    STRATA is assigned dynamically by species/stock using elements of
-    the imported data
+    STRATA is assigned dynamically by using elements of the imported
+    data
   \item
     If using \texttt{transition\ rates}, two time periods are defined
   \item
@@ -311,28 +227,7 @@ tables created:
   \end{itemize}
 \item
   Apply Discard Mortality
-
-  \begin{itemize}
-  \tightlist
-  \item
-    Match by CAMS\_GEAR\_GROUP at the subtrip level
-  \end{itemize}
 \end{itemize}
-
-\end{frame}
-
-\begin{frame}{output}
-\protect\hypertarget{output}{}
-
-\includegraphics[width = \textwidth]{dest_strata_squid_ex.jpg}
-\vspace{2cm} \includegraphics[width = \textwidth]{squid_ex_table.jpg}
-
-\end{frame}
-
-\begin{frame}{compare to ACL summary}
-\protect\hypertarget{compare-to-acl-summary}{}
-
-\includegraphics[width = \textwidth]{CAMS_discaRd_ACL_comparison.jpg}
 
 \end{frame}
 
@@ -350,29 +245,34 @@ tables created:
     \texttt{CAMS\_GEAR\_GROUP} \textbf{DONE}
   \item
     \texttt{STAT\_AREAS} \textbf{DONE}
+  \item
+    \texttt{CAMS\_DISCARD\_MORTALITY\_STOCK} \textbf{in process}
   \end{itemize}
 \item
   add \texttt{SECTOR} for multispecies (see above) \textbf{DONE}
 \item
-  utilize discard mortality table (species/gear/mesh)
-  \textbf{imminent..}
-\item
-  decide on time periods \textbf{Determined by STOCK/SPECIES}
+  Time periods \textbf{Determined by STOCK/SPECIES}
 
   \begin{itemize}
   \tightlist
   \item
-    Species with the same tiem period, e.g.~Calendar year, can be
+    Species with the same time period, e.g.~Calendar year, can be
     imported at once.
   \end{itemize}
 \item
-  decide on criteria for assumed (fallback) rates: how simplified must
-  this be?
+  Assumed (fallback) rate criteria: how simplified must this be?
 \item
   implement transitions (if using fixed time period) \textbf{DONE}
 \item
-  refine exact operational process
+  Deal with Exemptions
+\item
+  Incorporate stratification for EM trips
+\item
+  refine exact operational process*
 \end{itemize}
+
+*\textbf{Will likely be based on modules that run common sets of species
+(e.g.~common \texttt{CAMS\_GEAR\_GROUP} and stock definition)}
 
 \end{frame}
 
