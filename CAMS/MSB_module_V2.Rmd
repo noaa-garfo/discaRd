@@ -1,5 +1,5 @@
 ---
-title: "Illex Example"
+title: "SMB Example V2"
 output:
   pdf_document: 
     highlight: zenburn
@@ -21,8 +21,6 @@ editor_options:
 urlcolor: cyan
 ---
 
-## This module is for a single species. It's posible that species with identical CAMS_GEAR_GROUP groupings can be done together. The assigment of this is done in the first step using SQL.  
-
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
@@ -39,7 +37,7 @@ library(odbc)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
 library(ggplot2)
-library(config)
+# library(config)
 library(stringr)
 library(discaRd)
 
@@ -60,10 +58,13 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```{r define species first}
 
-species_nespp3 = '802'  # Illex squid
+species_nespp3 = '212'  # butterfish
 
 # define species stock if needed
 # species_stock = 'GOM'  # GOM cod
+
+# if using a unit stock, make this NULL!!
+species_stock = NA  # all unit stocks
 
 ```
 
@@ -81,7 +82,9 @@ c_o_dat2 <- tbl(bcon, sql(paste0("
 with obs_cams as (
    select year
 	, month
-	, region
+	, case when region = 'N' then 'NE'
+         when region = 'S' then 'MA'
+         end as region
 	, halfofyear
 	, carea
 	, vtrserno
@@ -171,7 +174,14 @@ CAMS_STATAREA_STOCK = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK'))
 
 # GEAR TABLE
 
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% collect()
+  CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% 
+    collect()
+  
+# Mortality table
+CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select *
+from apsd.CAMS_DISCARD_MORTALITY_STOCK")) 
+# %>% 
+#   collect()
 
 ```
 
@@ -255,13 +265,18 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 
 ```
 
-```{r get Stock Stat Areas }
+```{r get Stock Stat Areas and mortality }
 # unique stat areas for stock ID if needed
 STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
-  # filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% 
-  filter(NESPP3 == species_nespp3) %>% 
+  filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
   distinct(STAT_AREA) %>% 
   collect()
+
+CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
+  collect() %>% 
+  mutate(SPECIES_STOCK = AREA_NAME) %>% 
+  select(-AREA_NAME) %>% 
+  filter(NESPP3 == species_nespp3) ## don't reallt want this here... 
 ```
 
 
@@ -272,30 +287,46 @@ STOCK_AREAS = CAMS_STATAREA_STOCK %>%
 #---------------------------------------------------------------------------------------#
 
 ddat_focal <- c_o_dat2 %>% 
-  filter(YEAR == 2019) %>% 
+  filter(YEAR == 2019) %>%   ## time element is here!!
   filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
   # group_by(STRATA) %>% 
   collect() %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
-	  		 , NESPP3 = NESPP3_FINAL)
+	  		 , NESPP3 = NESPP3_FINAL
+	  		 , SPECIES_STOCK = species_stock) %>% 
+  left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% 
+              dplyr::select(-NESPP3) %>% 
+              mutate(SPECIES_STOCK = ifelse(is.na(species_stock), NA, SPECIES_STOCK))
+            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            ) %>% 
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
 
 
 ddat_prev <- c_o_dat2 %>% 
-  filter(YEAR == 2018) %>% 
+  filter(YEAR == 2018) %>%    ## time element is here!!
   filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
   # group_by(STRATA) %>% 
   collect() %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
-	  		 , NESPP3 = NESPP3_FINAL)
+	  		 , NESPP3 = NESPP3_FINAL
+	  		 , SPECIES_STOCK = species_stock) %>% 
+  left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% 
+              dplyr::select(-NESPP3) %>% 
+              mutate(SPECIES_STOCK = ifelse(is.na(species_stock), NA, SPECIES_STOCK))
+            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            ) %>% 
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
+
 
 ```
 
-```{r set up disacRd elements for Illex}
 
-# setup stratification variables
-stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'HALFOFYEAR', 'REGION')
+For species that have the same stock definitoin (i.e. unit stocks), these data pieces may be pulled at the same time. The next set of chunks can be run in sequence on a series of nespp3 (`species_nespp3`) codes. 
+
+
+```{r run discard functions for Groundfish}
 
 # need to slice the first record for each observed trip.. these trips are multi rowed whil unobs trips are singel row.. 
 ddat_focal_gf = ddat_focal %>% 
@@ -315,18 +346,20 @@ bdat_gf = ddat_focal %>%
          , OBS_AREA = CAREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
-```
 
-```{r run discaRd}
 gf_ex = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal_gf
 											 , c_o_tab = ddat_focal
+											 # , year = 2019
+											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = stratvars
-											 , aidx = c(1,2,3,4)
+											 # , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')  #CAMS_GEAR_GROUP
+											 , aidx = c(1,2)
 											 )
 
-gf_ex$res$DISCARD %>% sum(na.rm = T)
+# sum of all discard, by subtrip, multiplied by mortality ratio
+sum(gf_ex$res$DISCARD*gf_ex$res$Discard_Mortality_Ratio, na.rm = T) # 
 
 # discard rates by strata
 dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
@@ -343,6 +376,7 @@ dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
 
 ```
 
+The next chunk could be combined with the previous one if running several species in sequence. 
 
 ```{r use a transition rate on incomplete data for target year}
 
@@ -374,7 +408,7 @@ d_prev = run_discard(bdat = bdat_prev_gf
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 , species_nespp3 = species_nespp3
-											 , stratvars = stratvars
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')
 											 , aidx = c(1,2)
 											 )
 
@@ -384,8 +418,9 @@ d_focal = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal_gf
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
+											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = stratvars
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')
 											 , aidx = c(1,2)
 											 )
 
@@ -444,43 +479,11 @@ trans_rate_df = trans_rate_df %>%
 # park the final rate into the trips table
  trans_rate_df %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
-   summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL, na.rm = T)
-             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL, na.rm = T)
-             , final_rate_d = sum(final_rate*SUBTRIP_KALL, na.rm = T))
+   summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL*Discard_Mortality_Ratio, na.rm = T)
+             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*Discard_Mortality_Ratio, na.rm = T)
+             , final_rate_d = sum(final_rate*SUBTRIP_KALL*Discard_Mortality_Ratio, na.rm = T))
  
 ```
-
-```{r compare to ACL accounting for 2019}
-
-# get SMB ACL accounting numbers for 2019
-# acl_tab = readr::read_csv('H:/Hocking/smb/smb_acl_accounting/smb_acl_2019/summary_table.csv') %>% 
-# 	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
-acl_tab = readr::read_csv('summary_table.csv') %>% 
-	mutate(SPPNM = c("BUTTERFISH",  "ATLANTIC MACKEREL" ,  "LONGFIN SQUID"  ,   "ILLEX SQUID"))
-
-# get species names
-species = tbl(bcon, sql('select * from apsd.NESPP3_FMP')) %>% 
-	collect() %>% 
-	mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
-
-# species = offshoreWind::SPECIES %>% 
-	# mutate(NESPP3 = stringr::str_pad(NESPP3, width = 3, side = 'left', pad = 0))
-
-out_res = d_focal$res %>% 
-	dplyr::select(DMIS_TRIP_ID, VTRSERNO, NESPP3 , DISCARD)
-
-out_tab = out_res %>% 
-	# mutate(NESPP3 = MATCH_NESPP3) %>% 
-	group_by(NESPP3) %>% 
-	dplyr::summarise(`discaRd CAMS` = sum(DISCARD, na.rm = T)) %>% 
-	left_join(., species, by = 'NESPP3') %>% 
-		dplyr::select(1,3,2) %>% 
-	 left_join(acl_tab, by = 'SPPNM') %>% 
-	dplyr::select(1,2,3,7) %>% 
-	dplyr::rename(`ACL Discard` = Discards) 
-
-```
-
 
 
 ```{r print some summary tables, eval = F}
