@@ -1,6 +1,9 @@
 ---
-title: "discaRd steps for CAMS"
-author: "Ben Galuardi"
+title: "CAMS discaRd Update"
+author: 
+  - Ben Galuardi & Dan Linden
+  - ^[APSD]
+date: "`r lubridate::today()`"  
 output:
   beamer_presentation:
     highlight: haddock
@@ -69,7 +72,7 @@ digraph boxes_and_circles {
   STOCK';
 
   node [shape = circle,
-        fixedsize = true,
+        fixedsize = false,
         width = 2,  fontsize = 32] // sets as circles
   'CAMS
   OBS
@@ -88,8 +91,8 @@ digraph boxes_and_circles {
    PRORATE';
   
   node [shape = diamond,
-        fixedsize = true,
-        width = 2,  fontsize = 32, fontweight = 'bold'] // 
+        fixedsize = false,
+        width = 2,  fontsize = 40, fontweight = 'bold'] // 
   'R';
   
 
@@ -154,18 +157,18 @@ digraph boxes_and_circles {
 ```
 
 
-## Tables created and steps to date
+<!-- ## Tables created and steps to date -->
 
-**Rates determine by observer reported values (gear, area, etc)**
-Observed discards
+<!-- **Rates determine by observer reported values (gear, area, etc)** -->
+<!-- Observed discards -->
 
-`make_obdbs_table_cams_v2.sql`
+<!-- `make_obdbs_table_cams_v2.sql` -->
 
-created: 
+<!-- created:  -->
 
-* `apsd.bg_obdbs_cams_mock2018`
-* `apsd.bg_obdbs_cams_mock2019`
-* `apsd.bg_obdbs_cams_mock2020`
+<!-- * `apsd.bg_obdbs_cams_mock2018` -->
+<!-- * `apsd.bg_obdbs_cams_mock2019` -->
+<!-- * `apsd.bg_obdbs_cams_mock2020` -->
 
 ## Prorated discards
 **Incomplete observed trips have missing 'hauls' prorated by observed information from that trip**
@@ -175,80 +178,90 @@ This is done by applying a ratio of kept all on the entire trip to kept all on t
 
 $$d_{total} = d_{observedhauls}*(1+KALL_{unobserved hauls}/KALL_{subtrip})$$
 
-`make_obdbs_prorate.sql`
+<!-- `make_obdbs_prorate.sql` -->
 
-created:
+<!-- created: -->
 
-* `apsd.obs_cams_prorate`  
-	+ this table was made using  `apsd.bg_obdbs_cams_mock2018` and `apsd.bg_obdbs_cams_mock2019`
+<!-- * `apsd.obs_cams_prorate`   -->
+<!-- 	+ this table was made using  `apsd.bg_obdbs_cams_mock2018` and `apsd.bg_obdbs_cams_mock2019` -->
 
-## Use prorated observed discard values 
-**Trips with observer get reported/calculated observed discards of that specific trip**
+<!-- ## Use prorated observed discard values  -->
+<!-- **Trips with observer get reported/calculated observed discards of that specific trip** -->
 
-Match observed hauls to subtrips
+<!-- Match observed hauls to subtrips -->
 
-`explore_link3_mesh_match.sql`
+<!-- `explore_link3_mesh_match.sql` -->
 
-This step matches on `AREA`, `GEAR` and `MESHGROUP` (sm, lg, xlg). This is a hard match and will go awry if there is a mismatch in the data.
+<!-- This step matches on `LINK1` -->
+<!-- `AREA`, `GEAR` and `MESHGROUP` (sm, lg, xlg). This is a hard match and will go awry if there is a mismatch in the data. -->
 
-## Use prorated observed discard values (cont.)
-tables created: 
+<!-- ## Use prorated observed discard values (cont.) -->
+<!-- tables created:  -->
 
-* `apsd.bg_cams_catch_mock`
-	+ follows the steps layed out for mid-Atlantic discard estimation. `Gear`, `mesh`, `region`, `half of year` CASE statements should be replaced at some point with table driven code.  
-	+ Utilizes the current apportionment table: `apsd.cams_apport_20201230`
-* `apsd.bg_obs_cams_tmp1`
-	+ links to `dmis.d_match_obs_link` and `apsd.bg_cams_catch_mock`; **multiple** subtrips only. 
-<!-- * to date (`r lubridate::today()`), this is only using trips that have **multiple** subtrips. These are the only cases where the pro-ration step matters.  -->
-*  `apsd.bg_obs_cams_tmp2` is used in the `squid example` and include all trips. 
+<!-- * `apsd.bg_cams_catch_mock` -->
+<!-- 	+ follows the steps layed out for mid-Atlantic discard estimation. `Gear`, `mesh`, `region`, `half of year` CASE statements should be replaced at some point with table driven code.   -->
+<!-- 	+ Utilizes the current apportionment table: `apsd.cams_apport_20201230` -->
+<!-- * `apsd.bg_obs_cams_tmp1` -->
+<!-- 	+ links to `dmis.d_match_obs_link` and `apsd.bg_cams_catch_mock`; **multiple** subtrips only.  -->
+<!-- <!-- * to date (`r lubridate::today()`), this is only using trips that have **multiple** subtrips. These are the only cases where the pro-ration step matters.  --> 
+<!-- *  `apsd.bg_obs_cams_tmp2` is used in the `squid example` and include all trips.  -->
 
 <!-- **Unobserved trips get discards from the rate calculated from 1)** -->
 
 
-## R functions
+## R Process
 
-- `get_obs_disc_vals`
-- `make_assumed_rate`
-- `make_bdat_focal`
-- `run_discard`
+`discaRd` R package built for 2016 Discard Estimation Peer Review
+
+\includegraphics[width = .25\textwidth, height = .25\textheight]{discaRd.png}
+
+New functions for CAMS:
+
+<!-- - `get_obs_disc_vals`  -->
+- `make_assumed_rate` Calculates 'fallback rate' using a subset of `STRATA` variables
+- `make_bdat_focal` Constructs data frame of observed trip data for species of interest
+- `run_discard` Runs these functions in conjucntion with `discaRd`
 
 ## Running it 
 
 - refresh Oracle tables?
-- define species
+- define species and stock (if applicable)
 	+ generates SQL
 - import to R
 	+ apply CAMS_GEAR_GROUP according to SPECIES
 	+ apply STOCK STAT AREA according to SPECIES and stock (if needed)
+	+ join discard mortality by species/stock/CAMS_GEAR_GROUP
 - `run_discard`
-	+ STRATA is assigned dynamically by species/stock using elements of the imported data
+	+ STRATA is assigned dynamically by using elements of the imported data
 	+ If using `transition rates`, two time periods are defined
 	+ Assumed (fallback rates) are defined as a subset of STRATA
 - Apply Discard Mortality 
-	+ Match by CAMS_GEAR_GROUP at the subtrip level
+	
 
-## output
+<!-- ## output -->
 
-\includegraphics[width = \textwidth]{dest_strata_squid_ex.jpg}
-\vspace{2cm}
-\includegraphics[width = \textwidth]{squid_ex_table.jpg}
+<!-- \includegraphics[width = \textwidth]{dest_strata_squid_ex.jpg} -->
+<!-- \vspace{2cm} -->
+<!-- \includegraphics[width = \textwidth]{squid_ex_table.jpg} -->
 
-## compare to ACL summary
-\includegraphics[width = \textwidth]{CAMS_discaRd_ACL_comparison.jpg}
+<!-- ## compare to ACL summary -->
+<!-- \includegraphics[width = \textwidth]{CAMS_discaRd_ACL_comparison.jpg} -->
 
 ## TO DO
 - utilize support tables
 	+ `CAMS_GEAR_GROUP` **DONE**
 	+ `STAT_AREAS` **DONE**
+	+ `CAMS_DISCARD_MORTALITY_STOCK` **in process**
 - add `SECTOR` for multispecies (see above) **DONE**
-- utilize discard mortality table (species/gear/mesh) **imminent..**
-- decide on time periods **Determined by STOCK/SPECIES**
+- Time periods **Determined by STOCK/SPECIES**
 	+ Species with the same time period, e.g. Calendar year, can be imported at once. 
-- decide on criteria for assumed (fallback) rates: how simplified must this be?
+- Assumed (fallback) rate criteria: how simplified must this be?
 - implement transitions (if using fixed time period) **DONE**
 - Deal with Exemptions
 - Incorporate stratification for EM trips
-- refine exact operational process
+- refine exact operational process*
+
+***Will likely be based on modules that run common sets of species (e.g. common `CAMS_GEAR_GROUP` and stock definition)**
 
 
 
