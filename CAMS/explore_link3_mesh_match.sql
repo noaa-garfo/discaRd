@@ -327,8 +327,8 @@ from trips c
         select * from obs 
     ) o
 --on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
---on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
-on (o.vtrserno = c.vtrserno)
+on (o.link1 = c.link1 AND c.negear = o.obs_gear AND c.meshgroup = o.meshgroup AND c.CAREA = o.OBS_AREA)
+--on (o.vtrserno = c.vtrserno)
 --on (o.link1 = c.link1)
 
 --left outer join (SELECT * from mgear) m
@@ -416,8 +416,8 @@ select sum(subtrip_kall)
 --, tripcategory
 --, carea
 from bg_cams_obs_catch
-where nespp3 is not null
-and year = 2019
+--where nespp3 is not null
+where year = 2019
 group by geartype
 --, obs_gear, meshgroup, Sector_id
 --, accessarea
@@ -433,16 +433,77 @@ from bg_cams_obs_catch
 
 ;
 
-
-select dmis_trip_id
-, count(distinct(GEARCODE))
-, count(distinct(MESHGROUP))
-, count(distinct(AREA))
+-- count VTRS within LINK1
+select count(distinct(vtrserno))
+, link1
 from bg_cams_obs_catch
-group by dmis_trip_id
+where link1 is not null
+group by link1
+--group by dmis_trip_id
 
 /
 
+-- count link1 within vtrserno
+select count(distinct(link1))
+, vtrserno
+from bg_cams_obs_catch
+where link1 is not null
+group by vtrserno
+--group by dmis_trip_id
+/
+
+--check one of the many to 1 link1 on VTRSERNO
+select *
+from bg_cams_obs_catch
+where vtrserno = 12885188
+/
+
+select * 
+from dmis.d_match_obs_link
+where dmis_trip_id = '250164_180523_142000'
+/
+
+select *
+from dmis_all_years
+where vtrserno = '12885188'
+/
 
 
+-- this one shows 3 link1 
 
+select *
+--from obdbs.obtrp@nova
+from obdbs.asmtrp@nova
+where link1 in (
+ select link1
+ from dmis.d_match_obs_link
+ where dmis_trip_id = '250164_180523_142000'
+)
+
+/
+
+--check obdbs and asm directly for many to many vtr to link1
+-- no multiple vtr per link1 here.. 
+select count(distinct(vtrserno)) nvtr
+, link1
+--from obdbs.obtrp@nova
+from obdbs.asmtrp@nova
+where link1 is not null
+and year = 2018
+group by link1
+order by nvtr desc
+/
+
+select count(distinct(link1)) as nlink1
+, vtrserno
+from obdbs.obtrp@nova
+--from obdbs.asmtrp@nova
+where link1 is not null
+and year = 2018
+group by vtrserno
+order by nlink1 desc
+
+-- asm 2018 only has 2 trips like this
+-- asm 2019 only has 5 trips like this
+-- obtrp 2018 has 28 trips like this
+-- obtrp 2019 has 19 trips like this
