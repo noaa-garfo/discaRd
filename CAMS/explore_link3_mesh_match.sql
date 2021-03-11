@@ -1,4 +1,4 @@
-/*
+1/*
 
     BEN GALUARDI
     
@@ -257,7 +257,19 @@ with trips as (
 --    from apsd.cams_apport d
     left join (  --adds observer link field
      select *
+--     from dmis.d_match_obs_link
      from dmis.d_match_obs_link
+     where link1 in (
+         select distinct(link1) link1
+         from
+         obdbs.obhau@NOVA
+--         where year >=2018
+         union all
+         select distinct(link1) link1
+         from
+         obdbs.asmhau@NOVA
+--         where year >=2018
+     )
     ) o
     on o.dmis_trip_id = d.dmis_trip_id
 --    on o.obs_vtr = d.vtrserno --substr(d.vtrserno, 1, 13)
@@ -434,21 +446,23 @@ from bg_cams_obs_catch
 ;
 
 -- count VTRS within LINK1
-select count(distinct(vtrserno))
+select count(distinct(vtrserno)) nvtr
 , link1
 from bg_cams_obs_catch
 where link1 is not null
 group by link1
+order by nvtr desc
 --group by dmis_trip_id
 
 /
 
 -- count link1 within vtrserno
-select count(distinct(link1))
+select count(distinct(link1)) nlink1
 , vtrserno
 from bg_cams_obs_catch
 where link1 is not null
 group by vtrserno
+order by nlink1 desc
 --group by dmis_trip_id
 /
 
@@ -479,6 +493,49 @@ where link1 in (
  from dmis.d_match_obs_link
  where dmis_trip_id = '250164_180523_142000'
 )
+/
+-- look at the hauls for all link1's in the above secion. Are there hauls on each link1 ?? NO! 
+select *
+--from obdbs.obtrp@nova
+from obdbs.asmhau@nova
+where link1 in (
+ select link1
+ from dmis.d_match_obs_link
+ where dmis_trip_id = '250164_180523_142000'
+)
+
+/
+
+select distinct(link1)
+--from obdbs.obtrp@nova
+from (
+    select * from obdbs.obhau@nova
+    union all
+    select * from obdbs.asmhau@nova
+)
+where link1 in (
+ select * --distinct(link1) link1
+ , vtrserno
+ from dmis.d_match_obs_link
+ where vtrserno is not null
+-- where dmis_trip_id = '250164_180523_142000'
+)
+
+
+/
+select  * 
+from obdbs.asmhau@nova
+--from obdbs.obhau@nova
+where link1 = '230201801P78001'
+
+/
+
+select *
+from obdbs.asmotgh@nova
+--from obdbs.obdbs.obotgh@nova
+where link1 = '230201801P78001'
+--where link3 = '230201801P780010006'
+
 
 /
 
