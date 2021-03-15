@@ -271,9 +271,9 @@ with trips as (
 --         where year >=2018
      )
     ) o
-    on o.dmis_trip_id = d.dmis_trip_id
+    on ( o.obs_vtr = substr(d.vtrserno, 1, 13))
 --    on o.obs_vtr = d.vtrserno --substr(d.vtrserno, 1, 13)
-    
+--    o.dmis_trip_id = d.dmis_trip_id AND
     group by 
         d.permit
         , d.year
@@ -314,12 +314,12 @@ with trips as (
 
 , obs as (select * from obs_cams_prorate)
 
-, mgear as (
-    select gear_code_fid
-    , RIGHT('000' + negear, 3) as negear
-    , vtr_gear_code
-    from apsd.master_gear
-)
+--, mgear as (
+--    select gear_code_fid
+--    , RIGHT('000' + negear, 3) as negear
+--    , vtr_gear_code
+--    from apsd.master_gear
+--)
 
     select c.*
     , o.vtrserno as obsvtr
@@ -438,10 +438,10 @@ group by geartype
 
 ;
 
-select *
+select max(rownum)
 from bg_cams_obs_catch
 
--- 866,613 rows
+-- 866,258 rows
 
 ;
 
@@ -457,32 +457,55 @@ order by nvtr desc
 /
 
 -- count link1 within vtrserno
-select count(distinct(link1)) nlink1
-, vtrserno
-from bg_cams_obs_catch
-where link1 is not null
-group by vtrserno
-order by nlink1 desc
+with link as (
+    select count(distinct(link1)) nlink1
+    , vtrserno
+    from bg_cams_obs_catch
+    where link1 is not null
+    group by vtrserno
+    order by nlink1 desc
+)
+select *
+from link 
+where nlink1 > 1
+and vtrserno is not null
 --group by dmis_trip_id
 /
 
 --check one of the many to 1 link1 on VTRSERNO
 select *
 from bg_cams_obs_catch
-where vtrserno = 12885188
+where vtrserno = 12771795
 /
 
 select * 
 from dmis.d_match_obs_link
-where dmis_trip_id = '250164_180523_142000'
+where dmis_trip_id = '410126_180222_121500'
 /
 
 select *
 from dmis_all_years
-where vtrserno = '12885188'
+where vtrserno = '3305491807281'
 /
+-- grab all dmis records where nlink1 > 1
 
+with link as (
+    select count(distinct(link1)) nlink1
+    , vtrserno
+    from bg_cams_obs_catch
+    where link1 is not null
+    group by vtrserno
+    order by nlink1 desc
+)
 
+select a.*
+from dmis.d_match_obs_link a, link l 
+where a.obs_vtr is not null 
+AND a.obs_vtr in (l.vtrserno)
+AND l.nlink1 > 1
+order by a.dmis_trip_id desc
+
+/
 -- this one shows 3 link1 
 
 select *
