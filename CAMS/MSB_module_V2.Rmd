@@ -328,14 +328,24 @@ For species that have the same stock definitoin (i.e. unit stocks), these data p
 
 ```{r run discard functions for Groundfish}
 
+# FIX THIS!!! thsi could be the duping KALL issue.. 
+
 # need to slice the first record for each observed trip.. these trips are multi rowed whil unobs trips are singel row.. 
 ddat_focal_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
-  group_by(LINK1) %>% 
-  slice(1)
+  group_by(LINK1, VTRSERNO) %>% 
+  slice(1) %>% 
+  ungroup()
+
+# and join to the unobserved trips
 
 ddat_focal_gf = ddat_focal_gf %>% 
-  union_all(ddat_focal %>% filter(is.na(LINK1)))
+  union_all(ddat_focal %>% 
+              filter(is.na(LINK1)) %>% 
+               group_by(VTRSERNO) %>% 
+               slice(1) %>% 
+               ungroup()
+            )
 
 
 # if using the combined catch/obs table, which seems neccesary for groundfish.. need to roll your own table to use with run_discard function

@@ -204,11 +204,13 @@ AND meshgroup = 'xlg'
 ;
 
 
-/*
+/*-----------------------------------------------------------------------------------------------------
 
-now merge as before with obdbs
+now merge with obdbs
 
-*/  
+match on gear (NEGEAR), mesh, link1 and AREA
+
+------------------------------------------------------------------------------------------------------*/  
 
 drop table bg_obs_cams_tmp3
 /
@@ -220,7 +222,42 @@ drop table bg_cams_obs_catch
 
 create table bg_cams_obs_catch as 
 
-with trips as (  
+with ulink as (
+    select count(distinct(link1)) nlink1
+    , obs_vtr
+    from dmis.d_match_obs_link
+    where link1 is not null
+    AND link1 in (
+                 select distinct(link1) link1
+                 from
+                 obdbs.obhau@NOVA
+                 where link3 is not null
+                 union all
+                 select distinct(link1) link1
+                 from
+                 obdbs.asmhau@NOVA
+                 where link3 is not null
+             )    
+    
+    group by obs_vtr
+    order by nlink1 desc
+)
+, vtr_link as (
+     select obs_vtr
+    , permit
+    , min(link1) as link1  -- this is the minimum link1 for the vtr
+    , dmis_trip_id
+    from (
+        select a.*
+        from dmis.d_match_obs_link a, ulink l
+        where a.obs_vtr in (l.obs_vtr)
+        and l.obs_vtr is not null        
+    )
+    --where permit = 410126
+    group by obs_vtr, permit, dmis_trip_id
+    order by permit, obs_vtr
+)
+,trips as (  
        select d.permit
         , d.dmis_trip_id
         , d.year
@@ -255,27 +292,33 @@ with trips as (
         , d.tripcategory
         , d.accessarea
     , o.link1
-    from apsd.bg_cams_catch_ta_mock d
+--    from apsd.bg_cams_catch_ta_mock d
+    from apsd.bg_cams_catch d
 --    from apsd.cams_apport d
     left join (  --adds observer link field
-     select *
---     from dmis.d_match_obs_link
-     from dmis.d_match_obs_link
-     where link1 in (
-         select distinct(link1) link1
-         from
-         obdbs.obhau@NOVA
---         where year >=2018
-         union all
-         select distinct(link1) link1
-         from
-         obdbs.asmhau@NOVA
---         where year >=2018
-     )
+    
+         select * 
+         from vtr_link
+        
+        /* this code still     */    
+--             select *
+--        --     from dmis.d_match_obs_link
+--             from dmis.d_match_obs_link
+--             where link1 in (
+--                 select distinct(link1) link1
+--                 from
+--                 obdbs.obhau@NOVA
+--        --         where year >=2018
+--                 union all
+--                 select distinct(link1) link1
+--                 from
+--                 obdbs.asmhau@NOVA
+--        --         where year >=2018
+--             )
     ) o
 --    on ( o.obs_vtr = substr(d.vtrserno, 1, 13))
 --    on o.obs_vtr = d.vtrserno --substr(d.vtrserno, 1, 13)
-    on  o.dmis_trip_id = d.dmis_trip_id -- AND
+    on  o.dmis_trip_id = d.dmis_trip_id 
     
     group by 
         d.permit
@@ -357,7 +400,11 @@ select *
 from bg_cams_obs_catch
 /
 
+
+/*-------------------------------------------------------------------------------------------------------------
 -- this is the SQL call in R.. 
+-------------------------------------------------------------------------------------------------------------*/
+
 
 with obs_cams as (
    select year
