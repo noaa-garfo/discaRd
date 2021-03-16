@@ -58,7 +58,7 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```{r define species first}
 
-species_nespp3 = '212'  # butterfish
+species_nespp3 = '802'  # butterfish
 
 # define species stock if needed
 # species_stock = 'GOM'  # GOM cod
@@ -364,7 +364,8 @@ gf_ex = run_discard(bdat = bdat_gf
 											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
 											 # , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')  #CAMS_GEAR_GROUP
+											 # , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')  #CAMS_GEAR_GROUP
+											  , stratvars = c('GEARTYPE', 'MESHGROUP', 'REGION', 'HALFOFYEAR')  #OLD GEAR TYPE
 											 , aidx = c(1,2)
 											 )
 
