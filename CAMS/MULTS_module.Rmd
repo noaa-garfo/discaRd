@@ -58,14 +58,14 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```{r define species first}
 
-# species_nespp3 = '081'  # cod
-species_nespp3 = '269'  # pollock
+species_nespp3 = '081'  # cod
+# species_nespp3 = '269'  # pollock
 
 # define species stock if needed
-# species_stock = 'GOM'  # GOM cod
+species_stock = 'GOM'  # GOM cod
 
 # if using a unit stock, make this NULL!!
-species_stock = NA  # all unit stocks
+# species_stock = NA  # all unit stocks
 
 ```
 
@@ -268,10 +268,22 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 
 ```{r get Stock Stat Areas and mortality }
 # unique stat areas for stock ID if needed
+
+if(!is.na(species_stock)){ 
+
 STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
+  filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% # 
+  distinct(STAT_AREA) %>% 
+  collect()
+
+} else{
+  
+  STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
   filter(NESPP3 == species_nespp3) %>% # & AREA_NAME == species_stock
   distinct(STAT_AREA) %>% 
   collect()
+  
+}
 
 CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
   collect() %>% 
