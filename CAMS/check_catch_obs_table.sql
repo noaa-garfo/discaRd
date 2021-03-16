@@ -34,20 +34,101 @@ and vtrserno is not null
 --group by dmis_trip_id
 /
 
+-- look at dmis obs match with mulit link1 for vtr
+with link as (
+    select count(distinct(link1)) nlink1
+    , dmis_trip_id
+    from bg_cams_obs_catch
+    where link1 is not null
+    group by dmis_trip_id
+    order by nlink1 desc
+)
+
+select * 
+from dmis.d_match_obs_link
+where dmis_trip_id in (
+    select dmis_trip_id
+    from link 
+    where nlink1 > 1
+--    and vtrserno is not null
+)
+--group by dmis_trip_id
+
+
+
+
+
+/
+-- build an intermediary tablewith 1-1 vtr to link1 from DMIS_MATCH_OBS_LINK
+with link as (
+    select count(distinct(link1)) nlink1
+    , vtrserno
+    from bg_cams_obs_catch
+    where link1 is not null
+    group by vtrserno
+    order by nlink1 desc
+)
+select obs_vtr
+, permit
+, min(link1) as minlink1
+, dmis_trip_id
+from (
+    select a.*
+    from dmis.d_match_obs_link a, link l
+    where obs_vtr in (l.vtrserno)
+    and l.vtrserno is not null
+)
+--where permit = 410126
+group by obs_vtr, permit, dmis_trip_id
+order by permit, obs_vtr
+
+/
+-- count of obsvtr that are not null
+
+select sum(case when obs_vtr is null then 1 else 0 end) as null_ct
+, sum(case when obs_vtr is null then 0 else 1 end) as vtr_good_ct
+, extract(year from obs_sail) year
+, a.obs_link_match
+from dmis.d_match_obs_link a
+group by  extract(year from obs_sail), a.obs_link_match
+order by year
+
+/
 --check one of the many to 1 link1 on VTRSERNO
 select *
 from bg_cams_obs_catch
-where vtrserno = 12771795
+where vtrserno = 12844034
 /
 
 select * 
 from dmis.d_match_obs_link
-where dmis_trip_id = '410126_180222_121500'
+--where dmis_trip_id = '410126_180222_121500'
+--where link1 = '000201907P99026' -- first link1...
+where link1 = '000201907R53022' -- second link1... 
+--where obs_vtr = '12844034'
 /
 
-select *
+-- CAMS appt table
+ select * from
+ apsd.bg_cams_catch
+ where vtrserno in ('12844034','12844035')
+
+
+/
+
+select vtrserno
+, docid
+, date_trip
+, area
+, secgearfish
+, permit
 from dmis_all_years
-where vtrserno = '3305491807281'
+--where vtrserno = '12844034'
+where permit = 240206
+and date_trip >= '01-JUL-19'
+and date_trip < '01-AUG-19'
+order by date_trip
+
 /
 -- grab all dmis records where nlink1 > 1
 
@@ -105,6 +186,38 @@ where link1 in (
  where vtrserno is not null
 -- where dmis_trip_id = '250164_180523_142000'
 )
+
+/
+
+-- check a bad example
+
+with hauls as (
+    select link1, link3, datehbeg
+    from obdbs.obhau@nova
+--    where year = 2018
+    union all
+    select link1, link3, datehbeg
+    from obdbs.asmhau@nova
+--    year = 2018
+)
+/
+
+with otrips as (
+    select hullnum1, link1
+    from obdbs.obtrp@nova
+    union all
+    select hullnum1, link1
+    from obdbs.asmtrp@nova
+)
+select *
+from otrips
+where link1 in (
+     select unique(link1) as link1
+    from dmis.d_match_obs_link
+    where dmis_trip_id = '410126_180222_121500'
+)
+
+
 
 
 /
