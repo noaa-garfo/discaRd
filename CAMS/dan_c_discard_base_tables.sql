@@ -24,6 +24,7 @@ and stock_id like 'CODGM%'
 
 select *
 from fso.v_obSpeciesStockArea
+where nespp3 = 269 -- pollock
 
 ;
 

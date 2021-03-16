@@ -58,10 +58,14 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```{r define species first}
 
-species_nespp3 = '081'  # cod
+# species_nespp3 = '081'  # cod
+species_nespp3 = '269'  # pollock
 
 # define species stock if needed
-species_stock = 'GOM'  # GOM cod
+# species_stock = 'GOM'  # GOM cod
+
+# if using a unit stock, make this NULL!!
+species_stock = NA  # all unit stocks
 
 ```
 
@@ -79,7 +83,9 @@ c_o_dat2 <- tbl(bcon, sql(paste0("
 with obs_cams as (
    select year
 	, month
-	, region
+	, case when region = 'N' then 'NE'
+         when region = 'S' then 'MA'
+         end as region
 	, halfofyear
 	, carea
 	, vtrserno
@@ -169,7 +175,14 @@ CAMS_STATAREA_STOCK = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK'))
 
 # GEAR TABLE
 
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% collect()
+  CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% 
+    collect()
+  
+# Mortality table
+CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select *
+from apsd.CAMS_DISCARD_MORTALITY_STOCK")) 
+# %>% 
+#   collect()
 
 ```
 
@@ -253,12 +266,26 @@ group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHG
 
 ```
 
-```{r get Stock Stat Areas }
+```{r get Stock Stat Areas and mortality }
 # unique stat areas for stock ID if needed
 STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
-  filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% 
+  filter(NESPP3 == species_nespp3) %>% # & AREA_NAME == species_stock
   distinct(STAT_AREA) %>% 
   collect()
+
+CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
+  collect() %>% 
+  mutate(SPECIES_STOCK = AREA_NAME) %>% 
+  filter(NESPP3 == species_nespp3) ## don't reallt want this here... 
+
+# account for unit stocks.. 
+CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
+  mutate(SPECIES_STOCK = ifelse(is.na(species_stock), 'UNIT', species_stock)) %>% 
+  group_by(CAMS_GEAR_GROUP, SPECIES_STOCK, NESPP3, COMMON_NAME, SPECIES_ITIS) %>% 
+  dplyr::summarise(DISC_MORT_RATIO = max(Discard_Mortality_Ratio)) %>% 
+  ungroup()
+
+
 ```
 
 
@@ -275,7 +302,12 @@ ddat_focal <- c_o_dat2 %>%
   collect() %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
-	  		 , NESPP3 = NESPP3_FINAL)
+	  		 , NESPP3 = NESPP3_FINAL
+	  		 , SPECIES_STOCK = ifelse(is.na(species_stock), 'UNIT', species_stock) # account for unit stocks.. 
+	  		 ) %>% 
+  left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% dplyr::select(-NESPP3)
+            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')) %>% 
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 ddat_prev <- c_o_dat2 %>% 
@@ -283,11 +315,20 @@ ddat_prev <- c_o_dat2 %>%
   filter(CAREA %in% local(STOCK_AREAS$STAT_AREA)) %>% 
   # group_by(STRATA) %>% 
   collect() %>% 
-  mutate(LIVE_POUNDS = SUBTRIP_KALL
+   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
-	  		 , NESPP3 = NESPP3_FINAL)
+	  		 , NESPP3 = NESPP3_FINAL
+	  		 , SPECIES_STOCK = ifelse(is.na(species_stock), 'UNIT', species_stock) # account for unit stocks.. 
+	  		 ) %>% 
+  left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% dplyr::select(-NESPP3)
+            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')) %>% 
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 ```
+
+
+For species that have the same stock definitoin (i.e. unit stocks), these data pieces may be pulled at the same time. The next set of chunks can be run in sequence on a series of nespp3 (`species_nespp3`) codes. 
+
 
 ```{r run discard functions for Groundfish}
 
@@ -320,7 +361,8 @@ gf_ex = run_discard(bdat = bdat_gf
 											 , aidx = c(1,2,3,4)
 											 )
 
-gf_ex$res$DISCARD %>% sum(na.rm = T)
+# sum of all discard, by subtrip, multiplied by mortality ratio
+sum(gf_ex$res$DISCARD*gf_ex$res$DISC_MORT_RATIO, na.rm = T) # 22937.. estimate from 2019 DMIS was 29953
 
 # discard rates by strata
 dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
@@ -337,6 +379,7 @@ dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
 
 ```
 
+The next chunk could be combined with the previous one if running several species in sequence. 
 
 ```{r use a transition rate on incomplete data for target year}
 
@@ -439,9 +482,9 @@ trans_rate_df = trans_rate_df %>%
 # park the final rate into the trips table
  trans_rate_df %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
-   summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL, na.rm = T)
-             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL, na.rm = T)
-             , final_rate_d = sum(final_rate*SUBTRIP_KALL, na.rm = T))
+   summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
+             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
+             , final_rate_d = sum(final_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T))
  
 ```
 
