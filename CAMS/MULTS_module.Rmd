@@ -56,6 +56,69 @@ bcon <- dbConnect(odbc::odbc(),
 
 ```
 
+```{r get 2019 groundfish discard from DMIS}
+
+discard2019 = tbl(bcon, sql("
+select round(sum(POKGMASS_DISCARD)) POKGMASS_DISCARD
+,round(sum(CODGMSS_DISCARD)) CODGMSS_DISCARD
+,round(sum(CODGBE_DISCARD)) CODGBE_DISCARD
+,round(sum(CODGBW_DISCARD)) CODGBW_DISCARD
+,round(sum(FLDSNEMA_DISCARD)) FLDSNEMA_DISCARD
+,round(sum(FLWGB_DISCARD)) FLWGB_DISCARD
+,round(sum(FLWGMSS_DISCARD)) FLWGMSS_DISCARD
+,round(sum(PLAGMMA_DISCARD)) PLAGMMA_DISCARD
+,round(sum(YELCCGM_DISCARD)) YELCCGM_DISCARD
+,round(sum(HADGBW_DISCARD)) HADGBW_DISCARD
+,round(sum(WITGMMA_DISCARD)) WITGMMA_DISCARD
+-- ,round(sum(FLWGMSS_DISCARD)) FLWGMSS_DISCARD
+,round(sum(HALGMMA_DISCARD)) HALGMMA_DISCARD
+,round(sum(YELGB_DISCARD)) YELGB_DISCARD
+,round(sum(FLGMGBSS_DISCARD)) FLGMGBSS_DISCARD
+,round(sum(HKWGMMA_DISCARD)) HKWGMMA_DISCARD
+,round(sum(REDGMGBSS_DISCARD)) REDGMGBSS_DISCARD
+-- ,round(sum(FLWGB_DISCARD)) FLWGB_DISCARD
+,round(sum(HADGM_DISCARD)) HADGM_DISCARD
+,round(sum(OPTGMMA_DISCARD)) OPTGMMA_DISCARD
+,round(sum(WOLGMMA_DISCARD)) WOLGMMA_DISCARD
+,round(sum(FLWSNEMA_DISCARD)) FLWSNEMA_DISCARD
+,round(sum(HADGBE_DISCARD)) HADGBE_DISCARD
+-- ,round(sum(CODGBW_DISCARD)) CODGBW_DISCARD
+,round(sum(YELSNE_DISCARD)) YELSNE_DISCARD
+
+from apsd.dmis_all_years
+where fishing_year = 2019
+"))  %>% 
+  collect() %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(stock = row.names(.))
+
+names(discard2019)[1] = 'DMIS_DISCARD'
+
+discard2019$STOCK_ID = unlist(lapply(strsplit(discard2019$stock, split = '_'), function(x) x[[1]]))
+
+# get stock names and nespp3
+
+stock_nespp3 = tbl(bcon, sql("
+    select max(nespp3) as nespp3
+    , stock_id
+    , comname
+    from fso.v_obSpeciesStockArea 
+    where stock_id not like 'OTHER'
+    group by stock_id, comname
+")
+) %>% 
+    collect()
+
+stock_discard_2019 = stock_nespp3 %>% 
+  left_join(., discard2019, by = 'STOCK_ID') %>% 
+  dplyr::select(-stock)
+
+
+
+```
+
+
 ```{r define species first}
 
 species_nespp3 = '081'  # cod
@@ -186,85 +249,6 @@ from apsd.CAMS_DISCARD_MORTALITY_STOCK"))
 
 ```
 
-```{r keep obs and catch separate? likely not.. eval = F}
-# obs only 
-
-obs = tbl(bcon, sql('
-	select o.*
-	, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
-	from obs_cams_prorate o
-	left join (select * from apsd.s_nespp3_match_conv) c
-	on o.nespp3 = c.nespp3'
-))
-
-bdat <- obs %>% 
-	# filter(YEAR == 2019) %>% 
-	collect()
-	
-
-bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
-
-
-# catch only
-
-# dat = tbl(bcon, sql('select * from bg_cams_catch_mock'))
-
-
-dat = tbl(bcon, sql('
-select DMIS_TRIP_ID
-, YEAR
-, RECORD_LAND 
-, MONTH
-, REGION
-, case when month in (1,2,3,4,5,6) then 1
-		   when month in (7,8,9,10,11,12) then 2
-		   end as HALFOFYEAR
-, VTRSERNO
-, GEARNM
-, GEARCODE
-, GEARTYPE
-, NEGEAR
-, MESHGROUP
-, CAREA
-, sector_id
-, activity_code_1
-, permit_EFP_1
-, permit_EFP_2
-, permit_EFP_3
-, permit_EFP_4
-, redfish_exemption
-, closed_area_exemption
-, sne_smallmesh_exemption
-, xlrg_gillnet_exemption
-, tripcategory
-, accessarea
-, sum(pounds) as live_Pounds
-from bg_cams_catch
-group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHGROUP, CAREA, YEAR
-, MONTH
-, RECORD_LAND
-, REGION
-, sector_id
-, activity_code_1
-, permit_EFP_1
-, permit_EFP_2
-, permit_EFP_3
-, permit_EFP_4
-, redfish_exemption
-, closed_area_exemption
-, sne_smallmesh_exemption
-, xlrg_gillnet_exemption
-, tripcategory
-, accessarea
-, case when month in (1,2,3,4,5,6) then 1
-		   when month in (7,8,9,10,11,12) then 2
-		   end
-'))
-
-# %>% 
-# 	collect()
-
-```
 
 ```{r get Stock Stat Areas and mortality }
 # unique stat areas for stock ID if needed
@@ -509,6 +493,87 @@ dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
 
 # out_tab %>% head() %>% 
 	# knitr::kable(format= 'markdown', caption = "Exampe of tabular output")
+
+```
+
+
+```{r keep obs and catch separate? likely not.. eval = F}
+# obs only 
+
+obs = tbl(bcon, sql('
+	select o.*
+	, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
+	from obs_cams_prorate o
+	left join (select * from apsd.s_nespp3_match_conv) c
+	on o.nespp3 = c.nespp3'
+))
+
+bdat <- obs %>% 
+	# filter(YEAR == 2019) %>% 
+	collect()
+	
+
+bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
+
+
+# catch only
+
+# dat = tbl(bcon, sql('select * from bg_cams_catch_mock'))
+
+
+dat = tbl(bcon, sql('
+select DMIS_TRIP_ID
+, YEAR
+, RECORD_LAND 
+, MONTH
+, REGION
+, case when month in (1,2,3,4,5,6) then 1
+		   when month in (7,8,9,10,11,12) then 2
+		   end as HALFOFYEAR
+, VTRSERNO
+, GEARNM
+, GEARCODE
+, GEARTYPE
+, NEGEAR
+, MESHGROUP
+, CAREA
+, sector_id
+, activity_code_1
+, permit_EFP_1
+, permit_EFP_2
+, permit_EFP_3
+, permit_EFP_4
+, redfish_exemption
+, closed_area_exemption
+, sne_smallmesh_exemption
+, xlrg_gillnet_exemption
+, tripcategory
+, accessarea
+, sum(pounds) as live_Pounds
+from bg_cams_catch
+group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHGROUP, CAREA, YEAR
+, MONTH
+, RECORD_LAND
+, REGION
+, sector_id
+, activity_code_1
+, permit_EFP_1
+, permit_EFP_2
+, permit_EFP_3
+, permit_EFP_4
+, redfish_exemption
+, closed_area_exemption
+, sne_smallmesh_exemption
+, xlrg_gillnet_exemption
+, tripcategory
+, accessarea
+, case when month in (1,2,3,4,5,6) then 1
+		   when month in (7,8,9,10,11,12) then 2
+		   end
+'))
+
+# %>% 
+# 	collect()
 
 ```
 
