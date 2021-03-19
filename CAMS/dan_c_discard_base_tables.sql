@@ -22,9 +22,10 @@ and stock_id like 'CODGM%'
 
 ;
 
-select *
+select nespp3, stock_id, comname
 from fso.v_obSpeciesStockArea
 where nespp3 = 269 -- pollock
+and stock_id not like 'OTHER'
 
 ;
 
