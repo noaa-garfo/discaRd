@@ -19,10 +19,10 @@ stock area, region, half of year may all be dropped or modified in subsequent st
 
 */
 
-DEF year = 2020
+DEF year = 2017
 
 DROP TABLE bg_obdbs_cams_mock&year
-
+/
 DROP TABLE bg_obtables_join_1_&year
 /
 
@@ -365,7 +365,7 @@ from (
 ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, meshgroup1, meshgroup2, accessarea1)
 /
 
-CREATE TABLE bg_obdbs_cams_mock as select * from bg_obdbs_tables_5_&year
+CREATE TABLE bg_obdbs_cams_mock&year as select * from bg_obdbs_tables_5_&year
 /
 drop table bg_obdbs_tables_5_&year
 /
