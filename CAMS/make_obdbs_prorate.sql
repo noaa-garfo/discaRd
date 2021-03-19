@@ -100,9 +100,9 @@ group by link3
             , meshgroup
             , NESPP3
             , discard
---            , obs_haul_kept
---            , obs_haul_kall_trip
---            , obs_nohaul_kall_trip
+            , obs_haul_kept
+            , obs_haul_kall_trip
+            , obs_nohaul_kall_trip
             , prorate
             , case when month in (1,2,3,4,5,6) then 1
 		      when month in (7,8,9,10,11,12) then 2
