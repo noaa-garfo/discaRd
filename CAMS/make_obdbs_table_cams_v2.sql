@@ -9,11 +9,18 @@ Created by: Ben Galuardi, modified from Jay Hermsen's code
 
 12-23-20
 
+modified 
+3-18-21
+
 The year variable can be defined, and then the entire script run (F5 in sqldev)
+
+This version ues left joins in the first set of tables which preserves more information than previous versions which used hard matches
+
+we also keep all hauls, not just observed hauls, so prorating can be done
 
 */
 
-DEF year = 2020
+DEF year = 2018
 /
 DROP TABLE bg_obdbs_cams_mock&year
 /
@@ -154,19 +161,34 @@ AND a.tripext IN ('C', 'X')
 --AND i.inc IS NULL --exclude incidental takes
 /
 
+DROP TABLE bg_obtables_join_1a_&year
+
 /
+CREATE TABLE bg_obtables_join_1a_&year AS
+SELECT s.*, s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb livewt
+FROM bg_obtables_join_1_&year s LEFT OUTER JOIN obdbs.obspecconv@nova c
+ON s.nespp4 = c.nespp4_obs
+AND s.catdisp = c.catdisp_code
+AND s.drflag = c.drflag_code
+/
+
 DROP TABLE bg_asmtables_join_1a_&year
+
 /
+
 CREATE TABLE bg_asmtables_join_1a_&year AS
 SELECT s.*, s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb livewt
 FROM bg_asmtables_join_1_&year s LEFT OUTER JOIN obdbs.obspecconv@nova c
 ON s.nespp4 = c.nespp4_obs
 AND s.catdisp = c.catdisp_code
 AND s.drflag = c.drflag_code
+
 /
 ---UNION THE TWO TABLES CREATED ABOVE  
-DROP TABLE bg_obdbs_tables_1_&year;
+DROP TABLE bg_obdbs_tables_1_&year
+
 /
+
 CREATE TABLE bg_obdbs_tables_1_&year 
 as
 select *
@@ -174,6 +196,7 @@ from
 (select * from bg_obtables_join_1a_&year)
 union all
 (select * from bg_asmtables_join_1a_&year)
+
 /
 --- GENERATE A TABLE OF KEPT ALL SPECIES BY TRIP (trip is defined by link1, not tripid or vtrserno 
 ---in the observer database)  
