@@ -21,7 +21,7 @@ stock area, region, half of year may all be dropped or modified in subsequent st
 
 DEF year = 2020
 
-DROP TABLE bg_obdbs_cams_mock
+DROP TABLE bg_obdbs_cams_mock&year
 
 DROP TABLE bg_obtables_join_1_&year
 /
@@ -381,7 +381,7 @@ drop table bg_obdbs_tables_4_&year
 ;
 
 select count(*) 
-from bg_obdbs_cams_mock
+from bg_obdbs_cams_mock&year
 
 ;
 

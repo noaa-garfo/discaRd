@@ -282,7 +282,6 @@ b.LINERMSIZE
 FROM bg_obdbs_tables_3_&year a LEFT OUTER JOIN bg_obdbs_meshsize1_&year b
 ON a.link3 = b.link3 
 
-
 /
 DROP TABLE bg_obdbs_tables_5_&year
 /
