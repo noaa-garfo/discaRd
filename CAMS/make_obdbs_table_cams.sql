@@ -19,7 +19,7 @@ stock area, region, half of year may all be dropped or modified in subsequent st
 
 */
 
-DEF year = 2017
+DEF year = 2020
 
 DROP TABLE bg_obdbs_cams_mock&year
 /
