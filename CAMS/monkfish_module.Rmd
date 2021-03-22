@@ -248,6 +248,8 @@ ddat_prev <- c_o_dat2 %>%
             ) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','REGION','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
 
+save(ddat_focal,file="ddat_focal_monkfishFY18.Rdata")
+save(ddat_prev,file="ddat_prev_monkfishFY18.Rdata")
 
 ```
 

@@ -42,6 +42,8 @@ library(stringr)
 library(discaRd)
 options(scipen = 999)
 
+source('cams_discard_functions.R')
+
 # local run
 dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
@@ -54,8 +56,6 @@ bcon <- dbConnect(odbc::odbc(),
 									PWD = dw_apsd$pwd)
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
-
-source('cams_discard_functions.R')
 
 ```
 
@@ -248,6 +248,9 @@ ddat_prev <- c_o_dat2 %>%
             ) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','REGION','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
 
+save(ddat_focal,file="ddat_focal_dogfishFY18.Rdata")
+save(ddat_prev,file="ddat_prev_dogfishFY18.Rdata")
+
 
 ```
 
@@ -301,6 +304,8 @@ gf_ex = run_discard(bdat = bdat_gf
 											 , aidx = c(1,2)
 											 )
 
+gf_ex$res$Discard_Mortality_Ratio[is.na(gf_ex$res$Discard_Mortality_Ratio)] <- 1
+
 # sum of all discard, by subtrip, multiplied by mortality ratio
 sum(gf_ex$res$DISCARD*gf_ex$res$Discard_Mortality_Ratio, na.rm = T) # 
 
@@ -318,6 +323,63 @@ dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
 
 
 gf_ex$res %>%  mutate(newd = DISCARD*Discard_Mortality_Ratio) %>% group_by(STRATA) %>% summarise(D=sum(newd,na.rm=T),d_rate=mean(DISC_RATE,na.rm=T)) %>% arrange(desc(D)) %>% print.data.frame()
+
+
+```
+
+
+
+```{r model discards}
+
+bdat_mod <- bdat_gf %>% filter(
+  OBS_KALL > 0,
+  NESPP3_FINAL==species_nespp3
+  ) %>%
+  select(DMIS_TRIP_ID,SUBTRIP_KALL,OBS_KALL,DISCARD,
+         STRATA,CAMS_GEAR_GROUP,REGION,HALFOFYEAR,MESHGROUP) %>%
+  mutate(STRATA = gsub("-","_",STRATA))
+
+
+mod <- glm(DISCARD~offset(log(OBS_KALL)) + CAMS_GEAR_GROUP + MESHGROUP + HALFOFYEAR + REGION,
+           family=poisson(),data=bdat_mod)
+AIC(mod)
+mod <- glm(DISCARD~offset(log(OBS_KALL)) + CAMS_GEAR_GROUP*HALFOFYEAR + REGION*HALFOFYEAR*MESHGROUP,
+           family=poisson(),data=bdat_mod)
+AIC(mod)
+mod <- glm(DISCARD~offset(log(OBS_KALL+1)) + STRATA -1,
+           family=poisson(),data=bdat_mod)
+AIC(mod)
+summary(mod)
+
+mod <- glm(DISCARD~offset(log(OBS_KALL+1)) + STRATA -1,
+           family=Gamma,data=bdat_mod)
+
+ddat_mod <- ddat_focal_gf %>% 
+  filter(SUBTRIP_KALL > 0) %>%
+  select(DMIS_TRIP_ID,SUBTRIP_KALL,
+         STRATA,CAMS_GEAR_GROUP,REGION,HALFOFYEAR,MESHGROUP) %>%
+  mutate(
+    OBS_KALL = SUBTRIP_KALL,
+    CAMS_GEAR_GROUP = 
+           case_when(
+             CAMS_GEAR_GROUP %in% unique(bdat_mod$CAMS_GEAR_GROUP) ~ CAMS_GEAR_GROUP,
+             TRUE ~ '0'
+           ),
+    STRATA = gsub("-","_",STRATA),
+    NULL=NULL) %>%
+  filter(STRATA %in% bdat_mod$STRATA)
+
+ddat_mod <- gf_ex$res %>% filter(STRATA %in% bdat_mod$STRATA) %>%
+    mutate(OBS_KALL = SUBTRIP_KALL)
+
+ddat_pred <- data.frame(ddat_mod,d_model=predict(mod,ddat_mod))
+sum(exp(ddat_pred$d_model))
+
+sum(exp(ddat_pred$d_model[
+  which(!ddat_pred$STRATA %in% bdat_mod$STRATA)])) + sum(dest_strata$disc_est,na.rm=T)
+
+sum(exp(ddat_pred$d_model[
+  which(ddat_pred$STRATA %in% bdat_mod$STRATA)]))
 
 
 ```
