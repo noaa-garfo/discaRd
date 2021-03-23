@@ -263,8 +263,27 @@ New functions for CAMS:
 
 ***Will likely be based on modules that run common sets of species (e.g. common `CAMS_GEAR_GROUP` and stock definition)**
 
+## Modules
 
+<!-- We envision CAMS discards to run via several modules that are specific to the FMP and purpose. They will include: -->
+<!-- \begin{small} -->
 
+- Quota Monitoring
+	+ Squid/Mackerel/Butterfish (Calendar year)
+		++ This may encompass any UNIT stock with calendar year
+	+ Groundfish (May year)
+	+ Monkfish (May year)
+	+ Yellowtail/Windowpane in scallop fishery (April year)
+	+ Skates (?)
+	+ Small mesh species (hakes)
+	+ Dogfish (May year)
+	+ ??
+- SBRM
+	+ 300 species on SBRM year (Calendar?)
+-Stock Assessments
+	+ typically run on calendar years for all species
+
+<!-- \end{small} -->
 
 
 ```{r}
