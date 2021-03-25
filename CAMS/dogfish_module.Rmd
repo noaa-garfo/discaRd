@@ -30,9 +30,6 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 ```
 
 ```{r setup, eval = T}
-
-# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
-
 library(odbc)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
@@ -193,7 +190,7 @@ select CAMS_GEAR_GROUP
   , r.region
   , c.match_nespp3
   , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
-  , NVL(s.CAMS_GEAR_GROUP, '0')||'-'||o.MESHGROUP||'-'||NVL(r.REGION,'na')||'-'||o.HALFOFYEAR as STRATA
+  , NVL(s.CAMS_GEAR_GROUP, '0')||'_'||o.MESHGROUP||'_'||NVL(r.REGION,'na')||'_'||o.HALFOFYEAR as STRATA
   , NVL(s.CAMS_GEAR_GROUP, '0') CAMS_GEAR_GROUP
   from obs_cams o
   left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3
@@ -248,17 +245,16 @@ ddat_prev <- c_o_dat2 %>%
             ) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','REGION','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
 
-save(ddat_focal,file="ddat_focal_dogfishFY18.Rdata")
-save(ddat_prev,file="ddat_prev_dogfishFY18.Rdata")
-
+save(ddat_focal,file=paste0("ddat_focal_nespp",species_nespp3,"_FY",FY,".Rdata"))
+save(ddat_prev,file=paste0("ddat_prev_nespp",species_nespp3,"_FY",FY,".Rdata"))
 
 ```
 
 For species that have the same stock definition (i.e. unit stocks), these data pieces may be pulled at the same time. The next set of chunks can be run in sequence on a series of nespp3 (`species_nespp3`) codes. 
 
 ```{r load ddats, eval = T}
-load(file="ddat_focal_dogfishFY18.Rdata")
-load(file="ddat_prev_dogfishFY18.Rdata")
+load(file=paste0("ddat_focal_nespp",species_nespp3,"_FY",FY,".Rdata"))
+load(file=paste0("ddat_prev_nespp",species_nespp3,"_FY",FY,".Rdata"))
 ```
 
 ```{r run discard functions for species of choice}
@@ -266,7 +262,7 @@ load(file="ddat_prev_dogfishFY18.Rdata")
 # FIX THIS!!! this could be the duping KALL issue.. 
 
 # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
-ddat_focal_gf = ddat_focal %>% 
+ddat_focal_spp = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   group_by(LINK1, VTRSERNO) %>% 
   slice(1) %>% 
@@ -274,7 +270,7 @@ ddat_focal_gf = ddat_focal %>%
 
 # and join to the unobserved trips
 
-ddat_focal_gf = ddat_focal_gf %>% 
+ddat_focal_spp = ddat_focal_spp %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)) %>% 
                group_by(VTRSERNO) %>% 
@@ -285,32 +281,31 @@ ddat_focal_gf = ddat_focal_gf %>%
 
 # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
 
-bdat_gf = ddat_focal %>% 
+bdat_spp = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = CAREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
 
-gf_ex = run_discard(bdat = bdat_gf
-											 , ddat = ddat_focal_gf
+ddat_discards = run_discard(bdat = bdat_spp
+											 , ddat = ddat_focal_spp
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 # , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')  #CAMS_GEAR_GROUP
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'REGION', 'HALFOFYEAR')
 											  # , stratvars = c('GEARTYPE', 'MESHGROUP', 'REGION', 'HALFOFYEAR')  #OLD GEAR TYPE
 											 , aidx = c(1,2)
 											 )
 
-gf_ex$res$Discard_Mortality_Ratio[is.na(gf_ex$res$Discard_Mortality_Ratio)] <- 1
+ddat_discards$res$Discard_Mortality_Ratio[is.na(ddat_discards$res$Discard_Mortality_Ratio)] <- 1
 
 # sum of all discard, by subtrip, multiplied by mortality ratio
-sum(gf_ex$res$DISCARD*gf_ex$res$Discard_Mortality_Ratio, na.rm = T) # 
+sum(ddat_discards$res$DISCARD*ddat_discards$res$Discard_Mortality_Ratio, na.rm = T) # 
 
 # discard rates by strata
-dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
+dest_strata = ddat_discards$allest$C %>% summarise(STRATA = STRATA
                        , N = N
                        , n = n
                        , orate = round(n/N, 2)
@@ -319,10 +314,10 @@ dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
                        , CV = round(RE_rse, 2)
 										)
 
+# rates for trawls
 dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
 
-
-gf_ex$res %>%  mutate(newd = DISCARD*Discard_Mortality_Ratio) %>% group_by(STRATA) %>% summarise(D=sum(newd,na.rm=T),d_rate=mean(DISC_RATE,na.rm=T)) %>% arrange(desc(D)) %>% print.data.frame()
+ddat_discards$res %>%  mutate(newd = DISCARD*Discard_Mortality_Ratio) %>% group_by(STRATA) %>% dplyr::summarise(D=sum(newd,na.rm=T),d_rate=mean(DISC_RATE,na.rm=T)) %>% arrange(desc(D)) %>% print.data.frame()
 
 
 ```
@@ -330,56 +325,58 @@ gf_ex$res %>%  mutate(newd = DISCARD*Discard_Mortality_Ratio) %>% group_by(STRAT
 
 
 ```{r model discards}
+# Potentially limited to the focal year (for year end estimation)
 
-bdat_mod <- bdat_gf %>% filter(
+# create a small bdat
+bdat_mod <- bdat_spp %>% filter(
   OBS_KALL > 0,
   NESPP3_FINAL==species_nespp3
   ) %>%
   select(DMIS_TRIP_ID,SUBTRIP_KALL,OBS_KALL,DISCARD,
-         STRATA,CAMS_GEAR_GROUP,REGION,HALFOFYEAR,MESHGROUP) %>%
-  mutate(STRATA = gsub("-","_",STRATA))
+         STRATA,CAMS_GEAR_GROUP,REGION,HALFOFYEAR,MESHGROUP)
 
-
+# full stratification (similar to ratio estimator)
+mod.full <- glm(DISCARD~offset(log(OBS_KALL)) + STRATA -1,
+           family=poisson(),data=bdat_mod)
+# additive effects (to accommodate unobserved full-factorial strata)
 mod <- glm(DISCARD~offset(log(OBS_KALL)) + CAMS_GEAR_GROUP + MESHGROUP + HALFOFYEAR + REGION,
            family=poisson(),data=bdat_mod)
-AIC(mod)
-mod <- glm(DISCARD~offset(log(OBS_KALL)) + CAMS_GEAR_GROUP*HALFOFYEAR + REGION*HALFOFYEAR*MESHGROUP,
-           family=poisson(),data=bdat_mod)
-AIC(mod)
-mod <- glm(DISCARD~offset(log(OBS_KALL+1)) + STRATA -1,
-           family=poisson(),data=bdat_mod)
-AIC(mod)
-summary(mod)
 
-mod <- glm(DISCARD~offset(log(OBS_KALL+1)) + STRATA -1,
-           family=Gamma,data=bdat_mod)
-
-ddat_mod <- ddat_focal_gf %>% 
-  filter(SUBTRIP_KALL > 0) %>%
-  select(DMIS_TRIP_ID,SUBTRIP_KALL,
-         STRATA,CAMS_GEAR_GROUP,REGION,HALFOFYEAR,MESHGROUP) %>%
+# create ddat for model predictions
+ddat_pred <- ddat_discards$res %>% 
+  filter(
+    #STRATA %in% bdat_spp_mod$STRATA,  #only for full factorial
+    SUBTRIP_KALL > 0
+    ) %>%
+  select(DMIS_TRIP_ID,SUBTRIP_KALL,STRATA,Discard_Mortality_Ratio,EST_DISCARD,
+         CAMS_GEAR_GROUP,REGION,HALFOFYEAR,MESHGROUP) %>%
   mutate(
     OBS_KALL = SUBTRIP_KALL,
-    CAMS_GEAR_GROUP = 
+    # adjust for unobserved gear groups
+    CAMS_GEAR_GROUP =
            case_when(
              CAMS_GEAR_GROUP %in% unique(bdat_mod$CAMS_GEAR_GROUP) ~ CAMS_GEAR_GROUP,
              TRUE ~ '0'
            ),
-    STRATA = gsub("-","_",STRATA),
-    NULL=NULL) %>%
-  filter(STRATA %in% bdat_mod$STRATA)
+    NULL=NULL) 
 
-ddat_mod <- gf_ex$res %>% filter(STRATA %in% bdat_mod$STRATA) %>%
-    mutate(OBS_KALL = SUBTRIP_KALL)
+# model predictions
+ddat_pred <- data.frame(ddat_pred,D_MODEL=predict(mod,ddat_pred,type = "response"))
+# sum predicted discards for all trips
+sum(ddat_pred$D_MODEL)
 
-ddat_pred <- data.frame(ddat_mod,d_model=predict(mod,ddat_mod))
-sum(exp(ddat_pred$d_model))
+# sum of predicted discards for:
+#    1) trips with unobserved strata (model)
+#    2) trips with observed strata (ratio estimator)
 
-sum(exp(ddat_pred$d_model[
-  which(!ddat_pred$STRATA %in% bdat_mod$STRATA)])) + sum(dest_strata$disc_est,na.rm=T)
-
-sum(exp(ddat_pred$d_model[
-  which(ddat_pred$STRATA %in% bdat_mod$STRATA)]))
+ddat_pred %>%
+  mutate(DEAD_DISCARDS_FINAL =
+           case_when(
+             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ D_MODEL*Discard_Mortality_Ratio,
+             STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ EST_DISCARD*Discard_Mortality_Ratio
+           )) %>%
+  group_by(REGION) %>%
+  dplyr::summarise(sum(DEAD_DISCARDS_FINAL))
 
 
 ```
@@ -393,17 +390,17 @@ The next chunk could be combined with the previous one if running several specie
 
 
 # set up trips table for previous year
-ddat_prev_gf = ddat_prev %>% 
+ddat_prev_spp = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   group_by(LINK1) %>% 
   slice(1)
 
-ddat_prev_gf = ddat_prev_gf %>% 
+ddat_prev_spp = ddat_prev_spp %>% 
   union_all(ddat_prev %>% filter(is.na(LINK1)))
 
 
 # previous year observer data needed.. 
-bdat_prev_gf = ddat_prev %>% 
+bdat_prev_spp = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = CAREA
@@ -411,8 +408,8 @@ bdat_prev_gf = ddat_prev %>%
          , PRORATE = 1)
 
 # Run the discaRd functions on previous year
-d_prev = run_discard(bdat = bdat_prev_gf
-											 , ddat = ddat_prev_gf
+d_prev = run_discard(bdat = bdat_prev_spp
+											 , ddat = ddat_prev_spp
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 , species_nespp3 = species_nespp3
@@ -422,8 +419,8 @@ d_prev = run_discard(bdat = bdat_prev_gf
 
 
 # Run the discaRd functions on current year
-d_focal = run_discard(bdat = bdat_gf
-											 , ddat = ddat_focal_gf
+d_focal = run_discard(bdat = bdat_spp
+											 , ddat = ddat_focal_spp
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
@@ -504,109 +501,3 @@ dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
 	# knitr::kable(format= 'markdown', caption = "Exampe of tabular output")
 
 ```
-
-```{r keep obs and catch separate? likely not.. eval = F}
-# obs only 
-
-obs = tbl(bcon, sql('
-	select o.*
-	, case when c.match_nespp3 is not null then c.match_nespp3 else o.nespp3 end as match_nespp3
-	from obs_cams_prorate o
-	left join (select * from apsd.s_nespp3_match_conv) c
-	on o.nespp3 = c.nespp3'
-))
-
-bdat <- obs %>% 
-	# filter(YEAR == 2019) %>% 
-	collect()
-	
-
-bdat$MESHGROUP[bdat$MESHGROUP == 'na'] = NA
-
-
-# catch only
-
-# dat = tbl(bcon, sql('select * from bg_cams_catch_mock'))
-
-
-dat = tbl(bcon, sql('
-select DMIS_TRIP_ID
-, YEAR
-, RECORD_LAND 
-, MONTH
-, REGION
-, case when month in (1,2,3,4,5,6) then 1
-		   when month in (7,8,9,10,11,12) then 2
-		   end as HALFOFYEAR
-, VTRSERNO
-, GEARNM
-, GEARCODE
-, GEARTYPE
-, NEGEAR
-, MESHGROUP
-, CAREA
-, sector_id
-, activity_code_1
-, permit_EFP_1
-, permit_EFP_2
-, permit_EFP_3
-, permit_EFP_4
-, redfish_exemption
-, closed_area_exemption
-, sne_smallmesh_exemption
-, xlrg_gillnet_exemption
-, tripcategory
-, accessarea
-, sum(pounds) as live_Pounds
-from bg_cams_catch
-group by DMIS_TRIP_ID, VTRSERNO, YEAR, GEARNM, GEARCODE, NEGEAR, GEARTYPE, MESHGROUP, CAREA, YEAR
-, MONTH
-, RECORD_LAND
-, REGION
-, sector_id
-, activity_code_1
-, permit_EFP_1
-, permit_EFP_2
-, permit_EFP_3
-, permit_EFP_4
-, redfish_exemption
-, closed_area_exemption
-, sne_smallmesh_exemption
-, xlrg_gillnet_exemption
-, tripcategory
-, accessarea
-, case when month in (1,2,3,4,5,6) then 1
-		   when month in (7,8,9,10,11,12) then 2
-		   end
-'))
-
-# %>% 
-# 	collect()
-
-```
-
-
-```{r explore differences in meshgroupings}
-
-mesh = tbl(bcon, sql("
-select meshgroup||'-'||obs_meshgroup as vtr_obs_meshes
-, vtrserno
-, link1
-, subtrip_kall
-from bg_cams_obs_catch
-where link1 is not null
-and negear = 50
---group by  meshgroup||'-'||obs_meshgroup
-")
-) %>% collect()
-
- mesh %>% 
-   group_by(VTRSERNO) %>% 
-   slice(1) %>% 
-   ungroup() %>% 
-   group_by(VTR_OBS_MESHES) %>% 
-   dplyr::summarise(nvtrs = length(unique(VTRSERNO))
-                                   , KALL = sum(SUBTRIP_KALL, na.rm = T))
-
-```
-
