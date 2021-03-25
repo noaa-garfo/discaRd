@@ -61,7 +61,7 @@ source('cams_discard_functions.R')
 
 ```{r define species/year first}
 
-species_nespp3 = '012'  # spiny dogfish
+species_nespp3 = '012'  # monkfish
 
 # define species stock if needed
 # species_stock = 'GOM'  # GOM cod
@@ -265,7 +265,7 @@ load(file="ddat_prev_monkfishFY18.Rdata")
 # FIX THIS!!! this could be the duping KALL issue.. 
 
 # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
-ddat_focal_gf = ddat_focal %>% 
+ddat_focal_spp = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   group_by(LINK1, VTRSERNO) %>% 
   slice(1) %>% 
@@ -273,7 +273,7 @@ ddat_focal_gf = ddat_focal %>%
 
 # and join to the unobserved trips
 
-ddat_focal_gf = ddat_focal_gf %>% 
+ddat_focal_spp = ddat_focal_spp %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)) %>% 
                group_by(VTRSERNO) %>% 
@@ -284,15 +284,15 @@ ddat_focal_gf = ddat_focal_gf %>%
 
 # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
 
-bdat_gf = ddat_focal %>% 
+bdat_spp = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = CAREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
 
-gf_ex = run_discard(bdat = bdat_gf
-											 , ddat = ddat_focal_gf
+gf_ex = run_discard(bdat = bdat_spp
+											 , ddat = ddat_focal_spp
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
@@ -333,17 +333,17 @@ The next chunk could be combined with the previous one if running several specie
 
 
 # set up trips table for previous year
-ddat_prev_gf = ddat_prev %>% 
+ddat_prev_spp = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   group_by(LINK1) %>% 
   slice(1)
 
-ddat_prev_gf = ddat_prev_gf %>% 
+ddat_prev_spp = ddat_prev_spp %>% 
   union_all(ddat_prev %>% filter(is.na(LINK1)))
 
 
 # previous year observer data needed.. 
-bdat_prev_gf = ddat_prev %>% 
+bdat_prev_spp = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = CAREA
@@ -351,8 +351,8 @@ bdat_prev_gf = ddat_prev %>%
          , PRORATE = 1)
 
 # Run the discaRd functions on previous year
-d_prev = run_discard(bdat = bdat_prev_gf
-											 , ddat = ddat_prev_gf
+d_prev = run_discard(bdat = bdat_prev_spp
+											 , ddat = ddat_prev_spp
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 , species_nespp3 = species_nespp3
@@ -362,8 +362,8 @@ d_prev = run_discard(bdat = bdat_prev_gf
 
 
 # Run the discaRd functions on current year
-d_focal = run_discard(bdat = bdat_gf
-											 , ddat = ddat_focal_gf
+d_focal = run_discard(bdat = bdat_spp
+											 , ddat = ddat_focal_spp
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
