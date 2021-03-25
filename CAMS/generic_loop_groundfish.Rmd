@@ -1,0 +1,433 @@
+---
+title: "Generic Loop for Groundfish Stocks"
+output:
+  pdf_document: 
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+  bookdown::pdf_book:
+    includes:
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    keep_tex: yes
+  html_document:
+    df_print: paged
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+urlcolor: cyan
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
+											message = FALSE, cache = FALSE,
+											progress = TRUE, verbose = FALSE, comment = F
+											, error = FALSE, dev = 'png', dpi = 200)
+```
+
+```{r setup, eval = T}
+
+t1 = Sys.time()
+
+# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
+
+library(odbc)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+# library(config)
+library(stringr)
+library(discaRd)
+options(scipen = 999)
+
+# local run
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+# if on server..
+dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = dw_apsd$dsn, 
+									UID = dw_apsd$uid, 
+									PWD = dw_apsd$pwd)
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+source('cams_discard_functions.R')
+
+```
+
+```{r define fishing year and species, eval = T}
+
+# species_nespp3 = '012'  # monkfish
+# species_nespp3 = '335'  # black seabass
+
+# define species stock if needed
+# species_stock = 'GOM'  # GOM cod
+
+# if using a unit stock, make this NULL!!
+species_stock = NA  # all unit stocks
+
+FY <- 2019
+
+#--------------------------------------------------------------------------#
+# group of species
+
+species = tbl(bcon, sql("
+    select distinct(nespp3) as nespp3
+    from fso.v_obSpeciesStockArea 
+    where stock_id not like 'OTHER'
+    ")) %>% 
+  collect() %>% 
+  filter(NESPP3 != '082') %>% 
+  filter(NESPP3 != '119') %>%
+  filter(NESPP3 != '147') %>% 
+  arrange(NESPP3)
+
+
+# species = as.character(c(335, 212, 801, 802, '051'))
+
+final_discard_table = data.frame(YEAR = FY, NESPP3 = species$NESPP3, DISCARD = NA)
+
+#--------------------------------------------------------------------------#
+
+
+```
+
+```{r get obs and catch data from oracle, eval = T}
+
+# get catch and matched obs data together
+
+c_o_dat2 <- tbl(bcon, sql(
+" with obs_cams as (
+   select year
+	, month
+	, case when month in (5,6,7,8,9,10) then 1
+	       when month in (11,12,1,2,3,4) then 2
+	       end as halfofyear
+	, carea
+	, vtrserno
+	, link1
+	, docid
+	, dmis_trip_id
+	, nespp3
+    , GEARCODE
+	, NEGEAR
+	, GEARTYPE
+	, MESHGROUP
+	, SECTOR_ID
+	, tripcategory
+	, accessarea
+	, activity_code_1
+    , permit_EFP_1
+  , permit_EFP_2
+  , permit_EFP_3
+  , permit_EFP_4
+  , redfish_exemption
+	, closed_area_exemption
+	, sne_smallmesh_exemption
+	, xlrg_gillnet_exemption
+	, NVL(sum(discard),0) as discard
+	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
+	, NVL(round(max(obs_kall)),0) as obs_kall
+	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
+	from apsd.bg_cams_obs_catch
+--	where nespp3 is not null
+	group by year, carea, vtrserno, link1, nespp3, docid, GEARCODE, NEGEAR, GEARTYPE
+	, MESHGROUP, dmis_trip_id, month
+	, halfofyear
+	, sector_id
+	, tripcategory
+	, accessarea
+	, activity_code_1
+    , permit_EFP_1
+  , permit_EFP_2
+  , permit_EFP_3
+  , permit_EFP_4
+  , redfish_exemption
+	, closed_area_exemption
+	, sne_smallmesh_exemption
+	, xlrg_gillnet_exemption
+	order by vtrserno asc
+    ) 
+
+  select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
+  , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
+  , o.*
+  , c.match_nespp3
+  , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
+  from obs_cams o
+  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3
+"
+  )
+) %>%
+	collect()
+
+```
+
+```{r subset tables join and run }
+
+# Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              , 'CAMS_GEAR_GROUP'
+              , 'MESHGROUP'
+              , 'CAREA'
+              , 'SECTOR_ID'
+              , "PERMIT_EFP_1"
+              , "PERMIT_EFP_2"
+              , "PERMIT_EFP_3"
+              , "PERMIT_EFP_4"
+              , "REDFISH_EXEMPTION"
+              , "SNE_SMALLMESH_EXEMPTION"
+              , "XLRG_GILLNET_EXEMPTION"
+              )
+
+
+# Begin loop
+
+for(i in 1:length(species$NESPP3)){
+
+species_nespp3 = species$NESPP3[i]  
+#--------------------------------------------------------------------------#
+# Support table import by species
+
+# GEAR TABLE
+CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% 
+    collect() %>% 
+  dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
+  filter(NESPP3 == species_nespp3) %>% 
+  dplyr::select(-NESPP3, -SPECIES_ITIS)
+
+# Stat areas table  
+# unique stat areas for stock ID if needed
+STOCK_AREAS = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) %>%
+  filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+    collect() %>% 
+  group_by(AREA_NAME) %>% 
+  distinct(STAT_AREA) %>%
+  mutate(CAREA = as.character(STAT_AREA)
+         , SPECIES_STOCK = AREA_NAME) %>% 
+  ungroup() %>% 
+  dplyr::select(SPECIES_STOCK, CAREA)
+
+# Mortality table
+CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from apsd.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+  collect() %>%
+  mutate(SPECIES_STOCK = AREA_NAME
+         , GEARCODE = CAMS_GEAR_GROUP) %>%
+  select(-AREA_NAME) %>%
+  # mutate(CAREA = as.character(STAT_AREA)) %>% 
+  filter(NESPP3 == species_nespp3) %>% 
+  dplyr::select(-NESPP3) %>% 
+  dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
+
+#--------------------------------------------------------------------------------#
+# make tables
+ddat_focal <- c_o_dat2 %>% 
+  filter(GF_YEAR == FY) %>%   ## time element is here!!
+  filter(CAREA %in% STOCK_AREAS$CAREA) %>% 
+  mutate(LIVE_POUNDS = SUBTRIP_KALL
+         ,SEADAYS = 0
+	  		 , NESPP3 = NESPP3_FINAL) %>% 
+   left_join(., y = STOCK_AREAS, by = 'CAREA') %>% 
+   left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
+   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
+            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            ) %>% 
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+
+
+ddat_prev <- c_o_dat2 %>% 
+  filter(GF_YEAR == FY-1) %>%   ## time element is here!!
+  filter(CAREA %in% STOCK_AREAS$CAREA) %>% 
+  mutate(LIVE_POUNDS = SUBTRIP_KALL
+         ,SEADAYS = 0
+	  		 , NESPP3 = NESPP3_FINAL) %>% 
+   left_join(., y = STOCK_AREAS, by = 'CAREA') %>% 
+   left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
+   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
+            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            ) %>%  
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+
+
+
+# need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
+ddat_focal_gf = ddat_focal %>% 
+  filter(!is.na(LINK1)) %>% 
+  group_by(LINK1, VTRSERNO) %>% 
+  slice(1) %>% 
+  ungroup()
+
+# and join to the unobserved trips
+
+ddat_focal_gf = ddat_focal_gf %>% 
+  union_all(ddat_focal %>% 
+              filter(is.na(LINK1)) %>% 
+               group_by(VTRSERNO) %>% 
+               slice(1) %>% 
+               ungroup()
+            )
+
+
+# if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
+
+bdat_gf = ddat_focal %>% 
+  filter(!is.na(LINK1)) %>% 
+  mutate(DISCARD_PRORATE = DISCARD
+         , OBS_AREA = CAREA
+         , OBS_HAUL_KALL_TRIP = OBS_KALL
+         , PRORATE = 1)
+
+# gf_ex = run_discard(bdat = bdat_gf
+# 											 , ddat = ddat_focal_gf
+# 											 , c_o_tab = ddat_focal
+# 											 , species_nespp3 = species_nespp3  #'081' #cod... 
+# 											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'SPECIES_STOCK', 'HALFOFYEAR')  #CAMS_GEAR_GROUP
+# 											 , aidx = c(1,2)
+# 											 )
+# 
+# # sum of all discard, by subtrip, multiplied by mortality ratio
+# sum(gf_ex$res$DISCARD*gf_ex$res$DISC_MORT_RATIO, na.rm = T) # 
+# 
+# # discard rates by strata
+# dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
+#                        , N = N
+#                        , n = n
+#                        , orate = round(n/N, 2)
+#                        , drate = RE_mean
+#                        , KALL = K, disc_est = round(D)
+#                        , CV = round(RE_rse, 2)
+# 										)
+# 
+# dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
+# 
+# 
+# gf_ex$res %>%  mutate(newd = DISCARD*DISC_MORT_RATIO) %>% group_by(STRATA) %>% summarise(D=sum(newd,na.rm=T),d_rate=mean(DISC_RATE,na.rm=T)) %>% arrange(desc(D)) %>% print.data.frame()
+
+
+# set up trips table for previous year
+ddat_prev_gf = ddat_prev %>% 
+  filter(!is.na(LINK1)) %>% 
+  group_by(LINK1) %>% 
+  slice(1)
+
+ddat_prev_gf = ddat_prev_gf %>% 
+  union_all(ddat_prev %>% filter(is.na(LINK1)))
+
+
+# previous year observer data needed.. 
+bdat_prev_gf = ddat_prev %>% 
+  filter(!is.na(LINK1)) %>% 
+  mutate(DISCARD_PRORATE = DISCARD
+         , OBS_AREA = CAREA
+         , OBS_HAUL_KALL_TRIP = OBS_KALL
+         , PRORATE = 1)
+
+# Run the discaRd functions on previous year
+d_prev = run_discard(bdat = bdat_prev_gf
+											 , ddat = ddat_prev_gf
+											 , c_o_tab = ddat_prev
+											 # , year = 2018
+											 , species_nespp3 = species_nespp3
+											 , stratvars = stratvars
+											 , aidx = c(1,2)
+											 )
+
+
+# Run the discaRd functions on current year
+d_focal = run_discard(bdat = bdat_gf
+											 , ddat = ddat_focal_gf
+											 , c_o_tab = ddat_focal
+											 # , year = 2019
+											 # , species_nespp3 = '081' # haddock...
+											 , species_nespp3 = species_nespp3  #'081' #cod... 
+											 , stratvars = stratvars
+											 , aidx = c(1,2)
+											 )
+
+# summarize each result for convenience
+dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+# substitute transition rates where needed
+
+trans_rate_df = dest_strata_f %>% 
+  left_join(., dest_strata_p, by = 'STRATA') %>% 
+  mutate(STRATA = STRATA
+         , n_obs_trips = n.x
+         , in_season_rate = drate.x
+         , previous_season_rate = drate.y
+         , trans_rate = get.trans.rate(l_observed_trips = n_obs_trips
+                                         , l_assumed_rate = previous_season_rate
+                                         , l_inseason_rate = in_season_rate
+                                         )
+         ) %>% 
+  dplyr::select(STRATA
+         , n_obs_trips 
+         , in_season_rate 
+         , previous_season_rate 
+         , trans_rate)
+
+
+trans_rate_df = trans_rate_df %>% 
+  mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate)) 
+  
+ trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
+
+# compare subbed rate total to in season total. 
+ trans_rate_df %>% 
+   left_join(dest_strata_f, by = 'STRATA') %>% 
+   summarise(in_season_discard = sum(in_season_rate*KALL, na.rm = T)
+             , final_rate_discard = sum(final_rate*KALL, na.rm = T)
+             ) %>% 
+   knitr::kable()
+ 
+# park the final rate into the trips table
+ final_table = trans_rate_df %>% 
+   right_join(., y = d_focal$res, by = 'STRATA') %>% 
+   as_tibble()%>% 
+   mutate(INSEASON_RATE_DISCARD = in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO
+             , TRANS_RATE_DISCARD =  trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO
+             , FINAL_RATE_DISCARD = final_rate*SUBTRIP_KALL*DISC_MORT_RATIO
+          ) %>% 
+   select(VTRSERNO, NESPP3, SPECIES_ITIS, FINAL_RATE_DISCARD, SPECIES_STOCK, STRATA)
+ 
+# save total results to summary table
+ final_discard_table$DISCARD[i] = final_table$FINAL_RATE_DISCARD %>% sum(na.rm = T)
+ 
+# save trip by trip info to RDS 
+ saveRDS(final_table, file = paste0('discard_est_', species_nespp3, '.RDS'))
+ 
+#---------------------------------------------------------------------#
+# End loop
+
+t2 = Sys.time()
+
+print(paste(species_nespp3, ' : ', t2-t1, sep = ''))
+ 
+} 
+ 
+```
+
+
