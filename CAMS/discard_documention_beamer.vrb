@@ -1,0 +1,43 @@
+\frametitle{TO DO}
+\protect\hypertarget{to-do}{}
+
+\begin{itemize}
+\tightlist
+\item
+  utilize support tables
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{CAMS\_GEAR\_GROUP} \textbf{DONE}
+  \item
+    \texttt{STAT\_AREAS} \textbf{DONE}
+  \item
+    \texttt{CAMS\_DISCARD\_MORTALITY\_STOCK} \textbf{in process}
+  \end{itemize}
+\item
+  add \texttt{SECTOR} for multispecies (see above) \textbf{DONE}
+\item
+  Time periods \textbf{Determined by STOCK/SPECIES}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Species with the same time period, e.g.~Calendar year, can be
+    imported at once.
+  \end{itemize}
+\item
+  Assumed (fallback) rate criteria: how simplified must this be?
+\item
+  implement transitions (if using fixed time period) \textbf{DONE}
+\item
+  Deal with Exemptions
+\item
+  Incorporate stratification for EM trips
+\item
+  refine exact operational process*
+\end{itemize}
+
+*\textbf{Will likely be based on modules that run common sets of species
+(e.g.~common \texttt{CAMS\_GEAR\_GROUP} and stock definition)}
+
