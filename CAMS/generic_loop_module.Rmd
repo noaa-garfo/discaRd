@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 											, error = FALSE, dev = 'png', dpi = 200)
 ```
 
-```{r setup, eval = T}
+```{r setup, eval = F}
 
 t1 = Sys.time()
 
@@ -79,7 +79,7 @@ FY <- 2019
 
 # species = as.character(c(335, 212, 801, 802, '051'))
 
-species = as.character(c( 801))
+species = as.character(c(212))
 
 final_discard_table = data.frame(YEAR = FY, NESPP3 = species, DISCARD = NA)
 
@@ -433,11 +433,11 @@ bdat_mod <- bdat_gf %>%
 
 # full stratification (similar to ratio estimator)
 mod.full <- glm(DISCARD ~ offset(log(OBS_KALL)) + STRATA -1,
-           family=poisson(),data = bdat_mod)
+           family=poisson(), data = bdat_mod)
 # additive effects (to accommodate unobserved full-factorial strata)
 mod <- glm(DISCARD ~ offset(log(OBS_KALL)) + 
-             # CAMS_GEAR_GROUP +
-             eval(parse(text = stratvars[1])) + 
+             CAMS_GEAR_GROUP +
+             # eval(parse(text = stratvars[1])) + 
              MESHGROUP + 
              HALFOFYEAR + 
              REGION,
@@ -449,7 +449,7 @@ mod <- glm(DISCARD ~ offset(log(OBS_KALL)) +
 ddat_discards = d_focal
 
 ddat_pred <- ddat_discards$res %>% 
-    # mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed.. 
+    mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
   assign_strata(., stratvars) %>% 
   filter(
     #STRATA %in% bdat_spp_mod$STRATA,  #only for full factorial
