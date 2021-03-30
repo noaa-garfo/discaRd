@@ -28,7 +28,7 @@ where fishing_year = 2019
 
 ;
 left join (
-    select max(nespp3) as nespp3
+    select distinct(nespp3) as nespp3
     , stock_id
     , comname
     from fso.v_obSpeciesStockArea 
