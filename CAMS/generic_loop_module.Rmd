@@ -77,7 +77,9 @@ FY <- 2019
 #--------------------------------------------------------------------------#
 # group of species
 
-species = as.character(c(335, 212, 801, 802, '051'))
+# species = as.character(c(335, 212, 801, 802, '051'))
+
+species = as.character(c( 801))
 
 final_discard_table = data.frame(YEAR = FY, NESPP3 = species, DISCARD = NA)
 
@@ -400,4 +402,109 @@ print(paste(species_nespp3, ' : ', t2-t1, sep = ''))
  
 ```
 
+```{r (3) model discards}
+# Potentially limited to the focal year (for year end estimation)
+
+stratvars = c('CAMS_GEAR_GROUP'
+              , 'MESHGROUP'
+              # , 'SPECIES_STOCK'
+              , 'REGION'
+              , 'HALFOFYEAR')
+
+# create a small bdat
+bdat_mod <- bdat_gf %>% 
+  mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
+  assign_strata(., stratvars = stratvars) %>% 
+  filter(
+  OBS_KALL > 0,
+  NESPP3_FINAL==species_nespp3
+  ) %>%
+  select(VTRSERNO #DMIS_TRIP_ID
+         ,OBS_KALL
+         ,STRATA
+         , DISC_MORT_RATIO
+         , DISCARD
+         , stratvars
+         # , CAMS_GEAR_GROUP
+         # , REGION
+         # , HALFOFYEAR
+         # , MESHGROUP
+         )
+
+# full stratification (similar to ratio estimator)
+mod.full <- glm(DISCARD ~ offset(log(OBS_KALL)) + STRATA -1,
+           family=poisson(),data = bdat_mod)
+# additive effects (to accommodate unobserved full-factorial strata)
+mod <- glm(DISCARD ~ offset(log(OBS_KALL)) + 
+             # CAMS_GEAR_GROUP +
+             eval(parse(text = stratvars[1])) + 
+             MESHGROUP + 
+             HALFOFYEAR + 
+             REGION,
+           family = poisson()
+           , data = bdat_mod)
+
+# create ddat for model predictions
+
+ddat_discards = d_focal
+
+ddat_pred <- ddat_discards$res %>% 
+    # mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed.. 
+  assign_strata(., stratvars) %>% 
+  filter(
+    #STRATA %in% bdat_spp_mod$STRATA,  #only for full factorial
+    SUBTRIP_KALL > 0
+    ) %>%
+  select(VTRSERNO #DMIS_TRIP_ID
+         ,SUBTRIP_KALL
+         ,STRATA
+         , DISC_MORT_RATIO
+         , EST_DISCARD
+         , stratvars
+         # , CAMS_GEAR_GROUP
+         # , REGION
+         # , HALFOFYEAR
+         # , MESHGROUP
+         ) %>%
+  mutate(
+    OBS_KALL = SUBTRIP_KALL,
+    # adjust for unobserved gear groups
+    CAMS_GEAR_GROUP =
+           case_when(
+             CAMS_GEAR_GROUP %in% unique(bdat_mod$CAMS_GEAR_GROUP) ~ CAMS_GEAR_GROUP,
+             TRUE ~ '0'
+           ),
+    NULL=NULL) 
+
+# model predictions
+ddat_pred <- data.frame(ddat_pred, D_MODEL = predict(mod, ddat_pred, type = "response"))
+# sum predicted discards for all trips
+#sum(ddat_pred$D_MODEL)
+
+# sum of predicted discards for:
+#    1) trips with unobserved strata (model)
+#    2) trips with observed strata (ratio estimator)
+
+dest_strata = dest_strata_f
+
+dat.discards <- ddat_pred %>%
+  mutate(DEAD_DISCARDS_FINAL =
+           case_when(
+             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ D_MODEL*DISC_MORT_RATIO,
+             STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ EST_DISCARD*DISC_MORT_RATIO
+           )
+         , ESTIMATE_SOURCE =
+           case_when(
+             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ 'model'
+             , STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ 'ratio'
+           )
+         )
+
+dat.discards %>%
+  group_by(ESTIMATE_SOURCE) %>%
+  dplyr::summarise(POUNDS = sum(DEAD_DISCARDS_FINAL, na.rm = T))
+
+# ACLtab[3,c("Pounds")] <- round(dat.discards$POUNDS,0)
+
+```
 
