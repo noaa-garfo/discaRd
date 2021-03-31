@@ -1,5 +1,5 @@
 ---
-title: "CAMS: Prorated Observer Table"
+title: "CAMS: Observer & Catch Table"
 author: "Ben Galuardi"
 output:
   html_document: default
@@ -56,7 +56,7 @@ IMPORTANT!: The table itself is a hybrid. For trips that were not observed, ther
 library(readxl)
 library(knitr)
 
-dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx')
+dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx', sheet = 'obs_catch')
 
 kable(dat)
 

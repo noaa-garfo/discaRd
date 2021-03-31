@@ -1,0 +1,60 @@
+---
+title: "CAMS: Prorated Observer Table"
+author: "Ben Galuardi"
+output:
+  html_document: default
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+
+## Description
+
+- **OUTPUT TABLE:** APSD.OBS_CAMS_PRORATE
+- **YEARS:** 2017-2020
+- **RESOLUTION:** LINK3~LINK1
+- **DEVELOPMENT LANGUAGE:** SQL
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
+
+
+## Data Sources
+- OBDBS (NEFOP, NEFSC)
+
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.OBS_CAMS_PRORATE table lineage"}
+DiagrammeR::mermaid("
+  graph LR
+  apsd.bg_obdbs_cams_mock2017 --> APSD.OBS_CAMS_PRORATE
+  apsd.bg_obdbs_cams_mock2018 --> APSD.OBS_CAMS_PRORATE
+  apsd.bg_obdbs_cams_mock2019 --> APSD.OBS_CAMS_PRORATE
+  apsd.bg_obdbs_cams_mock2020 --> APSD.OBS_CAMS_PRORATE
+        ")
+```
+## Approach
+
+Following the standard approach taken for groundfish quota monitoring, observed discards on unobserved hauls are prorated within a subtrip. This is done by applying a ratio of kept all on the entire trip to kept all on the unobserved hauls only:
+
+$$d_{total} = d_{observedhauls}*(1+KALL_{unobserved hauls}/KALL_{subtrip})$$
+
+This approach is used for all observed subtrips in CAMS. 
+
+
+## Data Dictionary
+
+```{r echo = F}
+
+library(readxl)
+library(knitr)
+
+dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx', sheet = 'obs_prorate')
+
+kable(dat)
+
+```
+
