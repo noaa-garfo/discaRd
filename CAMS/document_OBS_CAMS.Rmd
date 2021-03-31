@@ -1,0 +1,68 @@
+---
+title: "CAMS: Observer Mockup Tables"
+author: "Ben Galuardi"
+output:
+  html_document: default
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+
+## Description
+
+- **OUTPUT TABLE:** APSD.BG_OBDBS_CAMS_MOCK(YYYY)
+- **YEARS:** 2017-2020
+- **RESOLUTION:** LINK3~LINK1
+- **DEVELOPMENT LANGUAGE:** SQL
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
+
+
+## Data Sources
+- OBDBS (NEFOP, @NOVA, NEFSC)
+
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.BG_OBDBS_CAMS_MOCK(YYYY) table lineage"}
+DiagrammeR::mermaid("
+  graph TB
+  A((obdbs.obtrp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  B((obdbs.obhau)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  C((obdbs.obspp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  D((obdbs.obfishdisp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  E((obdbs.asmtrp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  F((obdbs.asmhau)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  G((obdbs.asmspp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  H((obdbs.obfishdisp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  I((obdbs.obspecconv)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  J((obdbs.obotgh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  K((obdbs.asmotgh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  L((obdbs.obgggh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  M((obdbs.asmgggh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+ 
+  
+        ")
+```
+## Approach
+
+These tables are built by calendar year and encompass all information from NEFOP and ASM, for all observed trips. Tables from the OBDSB@NOVA schema in Oracle are used to build a flat file of all observations at the LINK3 (haul) level for all discarded species. The general methodology has been used for the past 5 years at GARFO for annual ACL monitoring in many managed fisheries (e.g. Squid/Mack/Butterfish, dogfish, monkfish, black sea bass, etc.). Since CAMS discard methodology relies on commerical trip metrics for stratification, many variables in these tables are not used directly as in the past. They are used, however, to match the observed records to the corresponding commercial trip. 
+
+Refer to [OBDBS](http://nova.nefsc.noaa.gov/datadict/) documentation for details on individual input tables. 
+
+## Data Dictionary
+
+```{r echo = F}
+
+library(readxl)
+library(knitr)
+
+dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx', sheet = 'obs_cams')
+
+kable(dat)
+
+```
+
