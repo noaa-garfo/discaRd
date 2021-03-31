@@ -1,0 +1,62 @@
+---
+title: "CAMS: Prorated Observer Table"
+author: "Ben Galuardi"
+output:
+  html_document: default
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+
+## Description
+
+- **OUTPUT TABLE:** APSD.BG_CAMS_OBS_CATCH
+- **YEARS:** 2018-2020
+- **RESOLUTION:** VTRSERNO (subtrip)~LINK1
+- **DEVELOPMENT LANGUAGE:** SQL
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
+
+
+## Data Sources
+- CAMS Apportionment and Trip attributes (GARFO)
+- CAMS prorated observer data
+	+ NEFOP (NEFSC)
+	+ ASM (NEFSC)
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   APSD.BG_CAMS_OBS_CATCH table lineage"}
+DiagrammeR::mermaid("
+  graph LR
+  apsd.cams_trip_attribute --> APSD.BG_CAMS_CATCH
+  apsd.cfders_vtr_apportionment --> APSD.BG_CAMS_CATCH
+  NEFOP --> APSD.OBS_CAMS_PRORATE
+  ASM --> APSD.OBS_CAMS_PRORATE
+  APSD.BG_CAMS_CATCH --> APSD.BG_CAMS_OBS_CATCH
+  APSD.OBS_CAMS_PRORATE --> APSD.BG_CAMS_OBS_CATCH
+
+        ")
+```
+## Approach
+
+<!-- Most of the data sources used to assign trip attributes do no require processing in the DMIS matching engine because they are range bound with a START_DATE and END_DATE.  Therefore linkage to the DMIS_TRIP_ID is achieved by identifying attribute records where the RECORD_LAND for the trip is between the START_DATE and END_DATE.  Due to the large number of source tables for trip attribute information, it was easiest to decompose these attributes into key-value pairs with START and END dates.  The result is a highly normalized intermediary table that can be unioned to other data sources formatted in the same way.  This approach allows for a modular design and make it easier to add trip attributes from different source tables in the future because they can simply be added to the key-value pair table.  After decomposing into key-values and associating with each DMIS_TRIP_ID, the output is rotated into a "flat" table where each row is a trip with the Oracle PIVOT function.  The final step then joins trip attributes that are matched in the CAMS matching engine by DMIS_TRIP_ID, these include VMS declaration code and Trip-Start-Hail exemptions. -->
+
+
+
+## Data Dictionary
+
+```{r echo = F}
+
+library(readxl)
+library(knitr)
+
+dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx')
+
+kable(dat)
+
+```
+
