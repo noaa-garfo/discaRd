@@ -20,7 +20,7 @@ we also keep all hauls, not just observed hauls, so prorating can be done
 
 */
 
-DEF year = 2017
+DEF year = 2021
 /
 DROP TABLE bg_obdbs_cams_mock&year
 /

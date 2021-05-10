@@ -28,8 +28,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.BG_OBDBS_CAMS_MOCK(YYYY) table lineage"}
-DiagrammeR::mermaid("
-  graph TB
+DiagrammeR::mermaid(diagram = "
+  graph TB  
   A((obdbs.obtrp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
   B((obdbs.obhau)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
   C((obdbs.obspp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
@@ -43,6 +43,7 @@ DiagrammeR::mermaid("
   K((obdbs.asmotgh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
   L((obdbs.obgggh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
   M((obdbs.asmgggh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  
  
   
         ")
