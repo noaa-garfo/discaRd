@@ -1,6 +1,7 @@
 ---
 title: "DiscaRd steps for CAMS"
 output:
+  github_document:
   pdf_document: 
     highlight: zenburn
     toc: yes
