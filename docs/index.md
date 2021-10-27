@@ -1,35 +1,26 @@
-## Welcome to the discaRd project
+# discaRd
 
+## an R package for calculating discard sing the Cochran ratio estimator
 
+This package was developed as part of the GARFO discard peer review in 2016. More information on the review may be found here: https://www.fisheries.noaa.gov/new-england-mid-atlantic/science-data/discard-methodology 
 
-### Markdown
+## Install
+`remotes` is the small part of `devtools` for loading remote data so either work
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```
+library(remotes)
+install_github("NOAA-Fisheries-Greater-Atlantic-Region/discaRd")
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+## Use
 
-### Jekyll Themes
+The `discaRd` package does not set the stratifications. The functions take the stratifications as an input argument from the user.
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/noaa-garfo/discaRd/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+To see an example vignette:
 
-### Support or Contact
+```
+library(discaRd)
+vignette("eflalo_demo")
+```
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+One of the main functions is `get.cochran.ss.by.strat()`. To see the instructions for this run `?get.cochran.ss.by.strat` in R. (NO HELP FILE FOR THIS CURRENTLY - ADDING GITHUB ISSUE)
