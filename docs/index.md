@@ -2,7 +2,7 @@
 
 ## an R package for calculating discard sing the Cochran ratio estimator
 
-This package was developed as part of the GARFO discard peer review in 2016. More information on the review may be found here: https://www.fisheries.noaa.gov/new-england-mid-atlantic/science-data/discard-methodology 
+This package was developed as part of the GARFO discard peer review in 2016. More information on the review may be found [here](https://www.fisheries.noaa.gov/new-england-mid-atlantic/science-data/discard-methodology)
 
 ## Install
 `remotes` is the small part of `devtools` for loading remote data so either work
@@ -24,3 +24,5 @@ vignette("eflalo_demo")
 ```
 
 One of the main functions is `get.cochran.ss.by.strat()`. To see the instructions for this run `?get.cochran.ss.by.strat` in R. 
+
+See full documentation [here](https://github.com/noaa-garfo/discaRd/edit/model_estimator/docs/index.html)
