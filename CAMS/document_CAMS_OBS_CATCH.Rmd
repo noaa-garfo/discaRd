@@ -2,6 +2,7 @@
 title: "CAMS: Observer & Catch Table"
 author: "Ben Galuardi"
 output:
+  github_document:
   html_document: default
   pdf_document: default
 always_allow_html: true
