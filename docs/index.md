@@ -23,4 +23,4 @@ library(discaRd)
 vignette("eflalo_demo")
 ```
 
-One of the main functions is `get.cochran.ss.by.strat()`. To see the instructions for this run `?get.cochran.ss.by.strat` in R. (NO HELP FILE FOR THIS CURRENTLY - ADDING GITHUB ISSUE)
+One of the main functions is `get.cochran.ss.by.strat()`. To see the instructions for this run `?get.cochran.ss.by.strat` in R. 
