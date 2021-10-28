@@ -4,7 +4,7 @@ Title: Cochran bycatch estimation
 Version: 1.1
 Date: 2016-11-02
 Author: Benjamin Galuardi, Daniel Linden, Brant McAfee
-Maintainer: <benjamin.galuardi@noaa.gov>
+Maintainer: Benjamin Galuardi <benjamin.galuardi@noaa.gov>
 Description: functions for calculating Cochran bycatch estimator and CV
 License: GPL-3
 Depends:
