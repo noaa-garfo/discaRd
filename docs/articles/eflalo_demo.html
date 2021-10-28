@@ -6,6 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>discaRd example using eflalo • discaRd</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -13,6 +19,7 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="discaRd example using eflalo">
 <meta property="og:description" content="discaRd">
+<meta property="og:image" content="/logo.png">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -129,7 +136,7 @@
 ##  $ LE_UNIT      : Factor w/ 1 level "KWDAYS": 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ LE_EFF       : num  139.2 148.1 23.9 197.1 72.9 ...
 ##  $ LE_EFF_VMS   : logi  NA NA NA NA NA NA ...
-##  $ OBSFLAG      : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ OBSFLAG      : num  0 0 0 1 0 0 0 0 0 0 ...
 ##  $ FT_REF2      : int  1 2 3 4 5 6 7 8 9 10 ...
 ##  $ NESPP3       : chr  "LE_KG_ANE" "LE_KG_ANE" "LE_KG_ANE" "LE_KG_ANE" ...
 ##  $ LIVE_POUNDS  : num  0 0 0 0 0 0 0 0 0 0 ...
@@ -184,8 +191,8 @@
 , row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'y0'</span>,<span class="st">'y1'</span><span class="op">)</span>
 <span class="op">)</span></code></pre></div>
 <pre><code>##               r     CVTOT
-## y0 0.0002634427 0.6229064
-## y1 0.0002394019 0.4312862</code></pre>
+## y0 7.161076e-05 0.2784574
+## y1 3.496988e-04 0.4428961</code></pre>
 </div>
 <div id="run-with-a-transition-rate" class="section level2">
 <h2 class="hasAnchor">
@@ -195,7 +202,7 @@
     <span class="va">dest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cochran.trans.calc.html">cochran.trans.calc</a></span><span class="op">(</span>bydat_focal <span class="op">=</span> <span class="va">bydat_focal</span>, trips_focal <span class="op">=</span> <span class="va">trips_focal</span>, bydat_prev <span class="op">=</span> <span class="va">bydat_prev</span>, trips_prev <span class="op">=</span> <span class="va">trips_prev</span>, CV_target <span class="op">=</span><span class="fl">.3</span>, strata_name <span class="op">=</span> <span class="st">"STRATA"</span>, strata_complete <span class="op">=</span> <span class="va">strata_complete</span>, time_span <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">minday</span>, <span class="fl">365</span><span class="op">)</span><span class="op">)</span>
 
 <span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">dest</span><span class="op">$</span><span class="va">D</span><span class="op">)</span></code></pre></div>
-<p>num [1:20, 1:365] 0 0 0 0.522 0 … - attr(*, “dimnames”)=List of 2 ..$ : chr [1:20] “DRB_MOL_0_0_0” “FPO_CRU_0_0_0” “GNS_DEF_0_0_0” “GNS_DEF_100-119_0_0” … ..$ : chr [1:365] “1” “2” “3” “4” …</p>
+<p>num [1:20, 1:365] 0 0 0 0 0 … - attr(*, “dimnames”)=List of 2 ..$ : chr [1:20] “DRB_MOL_0_0_0” “FPO_CRU_0_0_0” “GNS_DEF_0_0_0” “GNS_DEF_100-119_0_0” … ..$ : chr [1:365] “1” “2” “3” “4” …</p>
 </div>
 <div id="plot-the-total-discard" class="section level2">
 <h2 class="hasAnchor">
@@ -239,7 +246,7 @@
 
 
       <footer><div class="copyright">
-  <p>Developed by .</p>
+  <p>Developed by Benjamin Galuardi.</p>
 </div>
 
 <div class="pkgdown">
