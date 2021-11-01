@@ -1,0 +1,15 @@
+navbar:
+  title: "discaRd"
+  left:
+    - icon: fa-home fa-lg
+      href: index.html
+    - text: "Documentation"
+      href: https://www.fisheries.noaa.gov/new-england-mid-atlantic/science-data/discard-methodology
+    - text: "Articles"
+      menu:
+        - text: Demo with ICES data
+          href: eflalo_demo.html
+    - text: "Functions"
+      href: reference/index.html
+    - text: "News"
+      href: news.html
