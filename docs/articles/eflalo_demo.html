@@ -136,7 +136,7 @@
 ##  $ LE_UNIT      : Factor w/ 1 level "KWDAYS": 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ LE_EFF       : num  139.2 148.1 23.9 197.1 72.9 ...
 ##  $ LE_EFF_VMS   : logi  NA NA NA NA NA NA ...
-##  $ OBSFLAG      : num  0 0 0 1 0 0 0 0 0 0 ...
+##  $ OBSFLAG      : num  1 0 0 0 1 0 0 0 0 0 ...
 ##  $ FT_REF2      : int  1 2 3 4 5 6 7 8 9 10 ...
 ##  $ NESPP3       : chr  "LE_KG_ANE" "LE_KG_ANE" "LE_KG_ANE" "LE_KG_ANE" ...
 ##  $ LIVE_POUNDS  : num  0 0 0 0 0 0 0 0 0 0 ...
@@ -191,8 +191,8 @@
 , row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'y0'</span>,<span class="st">'y1'</span><span class="op">)</span>
 <span class="op">)</span></code></pre></div>
 <pre><code>##               r     CVTOT
-## y0 7.161076e-05 0.2784574
-## y1 3.496988e-04 0.4428961</code></pre>
+## y0 8.878681e-05 0.6385114
+## y1 3.901893e-05 0.2899111</code></pre>
 </div>
 <div id="run-with-a-transition-rate" class="section level2">
 <h2 class="hasAnchor">
@@ -202,7 +202,7 @@
     <span class="va">dest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cochran.trans.calc.html">cochran.trans.calc</a></span><span class="op">(</span>bydat_focal <span class="op">=</span> <span class="va">bydat_focal</span>, trips_focal <span class="op">=</span> <span class="va">trips_focal</span>, bydat_prev <span class="op">=</span> <span class="va">bydat_prev</span>, trips_prev <span class="op">=</span> <span class="va">trips_prev</span>, CV_target <span class="op">=</span><span class="fl">.3</span>, strata_name <span class="op">=</span> <span class="st">"STRATA"</span>, strata_complete <span class="op">=</span> <span class="va">strata_complete</span>, time_span <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">minday</span>, <span class="fl">365</span><span class="op">)</span><span class="op">)</span>
 
 <span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">dest</span><span class="op">$</span><span class="va">D</span><span class="op">)</span></code></pre></div>
-<p>num [1:20, 1:365] 0 0 0 0 0 … - attr(*, “dimnames”)=List of 2 ..$ : chr [1:20] “DRB_MOL_0_0_0” “FPO_CRU_0_0_0” “GNS_DEF_0_0_0” “GNS_DEF_100-119_0_0” … ..$ : chr [1:365] “1” “2” “3” “4” …</p>
+<p>num [1:20, 1:365] 0 0 0 9.62 0 … - attr(*, “dimnames”)=List of 2 ..$ : chr [1:20] “DRB_MOL_0_0_0” “FPO_CRU_0_0_0” “GNS_DEF_0_0_0” “GNS_DEF_100-119_0_0” … ..$ : chr [1:365] “1” “2” “3” “4” …</p>
 </div>
 <div id="plot-the-total-discard" class="section level2">
 <h2 class="hasAnchor">
