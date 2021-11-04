@@ -33,12 +33,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   APSD.BG_CAMS_OBS_CATCH table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  apsd.cams_trip_attribute --> APSD.BG_CAMS_CATCH
-  apsd.cfders_vtr_apportionment --> APSD.BG_CAMS_CATCH
-  NEFOP --> APSD.OBS_CAMS_PRORATE
-  ASM --> APSD.OBS_CAMS_PRORATE
-  APSD.BG_CAMS_CATCH --> APSD.BG_CAMS_OBS_CATCH
-  APSD.OBS_CAMS_PRORATE --> APSD.BG_CAMS_OBS_CATCH
+  MAPS.STG_TRIP_ATTR --> MAPS.CAMS_CATCH
+  MAPS.CFDERS_VTR_IMPUTED --> MAPS.CAMS_CATCH
+  NEFOP --> MAPS.OBS_CAMS_PRORATE
+  ASM --> MAPS.OBS_CAMS_PRORATE
+  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH
+  MAPS.OBS_CAMS_PRORATE --> MAPS.CAMS_OBS_CATCH
 
         ")
 ```
