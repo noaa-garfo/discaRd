@@ -1,6 +1,6 @@
 /*
 
-Create table of discarded speceis for a calendar year 
+Create table of discarded species for a calendar year 
 this follows the steps used in Mid-Atlantic discard estaimtion for year end reports
 
 The eventual goal is to replace the CASE code for gear, mesh and area with tale based joins. 
