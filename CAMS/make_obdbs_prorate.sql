@@ -6,6 +6,9 @@ ben galuardi
 
 1-6-21
 
+modified
+12-02-21 changed table references to match new OBS CAMS table names
+
 */
 
 drop table obs_cams_prorate 
@@ -62,13 +65,13 @@ select a.*
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
         
             from (
-			    select * from apsd.bg_obdbs_cams_mock2017
+			    select * from apsd.obdbs_cams_2017
                 union all
-                select * from apsd.bg_obdbs_cams_mock2018
+                select * from apsd.obdbs_cams_2018
                 union all
-                select * from apsd.bg_obdbs_cams_mock2019
+                select * from apsd.obdbs_cams_2019
 				union all
-                select * from apsd.bg_obdbs_cams_mock2020
+                select * from apsd.obdbs_cams_2020
             )
             o
           group by  o.link3
@@ -112,6 +115,9 @@ group by link3
 ;
 
 --select * from obs_cams_prorate
+/
+
+grant select on obs_cams_prorate to maps
 
 
             

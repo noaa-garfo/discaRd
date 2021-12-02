@@ -11,6 +11,7 @@ Created by: Ben Galuardi, modified from Jay Hermsen's code
 
 modified 
 3-18-21
+12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
 
 The year variable can be defined, and then the entire script run (F5 in sqldev)
 
@@ -22,7 +23,7 @@ we also keep all hauls, not just observed hauls, so prorating can be done
 
 DEF year = 2021
 /
-DROP TABLE bg_obdbs_cams_mock&year
+DROP TABLE obdbs_cams_&year
 /
 DROP TABLE bg_obtables_join_1_&year
 /
@@ -313,24 +314,47 @@ DROP TABLE bg_obdbs_tables_5_&year
 -- get rid of all the update steps... put them in CASE statements for WAY faster processing
 
 CREATE TABLE bg_obdbs_tables_5_&year AS 
-select c.*
-,  CASE when  (geartype in ('Otter Trawl') AND meshgroup2 = 'xlg' ) then 'lg'
-       when meshgroup2 IS NULL then 'na'
-      else meshgroup2 end as meshgroup
-      from (
-Select b.*
-, CASE when b.geartype in ('Otter Trawl, Haddock Separator', 'Otter Trawl, Ruhle', 'Otter Trawl, Twin') then 'lg'
-       else meshgroup1 end as meshgroup2
-    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
-    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory
-from (
+--select c.*
+--    ,  CASE when  (geartype in ('Otter Trawl') AND meshgroup2 = 'xlg' ) then 'lg'
+--           when meshgroup2 IS NULL then 'na'
+--          else meshgroup2 end as meshgroup
+--     
+--     
+--     
+--    from (              
+--        Select b.*
+--        , CASE when b.geartype in ('Otter Trawl, Haddock Separator', 'Otter Trawl, Ruhle', 'Otter Trawl, Twin') then 'lg'
+--               else meshgroup1 end as meshgroup2
+--            , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
+--            , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory
+--
+--    from (
+
+--select b.*
+--        , CASE  WHEN (meshsize < 8 AND negear in ('100','105','117', '116','115')) then 'LM'
+--             WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
+--             else meshgroup
+--             END as meshgroup2
+--from(
     SELECT a.*
-    , (CASE WHEN meshsize < 5.5 AND negear IN ('050','054','057','100','105','116','117') THEN 'sm'
-          WHEN meshsize BETWEEN 5.5 AND 7.99 AND negear IN ('050','054','057','100','105','116','117') THEN 'lg'
-          WHEN meshsize >= 8 AND negear IN ('050','054','057','100','105','116','117') THEN 'xlg'
-          END) as  meshgroup1
---    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea end as accessarea
---    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory end as tripcategory
+        , CASE WHEN (meshsize < 3.99 AND negear not in ('100','105','115', '117', '116')) then 'SM' --
+             WHEN (meshsize >= 3.99 AND meshsize < 5.75 AND negear not in ('100','105','117', '116','115') ) then 'MM' --
+             WHEN (meshsize >= 5.75 AND negear not in ('100','105','117', '116','115') ) then 'LM' --
+             WHEN (meshsize < 8 AND negear in ('100','105','117', '116','115')) then 'LM'
+             WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
+             else null
+             END as meshgroup
+             
+        
+        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
+        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory                     
+        
+--        , (CASE WHEN meshsize < 5.5 AND negear IN ('050','054','057','100','105','116','117') THEN 'sm'
+--              WHEN meshsize BETWEEN 5.5 AND 7.99 AND negear IN ('050','054','057','100','105','116','117') THEN 'lg'
+--              WHEN meshsize >= 8 AND negear IN ('050','054','057','100','105','116','117') THEN 'xlg'
+--              END) as  meshgroup1
+
+
     from  (
         SELECT a.*, b.MSWGTAVG
         ,  (CASE WHEN (a.month<=06) then 1 
@@ -395,8 +419,8 @@ from (
         FROM bg_obdbs_tables_4_&year a LEFT OUTER JOIN bg_obdbs_meshsize2_&year b
         ON a.link3 = b.link3 
     ) a
-  ) b
- ) c 
+--  ) b
+-- ) c 
 /
 
 /
@@ -404,7 +428,7 @@ from (
 ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, meshgroup1, meshgroup2, accessarea1)
 /
 
-CREATE TABLE bg_obdbs_cams_mock&year as select * from bg_obdbs_tables_5_&year
+CREATE TABLE obdbs_cams_&year as select * from bg_obdbs_tables_5_&year
 /
 drop table bg_obdbs_tables_5_&year
 /
@@ -417,10 +441,11 @@ drop table bg_obdbs_tables_2_&year
 drop table bg_obdbs_tables_3_&year
 /
 drop table bg_obdbs_tables_4_&year
+
 ;
 
 select count(*) 
-from bg_obdbs_cams_mock&year
+from obdbs_cams_&year
 
 ;
 
