@@ -24,6 +24,7 @@ declaration
 -----------------------------------------------------------------------*/
 
 CREATE TABLE bg_cams_catch AS
+
 SELECT a.dmis_trip_id
 , a.docid
 , a.vtrserno
