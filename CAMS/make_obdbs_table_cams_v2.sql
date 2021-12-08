@@ -444,7 +444,7 @@ drop table bg_obdbs_tables_4_&year
 
 ;
 
-select count(*) 
+select * --distinct(gearcat)
 from obdbs_cams_&year
 
 ;
