@@ -6,6 +6,8 @@ match on gear (NEGEAR), mesh, link1 and AREA
 
 BG 12-02-21
 
+12/7/21 added gearmapping for OBS abd VTR using a miodified SECGEARFISH column
+
 ------------------------------------------------------------------------------------------------------*/  
 
 drop table bg_cams_obs_catch
@@ -16,6 +18,7 @@ drop table cams_obs_catch
 
 
 create or replace view cams_obs_catch as 
+
 
 with ulink as (
     select count(distinct(obs_link1)) nlink1
@@ -48,7 +51,6 @@ with ulink as (
         where a.obs_vtr in (l.obs_vtr)
         and l.obs_vtr is not null        
     )
-    --where permit = 410126
     group by obs_vtr, permit, camsid
     order by permit, obs_vtr
 )
@@ -67,6 +69,7 @@ with ulink as (
         , d.gearcode
         , d.geartype
         , d.negear
+        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
 --        , d.meshsize
         , NVL(d.mesh_cat, 'na') as meshgroup
         , d.area
@@ -87,33 +90,17 @@ with ulink as (
         , d.tripcategory
         , d.accessarea
     , o.link1
---    from apsd.bg_cams_catch_ta_mock d
     from maps.cams_catch d
---    from apsd.cams_apport d
     left join (  --adds observer link field
-    
          select * 
          from vtr_link
-        
-        /* this code still     */    
---             select *
---        --     from dmis.d_match_obs_link
---             from dmis.d_match_obs_link
---             where link1 in (
---                 select distinct(link1) link1
---                 from
---                 obdbs.obhau@NOVA
---        --         where year >=2018
---                 union all
---                 select distinct(link1) link1
---                 from
---                 obdbs.asmhau@NOVA
---        --         where year >=2018
---             )
-    ) o
---    on ( o.obs_vtr = substr(d.vtrserno, 1, 13))
---    on o.obs_vtr = d.vtrserno --substr(d.vtrserno, 1, 13)
+        ) o
+       
     on  o.camsid = d.camsid 
+    
+    left join (select * from maps.STG_OBS_VTR_GEARMAP) g
+     on d.NEGEAR = g.VTR_NEGEAR
+    
     
     group by 
         d.permit
@@ -130,6 +117,7 @@ with ulink as (
         , d.gearcode
         , d.geartype
         , d.negear
+        , NVL(g.SECGEAR_MAPPED, 'OTH')
 --        , d.meshsize
         , NVL(d.mesh_cat, 'na')
         , d.area
@@ -153,7 +141,13 @@ with ulink as (
 
 -- this part gets observer data
 
-, obs as (select * from apsd.obs_cams_prorate)
+, obs as (
+      select a.*
+            , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+        from apsd.obs_cams_prorate a
+          left join (select * from maps.STG_OBS_VTR_GEARMAP) g
+          on a.OBS_GEAR = g.OBS_NEGEAR
+      )
 
 --, mgear as (
 --    select gear_code_fid
@@ -161,6 +155,8 @@ with ulink as (
 --    , vtr_gear_code
 --    from apsd.master_gear
 --)
+
+--, gearmap as (select * from maps.STG_OBS_VTR_GEARMAP)
 
     select c.*
     , o.vtrserno as obsvtr
@@ -179,8 +175,10 @@ from trips c
     left join (
         select * from obs 
     ) o
+    
+on (o.link1 = c.link1 AND c.SECGEAR_MAPPED = o.SECGEAR_MAPPED AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
 --on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
-on (o.link1 = c.link1 AND substr(to_char(c.negear), 1, 1) = substr(to_char(o.obs_gear), 1, 1) AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
+--on (o.link1 = c.link1 AND substr(to_char(c.negear), 1, 1) = substr(to_char(o.obs_gear), 1, 1) AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
 --on (o.vtrserno = c.vtrserno)
 --on (o.link1 = c.link1)
 
@@ -229,3 +227,19 @@ group by gearnm
 , mesh_cat
 , negear
 
+/
+
+-- look at number of link1 and vtr per gear and mesh combination
+
+select count(distinct(link1)) as nlink1
+,  count(distinct(CAMSID)) as n_vtr
+, meshgroup
+, geartype
+, negear
+, secgear_mapped
+from cams_obs_catch
+--where meshgroup not in 'na'
+where year = 2019
+--and link1 is not null
+group by negear, meshgroup, geartype, secgear_mapped
+order by negear, meshgroup
