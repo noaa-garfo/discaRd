@@ -179,7 +179,133 @@ on c.GEARCODE = vl.vtr_gear_code
 order by gearcode
 /
 
-/*   Use new gear mapping table */
+
+/
+
+     with t1 as (
+        select a.*
+            , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+        from apsd.obs_cams_prorate a
+          left join (select * from maps.STG_OBS_VTR_GEARMAP) g
+          on a.OBS_GEAR = g.OBS_NEGEAR
+          
+          where year = 2019
+          and VTRSERNO <> '00000000'
+        )
+      select count(distinct(LINK3)) nlink3
+      , count(distinct(LINK1)) nlink1
+      , SECGEAR_MAPPED
+      from t1
+      group by SECGEAR_MAPPED
+      
+
+
+/
+
+------- Look at what gear is on the VTR for the obs link1 where we see  116 ,117 gillnets
+-- get link1 from obs prorate table where negear is 116 117
+--- get CAMSID for those obs link1
+-- get catch info for those CMASIDs
+
+select count(distinct(camsid))
+, negear
+, gearnm
+, mesh_cat
+from
+maps.cams_catch
+    where camsid in (
+    select distinct(camsid) camsid
+    from maps.match_obs
+        where obs_link1 in(
+            select distinct(link1) as link1
+            from apsd.obs_cams_prorate
+            where obs_gear in (115, 116, 117)
+            and year = 2019
+        )
+)
+group by gearnm
+, mesh_cat
+, negear
+
+/
+
+select *
+from cams_obs_catch
+
+
+/
+
+
+-- look at number of link1 and vtr per gear and mesh combination
+
+select count(distinct(link1)) as nlink1
+,  count(distinct(CAMSID)) as n_vtr
+, meshgroup
+, obs_meshgroup
+, obs_gear
+, geartype
+, negear
+, secgear_mapped
+from cams_obs_catch
+--where meshgroup not in 'na'
+where year = 2019
+--and link1 is not null
+group by negear, meshgroup, geartype, secgear_mapped, obs_meshgroup,  obs_gear
+order by negear, meshgroup
+
+
+/
+-- staged match version
+
+select count(distinct(link3)) as nlink3
+, count(distinct(link1)) as nlink1
+,  count(distinct(vtrserno)) as n_vtr
+, year
+, 'staged' as match
+from maps.cams_obs_catch_tmp
+--where meshgroup not in 'na'
+where year = 2019
+group by year
+
+union all
+
+-- old table
+select count(distinct(link3)) as nlink3
+, count(distinct(link1)) as nlink1
+,  count(distinct(vtrserno)) as n_vtr
+, year
+, 'not staged' as match
+from maps.cams_obs_catch
+--where meshgroup not in 'na'
+where year = 2019
+group by year
+
+/
+
+-- seems like there are more LNINK1 in theold version than the new.. which are they? 
+-- none!! weird result above.. 
+
+select *
+from maps.cams_obs_catch_tmp 
+where link1 not in (
+    select distinct(link1) link1
+    from maps.cams_obs_catch
+)
+
+
+/
+select --count(distinct(link1)) as nlink1
+ count(distinct(vtrserno)) as n_vtr
+, meshgroup
+, geartype
+, negear
+, secgear_mapped
+from maps.cams_obs_catch_tmp
+--where meshgroup not in 'na'
+where year = 2019
+--and link1 is not null
+group by negear, meshgroup, geartype, secgear_mapped
+order by negear, meshgroup
 
 
 

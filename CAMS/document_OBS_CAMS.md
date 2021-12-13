@@ -1,4 +1,4 @@
-CAMS: Observer Mockup Tables
+CAMS: Observer Tables for Discards
 ================
 Ben Galuardi
 
@@ -6,20 +6,21 @@ Ben Galuardi
 
 ## Description
 
-  - **OUTPUT TABLE:** APSD.BG\_OBDBS\_CAMS\_MOCK(YYYY)
-  - **YEARS:** 2017-2020
-  - **RESOLUTION:** LINK3\~LINK1
-  - **DEVELOPMENT LANGUAGE:** SQL
-  - **CODE:**
+-   **OUTPUT TABLE:** APSD.OBDBS_CAMS\_<YYYY>
+-   **YEARS:** 2017-2020
+-   **RESOLUTION:** LINK3\~LINK1
+-   **DEVELOPMENT LANGUAGE:** SQL
+-   **CODE:**
     <https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS>
 
 ## Data Sources
 
-  - OBDBS (NEFOP, @NOVA, NEFSC)
+-   OBDBS (NEFOP, @NOVA, NEFSC)
 
-![Figure 1. APSD.BG\_OBDBS\_CAMS\_MOCK(YYYY) table
-lineage](document_OBS_CAMS_files/figure-gfm/table_flow0-1.png) \#\#
-Approach
+![Figure 1. APSD.OBDBS_CAMS<YYYY> table
+lineage](document_OBS_CAMS_files/figure-gfm/table_flow0-1.png)
+
+## Approach
 
 These tables are built by calendar year and encompass all information
 from NEFOP and ASM, for all observed trips. Tables from the <OBDSB@NOVA>
@@ -41,10 +42,10 @@ details on individual input tables.
     ## Warning: package 'knitr' was built under R version 4.0.5
 
 | Name         | Description                             | Data Type    |
-| :----------- | :-------------------------------------- | :----------- |
+|:-------------|:----------------------------------------|:-------------|
 | AREA         | see OBDBS                               | VARCHAR2(3)  |
 | CATDISP      | see OBDBS                               | VARCHAR2(1)  |
-| FLEET\_TYPE  | see OBDBS                               | VARCHAR2(3)  |
+| FLEET_TYPE   | see OBDBS                               | VARCHAR2(3)  |
 | DATELAND     | see OBDBS                               | DATE         |
 | DATESAIL     | see OBDBS                               | DATE         |
 | DEALNUM      | see OBDBS                               | VARCHAR2(25) |

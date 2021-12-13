@@ -21,7 +21,7 @@ we also keep all hauls, not just observed hauls, so prorating can be done
 
 */
 
-DEF year = 2021
+DEF year = 2017
 /
 DROP TABLE obdbs_cams_&year
 /
@@ -425,7 +425,7 @@ CREATE TABLE bg_obdbs_tables_5_&year AS
 
 /
 -- drop temp columns
-ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, meshgroup1, meshgroup2, accessarea1)
+ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, accessarea1)
 /
 
 CREATE TABLE obdbs_cams_&year as select * from bg_obdbs_tables_5_&year
@@ -444,8 +444,8 @@ drop table bg_obdbs_tables_4_&year
 
 ;
 
-select * --distinct(gearcat)
-from obdbs_cams_&year
+--select * --distinct(gearcat)
+--from obdbs_cams_&year
 
 ;
 

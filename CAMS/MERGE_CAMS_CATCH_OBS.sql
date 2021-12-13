@@ -7,6 +7,12 @@ match on gear (NEGEAR), mesh, link1 and AREA
 BG 12-02-21
 
 12/7/21 added gearmapping for OBS abd VTR using a miodified SECGEARFISH column
+12/10/21 match CAtch and OBS using a hierarchical match
+ Trips with no LINK1 are not observed
+ Trips with only one LINK1 are matched on only LINK1
+ Trips with >1 LINK1 are matched on LINK1, MESHGROUP, SECGEAR_MAPPED, AREA
+12/13/21 changed gearmapping join to use only unique NEGEAR to GEARCODE combinations. Trips were being duped with one to many on this match
+
 
 ------------------------------------------------------------------------------------------------------*/  
 
@@ -16,9 +22,13 @@ drop table bg_cams_obs_catch
 drop table cams_obs_catch
 /
 
+drop View cams_obs_catch
 
-create or replace view cams_obs_catch as 
+/
+drop materialized view cams_obs_catch
+/
 
+create materialized view cams_obs_catch as 
 
 with ulink as (
     select count(distinct(obs_link1)) nlink1
@@ -66,7 +76,7 @@ with ulink as (
              end as halfofyear
         , d.docid
         , substr(d.vtrserno, 1, 13) vtrserno
-        , d.gearcode
+--        , d.gearcode
         , d.geartype
         , d.negear
         , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
@@ -90,6 +100,7 @@ with ulink as (
         , d.tripcategory
         , d.accessarea
     , o.link1
+    , count(distinct(vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
     from maps.cams_catch d
     left join (  --adds observer link field
          select * 
@@ -98,7 +109,12 @@ with ulink as (
        
     on  o.camsid = d.camsid 
     
-    left join (select * from maps.STG_OBS_VTR_GEARMAP) g
+    left join (
+      select distinct(VTR_NEGEAR) as VTR_NEGEAR
+       , SECGEAR_MAPPED
+      from maps.STG_OBS_VTR_GEARMAP
+      where VTR_NEGEAR is not null
+     ) g
      on d.NEGEAR = g.VTR_NEGEAR
     
     
@@ -114,7 +130,7 @@ with ulink as (
         , d.camsid
         , d.docid
         , d.vtrserno
-        , d.gearcode
+--        , d.gearcode
         , d.geartype
         , d.negear
         , NVL(g.SECGEAR_MAPPED, 'OTH')
@@ -139,26 +155,32 @@ with ulink as (
         , o.link1
 )
 
--- this part gets observer data
+-- get observer data
+-- join to gearmapping for match
 
 , obs as (
       select a.*
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
         from apsd.obs_cams_prorate a
-          left join (select * from maps.STG_OBS_VTR_GEARMAP) g
+          left join (
+            select distinct(OBS_NEGEAR) as OBS_NEGEAR
+            , SECGEAR_MAPPED
+            from maps.STG_OBS_VTR_GEARMAP
+            where OBS_NEGEAR is not null          
+          ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
       )
 
---, mgear as (
---    select gear_code_fid
---    , RIGHT('000' + negear, 3) as negear
---    , vtr_gear_code
---    from apsd.master_gear
---)
 
---, gearmap as (select * from maps.STG_OBS_VTR_GEARMAP)
+-- 
+/* 
+staged matching 
 
-    select c.*
+trips with no link1 (unobserved)
+*/
+, trips_0 as (
+
+  select t.*
     , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
@@ -170,76 +192,94 @@ with ulink as (
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
---    , m.GEAR_CODE_FID
-from trips c
-    left join (
-        select * from obs 
-    ) o
-    
-on (o.link1 = c.link1 AND c.SECGEAR_MAPPED = o.SECGEAR_MAPPED AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
---on (o.link1 = c.link1 AND c.meshgroup = o.meshgroup AND c.negear = o.obs_gear AND c.CAREA = o.OBS_AREA)
---on (o.link1 = c.link1 AND substr(to_char(c.negear), 1, 1) = substr(to_char(o.obs_gear), 1, 1) AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
---on (o.vtrserno = c.vtrserno)
---on (o.link1 = c.link1)
 
---left outer join (SELECT * from mgear) m
---on (c.GEARCODE = m.VTR_GEAR_CODE) 
+     from trips t
+     left join (select * from obs ) o
+     on (t.link1 = o.link1)
+ 
+    where t.LINK1 is null   
+
+)
+
+-- trips with single link1 (one subtrip)
+, trips_1 
+ as (  
+  select t.*
+  , o.vtrserno as obsvtr
+    , o.link1 as obs_link1
+    , o.link3
+    , o.obs_area as obs_area
+    , o.nespp3
+    , o.discard_prorate as discard
+    , o.obs_haul_kept
+    , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
+    , o.obs_gear as obs_gear
+    , o.obs_mesh as obs_mesh
+    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    from ( 
+     select t.*
+     from trips t 
+
+   ) t
+      left join (select * from obs ) o
+        on (t.link1 = o.link1)
+  where nvtr_link1 = 1
+  and t.link1 is not null
+  and t.vtrserno is not null
+--  and t.year = 2019
+
+)
+
+-- trips with >1 link1
+, trips_2 as ( 
+
+   select t.*
+  , o.vtrserno as obsvtr
+    , o.link1 as obs_link1
+    , o.link3
+    , o.obs_area as obs_area
+    , o.nespp3
+    , o.discard_prorate as discard
+    , o.obs_haul_kept
+    , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
+    , o.obs_gear as obs_gear
+    , o.obs_mesh as obs_mesh
+    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    from ( 
+     select t.*
+     from trips t 
+   ) t
+      left join (select * from obs ) o
+        on (t.link1 = o.link1)
+  where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  and t.link1 is not null
+  and t.vtrserno is not null
+--  and t.year = 2019
+)
+
+select * from trips_0
+union all
+select * from trips_1
+union all
+select * from trips_2
+
+/*       Old matching criteria, no table split as above      */
+--on (o.link1 = c.link1 AND c.SECGEAR_MAPPED = o.SECGEAR_MAPPED AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
 
 /
 
-;
-
-select count(distinct(link1)) as nlink1
-, meshgroup
-, geartype
-, negear
-from cams_obs_catch
---where meshgroup not in 'na'
-where year = 2019
-and link1 is not null
-group by negear, meshgroup, geartype
-order by negear, meshgroup
+;   
+--
+--select count(distinct(link1)) as nlink1
+--, meshgroup
+--, geartype
+--, negear
+--from cams_obs_catch
+----where meshgroup not in 'na'
+--where year = 2019
+--and link1 is not null
+--group by negear, meshgroup, geartype
+--order by negear, meshgroup
 /
 
 / 
-------- Look at what gear is on the VTR for the obs link1 where we see  116 ,117 gillnets
--- get link1 from obs prorate table where negear is 116 117
---- get CAMSID for those obs link1
--- get catch info for those CMASIDs
-
-select count(distinct(camsid))
-, negear
-, gearnm
-, mesh_cat
-from
-maps.cams_catch
-    where camsid in (
-    select distinct(camsid) camsid
-    from maps.match_obs
-        where obs_link1 in(
-            select distinct(link1) as link1
-            from apsd.obs_cams_prorate
-            where obs_gear in (115, 116, 117)
-            and year = 2019
-        )
-)
-group by gearnm
-, mesh_cat
-, negear
-
-/
-
--- look at number of link1 and vtr per gear and mesh combination
-
-select count(distinct(link1)) as nlink1
-,  count(distinct(CAMSID)) as n_vtr
-, meshgroup
-, geartype
-, negear
-, secgear_mapped
-from cams_obs_catch
---where meshgroup not in 'na'
-where year = 2019
---and link1 is not null
-group by negear, meshgroup, geartype, secgear_mapped
-order by negear, meshgroup

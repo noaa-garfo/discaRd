@@ -31,10 +31,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.OBS_CAMS_PRORATE table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  apsd.bg_obdbs_cams_mock2017 --> APSD.OBS_CAMS_PRORATE
-  apsd.bg_obdbs_cams_mock2018 --> APSD.OBS_CAMS_PRORATE
-  apsd.bg_obdbs_cams_mock2019 --> APSD.OBS_CAMS_PRORATE
-  apsd.bg_obdbs_cams_mock2020 --> APSD.OBS_CAMS_PRORATE
+  apsd.obdbs_cams2017 --> APSD.OBS_CAMS_PRORATE
+  apsd.obdbs_cams2018 --> APSD.OBS_CAMS_PRORATE
+  apsd.obdbs_cams2019 --> APSD.OBS_CAMS_PRORATE
+  apsd.obdbs_cams2020 --> APSD.OBS_CAMS_PRORATE
         ")
 ```
 ## Approach
