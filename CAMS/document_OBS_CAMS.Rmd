@@ -1,5 +1,5 @@
 ---
-title: "CAMS: Observer Mockup Tables"
+title: "CAMS: Observer Tables for Discards"
 author: "Ben Galuardi"
 output:
   github_document:
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Description
 
-- **OUTPUT TABLE:** APSD.BG_OBDBS_CAMS_MOCK(YYYY)
+- **OUTPUT TABLE:** APSD.OBDBS_CAMS_<YYYY>
 - **YEARS:** 2017-2020
 - **RESOLUTION:** LINK3~LINK1
 - **DEVELOPMENT LANGUAGE:** SQL
@@ -28,27 +28,28 @@ knitr::opts_chunk$set(echo = TRUE)
 - OBDBS (NEFOP, @NOVA, NEFSC)
 
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.BG_OBDBS_CAMS_MOCK(YYYY) table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.OBDBS_CAMS<YYYY> table lineage"}
 DiagrammeR::mermaid(diagram = "
-  graph TB  
-  A((obdbs.obtrp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  B((obdbs.obhau)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  C((obdbs.obspp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  D((obdbs.obfishdisp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  E((obdbs.asmtrp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  F((obdbs.asmhau)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  G((obdbs.asmspp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  H((obdbs.obfishdisp)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  I((obdbs.obspecconv)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  J((obdbs.obotgh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  K((obdbs.asmotgh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  L((obdbs.obgggh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
-  M((obdbs.asmgggh)) --> Z[apsd.bg_obdbs_cams_mockYYYY]
+  graph LR 
+  A((obdbs.obtrp)) --> Z[apsd.obdbs_camsYYYY]
+  B((obdbs.obhau)) --> Z[apsd.obdbs_camsYYYY]
+  C((obdbs.obspp)) --> Z[apsd.obdbs_camsYYYY]
+  D((obdbs.obfishdisp)) --> Z[apsd.obdbs_camsYYYY]
+  E((obdbs.asmtrp)) --> Z[apsd.obdbs_camsYYYY]
+  F((obdbs.asmhau)) --> Z[apsd.obdbs_camsYYYY]
+  G((obdbs.asmspp)) --> Z[apsd.obdbs_camsYYYY]
+  H((obdbs.obfishdisp)) --> Z[apsd.obdbs_camsYYYY]
+  I((obdbs.obspecconv)) --> Z[apsd.obdbs_camsYYYY]
+  J((obdbs.obotgh)) --> Z[apsd.obdbs_camsYYYY]
+  K((obdbs.asmotgh)) --> Z[apsd.obdbs_camsYYYY]
+  L((obdbs.obgggh)) --> Z[apsd.obdbs_camsYYYY]
+  M((obdbs.asmgggh)) --> Z[apsd.obdbs_camsYYYY]
   
  
   
         ")
 ```
+
 ## Approach
 
 These tables are built by calendar year and encompass all information from NEFOP and ASM, for all observed trips. Tables from the OBDSB@NOVA schema in Oracle are used to build a flat file of all observations at the LINK3 (haul) level for all discarded species. The general methodology has been used for the past 5 years at GARFO for annual ACL monitoring in many managed fisheries (e.g. Squid/Mack/Butterfish, dogfish, monkfish, black sea bass, etc.). Since CAMS discard methodology relies on commerical trip metrics for stratification, many variables in these tables are not used directly as in the past. They are used, however, to match the observed records to the corresponding commercial trip. 

@@ -1,0 +1,192 @@
+---
+title: "check CAMS_OBS_CATCH"
+author: "Ben Galuardi"
+date: "12/10/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Examine the result of doing a left join
+
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo=FALSE, results = 'asis', warning=FALSE, 
+                      message=FALSE, cache=FALSE,
+                      progress = TRUE, verbose = FALSE)
+
+```
+
+```{sql eval = F, echo = T}
+
+on (o1.link1 = c.link1 AND c.SECGEAR_MAPPED = o1.SECGEAR_MAPPED AND c.AREA = o1.OBS_AREA)
+    left join (select * from obs ) o2 
+on (o2.link1 = c.link1 AND c.SECGEAR_MAPPED = o2.SECGEAR_MAPPED AND c.AREA = o2.OBS_AREA AND o2.meshgroup = c.meshgroup)
+
+
+```
+
+Original join is a hard match on four elements and looked like this:
+
+```{sql eval = F, echo = T}
+
+on (o.link1 = c.link1 AND substr(to_char(c.negear), 1, 1) = substr(to_char(o.obs_gear), 1, 1) AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
+
+
+```
+
+
+```{r connection and setup}
+
+library(odbc)
+library(readxl)
+library(dplyr)
+library(dbplyr)
+library(knitr)
+# library(dtplyr)
+
+setwd("~/GitHub/discaRd/CAMS")
+
+# connection
+dw_maps <- config::get(value = "maps", file = "K:/R_DEV/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+                  DSN = dw_maps$dsn, 
+                  UID = dw_maps$uid, 
+                  PWD = dw_maps$pwd)
+```
+
+
+```{r look at numebr of trips/hauls for 2019 OBS }
+
+obs19 = tbl(bcon, sql("
+        select a.*
+            , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+        from apsd.obs_cams_prorate a
+          left join (select * from maps.STG_OBS_VTR_GEARMAP) g
+          on a.OBS_GEAR = g.OBS_NEGEAR
+          
+          where year = 2019
+          and VTRSERNO <> '00000000'
+    
+
+      ")) %>% 
+  collect()
+
+ obs19 %>% 
+   dplyr::summarise(n_link3 = n_distinct(LINK3)
+     , n_link1 = n_distinct(LINK1)
+   )
+
+ 
+  obs19 %>% 
+    group_by(SECGEAR_MAPPED) %>% 
+    dplyr::summarise(n_link3 = n_distinct(LINK3)
+     , n_link1 = n_distinct(LINK1)
+    ) %>% 
+     dplyr::select(-1) %>% 
+    colSums()
+  
+
+```
+
+
+
+```{r read in the View/table}
+
+cams_obs_catch = tbl(bcon, sql('select * from MAPS.CAMS_OBS_CATCH_TMP'))
+                     
+
+```
+
+```{r check number by unique VTR}
+r1 = cams_obs_catch %>% 
+  filter(YEAR == 2019) %>% 
+  group_by(YEAR) %>% 
+  dplyr::summarise(nvtr = n_distinct(VTRSERNO)
+            ,nlink1 = n_distinct(LINK1)
+            , nlink3 =  n_distinct(LINK3)) %>% 
+  collect()
+
+r1 %>% 
+  kable(caption = "Unique VTR, LINK1, LINK3, no groupings")
+
+```
+
+```{r check number by unique VTR and secgear_mapped}
+r2 = cams_obs_catch %>% 
+  filter(YEAR == 2019) %>% 
+  group_by(SECGEAR_MAPPED) %>% 
+  dplyr::summarise(nvtr = n_distinct(VTRSERNO)
+            ,nlink1 = n_distinct(LINK1)
+            , nlink3 = n_distinct(LINK3)) %>% 
+  collect()
+
+r2 %>% 
+    ungroup() %>% 
+  dplyr::select(-1) %>% 
+  colSums() %>% 
+    kable(caption = "unique VTR by secgear_mapped") 
+
+```
+
+```{r check number by unique VTR and secgear_mapped and meshgroup}
+r3 = cams_obs_catch %>% 
+  filter(YEAR == 2019) %>% 
+  group_by(SECGEAR_MAPPED, MESHGROUP) %>% 
+  dplyr::summarise(nvtr = n_distinct(VTRSERNO)
+            ,nlink1 = n_distinct(LINK1)
+            , nlink3 = n_distinct(LINK3)) %>% 
+  collect()
+
+r3 %>% 
+  ungroup() %>% 
+  dplyr::select(-1, -2) %>% 
+  colSums() %>% 
+  kable(caption = "VTR by SECGEAR_MAPPED and MESHGROUP")
+
+```
+
+```{r group by link3 and see if any have multiple gear or mesh}
+r4 = cams_obs_catch %>% 
+  filter(YEAR == 2019) %>% 
+  group_by(LINK3) %>% 
+  dplyr::summarise(n_gear = n_distinct(SECGEAR_MAPPED)
+            ,n_mesh = n_distinct(MESHGROUP)
+              ) %>% 
+  collect()
+
+# r4 %>% 
+#   filter(n_gear > 1)
+# 
+# r4 %>% 
+#   filter(n_mesh > 1)
+
+# select one to see what's up...
+
+r5 = cams_obs_catch %>% 
+  filter(LINK3 == '000201901M250060002') %>% 
+  collect() 
+
+# nrow(r5)
+
+r5 %>% 
+  group_by(YEAR) %>% 
+  dplyr::summarise(n_vtr = n_distinct(VTRSERNO)
+                   , n_gear =  n_distinct(SECGEAR_MAPPED)
+                   , n_mesh =  n_distinct(MESHGROUP)
+                   , n_link1 = n_distinct(LINK1)
+                   , n_camsid = n_distinct(CAMSID)
+  ) %>% 
+  kable(caption = "Group by LINK3, look at one LINK3 (000201901M250060002)")
+
+
+# r5 %>% 
+  # View()
+
+
+```
+
+
+
