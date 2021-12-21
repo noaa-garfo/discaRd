@@ -64,7 +64,7 @@ Gill Nets:
 
 - `extra large` >= 8 (inches)
 
-`gear` groupings for matching purposes required a mapping of NEGEAR codes from observed and commercial trips to common gear codes (e.g. `DRS`, `PTO`, etc). The relationship in our database tables (VLGEAR, FVTR_GEAR) are many-to-many and do not map easily. Furthermore, there are several NEGEAR codes in VTR that do not occur in observer records, and vice versa. Therefore, a support table, `MAPS.SECGEAR_MAPPED` was constructed to facilitate gear matching. 
+`gear` groupings for matching purposes required a mapping of NEGEAR codes from observed and commercial trips to common gear codes (e.g. `DRS`, `PTO`, etc). The relationship in our database tables (VLGEAR, FVTR_GEAR) are many-to-many and do not map easily. Furthermore, there are several NEGEAR codes in VTR that do not occur in observer records, and vice versa. Therefore, a support table, `MAPS.CFG_OBS_VTR_GEARMAP` was constructed to facilitate gear matching. 
 
 IMPORTANT!: The table itself is a hybrid. For trips that were not observed, there will be a single row with all trip metrics and a total `KALL` per subtrip. When a trip was observed, there are multiple rows where the trip metric information is repeated, and each row shows species, discarded amount, and other observer recorded information for each row. Total `KALL` CANNOT be calculated without filtering rows by `LINK1` to indicate an observed trip or not. These steps are outlined in subsequent R modules used to run discaRd. 
 

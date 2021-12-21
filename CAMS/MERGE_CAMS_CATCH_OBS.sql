@@ -12,7 +12,7 @@ BG 12-02-21
  Trips with only one LINK1 are matched on only LINK1
  Trips with >1 LINK1 are matched on LINK1, MESHGROUP, SECGEAR_MAPPED, AREA
 12/13/21 changed gearmapping join to use only unique NEGEAR to GEARCODE combinations. Trips were being duped with one to many on this match
-
+12/21/21 changed table nname to MAPS.CAMS_OBS_PRORATE
 
 ------------------------------------------------------------------------------------------------------*/  
 
@@ -57,7 +57,7 @@ with ulink as (
     , camsid
     from (
         select a.*
-        from maps.match_obs a, ulink l
+        from MAPS.MATCH_OBS a, ulink l
         where a.obs_vtr in (l.obs_vtr)
         and l.obs_vtr is not null        
     )
@@ -101,7 +101,7 @@ with ulink as (
         , d.accessarea
     , o.link1
     , count(distinct(vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
-    from maps.cams_catch d
+    from MAPS.CAMS_CATCH d
     left join (  --adds observer link field
          select * 
          from vtr_link
@@ -112,7 +112,7 @@ with ulink as (
     left join (
       select distinct(VTR_NEGEAR) as VTR_NEGEAR
        , SECGEAR_MAPPED
-      from maps.STG_OBS_VTR_GEARMAP
+      from MAPS.STG_OBS_VTR_GEARMAP
       where VTR_NEGEAR is not null
      ) g
      on d.NEGEAR = g.VTR_NEGEAR
@@ -161,7 +161,7 @@ with ulink as (
 , obs as (
       select a.*
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-        from apsd.obs_cams_prorate a
+        from MAPS.CAMS_OBS_PRORATE a
           left join (
             select distinct(OBS_NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED

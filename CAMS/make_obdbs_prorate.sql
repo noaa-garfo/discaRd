@@ -9,12 +9,15 @@ ben galuardi
 modified
 12-02-21 changed table references to match new OBS CAMS table names
 
+12-21-21 Changed names to MAPS.CAMS_OBS_PRORATE 
+         Changed table references to MAPS.CAMS_OBS_YYYY
+
 */
 
-drop table obs_cams_prorate 
+drop table CAMS_OBS_prorate 
 /
 
-create table obs_cams_prorate as
+create table MAPS.CAMS_OBS_PRORATE as
 
 --WITH dummy AS(
 --SELECT
@@ -65,13 +68,15 @@ select a.*
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
         
             from (
-			    select * from apsd.obdbs_cams_2017
+			    select * from maps.cams_obdbs_2017
                 union all
-                select * from apsd.obdbs_cams_2018
+                select * from maps.cams_obdbs_2018
                 union all
-                select * from apsd.obdbs_cams_2019
+                select * from maps.cams_obdbs_2019
 				union all
-                select * from apsd.obdbs_cams_2020
+                select * from maps.cams_obdbs_2020
+                union all
+                select * from maps.cams_obdbs_2021
             )
             o
           group by  o.link3
@@ -117,7 +122,9 @@ group by link3
 --select * from obs_cams_prorate
 /
 
-grant select on obs_cams_prorate to maps
+grant select on cams_obs_prorate to apsd
+/
+
 
 
             

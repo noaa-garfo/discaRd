@@ -24,7 +24,9 @@ odbc::dbRemoveTable(conn = bcon, name = 'STG_OBS_VTR_GEARMAP')
 odbc::dbWriteTable(conn =  bcon, name = 'STG_OBS_VTR_GEARMAP', value = tab, overwrite = T)
 
 # test it
-tbl(bcon, sql('select * from maps.STG_OBS_GEAR_GEARMAP')) %>% 
+tbl(bcon, sql('select * from MAPS.STG_OBS_VTR_GEARMAP')) %>% 
   collect() %>% 
 filter(VTR_NEGEAR == '180')
+
+# this should be a CFG table.. csv put into MAPS/data-raw for auto-building
 
