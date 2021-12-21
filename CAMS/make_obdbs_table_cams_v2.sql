@@ -12,6 +12,7 @@ Created by: Ben Galuardi, modified from Jay Hermsen's code
 modified 
 3-18-21
 12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
+12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
 
 The year variable can be defined, and then the entire script run (F5 in sqldev)
 
@@ -19,9 +20,11 @@ This version ues left joins in the first set of tables which preserves more info
 
 we also keep all hauls, not just observed hauls, so prorating can be done
 
+RUN FROM MAPS SCHEMA
+
 */
 
-DEF year = 2017
+DEF year = 2021
 /
 DROP TABLE obdbs_cams_&year
 /
@@ -212,8 +215,8 @@ GROUP BY link1
 /
 DROP TABLE bg_obdbs_tables_3_&year
 /
-CREATE TABLE bg_obdbs_tables_3_&year
-AS SELECT a.AREA, a.CATDISP, a.FLEET_TYPE, 
+CREATE TABLE bg_obdbs_tables_3_&year AS 
+SELECT a.AREA, a.CATDISP, a.FLEET_TYPE, 
 a.DATELAND, a.DATESAIL, a.DEALNUM, a.DRFLAG, 
 a.ESTMETH, a.FISHDISP, a.FISHDISPDESC, 
 a.GEARCAT, a.HAILWT, a.HULLNUM1, a.LATHBEG, 
@@ -427,14 +430,29 @@ CREATE TABLE bg_obdbs_tables_5_&year AS
 -- drop temp columns
 ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, accessarea1)
 /
-
-CREATE TABLE obdbs_cams_&year as select * from bg_obdbs_tables_5_&year
+DROP TABLE MAPS.CAMS_OBDBS_&year
+/
+CREATE TABLE MAPS.CAMS_OBDBS_&year as select * from bg_obdbs_tables_5_&year
 /
 drop table bg_obdbs_tables_5_&year
 /
 drop table bg_obdbs_tables_1_&year
 /
 drop table bg_obdbs_tables_1a_&year
+/
+drop table bg_asmtables_join_1_&year 
+/
+drop table bg_obtables_join_1_&year 
+/
+drop table bg_obtables_join_1a_&year 
+/
+drop table bg_asmtables_join_1a_&year 
+/
+drop table bg_obdbs_meshsize2_&year
+/
+drop table bg_obdbs_meshsize1_&year
+/
+drop table  bg_obdbs_keptall_&year
 /
 drop table bg_obdbs_tables_2_&year
 /

@@ -46,7 +46,7 @@ library(discaRd)
 # dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
 # if on server..
-dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
+dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
 bcon <- dbConnect(odbc::odbc(), 
 									DSN = dw_apsd$dsn, 
@@ -144,7 +144,7 @@ source('cams_discard_functions.R')
 
 c_o_dat2 <- tbl(bcon, sql(paste0("
 with obs_cams as (
-   select year
+      select year
 	, month
 	--, case when region = 'N' then 'NE'
   --       when region = 'S' then 'MA'
@@ -156,13 +156,13 @@ with obs_cams as (
 	, vtrserno
 	, link1
 	, docid
-	, dmis_trip_id
+	, CAMSID
 	, nespp3
-    , GEARCODE
+    , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
-	, SECTOR_ID
+	, SECTID
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -178,13 +178,21 @@ with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
-	from apsd.bg_cams_obs_catch
---	where nespp3 is not null
-	group by year, carea, vtrserno, link1, nespp3, docid, GEARCODE, NEGEAR, GEARTYPE
-	, MESHGROUP, dmis_trip_id, month
-	--, region
+	from MAPS.CAMS_OBS_CATCH
+	group by year
+    , carea
+    , vtrserno
+    , link1
+    , nespp3
+    , docid
+    , SECGEAR_MAPPED 
+    , NEGEAR
+    , GEARTYPE
+	, MESHGROUP
+    , CAMSID
+    , month
 	, halfofyear
-	, sector_id
+	, sectid
 	, tripcategory
 	, accessarea
 	, activity_code_1
