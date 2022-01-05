@@ -11,6 +11,8 @@ modified
 
 12-21-21 Changed names to MAPS.CAMS_OBS_PRORATE 
          Changed table references to MAPS.CAMS_OBS_YYYY
+         
+RUN FROM MAPS SCHEMA
 
 */
 
