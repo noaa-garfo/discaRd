@@ -268,7 +268,7 @@ select * from trips_2
 
 /
 
-;   
+
 --
 --select count(distinct(link1)) as nlink1
 --, meshgroup

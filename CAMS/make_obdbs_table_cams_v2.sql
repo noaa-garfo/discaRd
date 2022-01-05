@@ -13,6 +13,7 @@ modified
 3-18-21
 12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
 12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
+01-04-22 update mesh categories (meshgroup): 0-3.99 = sm, >=4 = L, FOR GILLNETS, >=8 = XL
 
 The year variable can be defined, and then the entire script run (F5 in sqldev)
 
@@ -24,7 +25,7 @@ RUN FROM MAPS SCHEMA
 
 */
 
-DEF year = 2021
+DEF year = 2017
 /
 DROP TABLE obdbs_cams_&year
 /
@@ -333,20 +334,22 @@ CREATE TABLE bg_obdbs_tables_5_&year AS
 --
 --    from (
 
---select b.*
---        , CASE  WHEN (meshsize < 8 AND negear in ('100','105','117', '116','115')) then 'LM'
---             WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
---             else meshgroup
---             END as meshgroup2
---from(
-    SELECT a.*
-        , CASE WHEN (meshsize < 3.99 AND negear not in ('100','105','115', '117', '116')) then 'SM' --
-             WHEN (meshsize >= 3.99 AND meshsize < 5.75 AND negear not in ('100','105','117', '116','115') ) then 'MM' --
-             WHEN (meshsize >= 5.75 AND negear not in ('100','105','117', '116','115') ) then 'LM' --
-             WHEN (meshsize < 8 AND negear in ('100','105','117', '116','115')) then 'LM'
+select b.*
+        , CASE  --WHEN (meshsize < 8 AND negear in ('100','105','117', '116','115')) then 'LM'
              WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
-             else null
+             else meshgroup_pre
              END as meshgroup
+from(
+    SELECT a.*
+        , CASE WHEN (meshsize < 4) then 'SM' --
+--            CASE WHEN (meshsize < 4 AND negear not in ('100','105','115', '117', '116')) then 'SM' --
+--             WHEN (meshsize >= 3.99 AND meshsize < 5.75 AND negear not in ('100','105','117', '116','115') ) then 'MM' --
+--             WHEN (meshsize >= 4 AND negear not in ('100','105','117', '116','115') ) then 'LM' --
+             WHEN (meshsize >= 4) then 'LM'
+--             WHEN (meshsize < 8 AND negear in ('100','105','117', '116','115')) then 'LM'
+--             WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
+             else null
+             END as meshgroup_pre
              
         
         , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
@@ -422,12 +425,15 @@ CREATE TABLE bg_obdbs_tables_5_&year AS
         FROM bg_obdbs_tables_4_&year a LEFT OUTER JOIN bg_obdbs_meshsize2_&year b
         ON a.link3 = b.link3 
     ) a
---  ) b
+  ) b
 -- ) c 
 /
 
 /
 -- drop temp columns
+ALTER TABLE bg_obdbs_tables_5_&year DROP COLUMN meshgroup_pre
+
+/
 ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, accessarea1)
 /
 DROP TABLE MAPS.CAMS_OBDBS_&year
@@ -465,5 +471,5 @@ drop table bg_obdbs_tables_4_&year
 --select * --distinct(gearcat)
 --from obdbs_cams_&year
 
-;
+
 
