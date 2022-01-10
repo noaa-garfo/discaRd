@@ -398,7 +398,7 @@ gf_ex = run_discard(bdat = bdat_gf
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID', 'STOCK_AREA')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTID', 'STOCK_AREA')
 											 , aidx = c(1,2,3,4)
 											 )
 
@@ -458,7 +458,7 @@ d_prev = run_discard(bdat = bdat_prev_gf
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 , species_nespp3 = species_nespp3
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID', 'STOCK_AREA')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTID', 'STOCK_AREA')
 											 , aidx = c(1,2)
 											 )
 
@@ -470,7 +470,7 @@ d_focal = run_discard(bdat = bdat_gf
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTOR_ID', 'STOCK_AREA')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTID', 'STOCK_AREA')
 											 , aidx = c(1,2)
 											 )
 
@@ -594,12 +594,36 @@ gf_disc_dmis = gf_disc_dmis %>%
 
 ```
 
+```{r note cod results}
+
+cod_idx = grep(pattern = 'COD*', x = gf_disc_dmis$STOCK)
+
+cod_dmis = gf_disc_dmis[cod_idx,] %>% 
+	select(-1) %>% 
+	dplyr::rename('STOCK_AREA' = STOCK, 'DMIS_DISCARD' = DISCARD)
+
+cod_dmis$STOCK_AREA = c('GOM','EGB','WGB')
+
+trans_rate_df %>% 
+   right_join(., y = d_focal$res, by = 'STRATA') %>% 
+  filter(GFIDX == T ) %>% 
+   group_by(STOCK_AREA) %>% 
+   dplyr::summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
+             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
+             , final_rate_d = sum(final_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)) %>% 
+	left_join(., y = cod_dmis, by = 'STOCK_AREA') %>% 
+	mutate(diff_lbs = final_rate_d - DMIS_DISCARD
+				 , diff_mt = (final_rate_d - DMIS_DISCARD)/2204.62262)
+
+
+```
 
 
 
 ```{r print some summary tables, eval = F}
 
-assumed_discard %>% knitr::kable(caption = 'Assumed discard. This could be a generalized rate from current year. This could also be built from previous years discard info.')
+assumed_discard %>% 
+	knitr::kable(caption = 'Assumed discard. This could be a generalized rate from current year. This could also be built from previous years discard info.')
 
 dest_strata %>% knitr::kable(caption = 'Stratified Estimate From discaRd')
 
