@@ -45,15 +45,15 @@ library(discaRd)
 options(scipen = 999)
 
 # local run
-dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+dw_maps <- config::get(value = "maps", file = "~/config.yml")
 
 # if on server..
-#dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
+#dw_maps <- config::get(value = "maps", file = "~/config.yml")
 
 bcon <- dbConnect(odbc::odbc(), 
-									DSN = dw_apsd$dsn, 
-									UID = dw_apsd$uid, 
-									PWD = dw_apsd$pwd)
+									DSN = dw_maps$dsn, 
+									UID = dw_maps$uid, 
+									PWD = dw_maps$pwd)
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 

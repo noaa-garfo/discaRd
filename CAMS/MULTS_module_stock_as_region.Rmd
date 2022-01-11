@@ -398,7 +398,7 @@ gf_ex = run_discard(bdat = bdat_gf
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTID', 'STOCK_AREA')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'SECTID', 'STOCK_AREA')
 											 , aidx = c(1,2,3,4)
 											 )
 
@@ -458,7 +458,7 @@ d_prev = run_discard(bdat = bdat_prev_gf
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 , species_nespp3 = species_nespp3
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTID', 'STOCK_AREA')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'SECTID', 'STOCK_AREA')
 											 , aidx = c(1,2)
 											 )
 
@@ -470,7 +470,7 @@ d_focal = run_discard(bdat = bdat_gf
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'CAREA', 'SECTID', 'STOCK_AREA')
+											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'SECTID', 'STOCK_AREA')
 											 , aidx = c(1,2)
 											 )
 
@@ -553,6 +553,132 @@ trans_rate_df %>%
 
 ```
 
+```{r run model for unobserved strata}
+
+stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'SECTID', 'STOCK_AREA')
+
+# create a small bdat
+bdat_mod <- bdat_gf %>% 
+  mutate(REGION = STOCK_AREA) %>%  # make sure the variables are inthe table and substitutions won't be needed..
+  assign_strata(., stratvars = stratvars) %>% 
+  filter(
+  OBS_KALL > 0,
+  NESPP3_FINAL==species_nespp3
+  ) %>%
+  select(VTRSERNO #DMIS_TRIP_ID
+         ,OBS_KALL
+         ,STRATA
+         , DISC_MORT_RATIO
+         , DISCARD
+         , stratvars
+         # , CAMS_GEAR_GROUP
+         # , REGION
+         # , HALFOFYEAR
+         # , MESHGROUP
+         )
+
+# full stratification (similar to ratio estimator)
+mod.full <- glm(DISCARD ~ offset(log(OBS_KALL)) + STRATA -1,
+           family=poisson(), data = bdat_mod)
+# additive effects (to accommodate unobserved full-factorial strata)
+mod <- glm(DISCARD ~ offset(log(OBS_KALL)) + 
+             CAMS_GEAR_GROUP +
+					 	# 'CAMS_GEAR_GROUP', 'MESHGROUP', 'SECTID', 'STOCK_AREA'
+             # eval(parse(text = stratvars[1])) + 
+             MESHGROUP + 
+             SECTID + 
+             STOCK_AREA,
+           family = poisson()
+           , data = bdat_mod)
+
+# create ddat for model predictions
+
+ddat_discards = d_focal
+
+ddat_pred <- ddat_discards$res %>% 
+    mutate(REGION = STOCK_AREA) %>%  # make sure the variables are inthe table and substitutions won't be needed..
+  assign_strata(., stratvars) %>% 
+  filter(
+    #STRATA %in% bdat_spp_mod$STRATA,  #only for full factorial
+    SUBTRIP_KALL > 0
+    ) %>%
+  select(VTRSERNO #DMIS_TRIP_ID
+         ,SUBTRIP_KALL
+         ,STRATA
+         , DISC_MORT_RATIO
+         , EST_DISCARD
+         , stratvars
+         # , CAMS_GEAR_GROUP
+         # , REGION
+         # , HALFOFYEAR
+         # , MESHGROUP
+         ) %>%
+  mutate(
+    OBS_KALL = SUBTRIP_KALL,
+    # adjust for unobserved gear groups
+    CAMS_GEAR_GROUP =
+           case_when(
+             CAMS_GEAR_GROUP %in% unique(bdat_mod$CAMS_GEAR_GROUP) ~ CAMS_GEAR_GROUP,
+             TRUE ~ '0'
+           ),
+    NULL=NULL) 
+
+# model predictions
+ddat_pred <- data.frame(ddat_pred, D_MODEL = predict(mod, ddat_pred, type = "response"))
+# sum predicted discards for all trips
+#sum(ddat_pred$D_MODEL)
+
+# sum of predicted discards for:
+#    1) trips with unobserved strata (model)
+#    2) trips with observed strata (ratio estimator)
+
+dest_strata = dest_strata_f
+
+dat.discards <- ddat_pred %>%
+  mutate(DEAD_DISCARDS_FINAL =
+           case_when(
+             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ D_MODEL*DISC_MORT_RATIO,
+             STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ EST_DISCARD*DISC_MORT_RATIO
+           )
+         , ESTIMATE_SOURCE =
+           case_when(
+             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ 'model'
+             , STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ 'ratio'
+           )
+         )
+
+dat.discards %>%
+  group_by(ESTIMATE_SOURCE) %>%
+  dplyr::summarise(POUNDS = sum(DEAD_DISCARDS_FINAL, na.rm = T))
+
+# summarise by stok area
+dat.discards %>% 
+	group_by(STOCK_AREA, ESTIMATE_SOURCE) %>%  
+	dplyr::summarise(POUNDS = sum(DEAD_DISCARDS_FINAL, na.rm = T))
+	
+
+
+
+# join to the transition rate final output
+
+# park the final rate into the trips table
+
+mod_summary = trans_rate_df %>% 
+ 	 as_tibble() %>% 
+   right_join(., y = d_focal$res, by = 'STRATA') %>% 
+ 	 filter(GFIDX == T ) %>% 
+ 	 left_join(., y = dat.discards, by = 'VTRSERNO') %>% 
+ 	 filter(!is.na(VTRSERNO)) %>% 
+   group_by(STOCK_AREA.x) %>% 
+   dplyr::summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL.x*DISC_MORT_RATIO.x, na.rm = T)
+             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL.x*DISC_MORT_RATIO.x, na.rm = T)
+             , final_rate_d = sum(final_rate*SUBTRIP_KALL.x*DISC_MORT_RATIO.x, na.rm = T)
+   					 , model_only_rate = sum(D_MODEL, na.rm = T)
+ 					 , final_d_wModel = sum(DEAD_DISCARDS_FINAL, na.rm = T))
+
+
+```
+
 
 
 ```{r get GF estimates from DMIS 2019}
@@ -604,7 +730,7 @@ cod_dmis = gf_disc_dmis[cod_idx,] %>%
 
 cod_dmis$STOCK_AREA = c('GOM','EGB','WGB')
 
-trans_rate_df %>% 
+no_model_summary = trans_rate_df %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
   filter(GFIDX == T ) %>% 
    group_by(STOCK_AREA) %>% 
@@ -612,8 +738,18 @@ trans_rate_df %>%
              , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
              , final_rate_d = sum(final_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)) %>% 
 	left_join(., y = cod_dmis, by = 'STOCK_AREA') %>% 
-	mutate(diff_lbs = final_rate_d - DMIS_DISCARD
-				 , diff_mt = (final_rate_d - DMIS_DISCARD)/2204.62262)
+	mutate(diff_lbs_nomodel = final_rate_d - DMIS_DISCARD
+				 , diff_mt_nomodel = (final_rate_d - DMIS_DISCARD)/2204.62262)
+
+mod_summary %>% 
+	dplyr::rename('STOCK_AREA' = STOCK_AREA.x) %>% 
+	left_join(., y = cod_dmis, by = 'STOCK_AREA') %>% 
+	mutate(diff_lbs_nomodel = final_rate_d - DMIS_DISCARD
+				 , diff_mt_nomodel = (final_rate_d - DMIS_DISCARD)/2204.62262
+				 , diff_lbs_mod = final_d_wModel - DMIS_DISCARD
+				 , diff_mt_mod = (final_d_wModel - DMIS_DISCARD)/2204.62262)%>% 
+	dplyr::select(1,4,6:11)
+	
 
 
 ```
