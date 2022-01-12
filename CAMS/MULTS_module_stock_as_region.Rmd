@@ -121,8 +121,8 @@ stock_discard_2019 = stock_nespp3 %>%
 
 ```{r define species first}
 
-species_nespp3 = '081'  # cod
-# species_nespp3 = '269'  # pollock
+# species_nespp3 = '081'  # cod
+species_nespp3 = '269'  # pollock
 
 # define species stock if needed
 # species_stock = 'GOM'  # GOM cod
@@ -721,8 +721,10 @@ gf_disc_dmis = gf_disc_dmis %>%
 ```
 
 ```{r note cod results}
-
+# 
 cod_idx = grep(pattern = 'COD*', x = gf_disc_dmis$STOCK)
+
+# cod_idx = grep(pattern = 'POK*', x = gf_disc_dmis$STOCK)
 
 cod_dmis = gf_disc_dmis[cod_idx,] %>% 
 	select(-1) %>% 
