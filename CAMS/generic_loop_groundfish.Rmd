@@ -48,7 +48,7 @@ options(scipen = 999)
 # dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
 # if on server..
-dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
+dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
 bcon <- dbConnect(odbc::odbc(), 
 									DSN = dw_apsd$dsn, 
@@ -83,6 +83,7 @@ species = tbl(bcon, sql("
     where stock_id not like 'OTHER'
     ")) %>% 
   collect() %>% 
+	filter(NESPP3 != '269') %>% # cod is also 081
   filter(NESPP3 != '082') %>% # cod is also 081
   filter(NESPP3 != '119') %>% # winter flounder is also 120
   filter(NESPP3 != '148') %>%  # haddock is also 147
@@ -114,13 +115,13 @@ c_o_dat2 <- tbl(bcon, sql(
 	, vtrserno
 	, link1
 	, docid
-	, dmis_trip_id
+	, CAMSID
 	, nespp3
-    , GEARCODE
+    , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
-	, SECTOR_ID
+	, SECTID
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -136,12 +137,21 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
-	from apsd.bg_cams_obs_catch
+	from MAPS.CAMS_OBS_CATCH
 --	where nespp3 is not null
-	group by year, carea, vtrserno, link1, nespp3, docid, GEARCODE, NEGEAR, GEARTYPE
-	, MESHGROUP, dmis_trip_id, month
+	group by year, carea
+	, vtrserno
+	, link1
+	, docid
+	, nespp3
+    , SECGEAR_MAPPED
+	, NEGEAR
+	, GEARTYPE
+	, MESHGROUP
+	, SECTID
+  , CAMSID
+  , month
 	, halfofyear
-	, sector_id
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -162,7 +172,8 @@ c_o_dat2 <- tbl(bcon, sql(
   , c.match_nespp3
   , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
   from obs_cams o
-  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3
+  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3        
+        
 "
   )
 ) %>%
@@ -178,7 +189,7 @@ stratvars = c('SPECIES_STOCK'
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               # , 'CAREA'
-              , 'SECTOR_ID'
+              , 'SECTID'
               , "PERMIT_EFP_1"
               , "PERMIT_EFP_2"
               , "PERMIT_EFP_3"
