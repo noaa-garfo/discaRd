@@ -75,7 +75,8 @@ with ulink as (
              when d.month in (7,8,9,10,11,12) then 2
              end as halfofyear
         , d.docid
-        , substr(d.vtrserno, 1, 13) vtrserno
+--        , substr(d.vtrserno, 1, 13) vtrserno
+        , vtrserno
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -161,6 +162,8 @@ with ulink as (
 , obs as (
       select a.*
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+            , i.ITIS_TSN
+            , i.ITIS_GROUP1
         from MAPS.CAMS_OBS_PRORATE a
           left join (
             select distinct(OBS_NEGEAR) as OBS_NEGEAR
@@ -169,6 +172,9 @@ with ulink as (
             where OBS_NEGEAR is not null          
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
+          
+         left join(select * from maps.CFG_ITIS) i
+         on a.NESPP3 = i.DLR_NESPP3
       )
 
 
@@ -186,6 +192,8 @@ trips with no link1 (unobserved)
     , o.link3
     , o.obs_area as obs_area
     , o.nespp3
+    , o.ITIS_TSN
+    , o.ITIS_GROUP1
     , o.discard_prorate as discard
     , o.obs_haul_kept
     , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
@@ -210,6 +218,8 @@ trips with no link1 (unobserved)
     , o.link3
     , o.obs_area as obs_area
     , o.nespp3
+    , o.ITIS_TSN
+    , o.ITIS_GROUP1
     , o.discard_prorate as discard
     , o.obs_haul_kept
     , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
@@ -239,6 +249,8 @@ trips with no link1 (unobserved)
     , o.link3
     , o.obs_area as obs_area
     , o.nespp3
+    , o.ITIS_TSN
+    , o.ITIS_GROUP1
     , o.discard_prorate as discard
     , o.obs_haul_kept
     , o.obs_haul_kall_trip+obs_nohaul_kall_trip as obs_kall
