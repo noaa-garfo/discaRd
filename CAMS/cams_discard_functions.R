@@ -38,7 +38,7 @@ assign_strata <- function(dat, stratvars){
 #' This function is used to get observed discard values on observed trips. These values are used in place of estimated values for those trips that were observed. This is done at the the sub-trip level. 
 #' This function does not need startification. Only VTR serial number and an observed discard for desired species
 #' @param c_o_tab table of matched observer and commerical trips
-#' @param species_nespp3 species of interest using NESPP3 code
+#' @param species_itis species of interest using SPECIES_ITIS code
 #' @return a tibble with: YEAR, VTRSERNO, GEARTYPE, MESHGROUP,KALL, DISCARD, dk
 #' The stratification variables don't matter so much as the assignment of discard is done using VTR Serial Number.  
 #' @export
@@ -46,11 +46,14 @@ assign_strata <- function(dat, stratvars){
 #' @examples
 #' 
 get_obs_disc_vals <- function(c_o_tab = c_o_dat2
-, species_nespp3 = '802'){
+# , species_nespp3 = '802'
+, species_itis = '164712'){
   
   codat = c_o_tab %>% 
-    filter(NESPP3 == species_nespp3) %>% 
-    mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD))
+    # filter(NESPP3 == species_nespp3) %>%
+  	filter(SPECIES_ITIS == species_itis) %>% 
+    # mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD))
+    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD))
   
   obs_discard = codat %>% 
     group_by(VTRSERNO
@@ -110,7 +113,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #'
 #' @param bdat table of observed trips that can include (and should include) multiple years
 #' @param year Year where discard estimate is needed
-#' @param species_nespp3 species of interest using NESPP3 code
+#' @param species_itis species of interest using SPECIES ITIS code
 #' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive. 
 #'
 #' @return a tibble with LINK1, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by LINK1 (subtrip). BYCATCH is the observed discard of the species of interest.
@@ -123,7 +126,8 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #' @examples
 make_bdat_focal <- function(bdat
                             # , year = 2019
-                            , species_nespp3 = '802'
+                            # , species_nespp3 = '802'
+														, species_itis = '164712' #cod
                             , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
 	
 	require(rlang)
@@ -134,7 +138,8 @@ make_bdat_focal <- function(bdat
 	
 	bdat_focal = bdat %>% 
 		# filter(YEAR == year) %>% 
-		mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+		# mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
+		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE)) %>%
 		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 	
 	
@@ -177,7 +182,7 @@ make_bdat_focal <- function(bdat
 #'
 #' @param bdat table of observed trips that can include (and should include) multiple years
 #' @param year Year where discard estimate is needed
-#' @param species_nespp3 species of interest using NESPP3 code
+#' @param species_itis species of interest using SPECIES_ITIS code
 #' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive. Thiws should be a subset of those used in `make_bdat_focal`. 
 #' 
 #'
@@ -187,7 +192,8 @@ make_bdat_focal <- function(bdat
 #' @examples
 make_assumed_rate <- function(bdat
                               # , year = 2019
-                              , species_nespp3 = '802'
+                              # , species_nespp3 = '802'
+															, species_itis = '164712' # cod
                               , stratvars = c('GEARTYPE','meshgroup')){
 	require(rlang)
 	
@@ -195,7 +201,8 @@ make_assumed_rate <- function(bdat
 	
 	assumed_discard <- make_bdat_focal(bdat
 	                                   # , year = 2019
-	                                   , species_nespp3 = species_nespp3 
+	                                   # , species_nespp3 = species_nespp3 
+																		 , species_itis = species_itis
 	                                   , stratvars = stratvars
 	                                   )
 	
@@ -217,7 +224,7 @@ make_assumed_rate <- function(bdat
 #' @param ddat_focal table of observed trips for discard year
 #' @param c_o_tab matched table of observed and commerical trips
 #' @param year year where discard is needed
-#' @param species_nespp3 species of interest
+#' @param species_itis species of interest using SPECIES_ITIS code
 #' @param stratvars stratification variables desired
 #' @param aidx subset of `stratvars` for a simplified stratification.
 #'
@@ -232,7 +239,8 @@ run_discard <- function(bdat
                         , ddat_focal
                         , c_o_tab = c_o_dat2
                         # , year = 2019
-                        , species_nespp3 = '802'
+                        # , species_nespp3 = '802'
+												, species_itis = '164712'  # cod
                         , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
                         , aidx = c(1,2)
                         ){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
@@ -245,11 +253,13 @@ run_discard <- function(bdat
 	# bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
 	bdat_focal = make_bdat_focal(bdat
 	                             # , year = year
-	                             , species_nespp3 = species_nespp3
+	                             # , species_nespp3 = species_nespp3
+															 , species_itis = species_itis
 	                             , stratvars = stratvars
 	                             )
 	obs_discard = get_obs_disc_vals(c_o_tab
-	                                , species_nespp3 = species_nespp3
+	                                # , species_nespp3 = species_nespp3
+																	, species_itis = species_itis
 	                                # , year = year
 	                                # , stratvars = stratvars
 	                                )
@@ -333,7 +343,7 @@ run_discard <- function(bdat
 		mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
 		) 
 	
-	list(species = species_nespp3
+	list(species = species_itis #species_nespp3
 			 , allest = allest
 			 , res = out_tab
 	)
