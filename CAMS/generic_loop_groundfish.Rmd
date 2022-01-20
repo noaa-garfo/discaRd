@@ -57,7 +57,7 @@ bcon <- dbConnect(odbc::odbc(),
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('../cams_discard_functions.R')
+source('cams_discard_functions.R')
 
 ```
 
@@ -73,6 +73,7 @@ source('../cams_discard_functions.R')
 species_stock = NA  # all unit stocks
 
 FY <- 2019
+FY_TYPE = 'MAY START'
 
 #--------------------------------------------------------------------------#
 # group of species
@@ -123,7 +124,8 @@ c_o_dat2 <- tbl(bcon, sql(
 	, case when month in (5,6,7,8,9,10) then 1
 	       when month in (11,12,1,2,3,4) then 2
 	       end as halfofyear
-	, carea
+	-- , carea
+  , AREA
 	, vtrserno
 	, link1
 	, docid
@@ -153,7 +155,9 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
 --	where nespp3 is not null
-	group by year, carea
+	group by year
+  -- , carea
+  , AREA
 	, vtrserno
 	, link1
 	, docid
@@ -228,7 +232,7 @@ species_itis = species$SPECIES_ITIS[i]
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select *   from APSD.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from APSD.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -243,10 +247,10 @@ STOCK_AREAS = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) %>%
     collect() %>% 
   group_by(AREA_NAME) %>% 
   distinct(STAT_AREA) %>%
-  mutate(CAREA = as.character(STAT_AREA)
+  mutate(AREA = as.character(STAT_AREA)
          , SPECIES_STOCK = AREA_NAME) %>% 
   ungroup() %>% 
-  dplyr::select(SPECIES_STOCK, CAREA)
+  dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from apsd.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
@@ -264,11 +268,11 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from apsd.CAMS_DISCARD_MO
 # make tables
 ddat_focal <- c_o_dat2 %>% 
   filter(GF_YEAR == FY) %>%   ## time element is here!!
-  filter(CAREA %in% STOCK_AREAS$CAREA) %>% 
+  filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
 	  		 , NESPP3 = NESPP3_FINAL) %>% 
-   left_join(., y = STOCK_AREAS, by = 'CAREA') %>% 
+   left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
@@ -278,11 +282,11 @@ ddat_focal <- c_o_dat2 %>%
 
 ddat_prev <- c_o_dat2 %>% 
   filter(GF_YEAR == FY-1) %>%   ## time element is here!!
-  filter(CAREA %in% STOCK_AREAS$CAREA) %>% 
+  filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
 	  		 , NESPP3 = NESPP3_FINAL) %>% 
-   left_join(., y = STOCK_AREAS, by = 'CAREA') %>% 
+   left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
@@ -314,7 +318,7 @@ ddat_focal_gf = ddat_focal_gf %>%
 bdat_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
-         , OBS_AREA = CAREA
+         , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
 
@@ -359,7 +363,7 @@ ddat_prev_gf = ddat_prev_gf %>%
 bdat_prev_gf = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
-         , OBS_AREA = CAREA
+         , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
 
@@ -442,19 +446,41 @@ trans_rate_df = trans_rate_df %>%
 # park the final rate into the trips table
  final_table = trans_rate_df %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
-   as_tibble()%>% 
-   mutate(INSEASON_RATE_DISCARD = in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO
-             , TRANS_RATE_DISCARD =  trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO
-             , FINAL_RATE_DISCARD = final_rate*SUBTRIP_KALL*DISC_MORT_RATIO
-          ) %>%
-   select(VTRSERNO, CAMSID, eval(stratvars), INSEASON_RATE_DISCARD, TRANS_RATE_DISCARD, FINAL_RATE_DISCARD, STRATA, DISC_MORT_RATIO, CV, ACTIVITY_CODE_1) %>% 
- 	mutate(SPECIES_ITIS_EVAL = species_itis, COMNAME_EVAL = species$COMNAME[i]) %>% 
- 	relocate(SPECIES_ITIS_EVAL, COMNAME_EVAL)
+   as_tibble() %>% 
+ 	 	mutate(SPECIES_ITIS_EVAL = species_itis
+ 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , FISHING_YEAR = FY
+ 				 , FY_TYPE = FY_TYPE) %>% 
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    																	, is.na(LINK1) & CRATE == DISC_RATE ~ 'E'
+    																	, is.na(LINK1) & CRATE == previous_season_rate ~ 'P'
+    																	, is.na(LINK1) & CRATE == trans_rate ~ 'T'
+    																	, is.na(LINK1) & CRATE == ARATE ~ 'A')
+    			 )
+ 
+ 
+ # final_table %>%
+ # 	dplyr::select(DISCARD_SOURCE, ACTIVITY_CODE_1, VTRSERNO, ARATE, CRATE, DISC_RATE, STRATA_ASSUMED, STRATA, ARATE_IDX, LINK1, EST_DISCARD, DISCARD, OBS_DISCARD) %>% 
+ # 	View()
+ # 	 	 # select(FISHING_YEAR, FY_TYPE, DISCARD_SOURCE, VTRSERNO, CAMSID, eval(stratvars),  STRATA, DISC_MORT_RATIO, CV, ACTIVITY_CODE_1, SPECIES_ITIS_EVAL, COMNAME_EVAL) %>% 
+ # 	relocate(FISHING_YEAR, DISCARD_SOURCE, STRATA, FY_TYPE, SPECIES_ITIS_EVAL, COMNAME_EVAL)
  # 
+ 	
+ 	
+#    mutate(INSEASON_RATE_DISCARD = in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO
+#              , TRANS_RATE_DISCARD =  trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO
+#              , FINAL_RATE_DISCARD = final_rate*SUBTRIP_KALL*DISC_MORT_RATIO
+#           ) %>%
+#   
+#  	 select(VTRSERNO, CAMSID, eval(stratvars), INSEASON_RATE_DISCARD, TRANS_RATE_DISCARD, FINAL_RATE_DISCARD, STRATA, DISC_MORT_RATIO, CV, ACTIVITY_CODE_1) %>% 
+# %>% 
+#  	relocate(FISHING_YEAR, FY_TYPE, SPECIES_ITIS_EVAL, COMNAME_EVAL)
+#  # 
 # save total results to summary table
  final_discard_table$DISCARD[i] = final_table %>% 
  	filter(substr(ACTIVITY_CODE_1, 1, 3) =='NMS') %>% 
- 	dplyr::select(FINAL_RATE_DISCARD) %>% 
+ 	dplyr::summarise(TOTAL = DISCARD*DISC_MORT_RATIO) %>% 
+ 	dplyr::select(TOTAL) %>% 
  	sum(., na.rm = T)
  
 # save trip by trip info to RDS 
@@ -487,40 +513,29 @@ for(j in species$SPECIES_ITIS){
 do.call(rbind, res_list) %>% 
 	filter(substr(ACTIVITY_CODE_1, 1, 3) =='NMS') %>% 
 	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>% 
-	dplyr::summarise(D = sum(FINAL_RATE_DISCARD, na.rm = T)) %>% 
+	dplyr::summarise(D = round(sum(DISCARD*DISC_MORT_RATIO, na.rm = T))) %>% 
 	# filter(SPECIES_ITIS %in% species$SPECIES_ITIS) %>% 
 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'D') %>% 
 	mutate(SPECIES_ITIS = SPECIES_ITIS_EVAL) %>% 
 	left_join(., species, by = 'SPECIES_ITIS') %>% 
-	dplyr::select(-SPECIES_ITIS) %>% 
-	relocate('COMNAME','SPECIES_ITIS_EVAL')
+	dplyr::select(-SPECIES_ITIS, -NESPP3) %>% 
+	relocate('COMNAME','SPECIES_ITIS_EVAL') %>% 
+	View()
 
 
 # gfidx = grep('NMS*', d_focal$res$ACTIVITY_CODE_1)
-
-res$GFIDX = substr(res$ACTIVITY_CODE_1, 1,3) == 'NMS'
-
-	res %>% 
-  filter(GFIDX == T ) %>% 
-   group_by(SPECIES_STOCK) %>% 
-   dplyr::summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
-             , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
-             , final_rate_d = sum(final_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T))
-
-
-```
-
-
-```{r read in results and split by stock}
-
-discard_est_081 <- readRDS("~/CAMS/discard_est_081.RDS")
-
-discard_est_081 %>% 
-  group_by(SPECIES_STOCK) %>% 
-  dplyr::summarise(discard_total = sum(FINAL_RATE_DISCARD, na.rm = T))
-
+# 
+# res$GFIDX = substr(res$ACTIVITY_CODE_1, 1,3) == 'NMS'
+# 
+# 	res %>% 
+#   filter(GFIDX == T ) %>% 
+#    group_by(SPECIES_STOCK) %>% 
+#    dplyr::summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
+#              , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
+#              , final_rate_d = sum(final_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T))
 
 
 ```
+
 
 
