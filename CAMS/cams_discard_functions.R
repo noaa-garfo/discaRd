@@ -167,7 +167,8 @@ make_bdat_focal <- function(bdat
 										, STRATA
 		) %>% 
 		# be careful here... need to take the max values since they are repeated..
-		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE)), BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
+		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE))
+										 , BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
 		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
 		ungroup()
 	
@@ -339,6 +340,7 @@ run_discard <- function(bdat
 	  mutate(OBS_DISCARD = DISCARD) %>% 
 		dplyr::select(VTRSERNO, OBS_DISCARD) %>% 
 		right_join(x = ., y = ddat_rate, by = 'VTRSERNO') %>%   # need to drop a column or it gets DISCARD.x
+		mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>% 
 		mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>% 
 		mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
 		) 
