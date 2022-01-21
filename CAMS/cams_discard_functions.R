@@ -66,48 +66,6 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
   
 }
 
-# get_obs_disc_vals <- function(c_o_tab = c_o_dat2
-#                               , species_nespp3 = '802'
-#                               # , year = 2019
-#                               , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
-#                               ){
-# 	
-# 	stratvars = toupper(stratvars)
-# 	
-# 	codat <- c_o_tab %>%
-# 		# filter(YEAR == year) %>% 
-# 		# group_by(DMIS_TRIP_ID, NESPP3) %>%
-# 		mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD)) 
-# 	# %>%
-# 	# 	mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
-# 	# 
-# 	
-# 	codat$MESHGROUP[codat$MESHGROUP == 'na'] = NA
-# 	
-# 	codat <- codat %>% 
-# 		mutate(STRATA = eval(parse(text = stratvars[1])))
-# 	
-# 	if(length(stratvars) >1 ){
-# 		
-# 		for(i in 2:length(stratvars)){
-# 			
-# 			codat <- codat %>% 
-# 				mutate(STRATA = paste(STRATA, eval(parse(text = stratvars[i])), sep = '_'))
-# 		}
-# 		
-# 	}
-# 	
-# 	obs_discard = codat %>% 
-# 		group_by(YEAR
-# 						 , VTRSERNO
-# 						 # , NEGEAR
-# 						 , STRATA
-# 		) %>% 
-# 		dplyr::summarise(KALL = sum(SUBTRIP_KALL), DISCARD = sum(SPECIES_DISCARD, na.rm = T), dk = sum(SPECIES_DISCARD, na.rm = T)/sum(SUBTRIP_KALL, na.rm = T))
-# 	
-# 	obs_discard
-# 	
-# }
 
 #' Get Observed trips for discard year
 #'
@@ -145,20 +103,7 @@ make_bdat_focal <- function(bdat
 	
 	bdat_focal = assign_strata(bdat_focal, stratvars = stratvars)
 	
-	# 
-	# bdat_focal <- bdat_focal %>% 
-	# 	mutate(STRATA = eval(parse(text = stratvars[1])))
-	# 
-	# if(length(stratvars) >1 ){
-	# 	
-	# 	for(i in 2:length(stratvars)){
-	# 		
-	# 		bdat_focal <- bdat_focal %>% 
-	# 			mutate(STRATA = paste(STRATA, eval(parse(text = stratvars[i])), sep = '_'))
-	# 	}
-	# 	
-	# }
-	
+
 	bdat_focal <- bdat_focal %>%
 		dplyr::group_by(LINK1
 										# , NEGEAR

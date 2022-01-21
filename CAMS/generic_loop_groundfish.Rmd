@@ -429,7 +429,8 @@ trans_rate_df = trans_rate_df %>%
     																	, is.na(LINK1) & CRATE == DISC_RATE ~ 'E'
     																	, is.na(LINK1) & CRATE == previous_season_rate ~ 'P'
     																	, is.na(LINK1) & CRATE == trans_rate ~ 'T'
-    																	, is.na(LINK1) & CRATE == ARATE ~ 'A')
+    																	, is.na(LINK1) & CRATE == ARATE ~ 'A'
+    																	, is.na(LINK1) & is.na(ARATE) ~ 'A')  # this may be replaced with model estimate!
     			 )
  
  
@@ -494,7 +495,8 @@ do.call(rbind, res_list) %>%
 	left_join(., species, by = 'SPECIES_ITIS') %>% 
 	dplyr::select(-SPECIES_ITIS, -NESPP3) %>% 
 	relocate('COMNAME','SPECIES_ITIS_EVAL') %>% 
-	View()
+	write.csv('groundfish_loop_results_gftrips_only_012122.csv', row.names = F)
+	# View()
 
 
 # gfidx = grep('NMS*', d_focal$res$ACTIVITY_CODE_1)
@@ -511,5 +513,106 @@ do.call(rbind, res_list) %>%
 
 ```
 
+```{r get 2019 groundfish discard from DMIS, eval = F}
+
+discard2019 = tbl(bcon, sql("
+select round(sum(POKGMASS_DISCARD)) POKGMASS_DISCARD
+,round(sum(CODGMSS_DISCARD)) CODGMSS_DISCARD
+,round(sum(CODGBE_DISCARD)) CODGBE_DISCARD
+,round(sum(CODGBW_DISCARD)) CODGBW_DISCARD
+,round(sum(FLDSNEMA_DISCARD)) FLDSNEMA_DISCARD
+,round(sum(FLWGB_DISCARD)) FLWGB_DISCARD
+,round(sum(FLWGMSS_DISCARD)) FLWGMSS_DISCARD
+,round(sum(PLAGMMA_DISCARD)) PLAGMMA_DISCARD
+,round(sum(YELCCGM_DISCARD)) YELCCGM_DISCARD
+,round(sum(HADGBW_DISCARD)) HADGBW_DISCARD
+,round(sum(WITGMMA_DISCARD)) WITGMMA_DISCARD
+-- ,round(sum(FLWGMSS_DISCARD)) FLWGMSS_DISCARD
+,round(sum(HALGMMA_DISCARD)) HALGMMA_DISCARD
+,round(sum(YELGB_DISCARD)) YELGB_DISCARD
+,round(sum(FLGMGBSS_DISCARD)) FLGMGBSS_DISCARD
+,round(sum(HKWGMMA_DISCARD)) HKWGMMA_DISCARD
+,round(sum(REDGMGBSS_DISCARD)) REDGMGBSS_DISCARD
+-- ,round(sum(FLWGB_DISCARD)) FLWGB_DISCARD
+,round(sum(HADGM_DISCARD)) HADGM_DISCARD
+,round(sum(OPTGMMA_DISCARD)) OPTGMMA_DISCARD
+,round(sum(WOLGMMA_DISCARD)) WOLGMMA_DISCARD
+,round(sum(FLWSNEMA_DISCARD)) FLWSNEMA_DISCARD
+,round(sum(HADGBE_DISCARD)) HADGBE_DISCARD
+-- ,round(sum(CODGBW_DISCARD)) CODGBW_DISCARD
+,round(sum(YELSNE_DISCARD)) YELSNE_DISCARD
+
+from apsd.dmis_all_years
+where fishing_year = 2019
+"))  %>% 
+  collect() %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(stock = row.names(.))
+
+names(discard2019)[1] = 'DMIS_DISCARD'
+
+discard2019$STOCK_ID = unlist(lapply(strsplit(discard2019$stock, split = '_'), function(x) x[[1]]))
+
+# get stock names and nespp3
+
+stock_nespp3 = tbl(bcon, sql("
+    select max(nespp3) as nespp3
+    , stock_id
+    , comname
+    from fso.v_obSpeciesStockArea 
+    where stock_id not like 'OTHER'
+    group by stock_id, comname
+")
+) %>% 
+    collect()
+
+stock_discard_2019 = stock_nespp3 %>% 
+  left_join(., discard2019, by = 'STOCK_ID') %>% 
+  dplyr::select(-stock)
+
+write.csv(stock_discard_2019, 'dmis2019_groundfish_discard.csv', row.names = F)
+
+```
+
+```{r table output example}
+
+db_example = final_table %>%
+	mutate(DATE_RUN = as.character(lubridate::today())
+				 , FY = as.integer(FY)) %>%
+	dplyr::select(
+	DATE_RUN,
+	FY,
+	SPECIES_ITIS_EVAL,
+	FY_TYPE,
+	DISCARD_SOURCE,
+	ACTIVITY_CODE_1,
+	VTRSERNO,
+	ARATE,
+	CRATE,
+	DISC_RATE,
+	STRATA,
+	STRATA_ASSUMED,
+	LINK1,
+	OBS_DISCARD,
+	EST_DISCARD,
+	DISCARD,
+	n_obs_trips,
+	CV,
+	eval(stratvars)
+	)
+
+dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
+
+acon <- dbConnect(odbc::odbc(), 
+									DSN = dw_apsd$dsn, 
+									UID = dw_apsd$uid, 
+									PWD = dw_apsd$pwd)
+db_drop_table(acon, 'CAMS_DISCARD_EXMAPLE_GF19')
+
+dbWriteTable(acon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = db_example, overwrite = T)
+
+
+```
 
 
