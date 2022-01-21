@@ -322,32 +322,6 @@ bdat_gf = ddat_focal %>%
          , OBS_HAUL_KALL_TRIP = OBS_KALL
          , PRORATE = 1)
 
-# gf_ex = run_discard(bdat = bdat_gf
-# 											 , ddat = ddat_focal_gf
-# 											 , c_o_tab = ddat_focal
-# 											 , species_nespp3 = species_nespp3  #'081' #cod... 
-# 											 , stratvars = c('CAMS_GEAR_GROUP', 'MESHGROUP', 'SPECIES_STOCK', 'HALFOFYEAR')  #CAMS_GEAR_GROUP
-# 											 , aidx = c(1,2)
-# 											 )
-# 
-# # sum of all discard, by subtrip, multiplied by mortality ratio
-# sum(gf_ex$res$DISCARD*gf_ex$res$DISC_MORT_RATIO, na.rm = T) # 
-# 
-# # discard rates by strata
-# dest_strata = gf_ex$allest$C %>% summarise(STRATA = STRATA
-#                        , N = N
-#                        , n = n
-#                        , orate = round(n/N, 2)
-#                        , drate = RE_mean
-#                        , KALL = K, disc_est = round(D)
-#                        , CV = round(RE_rse, 2)
-# 										)
-# 
-# dest_strata %>% slice(grep('50_*', dest_strata$STRATA))
-# 
-# 
-# gf_ex$res %>%  mutate(newd = DISCARD*DISC_MORT_RATIO) %>% group_by(STRATA) %>% summarise(D=sum(newd,na.rm=T),d_rate=mean(DISC_RATE,na.rm=T)) %>% arrange(desc(D)) %>% print.data.frame()
-
 
 # set up trips table for previous year
 ddat_prev_gf = ddat_prev %>% 
