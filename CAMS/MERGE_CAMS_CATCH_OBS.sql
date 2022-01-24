@@ -13,6 +13,7 @@ BG 12-02-21
  Trips with >1 LINK1 are matched on LINK1, MESHGROUP, SECGEAR_MAPPED, AREA
 12/13/21 changed gearmapping join to use only unique NEGEAR to GEARCODE combinations. Trips were being duped with one to many on this match
 12/21/21 changed table nname to MAPS.CAMS_OBS_PRORATE
+01/24/22 rebuilt to reflect changes to SECGEAR_MAPPED (clam dredge NEGEAR 400)
 
 ------------------------------------------------------------------------------------------------------*/  
 
