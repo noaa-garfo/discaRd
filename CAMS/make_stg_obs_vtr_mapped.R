@@ -16,7 +16,7 @@ bcon <- dbConnect(odbc::odbc(),
 
 
 # read excel table
-tab = readxl::read_excel('NEGEAR_GEARCODE_MAPPING.xlsx', sheet = 'upload table')
+tab = readxl::read_excel('NEGEAR_GEARCODE_MAPPING.xlsx', sheet = 'upload table 2')
 
 
 # drop and write
@@ -26,7 +26,7 @@ odbc::dbWriteTable(conn =  bcon, name = 'STG_OBS_VTR_GEARMAP', value = tab, over
 # test it
 tbl(bcon, sql('select * from MAPS.STG_OBS_VTR_GEARMAP')) %>% 
   collect() %>% 
-filter(VTR_NEGEAR == '180')
+filter(NEGEAR == '400')
 
 # this should be a CFG table.. csv put into MAPS/data-raw for auto-building
 
