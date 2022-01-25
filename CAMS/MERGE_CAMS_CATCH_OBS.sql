@@ -112,10 +112,10 @@ with ulink as (
     on  o.camsid = d.camsid 
     
     left join (
-      select distinct(VTR_NEGEAR) as VTR_NEGEAR
+      select distinct(NEGEAR) as VTR_NEGEAR
        , SECGEAR_MAPPED
       from MAPS.STG_OBS_VTR_GEARMAP
-      where VTR_NEGEAR is not null
+      where NEGEAR is not null
      ) g
      on d.NEGEAR = g.VTR_NEGEAR
     
@@ -167,10 +167,10 @@ with ulink as (
             , i.ITIS_GROUP1
         from MAPS.CAMS_OBS_PRORATE a
           left join (
-            select distinct(OBS_NEGEAR) as OBS_NEGEAR
+            select distinct(NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED
             from maps.STG_OBS_VTR_GEARMAP
-            where OBS_NEGEAR is not null          
+            where NEGEAR is not null          
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
           
