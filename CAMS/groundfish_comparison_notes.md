@@ -10,7 +10,7 @@ This example includes all trips for Fishing Year 2019 (May 2019 start). Stratifi
 
 - Stock Area
 - Gear (`CAMS_GEAR_GROUP`)
-- Mesh ('MESHGROUP')
+- Mesh (`MESHGROUP`)
 - Sector
 - Exemption (there are four possible exemptions)
 
@@ -32,7 +32,7 @@ Estimates of yellowtail and windowpane from scallop trips need to come from scal
 
 ### Snoops..
 
-Difference in stratification for
+Difference in stratification
 
 ``` sql
 -- number of gear groups for Ocean Pout
@@ -62,7 +62,19 @@ Pot and traps
 Twin trawl
 Other
 
-**no scallop dredge present..**
+#### Scallop Trips:
+
+Dan C. does this separately. Stratifies GF discard rates by
+- Gear (Trawl/Dredge)
+- Fleet (LA/LAGC)
+- does NOT stratify by Access Area/Open; only by stock area
+- Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
+
+In summary, QM groundfish gets year-end estiamtes in three steps:
+- GF Trips (`Sector/Gear/Mesh/Exemption`)
+- Scallop trips (`Gear/Fleet`)
+  - YTF and WP on scallop trips done in scallop procedure(module) (`Gear/Fleet/AA vs Open`)
+- All other Trips (`Gear group/Mesh`)
 
 
 ``` sql
@@ -87,7 +99,15 @@ from Dan Caless:
 `DISC_RATE_TYPE of 'I' stands for in-season rate, wholly based on at least five in-season observed trips. Type = 'T' is Transition, based partially on the assumed rate and partially based on between one and four in-season trips, and 'A' are assumed rates based primarily on last year's discard rates.`
 
 
-Is (A) specific to strata or does it default to broad stock rate?
+*Q: Is (A) specific to strata or does it default to broad stock rate?*
+
+from dan C.:
+1. They equal last FY in-season if they exist
+2. else they group across sectors, but keep the other strata
+3. else they group across all strata by stock
+
+`I keep them if they have five or more trips`
+
 
 Example:
 
@@ -118,5 +138,5 @@ select distinct(SECGEARFISH)
   order by SECGEARFISH, MESH_CAT
 ```
 
-`discaRd` shows 77 trips observed for strata `Sector 10, XL mesh, Gillnet`
+- `discaRd` shows 77 trips observed for strata `Sector 10, XL mesh, Gillnet`
 Caless has this sector using an assumed rate, meaning there would not be many (or any) obs trips
