@@ -74,3 +74,28 @@ from MAPS.CAMS_OBS_CATCH
 --select *
 --from maps.CFG_itis
 
+BEGIN
+FOR cur_rec IN (SELECT object_name, object_type
+FROM user_objects
+WHERE object_type IN
+('TABLE'))
+LOOP
+BEGIN
+EXECUTE IMMEDIATE 'GRANT SELECT ON '
+--|| cur_rec.object_type
+|| ' "'
+|| cur_rec.object_name
+|| '" TO JMOSER, APSD, SWIGLEY, GSHIELD, CLEGAULT, CAMS_GARFO_FOR_NEFSC';
+EXCEPTION
+WHEN OTHERS
+THEN
+DBMS_OUTPUT.put_line ( 'FAILED: DROP '
+|| cur_rec.object_type
+|| ' "'
+|| cur_rec.object_name
+|| '"'
+);
+END;
+END LOOP;
+END;
+/
