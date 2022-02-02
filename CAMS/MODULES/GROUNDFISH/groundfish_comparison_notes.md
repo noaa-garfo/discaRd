@@ -22,12 +22,13 @@ An assumed rate was used for non-groundfish trips
 ### Issues
 according to 2020 ACL accounting, this should include
 
-- Mesh ('MESHGROUP')
+- Mesh ('MESHGROUP') ADDED
 
-Sector and Exemptions are carrying through to non-groundfish trips. This is affecting which rate is being used.
+Sector and Exemptions are carrying through to non-groundfish trips. This is affecting which rate is being used. (see below, need to split these out)
+
 - Non-groundfish trips should not include these stratifications.
 
-Estimates of yellowtail and windowpane from scallop trips need to come from scallop specific stratification.
+- Estimates of yellowtail and windowpane from scallop trips need to come from scallop specific stratification.
 
 
 ### Snoops..
@@ -50,7 +51,7 @@ where NESPP3 = 250
 | 54 | Ruhle Trawl
 | 57 | Haddock Separator Trawl
 
-Dan Caless's sumamry has nine gear groupings:
+Dan Caless's summary has nine gear groupings:
 
 Gillnet
 Longline and other line gear
@@ -108,6 +109,7 @@ from dan C.:
 
 `I keep them if they have five or more trips`
 
+Dan splits groundfish and non-groundfish trips and stratifies separately.
 
 Example:
 
@@ -139,4 +141,44 @@ select distinct(SECGEARFISH)
 ```
 
 - `discaRd` shows 77 trips observed for strata `Sector 10, XL mesh, Gillnet`
+
 Caless has this sector using an assumed rate, meaning there would not be many (or any) obs trips
+
+*There was a problem with SECTOR_ID in MAPS matchign tables. This has been fixed*
+
+## Feb 1, 2022
+- Multiple LINK1 on a single VTR are sneaking through our fix using only observed hauls. THe species foudn on these trips, for the entire 2018-2020 dataset in groundfish tips are : ] "660" "667" "679" "680" "681" "682" "683" "685" "687" "689" NA which correspond to debris unknown fish groups, random invertebrates etc. see following:
+
+```sql
+select *
+from obdbs.obspec@NOVA
+where substr(NESPP4,1,3) in (660
+  , 667
+  , 679
+  , 680
+  , 681
+  , 682
+  , 683
+  , 685
+  , 687
+  , 689)
+```
+
+There are no `SPECIES ITIS` codes for these `NESPP3` codes and are most likely not ever estimated.
+
+Solution may be to filter these rows from the master table (`CAMS_OBS_CATCH`) upon import to `R`. Filtering these will not affect `KEPT ALL` since these are all from trips that (erroneously) have multiple `LINK1` per `VTR`.
+
+## Feb 2, 2022
+
+- found that there are Strata where all trips report 0 `OBS_KALL` and 0 OBS_DISCARD.. This creates NaN in `DISC_EST`, `DRATE` and NA in `CV`
+
+Options
+1. alter the R functions in the `discaRd` package
+```r
+get.cochran.ss.by.strat
+cochran.calc.ss
+```
+2. Use trip KALL for d/k calculation
+3. Ignore these trips. This depends on whether the discard species info can be trusted given the `OBS_KALL` is incorrect.
+
+- May need to change the trip reference in the R functions above. Now, it is `DOCID`. May need to make this generic and use `VTRSERNO`.. This could affect the CV as using DOCID makes the `N` term smaller than if using `VTRSERNO`
