@@ -205,6 +205,41 @@ c_o_dat2 <- tbl(bcon, sql(
 	collect() %>% 
 	filter(substr(ACTIVITY_CODE_1, 1,3) == 'NMS')
 
+
+c_o_dat2 = c_o_dat2 %>% 
+	mutate(ROWID = 1:nrow(c_o_dat2)) %>% 
+	relocate(ROWID)
+
+# filter out link1 that are doubled on VTR
+
+multilink = c_o_dat2 %>% 
+	filter(!is.na(LINK1)) %>% 
+	group_by(VTRSERNO) %>% 
+	dplyr::summarise(nlink1 = n_distinct(LINK1)) %>% 
+	arrange(desc(nlink1)) %>% 
+	filter(nlink1>1)
+
+remove_links = c_o_dat2 %>% 
+	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
+	dplyr::select(LINK1) %>% 
+	distinct()
+
+remove_id = c_o_dat2 %>% 
+    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
+	  distinct(ROWID)
+
+c_o_dat2 =
+	c_o_dat2 %>% 
+	filter(ROWID %!in% remove_id$ROWID)
+
+# test the removal. Success! only 362 rows removed.. 
+
+    # filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
+		# group_by(SPECIES_ITIS, NESPP3_FINAL) %>% 
+		# dplyr::summarise(sum(DISCARD))
+		
+
+
 ```
 
 ```{r subset tables join and run }
@@ -453,7 +488,9 @@ trans_rate_df = trans_rate_df %>%
  trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
 
  
- full_strata_table = trans_rate_df %>% 
+ trans_rate_df_full = trans_rate_df
+ 
+ full_strata_table = trans_rate_df_full %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
@@ -466,7 +503,7 @@ trans_rate_df = trans_rate_df %>%
  
 
  
-```{r SECTORS}
+```{r SECTOR ROLLUP}
 
 stratvars_assumed = c("SPECIES_STOCK", "CAMS_GEAR_GROUP", "MESHGROUP", "SECTOR_TYPE")
 
@@ -474,19 +511,20 @@ stratvars_assumed = c("SPECIES_STOCK", "CAMS_GEAR_GROUP", "MESHGROUP", "SECTOR_T
 ### All tables in previous run can be re-used wiht diff stratification
 
 # Run the discaRd functions on previous year
-d_prev = run_discard(bdat = bdat_prev_gf
+d_prev_pass2 = run_discard(bdat = bdat_prev_gf
 											 , ddat = ddat_prev_gf
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 # , species_nespp3 = species_nespp3
 										   , species_itis = species_itis
 											 , stratvars = stratvars_assumed
-											 , aidx = c(1:length(stratvars_assumed))
+											 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used.. 
+											, aidx = c(1)  # this creates an unstratified broad stock rate
 											 )
 
 
 # Run the discaRd functions on current year
-d_focal = run_discard(bdat = bdat_gf
+d_focal_pass2 = run_discard(bdat = bdat_gf
 											 , ddat = ddat_focal_gf
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
@@ -494,11 +532,12 @@ d_focal = run_discard(bdat = bdat_gf
 											 # , species_nespp3 = species_nespp3  #'081' #cod...
 											 , species_itis = species_itis
 											 , stratvars = stratvars_assumed
-											 , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used.. 
+											 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used.. 
+											, aidx = c(1)  # this creates an unstratified broad stock rate
 											 )
 
 # summarize each result for convenience
-dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
+dest_strata_p_pass2 = d_prev_pass2$allest$C %>% summarise(STRATA = STRATA
                        , N = N
                        , n = n
                        , orate = round(n/N, 2)
@@ -507,7 +546,7 @@ dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
                        , CV = round(RE_rse, 2)
 										)
 
-dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
+dest_strata_f_pass2 = d_focal_pass2$allest$C %>% summarise(STRATA = STRATA
                        , N = N
                        , n = n
                        , orate = round(n/N, 2)
@@ -518,8 +557,8 @@ dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
 
 # substitute transition rates where needed
 
-trans_rate_df = dest_strata_f %>% 
-  left_join(., dest_strata_p, by = 'STRATA') %>% 
+trans_rate_df_pass2 = dest_strata_f_pass2 %>% 
+  left_join(., dest_strata_p_pass2, by = 'STRATA') %>% 
   mutate(STRATA = STRATA
          , n_obs_trips_f = n.x
   			 , n_obs_trips_p = n.y
@@ -542,11 +581,18 @@ trans_rate_df = dest_strata_f %>%
          )
 
 
-trans_rate_df = trans_rate_df %>% 
+trans_rate_df_pass2 = trans_rate_df_pass2 %>% 
   mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate)) 
   
- trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
+ trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
+ 
+ # get a table of broad stock rates from results (ARATE in pass2)
+ 
+ ARATE_table = d_focal_pass2$res %>% 
+ 	group_by(SPECIES_STOCK) %>% 
+ 	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
+ 
  
  #  assumed_strata_table = trans_rate_df %>% 
  #   right_join(., y = d_focal$res, by = 'STRATA') %>% 
@@ -558,7 +604,8 @@ trans_rate_df = trans_rate_df %>%
  # 	   dplyr::rename(ASSUMED_STRATA = STRATA) %>% 
  #  	select(1:9)
   
-  names(trans_rate_df) = paste0(names(trans_rate_df), '_a')
+  names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
+  
 
 ``` 
  
@@ -569,29 +616,73 @@ trans_rate_df = trans_rate_df %>%
 joined_table = assign_strata(full_strata_table, stratvars_assumed) %>% 
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
-	left_join(., y = trans_rate_df, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate
-															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ final_rate
-															 , n_obs_trips_f < 5 & n_obs_trips_p < 5 ~ final_rate_a
+	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
+	left_join(x =., y = ARATE_table, by = 'SPECIES_STOCK') %>% 
+	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate  # this is an in season rate
+															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ final_rate  # this is a final rate taking transition into account
+															 , n_obs_trips_f < 5 & n_obs_trips_p < 5 ~ final_rate_a  # this is an final assumed rate taking trasnition into account
 		                           )
+	) %>% 
+	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
+	mutate(SPECIES_ITIS_EVAL = species_itis
+ 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , FISHING_YEAR = FY
+ 				 , FY_TYPE = FY_TYPE) 
+
+```
+
+```{r add discard source}
+
+joined_table = joined_table %>% 
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    																	, is.na(LINK1) & n_obs_trips_f >= 5 ~ 'E'
+    																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+    																	, is.na(LINK1) & n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ 'T'
+    																	, is.na(LINK1) & n_obs_trips_f < 5 &
+    																		n_obs_trips_p < 5 &
+    																		n_obs_trips_f_a >= 5 ~ 'A'
+    																	, is.na(LINK1) & n_obs_trips_f < 5 &
+    																		n_obs_trips_p < 5 &
+    																		n_obs_trips_p_a >= 5 ~ 'AT'
+    																	, is.na(LINK1) & 
+    																		n_obs_trips_f < 5 & 
+    																		n_obs_trips_p < 5 & 
+    																		n_obs_trips_f_a < 5 & 
+    																		n_obs_trips_p_a < 5 ~ 'B'
+    																	)  # this may be replaced with model estimate!
+    			 )
+```
+
+```{r make sure CV type matches DISCARD SOURCE}
+
+
+joined_table = joined_table %>% 
+	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
+												, DISCARD_SOURCE == 'E' ~ CV_f
+												, DISCARD_SOURCE == 'T' ~ CV_f
+												, DISCARD_SOURCE == 'A' ~ CV_f_a
+												, DISCARD_SOURCE == 'AT' ~ CV_f_a
+												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
 
+# examine strata that have NaN for DISC_EST
+dest_strata_f %>% 
+	View()
+
+
+ddat_focal_gf %>% 
+	assign_strata(stratvars) %>% 
+	filter(STRATA == 'WGB and South_100_LM_22_CFF GILLNET RENEWAL_NA_NA_NA_0_0_1') %>% 
+	dplyr::select(OBS_KALL, LIVE_POUNDS)
+
+
+
+```
+
+
+```{r}
 # park the final rate into the trips table
- final_table = trans_rate_df %>% 
-   right_join(., y = d_focal$res, by = 'STRATA') %>% 
-   as_tibble() %>% 
- 	 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
- 				 , FY_TYPE = FY_TYPE) %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
-    																	, is.na(LINK1) & CRATE == DISC_RATE ~ 'E'
-    																	, is.na(LINK1) & CRATE == previous_season_rate ~ 'P'
-    																	, is.na(LINK1) & CRATE == trans_rate ~ 'T'
-    																	, is.na(LINK1) & CRATE == ARATE ~ 'A'
-    																	, is.na(LINK1) & is.na(ARATE) ~ 'A')  # this may be replaced with model estimate!
-    			 )
 
  final_discard_table$DISCARD[i] = final_table %>% 
  	filter(substr(ACTIVITY_CODE_1, 1, 3) =='NMS') %>% 
