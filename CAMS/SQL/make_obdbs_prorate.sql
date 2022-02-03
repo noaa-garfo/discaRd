@@ -16,7 +16,7 @@ RUN FROM MAPS SCHEMA
 
 */
 
-drop table CAMS_OBS_prorate 
+drop table MAPS.CAMS_OBS_prorate 
 /
 
 create table MAPS.CAMS_OBS_PRORATE as
@@ -124,7 +124,7 @@ group by link3
 --select * from obs_cams_prorate
 /
 
-grant select on cams_obs_prorate to apsd
+grant select on maps.cams_obs_prorate to apsd
 /
 
 

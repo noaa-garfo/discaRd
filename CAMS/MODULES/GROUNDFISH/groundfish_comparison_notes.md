@@ -172,7 +172,11 @@ Solution may be to filter these rows from the master table (`CAMS_OBS_CATCH`) up
 
 - found that there are Strata where all trips report 0 `OBS_KALL` and 0 OBS_DISCARD.. This creates NaN in `DISC_EST`, `DRATE` and NA in `CV`
 
-Options
+![table illustrating effect of 0 OBS_KALL ](drate_nan.jpg)
+
+![zeros in OBS_KALL](zero_obs_kall.jpg)
+
+**Options**
 1. alter the R functions in the `discaRd` package
 ```r
 get.cochran.ss.by.strat
@@ -182,3 +186,26 @@ cochran.calc.ss
 3. Ignore these trips. This depends on whether the discard species info can be trusted given the `OBS_KALL` is incorrect.
 
 - May need to change the trip reference in the R functions above. Now, it is `DOCID`. May need to make this generic and use `VTRSERNO`.. This could affect the CV as using DOCID makes the `N` term smaller than if using `VTRSERNO`
+
+- Identified that base table `CAMS_OBS_CATCH` may have been built incorrectly. Never completed the multi-layered join in the case with multiple subtrips per LINK1.
+
+- There may be an issue with the MAPS.MATCH_OBS table. Observed trips for the strata referenced above do can't be found in the OBS data. The LINK1 doe not match and the VTRSERNO do not match anything in MAPS.MATCH_OBS
+
+- found that `TRIPEXT in (C, X)` filtered out records with `L`, which accounts for the mismatch in the above strata.
+
+```sql
+-- example shows that there are hailwts on obs hauls 
+select *
+FROM obdbs.obtrp@nova a
+left join (select * from obdbs.obhau@nova) b
+on a.LINK1 = b.LINK1
+left join (select * from obdbs.obspp@nova) s
+on b.LINK3 = s.LINK3
+where a.link1 = '000201910R33047'
+```
+
+revisit against this table:
+```sql
+select *
+from obdbs.obtripext@nova
+```
