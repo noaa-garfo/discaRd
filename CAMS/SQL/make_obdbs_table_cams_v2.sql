@@ -14,6 +14,7 @@ modified
 12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
 12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
 01-04-22 update mesh categories (meshgroup): 0-3.99 = sm, >=4 = L, FOR GILLNETS, >=8 = XL
+02-03-22 update filter for tripext to include Limited sampling trips (see obdbs.tripext@nova)
 
 The year variable can be defined, and then the entire script run (F5 in sqldev)
 
@@ -25,7 +26,7 @@ RUN FROM MAPS SCHEMA
 
 */
 
-DEF year = 2017
+DEF year = 2019
 /
 DROP TABLE obdbs_cams_&year
 /

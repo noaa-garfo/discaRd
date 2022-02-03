@@ -673,7 +673,10 @@ dest_strata_f %>%
 
 ddat_focal_gf %>% 
 	assign_strata(stratvars) %>% 
-	filter(STRATA == 'WGB and South_100_LM_22_CFF GILLNET RENEWAL_NA_NA_NA_0_0_1') %>% 
+	filter(STRATA == 'WGB and South_100_XL_22_CFF GILLNET RENEWAL_NA_NA_NA_0_0_1') %>% 
+	filter(!is.na(LINK1)) %>% 
+	dplyr::select(VTRSERNO)
+
 	dplyr::select(OBS_KALL, LIVE_POUNDS)
 
 

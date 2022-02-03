@@ -14,6 +14,8 @@ BG 12-02-21
 12/13/21 changed gearmapping join to use only unique NEGEAR to GEARCODE combinations. Trips were being duped with one to many on this match
 12/21/21 changed table nname to MAPS.CAMS_OBS_PRORATE
 01/24/22 rebuilt to reflect changes to SECGEAR_MAPPED (clam dredge NEGEAR 400)
+02/03/22 make sure tripcategory and accessarea are included
+         make sure the multi VTR join is a multi factor join.. AREA, GEAR, MESH, LINK1
 
 ------------------------------------------------------------------------------------------------------*/  
 
@@ -29,7 +31,7 @@ drop View cams_obs_catch
 drop materialized view cams_obs_catch
 /
 
-create materialized view cams_obs_catch as 
+create table cams_obs_catch as 
 
 with ulink as (
     select count(distinct(obs_link1)) nlink1
@@ -263,7 +265,8 @@ trips with no link1 (unobserved)
      from trips t 
    ) t
       left join (select * from obs ) o
-        on (t.link1 = o.link1)
+--        on (t.link1 = o.link1)
+        on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA)
   where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and t.link1 is not null
   and t.vtrserno is not null

@@ -194,7 +194,7 @@ cochran.calc.ss
 - found that `TRIPEXT in (C, X)` filtered out records with `L`, which accounts for the mismatch in the above strata.
 
 ```sql
--- example shows that there are hailwts on obs hauls 
+-- example shows that there are hailwts on obs hauls
 select *
 FROM obdbs.obtrp@nova a
 left join (select * from obdbs.obhau@nova) b
@@ -209,3 +209,10 @@ revisit against this table:
 select *
 from obdbs.obtripext@nova
 ```
+
+## Feb 3, 2022
+
+- TRIPEXT should be only C and X.. DMIS discards are calculated from a table provided by the observer program; and they only use these trip designations.
+- Examined Dan Calles's discard script `Discard_Calculations_21_Mults.sql` this is 1500 lines of nested tables and exceptions.. 
+- should re-evaluate whether a new groundfish module is necessary or whether porting the SQL to CAMS is a better option.
+- the final discard rate table is not a bad template for an output table.
