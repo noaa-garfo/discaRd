@@ -665,7 +665,27 @@ joined_table = joined_table %>%
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
+```
 
+```{r get the discard for each trip using COAL_RATE}
+joined_table = joined_table %>% 
+	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
+				 )
+
+joined_table %>% 
+	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
+	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
+	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
+	dplyr::select(-1) %>% 
+	colSums(na.rm = T)
+
+
+
+```
+
+
+```{r }
 # examine strata that have NaN for DISC_EST
 dest_strata_f %>% 
 	View()
@@ -818,15 +838,16 @@ db_example = final_table %>%
 	FY,
 	SPECIES_ITIS_EVAL,
 	FY_TYPE,
-	DISCARD_SOURCE,
 	ACTIVITY_CODE_1,
 	VTRSERNO,
-	ARATE,
-	CRATE,
-	DISC_RATE,
+	LINK1,
 	STRATA,
 	STRATA_ASSUMED,
-	LINK1,
+	trans_rate,
+	trans_rate_a,
+	BROAD_STOCK_RATE,
+	COAL_RATE,
+	DISCARD_SOURCE,
 	OBS_DISCARD,
 	EST_DISCARD,
 	DISCARD,
