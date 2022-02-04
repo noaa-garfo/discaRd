@@ -16,6 +16,8 @@ BG 12-02-21
 01/24/22 rebuilt to reflect changes to SECGEAR_MAPPED (clam dredge NEGEAR 400)
 02/03/22 make sure tripcategory and accessarea are included
          make sure the multi VTR join is a multi factor join.. AREA, GEAR, MESH, LINK1
+02/04/22 added filter for observedtrips coming from CAMS.MATCH_OBS so only trips with TRIP_EXT C or X are included. 
+        This is the criteria used in OBS data
 
 ------------------------------------------------------------------------------------------------------*/  
 
@@ -53,6 +55,13 @@ with ulink as (
     group by obs_vtr
     order by nlink1 desc
 )
+, obstrp_ext as (
+ select distinct(link1) link1 
+ from obdbs.obtrp@NOVA
+ where tripext in ('C','X')
+-- and year >= 2018
+)
+ 
 , vtr_link as (
      select obs_vtr
     , permit
@@ -60,9 +69,10 @@ with ulink as (
     , camsid
     from (
         select a.*
-        from MAPS.MATCH_OBS a, ulink l
+        from MAPS.MATCH_OBS a, ulink l, obstrp_ext o
         where a.obs_vtr in (l.obs_vtr)
         and l.obs_vtr is not null        
+        AND OBS_LINK1 in o.link1       
     )
     group by obs_vtr, permit, camsid
     order by permit, obs_vtr
