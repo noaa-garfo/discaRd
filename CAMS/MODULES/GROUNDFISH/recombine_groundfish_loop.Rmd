@@ -720,7 +720,7 @@ allgf = do.call(rbind, res_list)
 
 allgf %>% 
 	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>% 
-	dplyr::summarise(D = round(sum(DISCARD*DISC_MORT_RATIO, na.rm = T))) %>% 
+	dplyr::summarise(D = round(sum(DISCARD, na.rm = T))) %>%
 	# filter(SPECIES_ITIS %in% species$SPECIES_ITIS) %>% 
 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'D') %>% 
 	mutate(SPECIES_ITIS = SPECIES_ITIS_EVAL) %>% 
@@ -746,6 +746,7 @@ db_example = allgf %>%
 	DATE_RUN,
 	FY,
 	SPECIES_ITIS_EVAL,
+	COMNAME_EVAL,
 	FY_TYPE,
 	ACTIVITY_CODE_1,
 	VTRSERNO,
@@ -768,6 +769,34 @@ db_example = allgf %>%
 
 names(db_example) = toupper(names(db_example))
 
+```
+
+```{r diagnostic plots}
+
+db_example %>% 
+	filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
+	slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+
+db_example %>% 
+	# filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+
+
+```
+
+
+```{r upload example table}
 dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
 
 acon <- dbConnect(odbc::odbc(), 
