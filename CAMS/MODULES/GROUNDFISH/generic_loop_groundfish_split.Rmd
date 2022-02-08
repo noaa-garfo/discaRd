@@ -589,22 +589,12 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
  
  # get a table of broad stock rates from results (ARATE in pass2)
  
- ARATE_table = d_focal_pass2$res %>% 
+BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>% 
  	group_by(SPECIES_STOCK) %>% 
  	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
  
  
- #  assumed_strata_table = trans_rate_df %>% 
- #   right_join(., y = d_focal$res, by = 'STRATA') %>% 
- #   as_tibble() %>% 
- # 	 	mutate(SPECIES_ITIS_EVAL = species_itis
- # 				 , COMNAME_EVAL = species$COMNAME[i]
- # 				 , FISHING_YEAR = FY
- # 				 , FY_TYPE = FY_TYPE) %>% 
- # 	   dplyr::rename(ASSUMED_STRATA = STRATA) %>% 
- #  	select(1:9)
-  
-  names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
+names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
   
 
 ``` 
@@ -617,10 +607,10 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-	left_join(x =., y = ARATE_table, by = 'SPECIES_STOCK') %>% 
+	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = 'SPECIES_STOCK') %>% 
 	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate  # this is an in season rate
-															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ final_rate  # this is a final rate taking transition into account
-															 , n_obs_trips_f < 5 & n_obs_trips_p < 5 ~ final_rate_a  # this is an final assumed rate taking trasnition into account
+															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
+															 , n_obs_trips_f < 5 & n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
 		                           )
 	) %>% 
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
@@ -633,6 +623,11 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 
 ```{r add discard source}
 
+# >5 trips in season gets in season rate
+# < 5 i nseason but >=5 past year gets transition
+# < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
+# <5, <5,  and <5 gets broad stock rate
+
 joined_table = joined_table %>% 
     mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
     																	, is.na(LINK1) & n_obs_trips_f >= 5 ~ 'E'
@@ -643,7 +638,7 @@ joined_table = joined_table %>%
     																		n_obs_trips_f_a >= 5 ~ 'A'
     																	, is.na(LINK1) & n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
-    																		n_obs_trips_p_a >= 5 ~ 'AT'
+    																		n_obs_trips_p_a >= 5 ~ 'B'
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 & 
     																		n_obs_trips_p < 5 & 
@@ -655,20 +650,26 @@ joined_table = joined_table %>%
 
 ```{r make sure CV type matches DISCARD SOURCE}
 
+# obs trips get 0, broad stock rate is NA
+
 
 joined_table = joined_table %>% 
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'E' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
 												, DISCARD_SOURCE == 'A' ~ CV_f_a
-												, DISCARD_SOURCE == 'AT' ~ CV_f_a
+												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
 ```
 
 ```{r get the discard for each trip using COAL_RATE}
+# discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
+# the KALLs should be small.. 
+
 joined_table = joined_table %>% 
+	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
@@ -678,14 +679,54 @@ joined_table %>%
 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
 	dplyr::select(-1) %>% 
-	colSums(na.rm = T)
+	colSums(na.rm = T) %>% 
+	round()
 
 
 
 ```
 
 
-```{r }
+```{r check that joined table has values for each trip}
+
+# trips that were not observed 
+joined_table %>%
+	filter(is.na(LINK1)) %>% 
+	filter(is.na(COAL_RATE))
+
+# See if any trips do not have a discard source
+joined_table %>%
+	filter(is.na(DISCARD_SOURCE))
+
+# see what trips have CV and which do not
+
+joined_table %>%
+	group_by(DISCARD_SOURCE) %>% 
+	dplyr::summarise(mean(CV, na.rm = F))
+
+# Broad sotck rate never has a CV.. this could be differnt if we calculate the total discard rate by stock
+
+# look at the AT rate.. is this a bad designation of discard source? 
+joined_table %>%
+	filter(DISCARD_SOURCE == 'AT' & is.na(CV)) %>%
+	dplyr::select(
+	FULL_STRATA,
+	STRATA_ASSUMED,
+	CV,
+	CV_f_a,
+	CV_f,
+	COAL_RATE,
+	BROAD_STOCK_RATE,
+	trans_rate,
+	trans_rate_a,
+	n_obs_trips_f,
+	n_obs_trips_f_a,
+	n_obs_trips_p,
+	n_obs_trips_p_a
+	) %>%
+	View()
+	
+
 # examine strata that have NaN for DISC_EST
 dest_strata_f %>% 
 	View()
