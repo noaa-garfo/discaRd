@@ -26,7 +26,7 @@ urlcolor: cyan
 knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
 											message = FALSE, cache = FALSE,
 											progress = TRUE, verbose = FALSE, comment = F
-											, error = FALSE, dev = 'png', dpi = 200)
+											, error = FALSE, dev = 'png', dpi = 200, prompt = F)
 ```
 
 ```{r setup, eval = T}
@@ -273,11 +273,9 @@ stratvars = c('SPECIES_STOCK'
 
 ```
 
-```{r setup support table info}
+```{r loop it all, }
 
-# for(i in 1:length(species$SPECIES_ITIS)){
-
-i = 12
+for(i in 1:length(species$SPECIES_ITIS)){
 
 print(paste0('Running ', species$COMNAME[i]))	
 	
@@ -319,10 +317,13 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from apsd.CAMS_DISCARD_MO
 	filter(SPECIES_ITIS == species_itis) %>%
   dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
-```
 
-```{r  haddock example trips with full strata either in year_t or year _t-1}
 #--------------------------------------------------------------------------------#
+# haddock example trips with full strata either in year_t or year _t-1
+#--------------------------------------------------------------------------------#
+
+print(paste0("Getting in-season rates for ", species_itis, " ", FY))
+
 # make tables
 ddat_focal <- gf_dat %>% 
   filter(GF_YEAR == FY) %>%   ## time element is here!!
@@ -506,10 +507,11 @@ trans_rate_df = trans_rate_df %>%
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
-```
+#-----------------------------------------------------------------------
+# SECTOR ROLLUP
+#-----------------------------------------------------------------------
+print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
  
-```{r SECTOR ROLLUP}
-
 stratvars_assumed = c("SPECIES_STOCK", "CAMS_GEAR_GROUP", "MESHGROUP", "SECTOR_TYPE")
 
 
@@ -601,10 +603,10 @@ BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>%
  
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
   
-
-``` 
- 
-```{r join full and assumed strata tables}
+#-----------------------------------------------------------------------
+# join full and assumed strata tables
+#-----------------------------------------------------------------------
+print(paste0("Constructing output table for ", species_itis, " ", FY)) 
 
 joined_table = assign_strata(full_strata_table, stratvars_assumed) %>% 
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
@@ -622,9 +624,10 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
-```
+#-----------------------------------------------------------------------
+# add discard source
+#-----------------------------------------------------------------------
 
-```{r add discard source}
 
 # >5 trips in season gets in season rate
 # < 5 i nseason but >=5 past year gets transition
@@ -649,9 +652,10 @@ joined_table = joined_table %>%
     																		n_obs_trips_p_a < 5 ~ 'B'
     																	)  # this may be replaced with model estimate!
     			 )
-```
 
-```{r make sure CV type matches DISCARD SOURCE}
+#-----------------------------------------------------------------------
+# make sure CV type matches DISCARD SOURCE}
+#-----------------------------------------------------------------------
 
 # obs trips get 0, broad stock rate is NA
 
@@ -665,9 +669,10 @@ joined_table = joined_table %>%
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
-```
+#-----------------------------------------------------------------------
+# get the discard for each trip using COAL_RATE}
+#-----------------------------------------------------------------------
 
-```{r get the discard for each trip using COAL_RATE}
 # discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
 # the KALLs should be small.. 
 
@@ -685,86 +690,18 @@ joined_table %>%
 	colSums(na.rm = T) %>% 
 	round()
 
+#-------------------------------------------------------------	
+# save trip by trip info to RDS 
+#-------------------------------------------------------------
 
-
-```
-
-
-```{r check that joined table has values for each trip}
-
-# trips that were not observed 
-joined_table %>%
-	filter(is.na(LINK1)) %>% 
-	filter(is.na(COAL_RATE))
-
-# See if any trips do not have a discard source
-joined_table %>%
-	filter(is.na(DISCARD_SOURCE))
-
-# see what trips have CV and which do not
-
-joined_table %>%
-	group_by(DISCARD_SOURCE) %>% 
-	dplyr::summarise(mean(CV, na.rm = F))
-
-# Broad sotck rate never has a CV.. this could be differnt if we calculate the total discard rate by stock
-
-# look at the AT rate.. is this a bad designation of discard source? 
-joined_table %>%
-	filter(DISCARD_SOURCE == 'AT' & is.na(CV)) %>%
-	dplyr::select(
-	FULL_STRATA,
-	STRATA_ASSUMED,
-	CV,
-	CV_f_a,
-	CV_f,
-	COAL_RATE,
-	BROAD_STOCK_RATE,
-	trans_rate,
-	trans_rate_a,
-	n_obs_trips_f,
-	n_obs_trips_f_a,
-	n_obs_trips_p,
-	n_obs_trips_p_a
-	) %>%
-	View()
-	
-
-# examine strata that have NaN for DISC_EST
-dest_strata_f %>% 
-	View()
-
-
-ddat_focal_gf %>% 
-	assign_strata(stratvars) %>% 
-	filter(STRATA == 'WGB and South_100_XL_22_CFF GILLNET RENEWAL_NA_NA_NA_0_0_1') %>% 
-	filter(!is.na(LINK1)) %>% 
-	dplyr::select(VTRSERNO)
-
-	dplyr::select(OBS_KALL, LIVE_POUNDS)
-
-
-
-```
-
-
-```{r}
-# park the final rate into the trips table
-
- final_discard_table$DISCARD[i] = final_table %>% 
- 	filter(substr(ACTIVITY_CODE_1, 1, 3) =='NMS') %>% 
- 	dplyr::summarise(TOTAL = DISCARD*DISC_MORT_RATIO) %>% 
- 	dplyr::select(TOTAL) %>% 
- 	sum(., na.rm = T)
- 
+saveRDS(joined_table, file = paste0('OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS'))
  t2 = Sys.time()
-
-print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
+	
+print(paste(species_itis, ' RAN IN ', round(t2-t1, 2), ' SECONDS',  sep = ''))
  
-# 
+}
 
 ```
-
 
 ```{r read in result and pull out only GF trips }
 
@@ -774,13 +711,12 @@ ii = 1
 
 for(j in species$SPECIES_ITIS){
 
-	res_list[[ii]] <- readRDS(paste0("discard_est_", j, "_gftrips_only.RDS"))
+	res_list[[ii]] <- readRDS(paste0("OUTPUT/discard_est_", j, "_gftrips_only.RDS"))
 	ii = ii+1
 
 }
 
-allgf = do.call(rbind, res_list) %>% 
-	filter(substr(ACTIVITY_CODE_1, 1, 3) =='NMS')
+allgf = do.call(rbind, res_list) 
 
 allgf %>% 
 	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>% 
@@ -791,90 +727,19 @@ allgf %>%
 	left_join(., species, by = 'SPECIES_ITIS') %>% 
 	dplyr::select(-SPECIES_ITIS, -NESPP3) %>% 
 	relocate('COMNAME','SPECIES_ITIS_EVAL') %>% 
-	write.csv('groundfish_loop_results_gftrips_only_012622.csv', row.names = F)
+	write.csv('groundfish_loop_results_gftrips_only_020722.csv', row.names = F)
 	# write.csv('groundfish_loop_results_gftrips_only_012122.csv', row.names = F)
 	# View()
 
 
-# gfidx = grep('NMS*', d_focal$res$ACTIVITY_CODE_1)
-# 
-# res$GFIDX = substr(res$ACTIVITY_CODE_1, 1,3) == 'NMS'
-# 
-# 	res %>% 
-#   filter(GFIDX == T ) %>% 
-#    group_by(SPECIES_STOCK) %>% 
-#    dplyr::summarise(inseason_rate_d = sum(in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
-#              , trans_rate_d = sum(trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T)
-#              , final_rate_d = sum(final_rate*SUBTRIP_KALL*DISC_MORT_RATIO, na.rm = T))
-
-
-```
-
-```{r get 2019 groundfish discard from DMIS, eval = F}
-
-discard2019 = tbl(bcon, sql("
-select round(sum(POKGMASS_DISCARD)) POKGMASS_DISCARD
-,round(sum(CODGMSS_DISCARD)) CODGMSS_DISCARD
-,round(sum(CODGBE_DISCARD)) CODGBE_DISCARD
-,round(sum(CODGBW_DISCARD)) CODGBW_DISCARD
-,round(sum(FLDSNEMA_DISCARD)) FLDSNEMA_DISCARD
-,round(sum(FLWGB_DISCARD)) FLWGB_DISCARD
-,round(sum(FLWGMSS_DISCARD)) FLWGMSS_DISCARD
-,round(sum(PLAGMMA_DISCARD)) PLAGMMA_DISCARD
-,round(sum(YELCCGM_DISCARD)) YELCCGM_DISCARD
-,round(sum(HADGBW_DISCARD)) HADGBW_DISCARD
-,round(sum(WITGMMA_DISCARD)) WITGMMA_DISCARD
--- ,round(sum(FLWGMSS_DISCARD)) FLWGMSS_DISCARD
-,round(sum(HALGMMA_DISCARD)) HALGMMA_DISCARD
-,round(sum(YELGB_DISCARD)) YELGB_DISCARD
-,round(sum(FLGMGBSS_DISCARD)) FLGMGBSS_DISCARD
-,round(sum(HKWGMMA_DISCARD)) HKWGMMA_DISCARD
-,round(sum(REDGMGBSS_DISCARD)) REDGMGBSS_DISCARD
--- ,round(sum(FLWGB_DISCARD)) FLWGB_DISCARD
-,round(sum(HADGM_DISCARD)) HADGM_DISCARD
-,round(sum(OPTGMMA_DISCARD)) OPTGMMA_DISCARD
-,round(sum(WOLGMMA_DISCARD)) WOLGMMA_DISCARD
-,round(sum(FLWSNEMA_DISCARD)) FLWSNEMA_DISCARD
-,round(sum(HADGBE_DISCARD)) HADGBE_DISCARD
--- ,round(sum(CODGBW_DISCARD)) CODGBW_DISCARD
-,round(sum(YELSNE_DISCARD)) YELSNE_DISCARD
-
-from apsd.dmis_all_years
-where fishing_year = 2019
-"))  %>% 
-  collect() %>% 
-  t() %>% 
-  as.data.frame() %>% 
-  mutate(stock = row.names(.))
-
-names(discard2019)[1] = 'DMIS_DISCARD'
-
-discard2019$STOCK_ID = unlist(lapply(strsplit(discard2019$stock, split = '_'), function(x) x[[1]]))
-
-# get stock names and nespp3
-
-stock_nespp3 = tbl(bcon, sql("
-    select max(nespp3) as nespp3
-    , stock_id
-    , comname
-    from fso.v_obSpeciesStockArea 
-    where stock_id not like 'OTHER'
-    group by stock_id, comname
-")
-) %>% 
-    collect()
-
-stock_discard_2019 = stock_nespp3 %>% 
-  left_join(., discard2019, by = 'STOCK_ID') %>% 
-  dplyr::select(-stock)
-
-write.csv(stock_discard_2019, 'dmis2019_groundfish_discard.csv', row.names = F)
 
 ```
 
 ```{r table output example}
 
-db_example = final_table %>%
+db_example = allgf %>%
+	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+								, 'DISCARD_RATE' = 'COAL_RATE') %>% 
 	mutate(DATE_RUN = as.character(lubridate::today())
 				 , FY = as.integer(FY)) %>%
 	dplyr::select(
@@ -885,20 +750,23 @@ db_example = final_table %>%
 	ACTIVITY_CODE_1,
 	VTRSERNO,
 	LINK1,
-	STRATA,
+	n_obs_trips_f,
+	STRATA_FULL,
 	STRATA_ASSUMED,
-	trans_rate,
-	trans_rate_a,
+	# trans_rate,
+	# trans_rate_a,
 	BROAD_STOCK_RATE,
-	COAL_RATE,
+	DISCARD_RATE,
+
 	DISCARD_SOURCE,
 	OBS_DISCARD,
-	EST_DISCARD,
+	DISC_MORT_RATIO,
 	DISCARD,
-	n_obs_trips,
 	CV,
 	eval(stratvars)
 	)
+
+names(db_example) = toupper(names(db_example))
 
 dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
 
