@@ -1,5 +1,5 @@
 ---
-title: "Looop several species for discards"
+title: "January loop for discards"
 output:
   pdf_document: 
     highlight: zenburn
@@ -93,12 +93,10 @@ FY_TYPE = 'JAN START'
 # black seabass and scup.
 #Not sure what else is needed for herring and shad catch cap.
 
-# species_nespp3 = c('212','801','802','051', '170',
-#                    '023', '121', '335', '329')  # Calendar year
+ species_nespp3 = c('212','801','802','051', '170',
+                    '023', '121', '335', '329')  # Calendar year
 
-species_nespp3 = c('801')  # Calendar year
-
-species = tbl(bcon, sql("select *
+ species = tbl(bcon, sql("select *
 												from MAPS.CFG_ITIS")) %>% 
 	collect() %>% 
 	filter(DLR_NESPP3 %in% species_nespp3)
@@ -125,8 +123,6 @@ c_o_dat2 <- tbl(bcon, sql(
 	       end as halfofyear
 	-- , carea
   ,region
- -- ,fleet
- -- ,scalloparea
   , AREA
 	, vtrserno
 	, link1
@@ -160,8 +156,6 @@ c_o_dat2 <- tbl(bcon, sql(
 	group by year
   -- , carea
    ,region
- -- ,fleet
- -- ,scalloparea
   , AREA
 	, vtrserno
 	, link1
@@ -239,9 +233,9 @@ stratvars = c('SPECIES_STOCK'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 							, 'HALFOFYEAR'
-							, 'REGION')
-						#	, 'FLEET'
-						#	, 'SCALLOPAREA')
+							, 'REGION'
+						  , 'TRIPCATEGORY'
+						  , 'ACCESSAREA')
 
 
 # Begin loop
@@ -339,7 +333,7 @@ ddat_focal_cy = ddat_focal_cy %>%
 
 # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
 
-bdat_cy = ddat_focal_cy %>% 
+bdat_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
@@ -420,41 +414,67 @@ trans_rate_df = dest_strata_f %>%
                                          , l_assumed_rate = previous_season_rate
                                          , l_inseason_rate = in_season_rate
                                          )
-         ) %>% 
-  dplyr::select(STRATA
-         , n_obs_trips 
-         , in_season_rate 
-         , previous_season_rate 
-         , trans_rate)
-
-
-trans_rate_df = trans_rate_df %>% 
-  mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate)) 
+         ) 
   
- trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
-
-# compare subbed rate total to in season total. 
-	 # trans_rate_df %>% 
-	 #   left_join(dest_strata_f, by = 'STRATA') %>% 
-	 #   summarise(in_season_discard = sum(in_season_rate*KALL, na.rm = T)
-	 #             , final_rate_discard = sum(final_rate*KALL, na.rm = T)
-	 #             ) %>% 
-	 #   knitr::kable()
+ #Fit model for an alternative to the assumed rate
+ # 
+ # m_data <- d_focal$res %>% filter(!is.na(LINK1))
+ # 
+ # mod <- glm(OBS_DISCARD ~ offset(log(m_data$OBS_KALL+1))+
+ #             SPECIES_STOCK +
+ #             CAMS_GEAR_GROUP +
+ #             MESHGROUP + 
+ #             HALFOFYEAR + 
+ #             REGION,
+ #           family = poisson(),
+ #           data = m_data)
+ # 
+ #  data_focal <- d_focal$res
+ # 
+ #  data_focal$OBS_KALL <- log(data_focal$OBS_KALL+1)
+ # 
+ # # Predict
+ # data_focal <- data.frame(data_focal, D_MODEL = predict(mod, data_focal, type = "response"))   #*DISC_MORT_RATIO
  
-# park the final rate into the trips table
+ 
+ #Then join to trans_rate_df
+ 
  final_table = trans_rate_df %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
  				 , FISHING_YEAR = FY
- 				 , FY_TYPE = FY_TYPE) %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
-    																	, is.na(LINK1) & CRATE == DISC_RATE ~ 'E'
-    																	, is.na(LINK1) & CRATE == previous_season_rate ~ 'P'
-    																	, is.na(LINK1) & CRATE == trans_rate ~ 'T'
-    																	, is.na(LINK1) & CRATE == ARATE ~ 'A')
-    			 )
+ 				 , FY_TYPE = FY_TYPE) %>%
+   
+   	mutate(FINAL_RATE = case_when(n_obs_trips >= 5 ~ in_season_rate  # this is an in season rate
+															    ,n_obs_trips < 5 & n.y >=5 ~ trans_rate          
+   	                              ,n_obs_trips < 5 & n.y < 5 ~ ARATE)
+   	       ) %>%
+     mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    																	, is.na(LINK1) & n_obs_trips >= 5 ~ 'E'
+    																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+    																	, is.na(LINK1) & n_obs_trips < 5 & n.y>=5 ~ 'T'
+    																	, is.na(LINK1) & n_obs_trips < 5 &
+    																		n.y < 5 ~ 'A'))
+  
+ 
+ final_table$disc_est_byrate <-final_table$SUBTRIP_KALL*final_table$FINAL_RATE*final_table$DISC_MORT_RATIO
+ 
+ sum(final_table$KALL.y, na.rm=TRUE)
+ 
+ sum(final_table$disc_est_byrate, na.rm=TRUE)
+ 
+ observed <- final_table %>% filter(DISCARD_SOURCE =="O")
+ x <- sum(observed$OBS_DISCARD)
+ 
+ unobserved <- final_table %>% filter(DISCARD_SOURCE !="O")
+ y <- sum(unobserved$disc_est_byrate, na.rm = TRUE)
+ 
+ species$ITIS_NAME[i]
+ x + y
+ 
+ sum(d_focal$res$SUBTRIP_KALL, na.rm=TRUE)
  
  
  # final_table %>%
@@ -501,14 +521,12 @@ print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 ```{r (3) model discards}
 # Potentially limited to the focal year (for year end estimation)
 
-stratvars = c('CAMS_GEAR_GROUP'
-							, 'MESHGROUP'
-							, 'SPECIES_STOCK'
-							, 'HALFOFYEAR'
-							, 'STOCK'
-							, 'REGION')
-						#	, 'FLEET'
-						#	, 'SCALLOPAREA')
+# stratvars = c('CAMS_GEAR_GROUP'
+# 							, 'MESHGROUP'
+# 							, 'SPECIES_STOCK'
+# 							, 'HALFOFYEAR'
+# 							, 'SPECIES_STOCK'
+# 							, 'REGION')
 
 # create a small bdat
 bdat_mod <- bdat_cy %>% 
@@ -528,7 +546,7 @@ bdat_mod <- bdat_cy %>%
 				 , MESHGROUP
 				 , SPECIES_STOCK
 				 , HALFOFYEAR
-				 , STOCK
+				# , STOCK
 				 , REGION
          )
 
