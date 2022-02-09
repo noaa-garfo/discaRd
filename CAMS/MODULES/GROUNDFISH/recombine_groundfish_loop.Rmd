@@ -23,10 +23,20 @@ urlcolor: cyan
 
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
-											message = FALSE, cache = FALSE,
-											progress = TRUE, verbose = FALSE, comment = F
-											, error = FALSE, dev = 'png', dpi = 200, prompt = F)
+knitr::opts_chunk$set(echo=FALSE
+											, warning = FALSE
+											, message = FALSE
+											, cache = FALSE
+											, progress = TRUE
+											, verbose = FALSE
+											, comment = F
+											, error = FALSE
+											, dev = 'png'
+											, dpi = 200
+											, prompt = F
+											, results='hide')
+
+options(dplyr.summarise.inform = FALSE)
 ```
 
 ```{r setup, eval = T}
@@ -273,7 +283,7 @@ stratvars = c('SPECIES_STOCK'
 
 ```
 
-```{r loop it all, }
+```{r loop it all }
 
 for(i in 1:length(species$SPECIES_ITIS)){
 
@@ -636,7 +646,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 
 joined_table = joined_table %>% 
     mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
-    																	, is.na(LINK1) & n_obs_trips_f >= 5 ~ 'E'
+    																	, is.na(LINK1) & n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
     																	, is.na(LINK1) & n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ 'T'
     																	, is.na(LINK1) & n_obs_trips_f < 5 &
@@ -662,7 +672,7 @@ joined_table = joined_table %>%
 
 joined_table = joined_table %>% 
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
-												, DISCARD_SOURCE == 'E' ~ CV_f
+												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
 												, DISCARD_SOURCE == 'A' ~ CV_f_a
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
@@ -717,19 +727,39 @@ for(j in species$SPECIES_ITIS){
 }
 
 allgf = do.call(rbind, res_list) 
-
-allgf %>% 
-	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>% 
-	dplyr::summarise(D = round(sum(DISCARD, na.rm = T))) %>%
-	# filter(SPECIES_ITIS %in% species$SPECIES_ITIS) %>% 
-	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'D') %>% 
-	mutate(SPECIES_ITIS = SPECIES_ITIS_EVAL) %>% 
-	left_join(., species, by = 'SPECIES_ITIS') %>% 
-	dplyr::select(-SPECIES_ITIS, -NESPP3) %>% 
-	relocate('COMNAME','SPECIES_ITIS_EVAL') %>% 
-	write.csv('groundfish_loop_results_gftrips_only_020722.csv', row.names = F)
+# 
+# allgf %>% 
+# 	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>% 
+# 	dplyr::summarise(D = round(sum(DISCARD, na.rm = T))) %>%
+# 	# filter(SPECIES_ITIS %in% species$SPECIES_ITIS) %>% 
+# 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'D') %>% 
+# 	mutate(SPECIES_ITIS = SPECIES_ITIS_EVAL) %>% 
+# 	left_join(., species, by = 'SPECIES_ITIS') %>% 
+# 	dplyr::select(-SPECIES_ITIS, -NESPP3) %>% 
+# 	relocate('COMNAME','SPECIES_ITIS_EVAL') %>% 
+# 	write.csv('groundfish_loop_results_gftrips_only_020722.csv', row.names = F)
 	# write.csv('groundfish_loop_results_gftrips_only_012122.csv', row.names = F)
 	# View()
+
+# check numebr of VTRs vs number of rows
+
+allgf %>% 
+	group_by(SPECIES_ITIS_EVAL) %>% 
+	dplyr::summarise(nvtr = n_distinct(VTRSERNO), KALL = sum(SUBTRIP_KALL, na.rm = T))
+	
+# check KALL for a few stocks
+allgf %>% 
+	filter(SPECIES_ITIS_EVAL == '164744') %>% 
+	group_by(SPECIES_ITIS_EVAL, SPECIES_STOCK) %>% 
+	dplyr::summarise(KALL = sum(SUBTRIP_KALL, na.rm = T))
+
+## KALL for EGB Haddock looks good.. ~20k less than DMIS
+
+# pivot all species/stocks 
+allgf %>% 
+	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+	pivot_wider(c('VTRSERNO', 'GF_STOCK_DEF','DISCARD'), names_from = 'GF_STOCK_DEF', values_from = 'DISCARD')
+
 
 
 
@@ -737,7 +767,8 @@ allgf %>%
 
 ```{r table output example}
 
-db_example = allgf %>%
+gf_discard_example = allgf %>%
+	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 								, 'DISCARD_RATE' = 'COAL_RATE') %>% 
 	mutate(DATE_RUN = as.character(lubridate::today())
@@ -767,7 +798,37 @@ db_example = allgf %>%
 	eval(stratvars)
 	)
 
-names(db_example) = toupper(names(db_example))
+names(gf_discard_example) = toupper(names(gf_discard_example))
+
+```
+
+```{r upload example table}
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon <- dbConnect(odbc::odbc(),
+									DSN = condat$dsn,
+									UID = condat$uid,
+									PWD = condat$pwd)
+
+# create example table on MAPS
+db_drop_table(bcon, 'CAMS_DISCARD_EXAMPLE_GF19')
+
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = gf_discard_example, overwrite = T)
+
+# grant table to cams_garfo
+dbSendQuery(bcon, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
+
+# create table ins cams_garfo
+dbSendQuery(ccon, statement = "DROP TABLE CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19")
+
+dbSendQuery(ccon, statement = "CREATE TABLE CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 as select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19", overwrite = T)
+
+# grant the cams_garfo table to cams_garfo_nefsc
+dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
+
+# check it worked!
+tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
+
 
 ```
 
@@ -796,18 +857,6 @@ db_example %>%
 ```
 
 
-```{r upload example table}
-dw_apsd <- config::get(value = "apsd", file = "~/config.yml")
 
-acon <- dbConnect(odbc::odbc(), 
-									DSN = dw_apsd$dsn, 
-									UID = dw_apsd$uid, 
-									PWD = dw_apsd$pwd)
-db_drop_table(acon, 'CAMS_DISCARD_EXMAPLE_GF19')
-
-dbWriteTable(acon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = db_example, overwrite = T)
-
-
-```
 
 
