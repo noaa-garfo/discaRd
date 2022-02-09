@@ -95,6 +95,9 @@ FY_TYPE = 'JAN START'
 
  species_nespp3 = c('212','801','802','051', '170',
                     '023', '121', '335', '329')  # Calendar year
+ 
+ #Need to add herring/shad for herring only trips... maybe it is its own module?
+ #AND all the SBRM species
 
  species = tbl(bcon, sql("select *
 												from MAPS.CFG_ITIS")) %>% 
@@ -268,7 +271,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   mutate(AREA = as.character(STAT_AREA)
          , SPECIES_STOCK = AREA_NAME) %>% 
   ungroup() %>% 
-  dplyr::select(SPECIES_STOCK, AREA)
+ # dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
@@ -367,7 +370,7 @@ d_prev = run_discard(bdat = bdat_prev_cy
 											 # , species_nespp3 = species_nespp3
 										   , species_itis = species_itis
 											 , stratvars = stratvars
-											 , aidx = c(1,2)
+											 , aidx = c(1,2,3) #maybe this should be bumped up?
 											 )
 
 
@@ -380,7 +383,7 @@ d_focal = run_discard(bdat = bdat_cy
 											 # , species_nespp3 = species_nespp3  #'081' #cod...
 											 , species_itis = species_itis
 											 , stratvars = stratvars
-											 , aidx = c(1,2)
+											 , aidx = c(1,2,3) #maybe this should be bumped up?
 											 )
 
 # summarize each result for convenience
@@ -406,6 +409,7 @@ dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
 
 trans_rate_df = dest_strata_f %>% 
   left_join(., dest_strata_p, by = 'STRATA') %>% 
+  	mutate(n.y = coalesce(n.y, 0)) %>% 
   mutate(STRATA = STRATA
          , n_obs_trips = n.x
          , in_season_rate = drate.x
@@ -453,59 +457,64 @@ trans_rate_df = dest_strata_f %>%
    	       ) %>%
      mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
     																	, is.na(LINK1) & n_obs_trips >= 5 ~ 'E'
-    																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
     																	, is.na(LINK1) & n_obs_trips < 5 & n.y>=5 ~ 'T'
     																	, is.na(LINK1) & n_obs_trips < 5 &
     																		n.y < 5 ~ 'A'))
-  
  
- final_table$disc_est_byrate <-final_table$SUBTRIP_KALL*final_table$FINAL_RATE*final_table$DISC_MORT_RATIO
+ final_table = final_table %>% 
+	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
+												, DISCARD_SOURCE == 'E' ~ CV.x
+												, DISCARD_SOURCE == 'T' ~ CV.x
+												, DISCARD_SOURCE == 'A' ~ CV # Im not sure this is correct?
+												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
+												)  # , DISCARD_SOURCE == 'B' ~ NA
+				 )
  
- sum(final_table$KALL.y, na.rm=TRUE)
- 
- sum(final_table$disc_est_byrate, na.rm=TRUE)
- 
- observed <- final_table %>% filter(DISCARD_SOURCE =="O")
- x <- sum(observed$OBS_DISCARD)
- 
- unobserved <- final_table %>% filter(DISCARD_SOURCE !="O")
- y <- sum(unobserved$disc_est_byrate, na.rm = TRUE)
- 
+ final_table =  final_table %>% 
+	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
+	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*FINAL_RATE*SUBTRIP_KALL))
+
  species$ITIS_NAME[i]
- x + y
- 
+
+ sum(final_table$DISCARD, na.rm=TRUE)
  sum(d_focal$res$SUBTRIP_KALL, na.rm=TRUE)
+
  
- 
- # final_table %>%
- # 	dplyr::select(DISCARD_SOURCE, ACTIVITY_CODE_1, VTRSERNO, ARATE, CRATE, DISC_RATE, STRATA_ASSUMED, STRATA, ARATE_IDX, LINK1, EST_DISCARD, DISCARD, OBS_DISCARD) %>% 
- # 	View()
- # 	 	 # select(FISHING_YEAR, FY_TYPE, DISCARD_SOURCE, VTRSERNO, CAMSID, eval(stratvars),  STRATA, DISC_MORT_RATIO, CV, ACTIVITY_CODE_1, SPECIES_ITIS_EVAL, COMNAME_EVAL) %>% 
- # 	relocate(FISHING_YEAR, DISCARD_SOURCE, STRATA, FY_TYPE, SPECIES_ITIS_EVAL, COMNAME_EVAL)
- # 
- 	
- 	
-#    mutate(INSEASON_RATE_DISCARD = in_season_rate*SUBTRIP_KALL*DISC_MORT_RATIO
-#              , TRANS_RATE_DISCARD =  trans_rate*SUBTRIP_KALL*DISC_MORT_RATIO
-#              , FINAL_RATE_DISCARD = final_rate*SUBTRIP_KALL*DISC_MORT_RATIO
-#           ) %>%
-#   
-#  	 select(VTRSERNO, CAMSID, eval(stratvars), INSEASON_RATE_DISCARD, TRANS_RATE_DISCARD, FINAL_RATE_DISCARD, STRATA, DISC_MORT_RATIO, CV, ACTIVITY_CODE_1) %>% 
-# %>% 
-#  	relocate(FISHING_YEAR, FY_TYPE, SPECIES_ITIS_EVAL, COMNAME_EVAL)
-#  # 
-# save total results to summary table
- # final_discard_table$DISCARD[i] = final_table %>% 
- # 	filter(substr(ACTIVITY_CODE_1, 1, 3) =='NMS') %>% 
- # 	dplyr::summarise(TOTAL = DISCARD*DISC_MORT_RATIO) %>% 
- # 	dplyr::select(TOTAL) %>% 
- # 	sum(., na.rm = T)
+ final_table <- final_table %>%
+	 mutate(DATE_RUN = as.character(lubridate::today())
+	 			 ,FY = as.integer(FY)) %>%
+       #  ,COAL_RATE = CRATE) %>%
+	dplyr::select(
+	DATE_RUN,
+	FY,
+	SPECIES_ITIS_EVAL,
+	FY_TYPE,
+	ACTIVITY_CODE_1,
+	VTRSERNO,
+	LINK1,
+	STRATA,
+	STRATA_ASSUMED,
+	trans_rate,
+#	trans_rate_a,
+#	BROAD_STOCK_RATE,
+	COAL_RATE,
+	DISCARD_SOURCE,
+	OBS_DISCARD,
+	EST_DISCARD,
+	DISCARD,
+	n_obs_trips,
+	CV,
+	eval(stratvars)
+	)
+
  
 # save trip by trip info to RDS 
- saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
- 
+ #saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
+ # saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
 #---------------------------------------------------------------------#
 # End loop
+#Need to modify this loop so it produces the oracle tables on each loop.
 
 t2 = Sys.time()
 
@@ -514,116 +523,88 @@ print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 } 
  
 ```
+```{r check that joined table has values for each trip}
+ # trips that were not observed 
+final_table %>%
+	filter(is.na(LINK1)) %>% 
+	filter(is.na(COAL_RATE))
+
+# See if any trips do not have a discard source
+final_table %>%
+	filter(is.na(DISCARD_SOURCE))
+
+# see what trips have CV and which do not
+
+final_table %>%
+	group_by(DISCARD_SOURCE) %>% 
+	dplyr::summarise(mean(CV, na.rm = F))
 
 
 
+# examine strata that have NaN for DISC_EST
+dest_strata_f %>% 
+	View()
+```
+	
+	
+```{r table output example}
 
-```{r (3) model discards}
-# Potentially limited to the focal year (for year end estimation)
+db_example = final_table %>%
+	# mutate(DATE_RUN = as.character(lubridate::today())
+	# 			 , FY = as.integer(FY)) %>%
+	dplyr::select(
+	DATE_RUN,
+	FY,
+	SPECIES_ITIS_EVAL,
+	FY_TYPE,
+	ACTIVITY_CODE_1,
+	VTRSERNO,
+	LINK1,
+	STRATA,
+	STRATA_ASSUMED,
+	trans_rate,
+#	trans_rate_a,
+# BROAD_STOCK_RATE,
+	COAL_RATE,
+	DISCARD_SOURCE,
+	OBS_DISCARD,
+	EST_DISCARD,
+	DISCARD,
+	n_obs_trips,
+	CV,
+	eval(stratvars)
+	)
 
-# stratvars = c('CAMS_GEAR_GROUP'
-# 							, 'MESHGROUP'
-# 							, 'SPECIES_STOCK'
-# 							, 'HALFOFYEAR'
-# 							, 'SPECIES_STOCK'
-# 							, 'REGION')
+dw_apsd <- config::get(config = "apsd", file = "~/config_group.yml")
+# 
+# bcon <- dbConnect(odbc::odbc(), 
+# 									DSN = dw_maps$dsn, 
+# 									UID = dw_maps$uid, 
+# 									PWD = dw_maps$pwd)
 
-# create a small bdat
-bdat_mod <- bdat_cy %>% 
-  mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
-  assign_strata(., stratvars = stratvars) %>% 
-  filter(
-  OBS_KALL > 0,
-  NESPP3_FINAL==species_nespp3
-  ) %>%
-  select(VTRSERNO #DMIS_TRIP_ID
-         ,OBS_KALL
-         ,STRATA
-         , DISC_MORT_RATIO
-         , DISCARD
-         , stratvars
-         , CAMS_GEAR_GROUP
-				 , MESHGROUP
-				 , SPECIES_STOCK
-				 , HALFOFYEAR
-				# , STOCK
-				 , REGION
-         )
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_apsd$host, ")(PORT=", dw_apsd$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_apsd$svc, ")))",
+    sep = ""
+  )
 
-# full stratification (similar to ratio estimator)
-mod.full <- glm(DISCARD ~ offset(log(OBS_KALL)) + STRATA -1,
-           family=poisson(), data = bdat_mod)
-# additive effects (to accommodate unobserved full-factorial strata)
-mod <- glm(DISCARD ~ offset(log(OBS_KALL)) + 
-             CAMS_GEAR_GROUP +
-             # eval(parse(text = stratvars[1])) + 
-             MESHGROUP + 
-             HALFOFYEAR + 
-             REGION,
-           family = poisson()
-           , data = bdat_mod)
+# Connect to oracle each loop in case of timeouts
+    acon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_apsd$uid,
+      password = dw_apsd$pwd,
+      dbname = connectString
+    )
 
-# create ddat for model predictions
 
-ddat_discards = d_focal
 
-ddat_pred <- ddat_discards$res %>% 
-    mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
-  assign_strata(., stratvars) %>% 
-  filter(
-    #STRATA %in% bdat_spp_mod$STRATA,  #only for full factorial
-    SUBTRIP_KALL > 0
-    ) %>%
-  select(VTRSERNO #DMIS_TRIP_ID
-         ,SUBTRIP_KALL
-         ,STRATA
-         , DISC_MORT_RATIO
-         , EST_DISCARD
-         , stratvars
-         # , CAMS_GEAR_GROUP
-         # , REGION
-         # , HALFOFYEAR
-         # , MESHGROUP
-         ) %>%
-  mutate(
-    OBS_KALL = SUBTRIP_KALL,
-    # adjust for unobserved gear groups
-    CAMS_GEAR_GROUP =
-           case_when(
-             CAMS_GEAR_GROUP %in% unique(bdat_mod$CAMS_GEAR_GROUP) ~ CAMS_GEAR_GROUP,
-             TRUE ~ '0'
-           ),
-    NULL=NULL) 
+#modify so it produces these tables in the loop.
+db_drop_table(acon, 'CAMS_DISCARD_EXAMPLE_CY19')
 
-# model predictions
-ddat_pred <- data.frame(ddat_pred, D_MODEL = predict(mod, ddat_pred, type = "response"))
-# sum predicted discards for all trips
-#sum(ddat_pred$D_MODEL)
+dbWriteTable(acon, name = 'CAMS_DISCARD_EXAMPLE_CY19', value = db_example, overwrite = T)
 
-# sum of predicted discards for:
-#    1) trips with unobserved strata (model)
-#    2) trips with observed strata (ratio estimator)
-
-dest_strata = dest_strata_f
-
-dat.discards <- ddat_pred %>%
-  mutate(DEAD_DISCARDS_FINAL =
-           case_when(
-             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ D_MODEL*DISC_MORT_RATIO,
-             STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ EST_DISCARD*DISC_MORT_RATIO
-           )
-         , ESTIMATE_SOURCE =
-           case_when(
-             STRATA %in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ 'model'
-             , STRATA %!in% dest_strata$STRATA[is.na(dest_strata$drate)] ~ 'ratio'
-           )
-         )
-
-dat.discards %>%
-  group_by(ESTIMATE_SOURCE) %>%
-  dplyr::summarise(POUNDS = sum(DEAD_DISCARDS_FINAL, na.rm = T))
-
-# ACLtab[3,c("Pounds")] <- round(dat.discards$POUNDS,0)
 
 ```
 
