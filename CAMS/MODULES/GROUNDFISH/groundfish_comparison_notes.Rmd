@@ -44,7 +44,7 @@ Sector and Exemptions are carrying through to non-groundfish trips. This is affe
 
 Difference in stratification
 
-``` sql
+```sql
 -- number of gear groups for Ocean Pout
 select distinct(CAMS_GEAR_GROUP)
 from APSD.CAMS_GEARCODE_STRATA
@@ -70,7 +70,7 @@ Dan C. does this separately. Stratifies GF discard rates by - Gear (Trawl/Dredge
 
 In summary, QM groundfish gets year-end estiamtes in three steps: - GF Trips (`Sector/Gear/Mesh/Exemption`) - Scallop trips (`Gear/Fleet`) - YTF and WP on scallop trips done in scallop procedure(module) (`Gear/Fleet/AA vs Open`) - All other Trips (`Gear group/Mesh`)
 
-``` sql
+```sql
 -- look at CV by strata
 select distinct(STRATA_ASSUMED)
 , STRATA
@@ -99,7 +99,7 @@ Dan splits groundfish and non-groundfish trips and stratifies separately.
 
 Example:
 
-``` sql
+```sql
 -- pull one strata for ocean POUT
 
 with pout as (
@@ -136,7 +136,7 @@ Caless has this sector using an assumed rate, meaning there would not be many (o
 
 -   Multiple LINK1 on a single VTR are sneaking through our fix using only observed hauls. THe species foudn on these trips, for the entire 2018-2020 dataset in groundfish tips are : \] "660" "667" "679" "680" "681" "682" "683" "685" "687" "689" NA which correspond to debris unknown fish groups, random invertebrates etc. see following:
 
-``` sql
+```sql 
 select *
 from obdbs.obspec@NOVA
 where substr(NESPP4,1,3) in (660
