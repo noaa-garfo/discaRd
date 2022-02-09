@@ -1,17 +1,188 @@
 ---
-title: "Notes on groundfish comparisons"
+title: "Groundfish Module Summary"
 author: "Ben Galuardi"
+date: "`lubridate::today()`"
 output:
   github_document:
   html_document: default
   pdf_document: default
 always_allow_html: true
+editor_options: 
+  chunk_output_type: console
 ---
 
+# Background 
 
-### January 25, 2022
+Discards of groundfish species are used for several purposes throughout the year. Quota Monitoring requires these on a weekly basis. Discard rates for sector trips are shared with Sector managers. End of year ACL accounting also requires discard estimates from all trips. 
 
-**APSD.CAMS\_DISCARD\_EXAMPLE\_GF19**
+This means a full accounting of groundfish discards occurs in several steps. 
+
+
+### Steps 
+
+1. pull all merged trips from CAMS_OBS_CATCH
+
+2. separate Groundfish trips from non-groundfish trips (Use VMS declaration `like 'NMS%'`)
+
+3. Set stratification variables for groundfish trips
+
+```{r, echo = T, eval = F}
+# FULL Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              , 'CAMS_GEAR_GROUP'
+              , 'MESHGROUP'
+              # , 'CAREA'
+              , 'SECTID'
+              , "PERMIT_EFP_1"
+              , "PERMIT_EFP_2"
+              , "PERMIT_EFP_3"
+              , "PERMIT_EFP_4"
+              , "REDFISH_EXEMPTION"
+              , "SNE_SMALLMESH_EXEMPTION"
+              , "XLRG_GILLNET_EXEMPTION"
+              ) 
+```
+
+	- SPECIES_sTOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
+	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
+	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
+	- EFP and Exemptions come from the CAMS trip atributes View (`MAPS.STG_TRIP_ATTR`), which complements `MAPS.DLR_VTR`
+	
+4. Perform *first pass* of `discaRd`
+	- there are two sub-passes for year t and year t-1
+5. Perform *second pass* of `discaRd` with discard rates rolled up for all Sectors
+	- Common Pool is distinguished from the rest of Sectors
+	- Simplified stratification is used:
+	
+```{r, echo = T, eval = F}
+# Assumed Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              , 'CAMS_GEAR_GROUP'
+              , 'MESHGROUP'
+							, 'SECTOR_TYPE'
+              ) 
+```	
+
+6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
+
+7. For each *pass*, a transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
+
+8. The two *passes* are joined in a hierarchical manner. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
+ - (I) in season rate; >= 5 trips in Full Stratification
+ - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
+ - (A) Assumed rate. This is the *second pass* rate when there were >=5 trips in season
+ - (B) Broad stock rate is used when other criteria are not met. 
+ - (O) Observed values used from obserevd trips; discard rate is NOT USED. 
+ 
+9. CV calculations are available for (I), (T), and (A). Obtaining a CV estimate for (B) would require a *third pass* of discaRd functions. (O) rates are not used and final discard values are not estimated. 
+
+10. Discard pounds per trip are calculated according to
+
+```{r echo = T, eval = F}
+	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
+	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
+				 
+			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
+```
+
+
+By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
+
+Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~12 seconds to process on the server.
+
+Output tables are produced for each species. These can easily be recombined. An example table has been shared on `MAPS` and `CAMS_GARFO`
+
+```sql
+	MAPS.CAMS_DISCARD_EXAMPLE_GF19
+	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19
+
+```
+
+### Diagnostic Plots/Tables
+
+```{r make diagnostic plot, eval = T, echo = F, fig.cap = "Discard Rates by Stock, Species, Discard Source"}
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon <- dbConnect(odbc::odbc(),
+									DSN = condat$dsn,
+									UID = condat$uid,
+									PWD = condat$pwd)
+
+db_example = tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19")) %>% 
+	collect()
+
+db_example %>% 
+	filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
+	slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+```
+
+```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source"}
+db_example %>% 
+	# filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+
+```
+
+```{r table 1}
+db_example %>% 
+	group_by(COMNAME_EVAL
+					 , SPECIES_STOCK) %>% 
+	dplyr::summarise(nvtr = n_distinct(VTRSERNO)
+									 , KALL = sum(SUBTRIP_KALL, na.rm = T)
+									 , DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
+	knitr::kable(format.args = list(big.mark = ","))
+
+```
+
+```{r pivot all results into one table}
+
+
+	
+# check KALL for a few stocks
+allgf %>% 
+	filter(SPECIES_ITIS_EVAL == '164744') %>% 
+	group_by(SPECIES_ITIS_EVAL, SPECIES_STOCK) %>% 
+	dplyr::summarise(KALL = sum(SUBTRIP_KALL, na.rm = T))
+
+## KALL for EGB Haddock looks good.. ~20k less than DMIS
+
+# pivot all species/stocks 
+allgf %>% 
+	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+	pivot_wider(c('VTRSERNO', 'GF_STOCK_DEF','DISCARD'), names_from = 'GF_STOCK_DEF', values_from = 'DISCARD')
+
+
+```
+
+
+
+
+
+
+### Issues
+
+### To-do 
+
+1. complete code for non-groundifsh trips in groundfish module. 
+	- combine with previous work (or not) so we have a full set of trips for each groundfish stock
+2. Apply discard rates to State trips	
+3. Incorporate EM (including MREM) records is using those values for discard amounts. This shoudl be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
+
 
 #### OCEAN POUT example
 
@@ -68,7 +239,7 @@ Gillnet Longline and other line gear Otter trawl Pot, lobster Pair trawl Purse s
 
 Dan C. does this separately. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
 
-In summary, QM groundfish gets year-end estiamtes in three steps: - GF Trips (`Sector/Gear/Mesh/Exemption`) - Scallop trips (`Gear/Fleet`) - YTF and WP on scallop trips done in scallop procedure(module) (`Gear/Fleet/AA vs Open`) - All other Trips (`Gear group/Mesh`)
+In summary, QM groundfish gets year-end estimates in three steps: - GF Trips (`Sector/Gear/Mesh/Exemption`) - Scallop trips (`Gear/Fleet`) - YTF and WP on scallop trips done in scallop procedure(module) (`Gear/Fleet/AA vs Open`) - All other Trips (`Gear group/Mesh`)
 
 ```sql
 -- look at CV by strata
@@ -134,7 +305,7 @@ Caless has this sector using an assumed rate, meaning there would not be many (o
 
 ## Feb 1, 2022
 
--   Multiple LINK1 on a single VTR are sneaking through our fix using only observed hauls. THe species foudn on these trips, for the entire 2018-2020 dataset in groundfish tips are : \] "660" "667" "679" "680" "681" "682" "683" "685" "687" "689" NA which correspond to debris unknown fish groups, random invertebrates etc. see following:
+-   Multiple LINK1 on a single VTR are sneaking through our fix using only observed hauls. The species found on these trips, for the entire 2018-2020 dataset in groundfish tips are : \] "660" "667" "679" "680" "681" "682" "683" "685" "687" "689" NA which correspond to debris unknown fish groups, random invertebrates etc. see following:
 
 ```sql 
 select *
@@ -202,7 +373,7 @@ from obdbs.obtripext@nova
 ## Feb 3, 2022
 
 - TRIPEXT should be only C and X.. DMIS discards are calculated from a table provided by the observer program; and they only use these trip designations.
-- Examined Dan Calles's discard script `Discard_Calculations_21_Mults.sql` this is 1500 lines of nested tables and exceptions..
+- Examined Dan Caless's discard script `Discard_Calculations_21_Mults.sql` this is 1500 lines of nested tables and exceptions..
 - should re-evaluate whether a new groundfish module is necessary or whether porting the SQL to CAMS is a better option.
 - the final discard rate table is not a bad template for an output table.
 
