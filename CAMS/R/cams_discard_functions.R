@@ -56,7 +56,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
     mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD))
   
   obs_discard = codat %>% 
-    group_by(VTRSERNO
+    group_by(VTRSERNO, CAMSID
              # , NEGEAR
              # , STRATA
     ) %>% 
@@ -280,15 +280,15 @@ run_discard <- function(bdat
 	# Use the observer tables created, NOT the merged trips/obs table.. 
 	# match on VTRSERNO? 
 	
-	out_tab = obs_discard %>% 
-	  ungroup() %>% 
-	  mutate(OBS_DISCARD = DISCARD) %>% 
-		dplyr::select(VTRSERNO, OBS_DISCARD) %>% 
-		right_join(x = ., y = ddat_rate, by = 'VTRSERNO') %>%   # need to drop a column or it gets DISCARD.x
-		mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>% 
-		mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>% 
+	out_tab = obs_discard %>%
+	  ungroup() %>%
+	  mutate(OBS_DISCARD = DISCARD) %>%
+		dplyr::select(VTRSERNO, CAMSID, OBS_DISCARD) %>%
+		right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
+		mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>%
+		mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>%
 		mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
-		) 
+		)
 	
 	list(species = species_itis #species_nespp3
 			 , allest = allest
