@@ -276,7 +276,8 @@ non_gf_dat %>% group_by(TRIP_TYPE) %>% dplyr::summarise(n_distinct(CAMSID))
 # Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP'
+							, 'GEARCODE'  # this is the SECGEAR_MAPPED variable
+              # , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               # , 'CAREA'
               , 'SECTID'
@@ -535,7 +536,11 @@ trans_rate_df = trans_rate_df %>%
 #-----------------------------------------------------------------------
 print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
  
-stratvars_assumed = c("SPECIES_STOCK", "CAMS_GEAR_GROUP", "MESHGROUP", "SECTOR_TYPE")
+stratvars_assumed = c("SPECIES_STOCK"
+											# , "CAMS_GEAR_GROUP"
+											, "GEARCODE"
+											, "MESHGROUP"
+											, "SECTOR_TYPE")
 
 
 ### All tables in previous run can be re-used wiht diff stratification
@@ -741,7 +746,8 @@ for(j in species$SPECIES_ITIS){
 
 allgf = do.call(rbind, res_list) 
 # 
-allgf %>%
+# res_cams_gear = allgf %>%
+	res_cams_gearcode = allgf %>%
 	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>%
 	dplyr::summarise(D = round(sum(DISCARD, na.rm = T))) %>%
 	# filter(SPECIES_ITIS %in% species$SPECIES_ITIS) %>%
@@ -749,10 +755,14 @@ allgf %>%
 	mutate(SPECIES_ITIS = SPECIES_ITIS_EVAL) %>%
 	left_join(., species, by = 'SPECIES_ITIS') %>%
 	dplyr::select(-SPECIES_ITIS, -NESPP3) %>%
-	relocate('COMNAME','SPECIES_ITIS_EVAL') %>%
-	write.csv('groundfish_loop_results_gftrips_only_020922.csv', row.names = F)
+	relocate('COMNAME','SPECIES_ITIS_EVAL')
+	# write.csv('groundfish_loop_results_gftrips_only_020922.csv', row.names = F)
 # View()
 
+gearcodes = gf_dat %>% dplyr::select(GEARTYPE, GEARCODE) %>% unique()
+
+save(list = c('res_cams_gear','res_cams_gearcode', 'gearcodes','CAMS_GEAR_STRATA'), file = 'compare_gear_strata_gftrips19.Rdata')
+	
 # check numebr of VTRs vs number of rows
 
 allgf %>% 
