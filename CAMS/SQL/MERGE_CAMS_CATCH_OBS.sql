@@ -21,16 +21,16 @@ BG 12-02-21
 
 ------------------------------------------------------------------------------------------------------*/  
 
-drop table bg_cams_obs_catch
+--drop table bg_cams_obs_catch
 /
 
 drop table cams_obs_catch
 /
 
-drop View cams_obs_catch
+--drop View cams_obs_catch
 
 /
-drop materialized view cams_obs_catch
+--drop materialized view cams_obs_catch
 /
 
 create table cams_obs_catch as 
@@ -218,7 +218,7 @@ trips with no link1 (unobserved)
      left join (select * from obs ) o
      on (t.link1 = o.link1)
  
-    where t.LINK1 is null   
+    where (t.LINK1 is null or t.nvtr_link1 = 0)   
 
 )
 
