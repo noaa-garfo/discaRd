@@ -1,14 +1,27 @@
 ---
 title: "Groundfish Module Summary"
 author: "Ben Galuardi"
-date: "`lubridate::today()`"
+date: "`r Sys.Date()`"
 output:
-  html_document: default
+  html_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
   pdf_document: default
 always_allow_html: true
 editor_options: 
   chunk_output_type: console
 ---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
+											message = FALSE, cache = FALSE,
+											progress = TRUE, verbose = FALSE, comment = F
+											, error = FALSE, dev = 'png', dpi = 200)
+
+options(knitr.kable.NA = '')
+```
+
 
 # Background 
 
@@ -103,7 +116,7 @@ Output tables are produced for each species. These can easily be recombined. An 
 
 ### Diagnostic Plots/Tables
 
-```{r make diagnostic plot, eval = T, echo = F, fig.cap = "Discard Rates by Stock, Species, Discard Source"}
+```{r make diagnostic plot, eval = T, echo = F, fig.cap = "Discard Rates by Stock, Species, Discard Source", fig.height = 8, fig.width = 12}
 
 library(odbc)
 library(dplyr, warn.conflicts = FALSE)
@@ -112,6 +125,8 @@ library(ggplot2)
 # library(config)
 library(stringr)
 library(discaRd)
+library(knitr)
+library(kableExtra)
 options(scipen = 999)
 
 condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
@@ -134,7 +149,7 @@ db_example %>%
 	theme_light()
 ```
 
-```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source"}
+```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
 db_example %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
 	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
@@ -147,6 +162,8 @@ db_example %>%
 
 ```
 
+\vspace{2mm}
+
 ```{r table 1}
 db_example %>% 
 	group_by(COMNAME_EVAL
@@ -154,9 +171,60 @@ db_example %>%
 	dplyr::summarise(nvtr = n_distinct(VTRSERNO)
 									 , KALL = sum(SUBTRIP_KALL, na.rm = T)
 									 , DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
-	knitr::kable(format.args = list(big.mark = ","))
+	knitr::kable(format.args = list(big.mark = ",")) %>% 
+	kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 ```
+
+```{r comaprison of gear stratifications}
+
+load('compare_gear_strata_gftrips19.Rdata')
+
+gearcodes %>% 
+	knitr::kable(format.args = list(big.mark = ",")
+							 , caption = "Gears used in OBS/CATCH merge (STG_SECGEAR_MAPPED)") %>% 
+	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+
+CAMS_GEAR_STRATA %>% 
+	knitr::kable(format.args = list(big.mark = ",")
+							 , caption = "Gear mapping for discaRd: ocean pout example") %>% 
+	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+
+
+res_cams_gear %>%
+	# replace_na(replace = list(' ')) %>% 
+		knitr::kable(format.args = list(big.mark = ",")
+								 , caption = "Groundfish discard estimates using CAMS_GEAR_GROUP") %>% 
+	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+res_cams_gearcode %>% 
+		knitr::kable(format.args = list(big.mark = ",")
+								 , caption = "Groundfish discard estimates using SECGEAR_MAPPED (OBS/Catch categories)") %>% 
+	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+
+bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select(-1,-2)) - (res_cams_gearcode %>% dplyr::select(-1,-2))) %>% 
+		knitr::kable(format.args = list(big.mark = ",")
+								 , caption = "Differnce in estimates between gear groupings") %>% 
+	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+
+```
+
+
+### Issues
+
+### To-do 
+
+1. complete code for non-groundifsh trips in groundfish module. 
+	- combine with previous work (or not) so we have a full set of trips for each groundfish stock
+	- Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
+2. Apply discard rates to State trips	
+3. Incorporate EM (including MREM) records is using those values for discard amounts. This shoudl be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
+
+
 
 ```{r discard rates by strata example}
 
@@ -173,16 +241,6 @@ db_example %>%
 ```
 
 
-
-### Issues
-
-### To-do 
-
-1. complete code for non-groundifsh trips in groundfish module. 
-	- combine with previous work (or not) so we have a full set of trips for each groundfish stock
-	- Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
-2. Apply discard rates to State trips	
-3. Incorporate EM (including MREM) records is using those values for discard amounts. This shoudl be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
 
 
 #### OCEAN POUT example
