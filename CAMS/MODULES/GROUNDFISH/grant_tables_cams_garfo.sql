@@ -34,6 +34,8 @@ create table CAMS_GARFO.CAMS_GEARCODE_STRATA as select * from MAPS.CAMS_GEARCODE
 create table CAMS_GARFO.CAMS_MASTER_GEAR as select * from MAPS.CAMS_MASTER_GEAR
 
 /
+drop table CAMS_GARFO.CAMS_OBS_CATCH
+/
 create table CAMS_GARFO.CAMS_OBS_CATCH as select * from MAPS.CAMS_OBS_CATCH
 /
 
