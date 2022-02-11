@@ -131,6 +131,7 @@ c_o_dat2 <- tbl(bcon, sql(
 " with obs_cams as (
    select year
 	, month
+  , PERMIT
 	, case when month in (5,6,7,8,9,10) then 1
 	       when month in (11,12,1,2,3,4) then 2
 	       end as halfofyear
@@ -149,7 +150,10 @@ c_o_dat2 <- tbl(bcon, sql(
 	, MESHGROUP
 	, SECTID
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
-			 else 'SECTOR' end as SECTOR_TYPE
+       when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
+			 else 'non_GF' end as SECTOR_TYPE
+, case when PERMIT = '000000' then 'STATE'
+       else 'FED' end as trip_type
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -169,6 +173,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	group by year
   -- , carea
   , AREA
+  , PERMIT
 	, vtrserno
 	, link1
 	, docid
@@ -180,9 +185,11 @@ c_o_dat2 <- tbl(bcon, sql(
 	, GEARTYPE
 	, MESHGROUP
 	, SECTID
-  , case when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
-       when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
-			 else '' end
+  , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
+       when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
+			 else 'non_GF' end
+  , case when PERMIT = '000000' then 'STATE'
+       else 'FED' end
   , CAMSID
   , month
 	, halfofyear
@@ -206,47 +213,52 @@ c_o_dat2 <- tbl(bcon, sql(
   , c.match_nespp3
   , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
   from obs_cams o
-  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3        
+  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3         
         
 "
   )) %>%
 	collect() 
 
 
+state_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'STATE')
+fed_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'FED')
 
-c_o_dat2 = c_o_dat2 %>% 
-	mutate(ROWID = 1:nrow(c_o_dat2)) %>% 
+fed_trips = fed_trips %>% 
+	mutate(ROWID = 1:nrow(fed_trips)) %>% 
 	relocate(ROWID)
 
 # filter out link1 that are doubled on VTR
 
-multilink = c_o_dat2 %>% 
+multilink = fed_trips %>% 
 	filter(!is.na(LINK1)) %>% 
 	group_by(VTRSERNO) %>% 
 	dplyr::summarise(nlink1 = n_distinct(LINK1)) %>% 
 	arrange(desc(nlink1)) %>% 
 	filter(nlink1>1)
 
-remove_links = c_o_dat2 %>% 
+remove_links = fed_trips %>% 
 	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
 	dplyr::select(LINK1) %>% 
 	distinct()
 
-remove_id = c_o_dat2 %>% 
+remove_id = fed_trips %>% 
     filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
 	  distinct(ROWID)
 
-c_o_dat2 =
-	c_o_dat2 %>% 
+fed_trips =
+	fed_trips %>% 
 	filter(ROWID %!in% remove_id$ROWID)
 
-non_gf_dat = c_o_dat2%>% 
-	filter(substr(ACTIVITY_CODE_1, 1,3) != 'NMS')
+non_gf_dat = fed_trips%>% 
+	filter(substr(ACTIVITY_CODE_1, 1,3) != 'NMS') %>% 
+	bind_rows(., state_trips)
 
-gf_dat = c_o_dat2%>% 
+gf_dat = fed_trips%>% 
 	filter(substr(ACTIVITY_CODE_1, 1,3) == 'NMS')
 
-rm(c_o_dat2)
+rm(c_o_dat2, fed_trips, state_trips)
+
+non_gf_dat %>% group_by(TRIP_TYPE) %>% dplyr::summarise(n_distinct(CAMSID))
 
 
 # test the removal. Success! only 362 rows removed.. 
