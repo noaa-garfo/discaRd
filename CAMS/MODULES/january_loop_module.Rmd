@@ -349,7 +349,7 @@ ddat_focal_cy = ddat_focal %>%
 ddat_focal_cy = ddat_focal_cy %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO,CAMSID) %>% 
+               group_by(VTRSERNO) %>% 
                slice(1) %>% 
                ungroup()
             )
@@ -380,7 +380,7 @@ ddat_prev_cy = ddat_prev %>%
 ddat_prev_cy = ddat_prev_cy %>% 
   union_all(ddat_prev %>% 
   						 filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO,CAMSID) %>% 
+               group_by(VTRSERNO) %>% 
                slice(1) %>% 
                ungroup()
   					)
@@ -395,7 +395,7 @@ bdat_prev_cy = ddat_prev %>%
          , PRORATE = 1)
 
 # Run the discaRd functions on previous year
-d_prev = run_discard(bdat = bdat_prev_cy
+d_prev = run_discard(bdat = bdat_cy
 											 , ddat = ddat_prev_cy
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
