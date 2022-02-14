@@ -271,13 +271,13 @@ non_gf_dat %>% group_by(TRIP_TYPE) %>% dplyr::summarise(n_distinct(CAMSID))
 
 ```
 
-```{r subset tables join and run }
+```{r define full stratification}
 
 # Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-							, 'GEARCODE'  # this is the SECGEAR_MAPPED variable
-              # , 'CAMS_GEAR_GROUP'
+							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
+              , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               # , 'CAREA'
               , 'SECTID'
@@ -296,7 +296,7 @@ stratvars = c('SPECIES_STOCK'
 
 ```
 
-```{r loop the sector trips }
+```{r loop through the sector trips for each stock }
 
 for(i in 1:length(species$SPECIES_ITIS)){
 
@@ -731,7 +731,7 @@ print(paste(species_itis, ' RAN IN ', round(t2-t1, 2), ' SECONDS',  sep = ''))
 
 ```
 
-```{r loop the non sector trips, eval = F}
+```{r loop through the non sector trips for each stock, eval = F}
 stratvars = c('SPECIES_STOCK'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
@@ -999,8 +999,8 @@ for(j in species$SPECIES_ITIS){
 
 allgf = do.call(rbind, res_list) 
 # 
-# res_cams_gear = allgf %>%
-	res_cams_gearcode = allgf %>%
+res_cams_gear = allgf %>%
+	# res_cams_gearcode = allgf %>%
 	group_by(SPECIES_STOCK, SPECIES_ITIS_EVAL) %>%
 	dplyr::summarise(D = round(sum(DISCARD, na.rm = T))) %>%
 	# filter(SPECIES_ITIS %in% species$SPECIES_ITIS) %>%
