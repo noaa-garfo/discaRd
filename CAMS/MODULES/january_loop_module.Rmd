@@ -96,7 +96,7 @@ FY_TYPE = 'JAN START'
  species_nespp3 = c('212','801','802','051', '170',
                     '023', '121', '335', '329')  # Calendar year
  
- #Need to add herring/shad for herring only trips... maybe it is its own module?
+ #Need to add river herring/shad for herring only trips... maybe it is its own module?
  #AND all the SBRM species
 
  species = tbl(bcon, sql("select *
@@ -139,6 +139,8 @@ c_o_dat2 <- tbl(bcon, sql(
 	, GEARTYPE
 	, MESHGROUP
 	, SECTID
+, case when PERMIT = '000000' then 'STATE'
+       else 'FED' end as trip_type
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -171,6 +173,8 @@ c_o_dat2 <- tbl(bcon, sql(
 	, GEARTYPE
 	, MESHGROUP
 	, SECTID
+  , case when PERMIT = '000000' then 'STATE'
+       else 'FED' end
   , CAMSID
   , month
 	, halfofyear
@@ -187,7 +191,6 @@ c_o_dat2 <- tbl(bcon, sql(
 --	, xlrg_gillnet_exemption
 	order by vtrserno asc
     ) 
-
   select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
   , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
   , o.*
@@ -201,30 +204,40 @@ c_o_dat2 <- tbl(bcon, sql(
 ) %>%
 	collect()
 
-# filter out link1 that are doubled on VTR
-c_o_dat2 = c_o_dat2 %>% 
-	mutate(ROWID = 1:nrow(c_o_dat2)) %>% 
+state_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'STATE')
+fed_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'FED')
+
+fed_trips = fed_trips %>% 
+	mutate(ROWID = 1:nrow(fed_trips)) %>% 
 	relocate(ROWID)
 
-multilink = c_o_dat2 %>% 
+# filter out link1 that are doubled on VTR
+
+multilink = fed_trips %>% 
 	filter(!is.na(LINK1)) %>% 
 	group_by(VTRSERNO) %>% 
 	dplyr::summarise(nlink1 = n_distinct(LINK1)) %>% 
 	arrange(desc(nlink1)) %>% 
 	filter(nlink1>1)
 
-remove_links = c_o_dat2 %>% 
+remove_links = fed_trips %>% 
 	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
 	dplyr::select(LINK1) %>% 
 	distinct()
 
-remove_id = c_o_dat2 %>% 
+remove_id = fed_trips %>% 
     filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
 	  distinct(ROWID)
 
-c_o_dat2 =
-	c_o_dat2 %>% 
+fed_trips =
+	fed_trips %>% 
 	filter(ROWID %!in% remove_id$ROWID)
+
+non_gf_dat = fed_trips%>% 
+	#filter(substr(ACTIVITY_CODE_1, 1,3) != 'NMS') %>% 
+	bind_rows(., state_trips)
+
+c_o_dat2 <- fed_trips
 ```
 
 
@@ -270,8 +283,8 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   distinct(STAT_AREA) %>%
   mutate(AREA = as.character(STAT_AREA)
          , SPECIES_STOCK = AREA_NAME) %>% 
-  ungroup() %>% 
- # dplyr::select(SPECIES_STOCK, AREA)
+  ungroup() #%>% 
+  #dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
@@ -279,10 +292,10 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP) %>%
   select(-AREA_NAME) %>%
-  # mutate(CAREA = as.character(STAT_AREA)) %>% 
+   mutate(CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(SPECIES_ITIS == species_itis) %>%
-  dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
+ # dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
 #--------------------------------------------------------------------------------#
@@ -298,6 +311,8 @@ ddat_focal <- c_o_dat2 %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -311,7 +326,9 @@ ddat_prev <- c_o_dat2 %>%
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
-            ) %>%  
+            ) %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -319,8 +336,12 @@ ddat_prev <- c_o_dat2 %>%
 # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
 ddat_focal_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
+	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
+																					)) %>% 
+	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
   group_by(LINK1, VTRSERNO) %>% 
-  slice(1) %>% 
+	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
+	slice(1) %>% 
   ungroup()
 
 # and join to the unobserved trips
@@ -328,13 +349,14 @@ ddat_focal_cy = ddat_focal %>%
 ddat_focal_cy = ddat_focal_cy %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO) %>% 
+               group_by(VTRSERNO,CAMSID) %>% 
                slice(1) %>% 
                ungroup()
             )
 
 
 # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
+# DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS. 
 
 bdat_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
@@ -347,11 +369,21 @@ bdat_cy = ddat_focal %>%
 # set up trips table for previous year
 ddat_prev_cy = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
-  group_by(LINK1) %>% 
-  slice(1)
+	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
+																					)) %>% 
+	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
+  group_by(LINK1, VTRSERNO) %>% 
+	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
+	slice(1) %>% 
+  ungroup()
 
 ddat_prev_cy = ddat_prev_cy %>% 
-  union_all(ddat_prev %>% filter(is.na(LINK1)))
+  union_all(ddat_prev %>% 
+  						 filter(is.na(LINK1)) %>% 
+               group_by(VTRSERNO,CAMSID) %>% 
+               slice(1) %>% 
+               ungroup()
+  					)
 
 
 # previous year observer data needed.. 
@@ -456,7 +488,7 @@ trans_rate_df = dest_strata_f %>%
    	                              ,n_obs_trips < 5 & n.y < 5 ~ ARATE)
    	       ) %>%
      mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
-    																	, is.na(LINK1) & n_obs_trips >= 5 ~ 'E'
+    																	, is.na(LINK1) & n_obs_trips >= 5 ~ 'I'
     																	, is.na(LINK1) & n_obs_trips < 5 & n.y>=5 ~ 'T'
     																	, is.na(LINK1) & n_obs_trips < 5 &
     																		n.y < 5 ~ 'A'))
@@ -481,6 +513,7 @@ trans_rate_df = dest_strata_f %>%
  sum(d_focal$res$SUBTRIP_KALL, na.rm=TRUE)
 
  
+ #add subtrip kall after CV
  final_table <- final_table %>%
 	 mutate(DATE_RUN = as.character(lubridate::today())
 	 			 ,FY = as.integer(FY)) %>%
