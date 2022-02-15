@@ -178,81 +178,97 @@ and negear = 400
 /
 -- look at the DLR_VTR_ZERO total pounds
 
-with state as (
-SELECT a.CAMSID
-, a.docid
-, a.vtrserno
-, a.AREA
-, a.CAREA
-, a.record_land
---, a.DLR_STATE
---, a.FISHING_YEAR
---, a.LINK1
-, a.NESPP3
-, a.ITIS_TSN
-, a.ITIS_GROUP1
---, a.NESPP4
-, a.LIVLB
-, a.MESH_CAT
---, a.MONTH
-, a.PERMIT 
-, null as sectid
-, null as activity_code_1
-, null as activity_code_2
-, null as activity_code_3
-, null as permit_EFP_1
-, null as permit_EFP_2
-, null as permit_EFP_3
-, null as permit_EFP_4
-, null as redfish_exemption
-, null as closed_area_exemption
-, null as sne_smallmesh_exemption
-, null as xlrg_gillnet_exemption
-, extract(year from a.date_trip) as year
-, extract(month from a.date_trip) as month
-, a.NEGEAR as negear
+select distinct(permit)
+from dlr_vtr_zero
+/
 
-        , (CASE WHEN area < 600 THEN 'N'
-                WHEN area >= 600 THEN 'S'
-                ELSE 'Other'
-                END) as region
-,  (case when area in (511, 512, 513, 514, 515, 521, 522, 561) 
-                then 'N' 
-                 when area  NOT IN (511, 512, 513, 514, 515, 521, 522, 561)
-               then 'S'
-                 else 'Unknown' end)  as stockarea 
-, (CASE WHEN a.negear IN ('070') THEN 'Beach Seine'
-			    WHEN a.negear IN ('020', '021') THEN 'Handline'
-  			   	WHEN a.negear IN ('010') THEN 'Longline'
-				WHEN a.negear IN ('170', '370') THEN 'Mid-water Trawl, Paired and Single'
-				WHEN a.negear IN ('350','050') THEN 'Otter Trawl'
-				WHEN a.negear IN ('057') THEN 'Otter Trawl, Haddock Separator'
-				WHEN a.negear IN ('054') THEN 'Otter Trawl, Ruhle'
-				WHEN a.negear IN ('053') THEN 'Otter Trawl, Twin'
-				WHEN a.negear IN ('181') THEN 'Pots+Traps, Fish'
-				WHEN a.negear IN ('186') THEN 'Pots+Traps, Hagfish'
-				WHEN a.negear IN ('120','121', '123') THEN 'Purse Seine'
-				WHEN a.negear IN ('132') THEN 'Scallop Dredge'
-				WHEN a.negear IN ('052') THEN 'Scallop Trawl'
-				WHEN a.negear IN ('058') THEN 'Shrimp Trawl'
-				WHEN a.negear IN ('100', '105','110', '115','116', '117','500') THEN 'Sink, Anchor, Drift Gillnet'
-				WHEN a.negear NOT IN 
-				('070','020', '021','010','170','370','350','050','057','054','053','181',
-				'186','120','121', '123','132','052','058','100', '105', '110','115','116', '117','500') THEN 'Other' 
-				WHEN a.negear IS NULL THEN 'Unknown'
-				END) as  geartype
+select count(distinct(CAMSID)) nCAMSID
+, case when permit = '000000' then 'state' else 'fed' end as trip_type
+from cams_obs_catch
+where year = 2019
+group by case when permit = '000000' then 'state' else 'fed' end
+
+/
+
+select distinct(year)
+from maps.dlr_vtr
 
 
-,  'all' as tripcategory   
-,  'all' as accessarea              
-
- from  MAPS.DLR_VTR_ZERO a
- )
- 
- select GEARTYPE, area
-,   count(distinct(camsid)) as n_camsid
- , sum(livlb) as livlb
- from state 
- where year = 2019
-group by geartype, area
+--with state as (
+--SELECT a.CAMSID
+--, a.docid
+--, a.vtrserno
+--, a.AREA
+--, a.CAREA
+--, a.record_land
+----, a.DLR_STATE
+----, a.FISHING_YEAR
+----, a.LINK1
+--, a.NESPP3
+--, a.ITIS_TSN
+--, a.ITIS_GROUP1
+----, a.NESPP4
+--, a.LIVLB
+--, a.MESH_CAT
+----, a.MONTH
+--, a.PERMIT 
+--, null as sectid
+--, null as activity_code_1
+--, null as activity_code_2
+--, null as activity_code_3
+--, null as permit_EFP_1
+--, null as permit_EFP_2
+--, null as permit_EFP_3
+--, null as permit_EFP_4
+--, null as redfish_exemption
+--, null as closed_area_exemption
+--, null as sne_smallmesh_exemption
+--, null as xlrg_gillnet_exemption
+--, extract(year from a.date_trip) as year
+--, extract(month from a.date_trip) as month
+--, a.NEGEAR as negear
+--
+--        , (CASE WHEN area < 600 THEN 'N'
+--                WHEN area >= 600 THEN 'S'
+--                ELSE 'Other'
+--                END) as region
+--,  (case when area in (511, 512, 513, 514, 515, 521, 522, 561) 
+--                then 'N' 
+--                 when area  NOT IN (511, 512, 513, 514, 515, 521, 522, 561)
+--               then 'S'
+--                 else 'Unknown' end)  as stockarea 
+--, (CASE WHEN a.negear IN ('070') THEN 'Beach Seine'
+--			    WHEN a.negear IN ('020', '021') THEN 'Handline'
+--  			   	WHEN a.negear IN ('010') THEN 'Longline'
+--				WHEN a.negear IN ('170', '370') THEN 'Mid-water Trawl, Paired and Single'
+--				WHEN a.negear IN ('350','050') THEN 'Otter Trawl'
+--				WHEN a.negear IN ('057') THEN 'Otter Trawl, Haddock Separator'
+--				WHEN a.negear IN ('054') THEN 'Otter Trawl, Ruhle'
+--				WHEN a.negear IN ('053') THEN 'Otter Trawl, Twin'
+--				WHEN a.negear IN ('181') THEN 'Pots+Traps, Fish'
+--				WHEN a.negear IN ('186') THEN 'Pots+Traps, Hagfish'
+--				WHEN a.negear IN ('120','121', '123') THEN 'Purse Seine'
+--				WHEN a.negear IN ('132') THEN 'Scallop Dredge'
+--				WHEN a.negear IN ('052') THEN 'Scallop Trawl'
+--				WHEN a.negear IN ('058') THEN 'Shrimp Trawl'
+--				WHEN a.negear IN ('100', '105','110', '115','116', '117','500') THEN 'Sink, Anchor, Drift Gillnet'
+--				WHEN a.negear NOT IN 
+--				('070','020', '021','010','170','370','350','050','057','054','053','181',
+--				'186','120','121', '123','132','052','058','100', '105', '110','115','116', '117','500') THEN 'Other' 
+--				WHEN a.negear IS NULL THEN 'Unknown'
+--				END) as  geartype
+--
+--
+--,  'all' as tripcategory   
+--,  'all' as accessarea              
+--
+-- from  MAPS.DLR_VTR_ZERO a
+-- )
+-- 
+-- select GEARTYPE, area
+--,   count(distinct(camsid)) as n_camsid
+-- , sum(livlb) as livlb
+-- from state 
+-- where year = 2019
+--group by geartype, area
 
