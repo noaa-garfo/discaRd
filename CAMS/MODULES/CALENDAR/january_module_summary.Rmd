@@ -1,0 +1,194 @@
+---
+title: "January Module Summary"
+author: "Ben Galuardi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+  pdf_document: default
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
+											message = FALSE, cache = FALSE,
+											progress = TRUE, verbose = FALSE, comment = F
+											, error = FALSE, dev = 'png', dpi = 200)
+
+options(knitr.kable.NA = '')
+```
+
+
+# Background 
+
+
+
+
+### Steps 
+
+1. pull all merged trips from CAMS_OBS_CATCH
+
+2. Set stratification variables for groundfish trips
+
+```{r, echo = T, eval = F}
+# FULL Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              ,'CAMS_GEAR_GROUP'
+							, 'MESHGROUP'
+							, 'HALFOFYEAR'
+							, 'REGION'
+						  , 'TRIPCATEGORY'
+						  , 'ACCESSAREA')
+```
+
+	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
+	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
+	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
+
+	
+3. Run `discaRd`
+	- there are sub-passes for year t and year t-1
+	
+```{r, echo = T, eval = F}
+# Assumed Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              , 'CAMS_GEAR_GROUP'
+              , 'MESHGROUP'
+							, 'SECTOR_TYPE'
+              ) 
+```	
+
+4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+
+7. A transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
+
+8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
+ - (I) in season rate; >= 5 trips in Full Stratification
+ - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
+ - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
+ - (O) Observed values used from obserevd trips; discard rate is NOT USED. 
+ 
+9. CV calculations are available for (I) and (T). Obtaining a CV estimate for (A) would require a *second pass* of discaRd functions. (O) rates are not used and final discard values are not estimated. 
+
+10. Discard pounds per trip are calculated according to
+
+```{r echo = T, eval = F}
+	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
+	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
+				 
+			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
+```
+
+
+By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
+
+Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~12 seconds to process on the server.
+
+Output tables are produced for each species. These can easily be recombined. An example table has been shared on `MAPS` and `CAMS_GARFO`
+
+```sql
+	MAPS.CAMS_DISCARD_EXAMPLE_CY19
+	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY19
+
+```
+
+### Diagnostic Plots/Tables
+
+```{r make diagnostic plot, eval = T, echo = F, fig.cap = "Discard Rates by Stock, Species, Discard Source", fig.height = 8, fig.width = 12}
+
+library(odbc)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+# library(config)
+library(stringr)
+library(discaRd)
+library(knitr)
+library(kableExtra)
+options(scipen = 999)
+
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon <- dbConnect(odbc::odbc(),
+									DSN = condat$dsn,
+									UID = condat$uid,
+									PWD = condat$pwd)
+
+db_example = tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY19")) %>% 
+	collect()
+
+db_example %>% 
+	filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
+	slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+```
+
+```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
+db_example %>% 
+	# filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+
+```
+
+\vspace{2mm}
+
+```{r table 1}
+db_example %>% 
+	group_by(COMNAME_EVAL
+					 , SPECIES_STOCK) %>% 
+	dplyr::summarise(nvtr = n_distinct(VTRSERNO)
+									 , KALL = sum(SUBTRIP_KALL, na.rm = T)
+									 , DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
+	knitr::kable(format.args = list(big.mark = ",")) %>% 
+	kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+```
+
+
+### Issues
+
+### To-do 
+
+1.
+2. Apply discard rates to State trips	
+3. Incorporate EM (including MREM) records is using those values for discard amounts. This shoudl be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
+
+
+
+```{r discard rates by strata example}
+
+db_example %>% 
+	group_by(COMNAME_EVAL
+					 , DISCARD_SOURCE
+					 , STRATA_FULL
+					 , STRATA_ASSUMED) %>% 
+	dplyr::summarise(DISCARD_RATE = max(DISCARD_RATE)
+									 , KALL = sum(SUBTRIP_KALL, na.rm = T)) %>% 
+	knitr::kable(format.args = list(big.mark = ","))
+
+
+```
+
+
+
+
+#### Species examples
+
