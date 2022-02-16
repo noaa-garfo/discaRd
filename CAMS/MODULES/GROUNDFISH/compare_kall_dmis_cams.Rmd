@@ -1,0 +1,126 @@
+---
+title: "Compare KALL, OBS D, d/k Groundfish"
+author: Ben Galuardi
+author: Dan Linden
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r connect to oracle}
+library(odbc)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+# library(config)
+library(stringr)
+library(discaRd)
+options(scipen = 999)
+
+# local run
+dw_maps <- config::get(value = "maps", file = "~/config.yml")
+
+# if on server..
+#dw_maps <- config::get(value = "maps", file = "~/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = dw_maps$dsn, 
+									UID = dw_maps$uid, 
+									PWD = dw_maps$pwd)
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+```
+
+
+
+```{r function}
+
+
+get_dmis_kall_stock <- function(bcon, species_itis){
+
+ t1 = tbl(bcon, sql("
+  select *
+  from apsd.dmis_all_years
+  where fishing_year = 2019
+  and activity_code like 'NMS%'
+   "
+ )
+)
+ 
+ t2 = 	tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+ filter(SPECIES_ITIS == species_itis)
+ 
+stock_dmis = tbl(bcon, sql("
+    select stock_id
+    , comname
+    , area
+    , max(species_itis) as species_itis
+    from fso.v_obSpeciesStockArea 
+    where stock_id not like 'OTHER'
+    and species_itis is not null
+    group by stock_id, comname, species_itis, area
+")
+) %>%
+	filter(SPECIES_ITIS == species_itis)
+
+
+
+t3 = tbl(bcon, sql("select *
+									 from MAPS.CAMS_CATCH
+									 where activity_code_1 like 'NMS%'
+									 AND RECORD_LAND >= '01-MAY-19'
+									 AND RECORD_LAND < '01-MAY-20'
+									 "
+									 )) %>% 
+	left_join(., t2, by = c('AREA' = 'STAT_AREA')) %>% 
+	filter(!is.na(AREA_NAME)) %>% 
+	group_by(AREA_NAME) %>% 
+	dplyr::summarise(KALL_CAMS = sum(LIVLB, na.rm = T))
+
+    # collect()
+ 
+ t1 %>% 
+ 	left_join(., t2, by= c('AREA' = 'STAT_AREA')) %>%
+ 	left_join(., stock_dmis, by = c('AREA' = 'AREA')) %>% 
+ 	filter(!is.na(STOCK_ID.y)) %>%   # don't use STOCK_ID.x... species specific stock to attribute catch 
+ 	group_by(STOCK_ID.y, AREA_NAME) %>%
+ 	# head() %>% 
+ 	dplyr::summarise(KALL_DMIS = round(sum(POUNDS, na.rm = T))) %>%
+ 	left_join(., t3, by = 'AREA_NAME') %>% 
+ 	collect() %>% 
+ 	mutate(SPECIES_ITIS = species_itis) %>% 
+ 	dplyr::rename('STOCK_ID_DMIS' = 'STOCK_ID.y', 'STOCK_ID_CAMS' = 'AREA_NAME')
+ 
+}
+
+
+```
+
+```{r compare}
+
+species = tbl(bcon, sql("
+select distinct(b.species_itis)
+    , COMNAME
+    , a.nespp3
+from fso.v_obSpeciesStockArea a
+left join (select *  from APSD.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+where stock_id not like 'OTHER'
+and b.species_itis is not null
+")
+) %>% 
+	collect()
+
+
+species$SPECIES_ITIS %>% 
+	as.list() %>%
+lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>% 
+	do.call(rbind, .) %>% 
+	mutate(KALL_DIFF = KALL_DMIS - KALL_CAMS
+				 , KALL_DIFF_PERC = paste0(round((KALL_DMIS - KALL_CAMS)/KALL_DMIS, 3)*100, '%'))%>% 
+	View()
+
+
+```
+
