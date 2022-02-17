@@ -35,8 +35,8 @@ bcon <- dbConnect(odbc::odbc(),
 
 
 
-```{r function}
 
+```{r function}
 
 get_dmis_kall_stock <- function(bcon, species_itis){
 
@@ -95,7 +95,6 @@ t3 = tbl(bcon, sql("select *
  
 }
 
-
 ```
 
 ```{r compare}
@@ -121,6 +120,10 @@ lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>%
 				 , KALL_DIFF_PERC = paste0(round((KALL_DMIS - KALL_CAMS)/KALL_DMIS, 3)*100, '%'))%>% 
 	View()
 
+species$SPECIES_ITIS %>% 
+	as.list() %>%
+lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>% 
+	do.call(rbind, .)
 
 ```
 
