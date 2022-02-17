@@ -19,7 +19,7 @@ library(discaRd)
 options(scipen = 999)
 
 # local run
-dw_maps <- config::get(value = "maps", file = "~/config.yml")
+dw_maps <- config::get(config = "maps", file = "K:/config.yml")
 
 # if on server..
 #dw_maps <- config::get(value = "maps", file = "~/config.yml")
