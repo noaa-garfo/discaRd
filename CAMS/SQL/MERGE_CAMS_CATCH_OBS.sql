@@ -100,6 +100,7 @@ with ulink as (
         , d.carea
         , round(sum(d.LIVLB)) as subtrip_kall
         , d.sectid
+        , d.GF
         , d.activity_code_1
         , d.activity_code_2
         , d.activity_code_3
@@ -153,6 +154,7 @@ with ulink as (
         , d.area
         , d.carea
         , d.sectid
+        , d.GF
         , d.activity_code_1
         , d.activity_code_2
         , d.activity_code_3
