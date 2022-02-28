@@ -67,6 +67,8 @@ bcon <- dbConnect(odbc::odbc(),
 
 source('~/PROJECTS/discaRd/CAMS/R/cams_discard_functions.R')
 
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
+
 ```
 
 ```{r define fishing year and species, eval = T}
@@ -156,10 +158,11 @@ c_o_dat2 <- tbl(bcon, sql(
 	, tripcategory
 	, accessarea
 	, activity_code_1
-    , permit_EFP_1
-  , permit_EFP_2
-  , permit_EFP_3
-  , permit_EFP_4
+  --, permit_EFP_1
+  --, permit_EFP_2
+  --, permit_EFP_3
+  --, permit_EFP_4
+  , EM
   , redfish_exemption
 	, closed_area_exemption
 	, sne_smallmesh_exemption
@@ -176,7 +179,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	, vtrserno
 	, link1
 	, docid
-	, nespp3
+	, nespp3	
   , itis_tsn
   , itis_group1
     , SECGEAR_MAPPED
@@ -196,10 +199,11 @@ c_o_dat2 <- tbl(bcon, sql(
 	, tripcategory
 	, accessarea
 	, activity_code_1
-    , permit_EFP_1
-  , permit_EFP_2
-  , permit_EFP_3
-  , permit_EFP_4
+  --  , permit_EFP_1
+  --, permit_EFP_2
+  --, permit_EFP_3
+  --, permit_EFP_4
+  , EM
   , redfish_exemption
 	, closed_area_exemption
 	, sne_smallmesh_exemption
@@ -250,11 +254,12 @@ fed_trips =
 	filter(ROWID %!in% remove_id$ROWID)
 
 non_gf_dat = fed_trips %>% 
-	filter(is.na(GF)) %>% 
-	bind_rows(., state_trips)
+	filter(GF == 0) %>% 
+	bind_rows(., state_trips) %>% 
+	mutate(GF = "0")
 
 gf_dat = fed_trips%>% 
-	filter(!is.na(GF))
+	filter(GF == 1)
 
 rm(c_o_dat2, fed_trips, state_trips)
 
@@ -271,20 +276,22 @@ rm(c_o_dat2, fed_trips, state_trips)
 
 ```
 
-```{r define full stratification}
+```{r loop through the sector trips for each stock }
+
 
 # Stratification variables
 
-stratvars = c( #'SPECIES_STOCK'
+stratvars = c( 'SPECIES_STOCK'
 							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
-               'CAMS_GEAR_GROUP'
+              , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               # , 'CAREA'
               , 'SECTID'
-              , "PERMIT_EFP_1"
-              , "PERMIT_EFP_2"
-              , "PERMIT_EFP_3"
-              , "PERMIT_EFP_4"
+              , 'EM'
+              # , "PERMIT_EFP_1"
+              # , "PERMIT_EFP_2"
+              # , "PERMIT_EFP_3"
+              # , "PERMIT_EFP_4"
               , "REDFISH_EXEMPTION"
               , "SNE_SMALLMESH_EXEMPTION"
               , "XLRG_GILLNET_EXEMPTION"
@@ -293,10 +300,6 @@ stratvars = c( #'SPECIES_STOCK'
 # add a second SECTORID for Common pool/all others
 
 
-
-```
-
-```{r loop through the sector trips for each stock }
 
 for(i in 1:length(species$SPECIES_ITIS)){
 
@@ -978,7 +981,93 @@ trans_rate_df = trans_rate_df %>%
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
- saveRDS(joined_table, file = paste0('OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
+#-----------------------------------------------------------------------
+# join full and assumed strata tables
+#-----------------------------------------------------------------------
+ 
+BROAD_STOCK_RATE_TABLE = d_focal$res %>% 
+ 	group_by(SPECIES_STOCK) %>% 
+ 	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE, na.rm = T)) # mean rate is max rate.. they are all the same within STOCK, as they should be 
+ 
+print(paste0("Constructing output table for ", species_itis, " ", FY)) 
+
+joined_table = assign_strata(full_strata_table, stratvars) %>% 
+	# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
+	# dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
+	# left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
+	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = 'SPECIES_STOCK') %>% 
+	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate  # this is an in season rate
+															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ trans_rate  # this is a final IN SEASON rate taking transition into account
+															 , n_obs_trips_f < 5 & n_obs_trips_p < 5 ~ ARATE  # assumed rate
+		                           )
+	) %>% 
+	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
+	mutate(SPECIES_ITIS_EVAL = species_itis
+ 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , FISHING_YEAR = FY
+ 				 , FY_TYPE = FY_TYPE) 
+
+#-----------------------------------------------------------------------
+# add discard source
+#-----------------------------------------------------------------------
+
+
+# >5 trips in season gets in season rate
+# < 5 i nseason but >=5 past year gets transition
+# < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
+# <5, <5,  and <5 gets broad stock rate
+
+joined_table = joined_table %>% 
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    																	, is.na(LINK1) & n_obs_trips_f >= 5 ~ 'I'
+    																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+    																	, is.na(LINK1) & n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ 'T'
+    																	, is.na(LINK1) & n_obs_trips_f < 5 &
+    																		n_obs_trips_p < 5 &
+    																		!is.na(ARATE) ~ 'A'
+    																	, is.na(LINK1) & n_obs_trips_f < 5 &
+    																		n_obs_trips_p < 5 &
+    																		is.na(ARATE) ~ 'B'
+    																	# , is.na(LINK1) & 
+    																	# 	n_obs_trips_f < 5 & 
+    																	# 	n_obs_trips_p < 5 & ~ 'B'
+    																		# n_obs_trips_f_a < 5 & 
+    																		# n_obs_trips_p_a < 5 
+    																	)  # this may be replaced with model estimate!
+    			 )
+
+#-----------------------------------------------------------------------
+# make sure CV type matches DISCARD SOURCE}
+#-----------------------------------------------------------------------
+
+# obs trips get 0, broad stock rate is NA
+
+
+joined_table = joined_table %>% 
+	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
+												, DISCARD_SOURCE == 'I' ~ CV_f
+												, DISCARD_SOURCE == 'T' ~ CV_f
+												# , DISCARD_SOURCE == 'A' ~ CV_f_a
+												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
+												)  # , DISCARD_SOURCE == 'B' ~ NA
+				 )
+
+#-----------------------------------------------------------------------
+# get the discard for each trip using COAL_RATE}
+#-----------------------------------------------------------------------
+
+# discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
+# the KALLs should be small.. 
+
+joined_table = joined_table %>% 
+	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
+	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
+				 )
+ 
+ 
+ 
+ saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
  
 t2 = Sys.time()
 	
@@ -1017,8 +1106,9 @@ res_cams_gear = allgf %>%
 	mutate(SPECIES_ITIS = SPECIES_ITIS_EVAL) %>%
 	left_join(., species, by = 'SPECIES_ITIS') %>%
 	dplyr::select(-SPECIES_ITIS, -NESPP3) %>%
-	relocate('COMNAME','SPECIES_ITIS_EVAL')
-	# write.csv('groundfish_loop_results_gftrips_only_020922.csv', row.names = F)
+	relocate('COMNAME','SPECIES_ITIS_EVAL') %>% 
+	dplyr::select(-1) %>% 
+	write.csv('groundfish_loop_results_gftrips_only_021822.csv', row.names = F)
 # View()
 
 gearcodes = gf_dat %>% dplyr::select(GEARTYPE, GEARCODE) %>% unique()
@@ -1055,7 +1145,7 @@ gf_discard_example = allgf %>%
 	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 								, 'DISCARD_RATE' = 'COAL_RATE') %>% 
-	mutate(DATE_RUN = as.character(lubridate::today())
+	mutate(DATE_RUN = as.character(Sys.Date())
 				 , FY = as.integer(FY)) %>%
 	dplyr::select(
 	DATE_RUN,
@@ -1119,7 +1209,7 @@ tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
 
 ```
 
-```{r diagnostic plots}
+```{r diagnostic plots, eval = F}
 
 db_example %>% 
 	filter(DISCARD_SOURCE != 'O') %>% 
@@ -1157,7 +1247,9 @@ for(j in species$SPECIES_ITIS){
 
 }
 
-nongf_res_list[[1]]
+nongf_res_list[[1]] %>% 
+	group_by(FULL_STRATA, DISCARD_SOURCE) %>% 
+	dplyr::summarise(max(COAL_RATE), min(COAL_RATE), mean(COAL_RATE))
 
 
 ```
