@@ -18,6 +18,7 @@ BG 12-02-21
          make sure the multi VTR join is a multi factor join.. AREA, GEAR, MESH, LINK1
 02/04/22 added filter for observedtrips coming from CAMS.MATCH_OBS so only trips with TRIP_EXT C or X are included. 
         This is the criteria used in OBS data
+02/18/22 changed EFP columns to new EM designation        
 
 ------------------------------------------------------------------------------------------------------*/  
 
@@ -104,10 +105,11 @@ with ulink as (
         , d.activity_code_1
         , d.activity_code_2
         , d.activity_code_3
-        , d.permit_EFP_1
-        , d.permit_EFP_2
-        , d.permit_EFP_3
-        , d.permit_EFP_4
+--        , d.permit_EFP_1
+--        , d.permit_EFP_2
+--        , d.permit_EFP_3
+--        , d.permit_EFP_4
+        , d.EM
         , redfish_exemption
         , closed_area_exemption
         , sne_smallmesh_exemption
@@ -158,10 +160,11 @@ with ulink as (
         , d.activity_code_1
         , d.activity_code_2
         , d.activity_code_3
-        , d.permit_EFP_1
-        , d.permit_EFP_2
-        , d.permit_EFP_3
-        , d.permit_EFP_4
+        , d.EM
+--        , d.permit_EFP_1
+--        , d.permit_EFP_2
+--        , d.permit_EFP_3
+--        , d.permit_EFP_4
         , d.redfish_exemption
         , d.closed_area_exemption
         , d.sne_smallmesh_exemption
