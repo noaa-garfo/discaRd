@@ -41,19 +41,16 @@ This means a full accounting of groundfish discards occurs in several steps.
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c( 'SPECIES_STOCK'
+							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
-              # , 'CAREA'
               , 'SECTID'
-              , "PERMIT_EFP_1"
-              , "PERMIT_EFP_2"
-              , "PERMIT_EFP_3"
-              , "PERMIT_EFP_4"
+              , 'EM'  # previously was four columns of EFP information.. 
               , "REDFISH_EXEMPTION"
               , "SNE_SMALLMESH_EXEMPTION"
               , "XLRG_GILLNET_EXEMPTION"
-              ) 
+              )
 ```
 
 	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
