@@ -140,7 +140,22 @@ bcon <- dbConnect(odbc::odbc(),
 									UID = mapsdat$uid, 
 									PWD = mapsdat$pwd)
 
-db_example = tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19")) %>% 
+db_example = tbl(ccon, sql("
+  with gf as ( 
+		select a.*
+		, b.area
+		from cams_garfo.CAMS_DISCARD_EXAMPLE_GF19 a
+		left join (
+		    select distinct(vtrserno) as vtrserno
+		    , area 
+		    from maps.cams_catch
+		) b
+		on (a.vtrserno = b.vtrserno)
+		)
+		
+		select *
+		from gf 													 
+")) %>% 
 	collect()
 
 db_example %>% 
@@ -281,36 +296,39 @@ comp_list = NULL
 ii = 1
 
 for(j in species$SPECIES_ITIS){
-
-	comp_list[[ii]] <- readRDS(paste0("/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_", j, "_gftrips_only.RDS"))
+	
+	comp_list[[ii]] <- db_example %>% 
+		filter(SPECIES_ITIS_EVAL == j)
 	
 	sid = match_stockid(bcon, j) %>% 
 		dplyr::select(DMIS_STOCK_ID, AREA, CAMS_STOCK_AREA)
 	
 	comp_list[[ii]] = comp_list[[ii]] %>% 
-			left_join(sid, by = c('AREA')) %>% 
-		group_by(COMMON_NAME, CAMS_STOCK_AREA, DMIS_STOCK_ID) %>% 
+		left_join(sid, by = c('AREA')) %>% 
+		group_by(COMNAME_EVAL, CAMS_STOCK_AREA, DMIS_STOCK_ID) %>% 
 		dplyr::summarise(CAMS_DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
-		filter(!is.na(COMMON_NAME))
+		filter(!is.na(COMNAME_EVAL))
 	
 	ii = ii+1
-
+	
 }
 
-allgf_comp = do.call(rbind, comp_list) 
+allgf_comp = do.call(rbind, comp_list) %>% 
+	filter(!is.na(CAMS_STOCK_AREA))
 
 # join to DMIS estimates
 
 dmis_comp = allgf_comp %>% 
-	group_by(COMMON_NAME, DMIS_STOCK_ID) %>% 
+	group_by(COMNAME_EVAL, DMIS_STOCK_ID) %>% 
 	dplyr::summarise(CAMS_DISCARD = round(sum(CAMS_DISCARD, na.rm = T))) %>% 
 	left_join(., discard2019, by = c('DMIS_STOCK_ID' = 'STOCK_ID')) %>% 
 	mutate(DMIS_CAMS_DIFF = DMIS_DISCARD - CAMS_DISCARD
-				 , DMIS_CAMS_DIFF_PERC = (DMIS_DISCARD - CAMS_DISCARD)/DMIS_DISCARD)
+				 , DMIS_CAMS_DIFF_PERC = (DMIS_DISCARD - CAMS_DISCARD)/DMIS_DISCARD) %>% 
+	dplyr::rename('COMMON_NAME' = 'COMNAME_EVAL')
 
 dmis_comp %>% 
-  DT::datatable(caption = 'DISCARD comparison, DMIS/CAMS (Uses DMIS Stock ID for summaries)') %>% 
-  formatPercentage('DMIS_CAMS_DIFF_PERC') %>% 
+	DT::datatable(caption = 'DISCARD comparison, DMIS/CAMS (Uses DMIS Stock ID for summaries)') %>% 
+	formatPercentage('DMIS_CAMS_DIFF_PERC') %>% 
 	DT::formatRound(names(dmis_comp)[3:5], digits = 0, interval = 3)
 
 
@@ -399,7 +417,13 @@ lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>%
 	do.call(rbind, .) %>% 
 	mutate(KALL_DIFF = KALL_DMIS - KALL_CAMS
 				 , KALL_DIFF_PERC = round((KALL_DMIS - KALL_CAMS)/KALL_DMIS, 3)) %>% 
-	DT::datatable(caption = 'KALL comparison, DMIS/CAMS') %>% 
+	DT::datatable(.
+								# , extensions = 'Buttons'
+							 # , options = list(dom = 'frtipB', buttons = c('csv', 'excel'), autoWidth = TRUE)
+							 , filter = "top"
+						 	 , class = 'cell-border stripe'
+						 	 , rownames = FALSE
+							, caption = 'KALL comparison, DMIS/CAMS') %>% 
 	formatPercentage('KALL_DIFF_PERC') %>% 
 	DT::formatRound(c('KALL_DMIS','KALL_CAMS','KALL_DIFF'), digits = 0, interval = 3)
 
