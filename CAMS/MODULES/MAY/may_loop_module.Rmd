@@ -1,5 +1,5 @@
 ---
-title: "January loop for discards"
+title: "May loop for discards"
 output:
   pdf_document: 
     highlight: zenburn
@@ -52,11 +52,18 @@ options(scipen = 999)
 # dw_maps <- config::get(value = "maps", file = "~/config.yml")
  
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
-# 
- bcon <- dbConnect(odbc::odbc(), 
- 									DSN = dw_maps$dsn, 
- 									UID = dw_maps$uid, 
- 									PWD = dw_maps$pwd)
+ 
+#  dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+#  
+#  bcon <- DBI::dbConnect(odbc::odbc(),
+#                             dsn = "fso",
+#                             uid = Sys.getenv("apsd_uid"), 
+#                             pwd = Sys.getenv("apsd_pwd"))
+# # 
+# bcon <- dbConnect(odbc::odbc(),
+# 									DSN = dw_maps$dsn,
+# 									UID = dw_maps$uid,
+# 									PWD = dw_maps$pwd)
 
 # Connect to database - move this to config file in the future - quick addition for server
   connectString <- paste(
@@ -85,26 +92,29 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 FY <- 2019
 
-FY_TYPE = 'JAN START'
+FY_TYPE = 'MAY START'
 
 #--------------------------------------------------------------------------#
-# group of species ITIS codes.. 
-# SMB, river herring, bluefish, summer flounder, 
-# black seabass and scup.
-#Not sure what else is needed for herring and shad catch cap.
 
- species_nespp3 = c('212','801','802','051', '170',
-                    '023', '121', '335', '329')  # Calendar year
+# species_nespp3 = c('012','352')
  
-  species_nespp3 = c('418')
- 
- #Need to add river herring/shad for herring only trips... maybe it is its own module?
- #AND all the SBRM species
+ species_nespp3 = c('364', '365', #skate
+                    '366', '367', #skate
+                    '368','369', #skate
+                    '370', '372', #skate
+                    '373','365') #skate
 
  species = tbl(bcon, sql("select *
 												from MAPS.CFG_ITIS")) %>% 
 	collect() %>% 
 	filter(DLR_NESPP3 %in% species_nespp3)
+ 
+ # species <- species %>% filter(ITIS_TSN %in% c(564139,160855,564130,
+ #                                           564136,564151,564149,
+ #                                           564145))
+ 
+ species$ITIS_TSN <- as.numeric(species$SRCE_ITIS_TSN)
+ species$ITIS_TSN <- as.character(species$ITIS_TSN)
 
 #--------------------------------------------------------------------------#
 # a sumamry table for comaprison
@@ -123,8 +133,8 @@ c_o_dat2 <- tbl(bcon, sql(
 " with obs_cams as (
    select year
 	, month
-	, case when month in (1,2,3,4,5,6) then 1
-	       when month in (7,8,9,10,11,12) then 2
+	, case when month in (5,6,7,8,9,10) then 1
+	       when month in (11,12,1,2,3,4) then 2
 	       end as halfofyear
 	-- , carea
   ,region
@@ -264,7 +274,8 @@ for(i in 1:length(species$ITIS_TSN)){
 print(paste0('Running ', species$ITIS_NAME[i]))	
 	
 # species_nespp3 = species$NESPP3[i]  
-species_itis = species$SRCE_ITIS_TSN[i] 
+species_itis = species$ITIS_TSN[i] 
+species_itis_srce = species$SRCE_ITIS_TSN[i]
 #--------------------------------------------------------------------------#
 # Support table import by species
 
@@ -273,14 +284,14 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
-	filter(SPECIES_ITIS == species_itis) %>%
+	filter(SPECIES_ITIS == species_itis_srce) %>%
   dplyr::select(-NESPP3, -SPECIES_ITIS)
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
 STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-	filter(SPECIES_ITIS == species_itis) %>%
+	filter(SPECIES_ITIS == species_itis_srce) %>%
     collect() %>% 
   group_by(AREA_NAME) %>% 
   distinct(STAT_AREA) %>%
@@ -339,7 +350,7 @@ ddat_prev <- c_o_dat2 %>%
 # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
 ddat_focal_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
-	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
+	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis_srce ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
   group_by(LINK1, VTRSERNO) %>% 
@@ -372,7 +383,7 @@ bdat_cy = ddat_focal %>%
 # set up trips table for previous year
 ddat_prev_cy = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
-	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
+	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis_srce ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
   group_by(LINK1, VTRSERNO) %>% 
@@ -403,7 +414,7 @@ d_prev = run_discard(bdat = bdat_prev_cy
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 # , species_nespp3 = species_nespp3
-										   , species_itis = species_itis
+										   , species_itis = species_itis_srce
 											 , stratvars = stratvars
 											 , aidx = c(1,2,3) #maybe this should be bumped up?
 											 )
@@ -416,7 +427,7 @@ d_focal = run_discard(bdat = bdat_cy
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
 											 # , species_nespp3 = species_nespp3  #'081' #cod...
-											 , species_itis = species_itis
+											 , species_itis = species_itis_srce
 											 , stratvars = stratvars
 											 , aidx = c(1,2,3) #maybe this should be bumped up?
 											 )
@@ -481,7 +492,7 @@ trans_rate_df = dest_strata_f %>%
  final_table = trans_rate_df %>% 
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
- 	 	mutate(SPECIES_ITIS_EVAL = species_itis
+ 	 	mutate(SPECIES_ITIS_EVAL = species_itis_srce
  				 , COMNAME_EVAL = species$COMNAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>%
@@ -492,13 +503,13 @@ trans_rate_df = dest_strata_f %>%
    	       ) %>%
      mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
     																	, is.na(LINK1) & n_obs_trips >= 5 ~ 'I'
-    																	, is.na(LINK1) & n_obs_trips < 5 & n.y>=5 ~ 'T'
+    																	, is.na(LINK1) & n_obs_trips < 5 & n.y >=5 ~ 'T'
     																	, is.na(LINK1) & n_obs_trips < 5 &
     																		n.y < 5 ~ 'A'))
  
  final_table = final_table %>% 
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
-												, DISCARD_SOURCE == 'E' ~ CV.x
+												, DISCARD_SOURCE == 'I' ~ CV.x
 												, DISCARD_SOURCE == 'T' ~ CV.x
 												, DISCARD_SOURCE == 'A' ~ CV # Im not sure this is correct?
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
@@ -521,31 +532,26 @@ trans_rate_df = dest_strata_f %>%
  sum(final_table$DISCARD, na.rm=TRUE)
 
  
- #add subtrip kall after CV
- 
  cy_discard_example = final_table %>%
 #	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-								, 'DISCARD_RATE' = 'FINAL_RATE') %>% 
+	dplyr::rename('STRATA_FULL' = 'STRATA'
+								, 'DISCARD_RATE' = 'FINAL_RATE'
+								,'n_obs_trips_f' = 'n_obs_trips') %>% 
 	mutate(DATE_RUN = as.character(lubridate::today())
 				 , FY = as.integer(FY)) %>%
 	dplyr::select(
 	DATE_RUN,
 	FY,
 	SPECIES_ITIS_EVAL,
-	COMNAME_EVAL,
+	COMMON_NAME,
 	FY_TYPE,
 	ACTIVITY_CODE_1,
 	VTRSERNO,
 	LINK1,
-#	n_obs_trips_f,
+	n_obs_trips_f,
 	STRATA_FULL,
 	STRATA_ASSUMED,
-	# trans_rate,
-	# trans_rate_a,
-#	BROAD_STOCK_RATE,
 	DISCARD_RATE,
-
 	DISCARD_SOURCE,
 	OBS_DISCARD,
 	DISC_MORT_RATIO,
@@ -553,13 +559,14 @@ trans_rate_df = dest_strata_f %>%
 	CV,
 	SUBTRIP_KALL, 
 	eval(stratvars),
-  TRIP_TYPE
+	TRIP_TYPE
 	)
-
-names(gf_discard_example) = toupper(names(gf_discard_example))
-
  
+# cy_discard_example$DISCARD_RATE <- #round(cy_discard_example$DISCARD_RATE, 5)
+
+names(cy_discard_example) = toupper(names(cy_discard_example))
  
+
 # save trip by trip info to RDS 
  #saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
  # saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
@@ -576,9 +583,9 @@ print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 ```
 ```{r check that joined table has values for each trip}
  # trips that were not observed 
-final_table %>%
+check <- final_table %>%
 	filter(is.na(LINK1)) %>% 
-	filter(is.na(COAL_RATE))
+	filter(is.na(FINAL_RATE))
 
 # See if any trips do not have a discard source
 final_table %>%
@@ -600,62 +607,83 @@ dest_strata_f %>%
 	
 ```{r table output example}
 
-db_example = final_table %>%
-	# mutate(DATE_RUN = as.character(lubridate::today())
-	# 			 , FY = as.integer(FY)) %>%
-	dplyr::select(
-	DATE_RUN,
-	FY,
-	SPECIES_ITIS_EVAL,
-	FY_TYPE,
-	ACTIVITY_CODE_1,
-	VTRSERNO,
-	LINK1,
-	STRATA,
-	STRATA_ASSUMED,
-	trans_rate,
-#	trans_rate_a,
-# BROAD_STOCK_RATE,
-	COAL_RATE,
-	DISCARD_SOURCE,
-	OBS_DISCARD,
-	EST_DISCARD,
-	DISCARD,
-	n_obs_trips,
-	CV,
-	eval(stratvars)
-	)
+db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_ROSETTESKATE_19', force = F)
 
-dw_apsd <- config::get(config = "apsd", file = "~/config_group.yml")
-# 
-# bcon <- dbConnect(odbc::odbc(), 
-# 									DSN = dw_maps$dsn, 
-# 									UID = dw_maps$uid, 
-# 									PWD = dw_maps$pwd)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_ROSETTESKATE_19', value = cy_discard_example, overwrite = T)
+
+ dbWriteTable(bcon
+              , cy_discard_example
+              , name ='CAMS_DISCARD_EXAMPLE_CY_butterfish_19'
+              , temporary = FALSE
+             , batch.rows = nrow(cy_discard_example)
+              ,overwrite=TRUE
+             # , append = TRUE)
+                ,field.types = c(
+                DATE_RUN = "VARCHAR2(30)"
+                  ,FY = "NUMBER(38,0)"
+                  ,SPECIES_ITIS_EVAL = "VARCHAR2(30)"
+                  ,COMMON_NAME = "VARCHAR2(30)"
+                  ,FY_TYPE = "VARCHAR2(30)"
+                  ,ACTIVITY_CODE_1 = "VARCHAR2(30)"
+                  ,VTSERNO = "VARCHAR2(30)"
+                  ,LINK1 = "VARCHAR2(30)"
+                  ,N_OBS_TRIPS_F = "NUMBER"
+                  ,STRATA_FULL = "VARCHAR2(30)"
+                  ,STRATA_ASSUMED = "VARCHAR2(30)"
+                  ,DISCARD_RATE = "NUMBER"
+                  ,DISCARD_SOURCE = "VARCHAR2(30)"
+                 ,OBS_DISCARD = "NUMBER"
+                 ,DISC_MORT_RATIO = "NUMBER"
+                ,DISCARD = "NUMBER"
+                 ,CV = "NUMBER"
+               ,SUBTRIP_KALL = "NUMBER"
+                 ,SPECIES_STOCK = "VARCHAR2(30)"
+                  ,CAMS_GEAR_GROUP = "VARCHAR2(30)"
+                  ,MESH_GROUP = "VARCHAR2(30)"
+                 ,HALFOFYEAR = "NUMBER"
+                  ,REGION = "VARCHAR2(30)"
+                  ,TRIPCATEGORY = "VARCHAR2(30)"
+                  ,ACCESSAREA = "VARCHAR2(30)"
+                 ,TRIP_TYPE = "VARCHAR2(30)")
+             )
+
+
+#connect to cams_garfo
+ dw_maps <- config::get(config = "cams_garfo", file = "~/config_group.yml")
+ 
 
 # Connect to database - move this to config file in the future - quick addition for server
   connectString <- paste(
     "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_apsd$host, ")(PORT=", dw_apsd$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_apsd$svc, ")))",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
     sep = ""
   )
 
 # Connect to oracle each loop in case of timeouts
     acon <- ROracle::dbConnect(
       drv = ROracle::Oracle(),
-      username = dw_apsd$uid,
-      password = dw_apsd$pwd,
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
       dbname = connectString
     )
+# create example table on MAPS
 
 
+# grant table to cams_garfo
+# dbSendQuery(bcon, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
 
-#modify so it produces these tables in the loop.
-db_drop_table(acon, 'CAMS_DISCARD_EXAMPLE_CY19')
+# create table ins cams_garfo
+db_drop_table(ccon, "CAMS_DISCARD_EXAMPLE_CY_stripedbass_19")
 
-dbWriteTable(acon, name = 'CAMS_DISCARD_EXAMPLE_CY19', value = db_example, overwrite = T)
+dbWriteTable(ccon, name = 'CAMS_DISCARD_EXAMPLE_CY_stripedbass_19', value = cy_discard_example, overwrite = T)
 
+# grant the cams_garfo table to cams_garfo_nefsc
+dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_stripedbass_19 TO CAMS_GARFO_FOR_NEFSC")
 
+# check it worked!
+tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_stripedbass_19"))
+
+tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_stripedbass_19"))
 ```
 
