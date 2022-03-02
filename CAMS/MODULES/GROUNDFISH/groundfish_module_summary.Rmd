@@ -34,26 +34,23 @@ This means a full accounting of groundfish discards occurs in several steps.
 
 1. pull all merged trips from CAMS_OBS_CATCH
 
-2. separate Groundfish trips from non-groundfish trips (Use VMS declaration `like 'NMS%'`)
+2. separate Groundfish trips from non-groundfish trips (Use CAMS `GF` column)
 
 3. Set stratification variables for groundfish trips
 
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c( 'SPECIES_STOCK'
+							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
-              # , 'CAREA'
               , 'SECTID'
-              , "PERMIT_EFP_1"
-              , "PERMIT_EFP_2"
-              , "PERMIT_EFP_3"
-              , "PERMIT_EFP_4"
+              , 'EM'  # previously was four columns of EFP information.. 
               , "REDFISH_EXEMPTION"
               , "SNE_SMALLMESH_EXEMPTION"
               , "XLRG_GILLNET_EXEMPTION"
-              ) 
+              )
 ```
 
 	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
@@ -136,7 +133,29 @@ ccon <- dbConnect(odbc::odbc(),
 									UID = condat$uid,
 									PWD = condat$pwd)
 
-db_example = tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19")) %>% 
+mapsdat <- config::get(value = "maps", file = "~/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = mapsdat$dsn, 
+									UID = mapsdat$uid, 
+									PWD = mapsdat$pwd)
+
+db_example = tbl(ccon, sql("
+  with gf as ( 
+		select a.*
+		, b.area
+		from cams_garfo.CAMS_DISCARD_EXAMPLE_GF19 a
+		left join (
+		    select distinct(vtrserno) as vtrserno
+		    , area 
+		    from maps.cams_catch
+		) b
+		on (a.vtrserno = b.vtrserno)
+		)
+		
+		select *
+		from gf 													 
+")) %>% 
 	collect()
 
 db_example %>% 
@@ -170,56 +189,296 @@ db_example %>%
 	dplyr::summarise(nvtr = n_distinct(VTRSERNO)
 									 , KALL = sum(SUBTRIP_KALL, na.rm = T)
 									 , DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
-	knitr::kable(format.args = list(big.mark = ",")) %>% 
-	kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+	DT::datatable(caption = 'Discard Estimate by Stock, Species, Discard Source (using CAMS Stock ID)') %>% 
+	DT::formatRound(c('nvtr','KALL','DISCARD'), digits = 0, interval = 3)
+	# 
+	# knitr::kable(format.args = list(big.mark = ",")) %>% 
+	# kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 ```
 
-```{r comaprison of gear stratifications}
+```{r DMIS CAMS DISCARD COMPARISON, echo = F}
+
+
+match_stockid <- function(bcon, species_itis){
+	
+	stock_dmis = tbl(bcon, sql("
+    select stock_id
+    , comname
+    , area
+    , max(species_itis) as species_itis
+    from fso.v_obSpeciesStockArea 
+    where stock_id not like 'OTHER'
+    and species_itis is not null
+    group by stock_id, comname, species_itis, area
+")
+) %>%
+	collect() %>% 
+		mutate(SPECIES_ITIS = ifelse(COMNAME == 'OCEAN POUT', "630979", SPECIES_ITIS)) %>% 
+		filter(SPECIES_ITIS == species_itis)
+	
+	 
+ t2 = 	tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+ filter(SPECIES_ITIS == species_itis) %>% 
+ 	collect() %>%
+ 	mutate('AREA' = as.character(STAT_AREA))
+ 
+ 
+ t2 %>% 
+ 	left_join(., stock_dmis, by = 'AREA') %>% 
+ 	mutate(CAMS_STOCK_AREA = paste(COMMON_NAME, AREA_NAME, sep = '_')) %>% 
+ 	dplyr::rename('DMIS_STOCK_ID' = STOCK_ID
+ 								, 'SPECIES_ITIS' = 'SPECIES_ITIS.x') %>% 
+ 	dplyr::select(-SPECIES_ITIS.y)
+	
+	
+}
+
+
+species = tbl(bcon, sql("
+select distinct(b.species_itis)
+    , COMNAME
+    , a.nespp3
+from fso.v_obSpeciesStockArea a
+left join (select *  from APSD.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+where stock_id not like 'OTHER'
+and b.species_itis is not null
+")
+) %>% 
+	collect()
+
+discard2019 = tbl(bcon, sql("
+select round(sum(POKGMASS_DISCARD)) POKGMASS
+,round(sum(CODGMSS_DISCARD)) CODGMSS
+,round(sum(CODGBE_DISCARD)) CODGBE
+,round(sum(CODGBW_DISCARD)) CODGBW
+,round(sum(FLDSNEMA_DISCARD)) FLDSNEMA
+,round(sum(FLWGB_DISCARD)) FLWGB
+,round(sum(FLWGMSS_DISCARD)) FLWGMSS
+,round(sum(PLAGMMA_DISCARD)) PLAGMMA
+,round(sum(YELCCGM_DISCARD)) YELCCGM
+,round(sum(HADGBW_DISCARD)) HADGBW
+,round(sum(WITGMMA_DISCARD)) WITGMMA
+-- ,round(sum(FLWGMSS_DISCARD)) FLWGMSS
+,round(sum(HALGMMA_DISCARD)) HALGMMA
+,round(sum(YELGB_DISCARD)) YELGB
+,round(sum(FLGMGBSS_DISCARD)) FLGMGBSS
+,round(sum(HKWGMMA_DISCARD)) HKWGMMA
+,round(sum(REDGMGBSS_DISCARD)) REDGMGBSS
+-- ,round(sum(FLWGB_DISCARD)) FLWGB
+,round(sum(HADGM_DISCARD)) HADGM
+,round(sum(OPTGMMA_DISCARD)) OPTGMMA
+,round(sum(WOLGMMA_DISCARD)) WOLGMMA
+,round(sum(FLWSNEMA_DISCARD)) FLWSNEMA
+,round(sum(HADGBE_DISCARD)) HADGBE
+-- ,round(sum(CODGBW_DISCARD)) CODGBW
+,round(sum(YELSNE_DISCARD)) YELSNE
+
+from apsd.dmis_all_years
+where fishing_year = 2019
+"))  %>% 
+  collect() %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(stock = row.names(.))
+
+names(discard2019)[1] = 'DMIS_DISCARD'
+
+discard2019$STOCK_ID = unlist(lapply(strsplit(discard2019$stock, split = '_'), function(x) x[[1]]))
+
+discard2019 = discard2019 %>% dplyr::select(-stock)
+
+
+# get CAMS estimates
+
+comp_list = NULL
+
+ii = 1
+
+for(j in species$SPECIES_ITIS){
+	
+	comp_list[[ii]] <- db_example %>% 
+		filter(SPECIES_ITIS_EVAL == j)
+	
+	sid = match_stockid(bcon, j) %>% 
+		dplyr::select(DMIS_STOCK_ID, AREA, CAMS_STOCK_AREA)
+	
+	comp_list[[ii]] = comp_list[[ii]] %>% 
+		left_join(sid, by = c('AREA')) %>% 
+		group_by(COMNAME_EVAL, CAMS_STOCK_AREA, DMIS_STOCK_ID) %>% 
+		dplyr::summarise(CAMS_DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
+		filter(!is.na(COMNAME_EVAL))
+	
+	ii = ii+1
+	
+}
+
+allgf_comp = do.call(rbind, comp_list) %>% 
+	filter(!is.na(CAMS_STOCK_AREA))
+
+# join to DMIS estimates
+
+dmis_comp = allgf_comp %>% 
+	group_by(COMNAME_EVAL, DMIS_STOCK_ID) %>% 
+	dplyr::summarise(CAMS_DISCARD = round(sum(CAMS_DISCARD, na.rm = T))) %>% 
+	left_join(., discard2019, by = c('DMIS_STOCK_ID' = 'STOCK_ID')) %>% 
+	mutate(DMIS_CAMS_DIFF = DMIS_DISCARD - CAMS_DISCARD
+				 , DMIS_CAMS_DIFF_PERC = (DMIS_DISCARD - CAMS_DISCARD)/DMIS_DISCARD) %>% 
+	dplyr::rename('COMMON_NAME' = 'COMNAME_EVAL')
+
+dmis_comp %>% 
+	DT::datatable(caption = 'DISCARD comparison, DMIS/CAMS (Uses DMIS Stock ID for summaries)') %>% 
+	formatPercentage('DMIS_CAMS_DIFF_PERC') %>% 
+	DT::formatRound(names(dmis_comp)[3:5], digits = 0, interval = 3)
+
+
+
+```
+
+
+```{r DMIS CAMS KALL Comparison}
+
+
+get_dmis_kall_stock <- function(bcon, species_itis){
+
+ t1 = tbl(bcon, sql("
+  select *
+  from apsd.dmis_all_years
+  where fishing_year = 2019
+  and activity_code like 'NMS%'
+   "
+ )
+)
+ 
+ t2 = 	tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+ filter(SPECIES_ITIS == species_itis)
+ 
+stock_dmis = tbl(bcon, sql("
+    select stock_id
+    , comname
+    , area
+    , max(species_itis) as species_itis
+    from fso.v_obSpeciesStockArea 
+    where stock_id not like 'OTHER'
+    and species_itis is not null
+    group by stock_id, comname, species_itis, area
+")
+) %>%
+	filter(SPECIES_ITIS == species_itis)
+
+
+
+t3 = tbl(bcon, sql("select *
+									 from MAPS.CAMS_CATCH
+									 where activity_code_1 like 'NMS%'
+									 AND RECORD_LAND >= '01-MAY-19'
+									 AND RECORD_LAND < '01-MAY-20'
+									 "
+									 )) %>% 
+	left_join(., t2, by = c('AREA' = 'STAT_AREA')) %>% 
+	filter(!is.na(AREA_NAME)) %>% 
+	group_by(AREA_NAME) %>% 
+	dplyr::summarise(KALL_CAMS = sum(LIVLB, na.rm = T))
+
+    # collect()
+ 
+ t1 %>% 
+ 	left_join(., t2, by= c('AREA' = 'STAT_AREA')) %>%
+ 	left_join(., stock_dmis, by = c('AREA' = 'AREA')) %>% 
+ 	filter(!is.na(STOCK_ID.y)) %>%   # don't use STOCK_ID.x... species specific stock to attribute catch 
+ 	group_by(STOCK_ID.y, AREA_NAME) %>%
+ 	# head() %>% 
+ 	dplyr::summarise(KALL_DMIS = round(sum(POUNDS, na.rm = T))) %>%
+ 	left_join(., t3, by = 'AREA_NAME') %>% 
+ 	collect() %>% 
+ 	mutate(SPECIES_ITIS = species_itis) %>% 
+ 	dplyr::rename('STOCK_ID_DMIS' = 'STOCK_ID.y', 'STOCK_ID_CAMS' = 'AREA_NAME')
+ 
+}
+
+# make the table 
+
+species = tbl(bcon, sql("
+select distinct(b.species_itis)
+    , COMNAME
+    , a.nespp3
+from fso.v_obSpeciesStockArea a
+left join (select *  from APSD.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+where stock_id not like 'OTHER'
+and b.species_itis is not null
+")
+) %>% 
+	collect()
+
+
+species$SPECIES_ITIS %>% 
+	as.list() %>%
+lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>% 
+	do.call(rbind, .) %>% 
+	mutate(KALL_DIFF = KALL_DMIS - KALL_CAMS
+				 , KALL_DIFF_PERC = round((KALL_DMIS - KALL_CAMS)/KALL_DMIS, 3)) %>% 
+	DT::datatable(.
+								# , extensions = 'Buttons'
+							 # , options = list(dom = 'frtipB', buttons = c('csv', 'excel'), autoWidth = TRUE)
+							 , filter = "top"
+						 	 , class = 'cell-border stripe'
+						 	 , rownames = FALSE
+							, caption = 'KALL comparison, DMIS/CAMS') %>% 
+	formatPercentage('KALL_DIFF_PERC') %>% 
+	DT::formatRound(c('KALL_DMIS','KALL_CAMS','KALL_DIFF'), digits = 0, interval = 3)
+
+```
+
+
+```{r comparison of gear stratifications}
 
 load('compare_gear_strata_gftrips19.Rdata')
 
 gearcodes %>% 
-	knitr::kable(format.args = list(big.mark = ",")
-							 , caption = "Gears used in OBS/CATCH merge (STG_SECGEAR_MAPPED)") %>% 
-	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+		DT::datatable(caption = 'Gears used in OBS/CATCH merge (STG_SECGEAR_MAPPED)')
+	# DT::formatRound(names(dmis_comp)[3:5], digits = 0, interval = 3)
+	# knitr::kable(format.args = list(big.mark = ",")
+	# 						 , caption = "Gears used in OBS/CATCH merge (STG_SECGEAR_MAPPED)") %>% 
+	#  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 
 CAMS_GEAR_STRATA %>% 
-	knitr::kable(format.args = list(big.mark = ",")
-							 , caption = "Gear mapping for discaRd: ocean pout example") %>% 
-	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+	DT::datatable(caption = 'Gear mapping for discaRd: Ocean Pout example')
+	# knitr::kable(format.args = list(big.mark = ",")
+	# 						 , caption = "Gear mapping for discaRd: ocean pout example") %>% 
+	#  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 
 
-res_cams_gear %>%
+# res_cams_gear %>%
 	# replace_na(replace = list(' ')) %>% 
-		knitr::kable(format.args = list(big.mark = ",")
-								 , caption = "Groundfish discard estimates using CAMS_GEAR_GROUP") %>% 
-	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+	# 	knitr::kable(format.args = list(big.mark = ",")
+	# 							 , caption = "Groundfish discard estimates using CAMS_GEAR_GROUP") %>% 
+	#  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-res_cams_gearcode %>% 
-		knitr::kable(format.args = list(big.mark = ",")
-								 , caption = "Groundfish discard estimates using SECGEAR_MAPPED (OBS/Catch categories)") %>% 
-	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+# res_cams_gearcode %>% 
+# 		knitr::kable(format.args = list(big.mark = ",")
+# 								 , caption = "Groundfish discard estimates using SECGEAR_MAPPED (OBS/Catch categories)") %>% 
+# 	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 
 bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select(-1,-2)) - (res_cams_gearcode %>% dplyr::select(-1,-2))) %>% 
 		knitr::kable(format.args = list(big.mark = ",")
-								 , caption = "Differnce in estimates between gear groupings") %>% 
+								 , caption = "Difference in estimates between using CAMS_GEAR_GROUP and SECGEAR_MAPPED gear groupings") %>% 
 	 kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 
 ```
 
+
 ### To-do 
 
 1. Check totals between CAMS/DMIS
-	- KALL
+	- KALL (*DONE*)
 	- d/k rates
 	- Observed discard totals
 
-2. complete code for non-groundfish trips in groundfish module. 
+2. Complete code for non-groundfish trips in groundfish module. 
 	- combine with previous work (or not) so we have a full set of trips for each groundfish stock
 	- Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
 
@@ -229,11 +488,15 @@ bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select
 4. Incorporate EM (including MREM) records is using those values for discard amounts. This should be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
 	- how to deal with adjustment of KALL on MREM trips?
 
-### Issues and Observations
+### Results/Discussion
 
 - Discard totals for CAMS are generally much lower than DMIS. 
 	- It is difficult to check rates as the strata between DMIS and CAMS are not identical. CAMS uses new meshgroupings as well as CAMS_GEAR_GROUP. 
 	
-	- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences (see above tables)
+		- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences (see above tables)
+	
+	- A potentially major diversion between DMIS and CAMS groundfish stratification is that Quota Monitoring (DMIS) uses stock area defined biologically and parses out the designations (STOCK_ID) in tables above AFTER estimating discards. It is not used as a stratifcation variable for the species. For example, Eastern Georges Bank (EGB) is CAMS Strata. Although DMIS has a separate total for EGB, this is parsed out from the entire Geroges Bank stock. This differential stratification is the most likely source that explains differnces in estimates. Stocks that havea singular STOCK_ID (e.g. Pollock), are fairly close in their DMIS/CAMS discard estimates. 
+	
+
 
 
