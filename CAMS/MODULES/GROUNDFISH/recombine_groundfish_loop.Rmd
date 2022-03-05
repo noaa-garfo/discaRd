@@ -1261,6 +1261,7 @@ nongf_res_list[[1]] %>%
 	View()
 
 # look at discard total for all non-GF trips
+
 lapply(nongf_res_list, function(x) 
 	data.frame(D = round(sum(x$DISCARD, na.rm = T)))) %>% 
 	plyr::ldply() %>% 
