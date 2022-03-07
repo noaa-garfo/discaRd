@@ -542,8 +542,8 @@ trans_rate_df = trans_rate_df %>%
 print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
  
 stratvars_assumed = c("SPECIES_STOCK"
-											# , "CAMS_GEAR_GROUP"
-											, "GEARCODE"
+											, "CAMS_GEAR_GROUP"
+											# , "GEARCODE"
 											, "MESHGROUP"
 											, "SECTOR_TYPE")
 
@@ -702,6 +702,21 @@ joined_table = joined_table %>%
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
+# Make note of the stratification variables used according to discard source
+
+strata_f = paste(stratvars, collapse = ';')
+strata_a = paste(stratvars_assumed, collapse = ';')
+strata_b = stratvars[1]
+
+joined_table = joined_table %>% 
+	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
+												, DISCARD_SOURCE == 'I' ~ strata_f
+												, DISCARD_SOURCE == 'T' ~ strata_f
+												, DISCARD_SOURCE == 'A' ~ strata_a
+												, DISCARD_SOURCE == 'B' ~ strata_b
+												) 
+				 )
+
 #-----------------------------------------------------------------------
 # get the discard for each trip using COAL_RATE}
 #-----------------------------------------------------------------------
@@ -727,7 +742,8 @@ joined_table %>%
 # save trip by trip info to RDS 
 #-------------------------------------------------------------
 
-saveRDS(joined_table, file = paste0('OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS'))
+saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
+)
  t2 = Sys.time()
 	
 print(paste(species_itis, ' RAN IN ', round(t2-t1, 2), ' SECONDS',  sep = ''))
@@ -737,7 +753,7 @@ print(paste(species_itis, ' RAN IN ', round(t2-t1, 2), ' SECONDS',  sep = ''))
 ```
 
 ```{r loop through the non sector trips for each stock, eval = F}
-stratvars = c('SPECIES_STOCK'
+stratvars_nongf = c('SPECIES_STOCK'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						  , 'TRIPCATEGORY'
@@ -898,7 +914,7 @@ d_prev = run_discard(bdat = bdat_prev_non_gf
 											 , ddat = ddat_prev_non_gf
 											 , c_o_tab = ddat_prev
 										   , species_itis = species_itis
-											 , stratvars = stratvars
+											 , stratvars = stratvars_nongf
 											 # , aidx = c(1:length(stratvars))
 										   , aidx = c(1:2) # uses GEAR as assumed
 											 )
@@ -909,7 +925,7 @@ d_focal = run_discard(bdat = bdat_non_gf
 											 , ddat = ddat_focal_non_gf
 											 , c_o_tab = ddat_focal
 											 , species_itis = species_itis
-											 , stratvars = stratvars
+											 , stratvars = stratvars_nongf
 											 # , aidx = c(1:length(stratvars))  # this makes sure this isn't used.. 
 											 , aidx = c(1:2) # uses GEAR as assumed
 											 )
@@ -990,15 +1006,15 @@ trans_rate_df = trans_rate_df %>%
  
 BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_non_gf
 																					 , species_itis = species$SPECIES_ITIS[i]
-																					 , stratvars = stratvars[1]) %>% 
+																					 , stratvars = stratvars_nongf[1]) %>% 
  	mutate(SPECIES_STOCK = STRATA
- 				 , STRAT_DESC = paste(stratvars[1], sep = '-')) %>% 
+ 				 , STRAT_DESC = paste(stratvars_nongf[1], sep = '-')) %>% 
  	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
  	dplyr::select(-STRATA, -KALL, -BYCATCH)
  
 print(paste0("Constructing output table for ", species_itis, " ", FY)) 
 
-joined_table = assign_strata(full_strata_table, stratvars) %>% 
+joined_table = assign_strata(full_strata_table, stratvars_nongf) %>% 
 	# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	# dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 	# left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
@@ -1059,6 +1075,23 @@ joined_table = joined_table %>%
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
+
+# Make note of the stratification variables used according to discard source
+
+strata_nongf = paste(stratvars_nongf, collapse = ';')
+strata_nongf_a = paste(stratvars_nongf[1:2], collapse = ';')
+strata_nongf_b = stratvars_nongf[1]
+
+joined_table = joined_table %>% 
+	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
+												, DISCARD_SOURCE == 'I' ~ strata_nongf
+												, DISCARD_SOURCE == 'T' ~ strata_nongf
+												, DISCARD_SOURCE == 'A' ~ strata_nongf_a
+												, DISCARD_SOURCE == 'B' ~ strata_nongf_b
+												) 
+				 )
+
+
 #-----------------------------------------------------------------------
 # get the discard for each trip using COAL_RATE}
 #-----------------------------------------------------------------------
@@ -1083,12 +1116,119 @@ print(paste(species_itis, ' RAN IN ', round(t2-t1, 2), ' SECONDS',  sep = ''))
 
 
 
+```
+
+```{r combine gf and non-gf trips, eval = T}
+gf_res_list = NULL
+nongf_res_list = NULL
+
+ii = 1
+
+for(j in species$SPECIES_ITIS){
+
+	gf_res_list[[ii]] <- readRDS(paste0("OUTPUT/discard_est_", j, "_gftrips_only.RDS"))
+	nongf_res_list[[ii]] <- readRDS(paste0("OUTPUT/discard_est_", j, "_non_gftrips.RDS"))
+	ii = ii+1
+
+}
 
 ```
 
+```{r build the tables and save, eval = T}
+# build vector of all possible stratifications usded above
+strata_unique = c(stratvars, stratvars_assumed, stratvars_nongf) %>% unique()
 
 
-```{r pivot all results into one table }
+outlist = NULL
+
+for(i in 1:length(gf_res_list)){
+	tmp = gf_res_list[[i]] %>% 
+		bind_rows(., nongf_res_list[[i]])
+	
+	tmp = tmp %>% 
+		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+								, 'CAMS_DISCARD_RATE' = 'COAL_RATE') %>% 
+	mutate(DATE_RUN = as.character(Sys.Date())
+				 , FY = as.integer(FY)) %>%
+	dplyr::select(
+		DATE_RUN,
+		FY,
+		SPECIES_ITIS_EVAL,
+		COMNAME_EVAL,
+		FY_TYPE,
+		ACTIVITY_CODE_1,
+		VTRSERNO,
+		CAMSID,
+		TRIP_TYPE,
+		GF,
+		AREA,
+		LINK1,
+		n_obs_trips_f,
+		STRATA_USED,
+		STRATA_FULL,
+		STRATA_ASSUMED,
+		DISCARD_SOURCE,
+		OBS_DISCARD,
+		SUBTRIP_KALL,
+		# trans_rate,
+		# trans_rate_a,
+		BROAD_STOCK_RATE,
+		CAMS_DISCARD_RATE,
+		DISC_MORT_RATIO,
+		DISCARD,
+		CV,
+	  eval(strata_unique)
+	)
+	
+names(tmp) = toupper(names(tmp))	
+	
+outlist[[i]] = tmp
+rm(tmp)
+
+}
+
+# unlist
+
+rm(nongf_res_list, gf_res_list)
+
+outlist = do.call(rbind, outlist)
+
+```
+
+```{r upload table of GF and nonGF}
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon <- dbConnect(odbc::odbc(),
+									DSN = condat$dsn,
+									UID = condat$uid,
+									PWD = condat$pwd)
+
+# create example table on MAPS
+db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_GF19', force = F)
+
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = gf_discard_example, overwrite = T)
+
+# grant table to cams_garfo
+# dbSendQuery(bcon, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
+
+# create table ins cams_garfo
+db_drop_table(ccon, "CAMS_DISCARD_EXAMPLE_GF19")
+
+dbWriteTable(ccon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist, overwrite = T)
+
+# grant the cams_garfo table to cams_garfo_nefsc
+dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
+
+# check it worked!
+tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19"))
+
+tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
+
+
+```
+
+```{r pivot all results into one table, eval = F }
 
 res_list = NULL
 
@@ -1141,11 +1281,9 @@ allgf %>%
 	pivot_wider(c('VTRSERNO', 'GF_STOCK_DEF','DISCARD'), names_from = 'GF_STOCK_DEF', values_from = 'DISCARD')
 
 
-
-
 ```
 
-```{r table output example}
+```{r table output example, eval = F}
 
 gf_discard_example = allgf %>%
 	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
@@ -1183,76 +1321,7 @@ names(gf_discard_example) = toupper(names(gf_discard_example))
 
 ```
 
-```{r upload example table}
-condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
-
-ccon <- dbConnect(odbc::odbc(),
-									DSN = condat$dsn,
-									UID = condat$uid,
-									PWD = condat$pwd)
-
-# create example table on MAPS
-db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_GF19', force = F)
-
-dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = gf_discard_example, overwrite = T)
-
-# grant table to cams_garfo
-# dbSendQuery(bcon, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
-
-# create table ins cams_garfo
-db_drop_table(ccon, "CAMS_DISCARD_EXAMPLE_GF19")
-
-dbWriteTable(ccon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = gf_discard_example, overwrite = T)
-
-# grant the cams_garfo table to cams_garfo_nefsc
-dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
-
-# check it worked!
-tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19"))
-
-tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
-
-
-```
-
-```{r diagnostic plots, eval = F}
-
-db_example %>% 
-	filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
-	slice(1) %>% 
-	ggplot()+
-	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
-	facet_wrap(~COMNAME_EVAL, scales = 'free')+
-	theme_light()
-
-db_example %>% 
-	# filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
-	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
-	# slice(1) %>% 
-	ggplot()+
-	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
-	facet_wrap(~COMNAME_EVAL, scales = 'free')+
-	theme_light()
-
-
-```
-
-```{r combine gf and non-gf trips}
-gf_res_list = NULL
-nongf_res_list = NULL
-
-ii = 1
-
-for(j in species$SPECIES_ITIS){
-
-	gf_res_list[[ii]] <- readRDS(paste0("OUTPUT/discard_est_", j, "_gftrips_only.RDS"))
-	nongf_res_list[[ii]] <- readRDS(paste0("OUTPUT/discard_est_", j, "_non_gftrips.RDS"))
-	ii = ii+1
-
-}
-
+```{r nongf diagnostics, eval = F}
 # look at rates for cod
 
 nongf_res_list[[1]] %>% 
@@ -1296,51 +1365,32 @@ for(i in 1:length(species$SPECIES_ITIS)){
 do.call(rbind, bind_summary) %>% 
 	View()
 
-# build the tables and save
-
-for(i in 1:length(gf_res_list)){
-	tmp = gf_res_list[[i]] %>% 
-		bind_rows(., nongf_res_list[[i]])
-	
-	tmp %>% 
-		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-								, 'DISCARD_RATE' = 'COAL_RATE') %>% 
-	mutate(DATE_RUN = as.character(Sys.Date())
-				 , FY = as.integer(FY)) %>%
-	dplyr::select(
-		DATE_RUN,
-		FY,
-		SPECIES_ITIS_EVAL,
-		COMNAME_EVAL,
-		FY_TYPE,
-		ACTIVITY_CODE_1,
-		VTRSERNO,
-		LINK1,
-		n_obs_trips_f,
-		STRATA_FULL,
-		STRATA_ASSUMED,
-		# trans_rate,
-		# trans_rate_a,
-		BROAD_STOCK_RATE,
-		DISCARD_RATE,
-	
-		DISCARD_SOURCE,
-		OBS_DISCARD,
-		DISC_MORT_RATIO,
-		DISCARD,
-		CV,
-		SUBTRIP_KALL, 
-		eval(stratvars)
-	)
-	
-}
-
-
-
 
 ```
 
+```{r diagnostic plots, eval = F}
+
+db_example %>% 
+	filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
+	slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+
+db_example %>% 
+	# filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	theme_light()
+
+
+```
 
 
 
