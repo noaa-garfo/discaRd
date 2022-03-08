@@ -1192,11 +1192,54 @@ rm(tmp)
 
 rm(nongf_res_list, gf_res_list)
 
-outlist = do.call(rbind, outlist)
+outlist_df = do.call(rbind, outlist)
 
 ```
 
-```{r upload table of GF and nonGF}
+```{r upload tables of GF and nonGF individually}
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon <- dbConnect(odbc::odbc(),
+									DSN = condat$dsn,
+									UID = condat$uid,
+									PWD = condat$pwd)
+
+for(i in 1:nrow(species)){
+	
+	tname = paste0('CAMS_DISCARD_EXAMPLE_'
+								 ,stringr::str_remove_all(species$COMNAME[i], pattern = "[/, ]")
+								 ,'_19')
+	
+		# tname = paste0('CAMS_DISCARD_EXAMPLE_'
+		# 						 ,species$SPECIES_ITIS[i]
+		# 						 ,'_19')
+	# tname_cgfn = paste0('CAMS_DISCARD_EXAMPLE_',species$SPECIES_ITIS[i],'_19')
+		
+	# create example table on MAPS
+	db_drop_table(con = bcon, table = tname, force = F)
+	
+	# dbWriteTable(bcon, name = tname, value = outlist[[i]], overwrite = T)
+	
+	# create table ins cams_garfo
+	db_drop_table(ccon, tname)
+	
+	# dbWriteTable(ccon, name = tname, value = outlist[[i]], overwrite = T)
+	
+	# grant the cams_garfo table to cams_garfo_nefsc
+	# dbSendQuery(ccon, statement = paste0("GRANT SELECT ON ", tname," TO CAMS_GARFO_FOR_NEFSC"))
+	
+	# tbl(bcon, sql(paste0("select * from ", tname)))
+	
+	# tbl(ccon, sql(paste0("select * from ", tname)))
+
+
+}
+
+
+```
+
+
+```{r upload table of GF and nonGF all at once}
 condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
 
 ccon <- dbConnect(odbc::odbc(),
@@ -1207,7 +1250,7 @@ ccon <- dbConnect(odbc::odbc(),
 # create example table on MAPS
 db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_GF19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = gf_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist_df, overwrite = T)
 
 # grant table to cams_garfo
 # dbSendQuery(bcon, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
@@ -1215,7 +1258,7 @@ dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = gf_discard_exampl
 # create table ins cams_garfo
 db_drop_table(ccon, "CAMS_DISCARD_EXAMPLE_GF19")
 
-dbWriteTable(ccon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist, overwrite = T)
+dbWriteTable(ccon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist_df, overwrite = T)
 
 # grant the cams_garfo table to cams_garfo_nefsc
 dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
