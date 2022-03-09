@@ -285,13 +285,8 @@ stratvars = c( 'SPECIES_STOCK'
 							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
-              # , 'CAREA'
               , 'SECTID'
               , 'EM'
-              # , "PERMIT_EFP_1"
-              # , "PERMIT_EFP_2"
-              # , "PERMIT_EFP_3"
-              # , "PERMIT_EFP_4"
               , "REDFISH_EXEMPTION"
               , "SNE_SMALLMESH_EXEMPTION"
               , "XLRG_GILLNET_EXEMPTION"
@@ -1134,7 +1129,7 @@ for(j in species$SPECIES_ITIS){
 
 ```
 
-```{r build the tables and save, eval = T}
+```{r build the RDS tables and save, eval = T}
 # build vector of all possible stratifications usded above
 strata_unique = c(stratvars, stratvars_assumed, stratvars_nongf) %>% unique()
 
