@@ -213,7 +213,7 @@ rm(c_o_dat2, fed_trips, state_trips)
 
 ```
 
-```{r define fishing year and species, eval = T}
+```{r define fishing year and species and run RMD as a script, eval = T}
 
 # species_nespp3 = '012'  # monkfish
 # species_nespp3 = '335'  # black seabass
@@ -255,11 +255,11 @@ for(jj in 2019){
 ```{r combine all results for a given year, eval = F, purl = F}
 #build one big table for a FY
 
-for (FY in 2018:2019){
+for (FY in 2019){
 
 assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.RDS'), full.names = T))
 
-cat(resfiles)			 
+# cat(resfiles)			 
 
 res = lapply(as.list(resfiles), function(x) readRDS(x))
 
