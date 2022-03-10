@@ -327,4 +327,31 @@ CAMS discard estimate for Haddock 2019
 DMIS estimate for Haddock 2019
 
 -   EGB shows the highest % difference (~75%) while the others show ~25% difference.
--
+
+
+## Feb 9, 2022
+
+## March 10, 2022
+updates to groundfish and general process for table output as it relates to [CAMS 52](https://www.fisheries.noaa.gov/jira/browse/CAMSNR-52)
+
+### Groundfish module
+
+in order to produce something comparable to calendar year 2019, we need to span two groundfish years (2018 and 2019). In order to estimate discards for GF year 2018, we need landings for calendar year 2017.
+
+
+### Output tables
+Structural changes are necessary for combining results for different species and across various modules. Changes were requested so various time periods may be easily extracted.
+
+- remove all individual strata columns.
+- add `MONTH`, `YEAR`, `CAMSID`, `AREA`
+- use `COMMON_NAME`, `SPECIES_ITIS` to denote species estimated
+
+These changes must be reflected in all module builds. To assist both this, and to facilitate fast and efficient estimation for many species, a control script process has been initiated.  
+
+#### use of control script
+This process does several things. It begins with the ingestion of a large amount, at the beginning of the process, that may be used across a range of estimations (e.g. groundfish and calendar year or years). Since the modules have been built as RMarkdown, there exists a smooth process for converting them to an R script on the fly. The table output happens at the end of the control script. This process has several distinct advantages:
+
+1. ingest large amount of data once
+2. follow individual protocols contained in modules
+3. generate commonly structured tables inline with the process
+4. run multiple years in a loop (or vectorized)  

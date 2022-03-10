@@ -1,0 +1,371 @@
+---
+title: "Run multiple years/modules"
+output:
+  pdf_document: 
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+  bookdown::pdf_book:
+    includes:
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    keep_tex: yes
+  html_document:
+    df_print: paged
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+urlcolor: cyan
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE
+											, warning = FALSE
+											, message = FALSE
+											, cache = FALSE
+											, progress = TRUE
+											, verbose = FALSE
+											, comment = F
+											, error = FALSE
+											, dev = 'png'
+											, dpi = 200
+											, prompt = F
+											, results='hide')
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r setup, eval = T}
+
+# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
+
+library(odbc)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+# library(config)
+library(stringr)
+library(discaRd)
+options(scipen = 999)
+
+# local run
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+# if on server..
+dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = dw_apsd$dsn, 
+									UID = dw_apsd$uid, 
+									PWD = dw_apsd$pwd)
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+source('~/PROJECTS/discaRd/CAMS/R/cams_discard_functions.R')
+
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
+
+```
+
+```{r get obs and catch data from oracle, eval = T}
+
+# get catch and matched obs data together
+
+c_o_dat2 <- tbl(bcon, sql(
+" with obs_cams as (
+   select year
+	, month
+  , PERMIT
+	, case when month in (5,6,7,8,9,10) then 1
+	       when month in (11,12,1,2,3,4) then 2
+	       end as halfofyear
+	-- , carea
+  , AREA
+	, vtrserno
+	, link1
+	, docid
+	, CAMSID
+	, nespp3
+  , itis_tsn as SPECIES_ITIS
+  , itis_group1
+    , SECGEAR_MAPPED as GEARCODE
+	, NEGEAR
+	, GEARTYPE
+	, MESHGROUP
+	, SECTID
+  , GF
+, case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
+       when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
+			 else 'non_GF' end as SECTOR_TYPE
+, case when PERMIT = '000000' then 'STATE'
+       else 'FED' end as trip_type
+	, tripcategory
+	, accessarea
+	, activity_code_1
+  --, permit_EFP_1
+  --, permit_EFP_2
+  --, permit_EFP_3
+  --, permit_EFP_4
+  , EM
+  , redfish_exemption
+	, closed_area_exemption
+	, sne_smallmesh_exemption
+	, xlrg_gillnet_exemption
+	, NVL(sum(discard),0) as discard
+	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
+	, NVL(round(max(obs_kall)),0) as obs_kall
+	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
+	from MAPS.CAMS_OBS_CATCH
+	group by year
+  -- , carea
+  , AREA
+  , PERMIT
+	, vtrserno
+	, link1
+	, docid
+	, nespp3	
+  , itis_tsn
+  , itis_group1
+    , SECGEAR_MAPPED
+	, NEGEAR
+	, GEARTYPE
+	, MESHGROUP
+	, SECTID
+  , GF
+  , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
+       when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
+			 else 'non_GF' end
+  , case when PERMIT = '000000' then 'STATE'
+       else 'FED' end
+  , CAMSID
+  , month
+	, halfofyear
+	, tripcategory
+	, accessarea
+	, activity_code_1
+  --  , permit_EFP_1
+  --, permit_EFP_2
+  --, permit_EFP_3
+  --, permit_EFP_4
+  , EM
+  , redfish_exemption
+	, closed_area_exemption
+	, sne_smallmesh_exemption
+	, xlrg_gillnet_exemption
+	order by vtrserno asc
+    ) 
+
+  select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
+  , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
+  , o.*
+  , c.match_nespp3
+  , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
+  from obs_cams o
+  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3         
+        
+"
+  )) %>%
+	collect() 
+
+
+state_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'STATE')
+fed_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'FED')
+
+fed_trips = fed_trips %>% 
+	mutate(ROWID = 1:nrow(fed_trips)) %>% 
+	relocate(ROWID)
+
+# filter out link1 that are doubled on VTR
+
+multilink = fed_trips %>% 
+	filter(!is.na(LINK1)) %>% 
+	group_by(VTRSERNO) %>% 
+	dplyr::summarise(nlink1 = n_distinct(LINK1)) %>% 
+	arrange(desc(nlink1)) %>% 
+	filter(nlink1>1)
+
+remove_links = fed_trips %>% 
+	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
+	dplyr::select(LINK1) %>% 
+	distinct()
+
+remove_id = fed_trips %>% 
+    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
+	  distinct(ROWID)
+
+fed_trips =
+	fed_trips %>% 
+	filter(ROWID %!in% remove_id$ROWID)
+
+non_gf_dat = fed_trips %>% 
+	filter(GF == 0) %>% 
+	bind_rows(., state_trips) %>% 
+	mutate(GF = "0")
+
+gf_dat = fed_trips%>% 
+	filter(GF == 1)
+
+rm(c_o_dat2, fed_trips, state_trips)
+
+```
+
+```{r define fishing year and species and run RMD as a script, eval = T}
+
+# species_nespp3 = '012'  # monkfish
+# species_nespp3 = '335'  # black seabass
+
+# define species stock if needed
+# species_stock = 'GOM'  # GOM cod
+
+# if using a unit stock, make this NULL!!
+species_stock = NA  # all unit stocks
+
+# FY <- 2019
+FY_TYPE = 'MAY START'
+
+#--------------------------------------------------------------------------#
+# group of species
+species = tbl(bcon, sql("
+select distinct(b.species_itis)
+    , COMNAME
+    , a.nespp3
+from fso.v_obSpeciesStockArea a
+left join (select *  from APSD.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+where stock_id not like 'OTHER'
+and b.species_itis is not null
+")
+) %>% 
+	collect()
+
+# make a script from RMD.. 
+knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
+
+# run two years worth of GF
+for(jj in 2019){
+	FY <- jj
+  source('recombine_groundfish_loop.R')
+	}
+
+```
+
+```{r combine all results for a given year, eval = F, purl = F}
+#build one big table for a FY
+
+for (FY in 2019){
+
+assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.RDS'), full.names = T))
+
+# cat(resfiles)			 
+
+res = lapply(as.list(resfiles), function(x) readRDS(x))
+
+outlist <- lapply(res, function(x) { 
+		x %>% 
+		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
+								, 'COMMON_NAME' = 'COMNAME_EVAL'
+								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
+								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
+								) %>% 
+	mutate(DATE_RUN = as.character(Sys.Date())
+				 , FY = as.integer(FY)) %>%
+	dplyr::select(
+		DATE_RUN,
+		FY,
+		YEAR,
+		MONTH,
+		SPECIES_ITIS,
+		COMMON_NAME,
+		FY_TYPE,
+		ACTIVITY_CODE,
+		VTRSERNO,
+		CAMSID,
+		TRIP_TYPE,
+		GF,
+		AREA,
+		LINK1,
+		N_OBS_TRIPS_F,
+		STRATA_USED,
+		STRATA_FULL,
+		STRATA_ASSUMED,
+		DISCARD_SOURCE,
+		OBS_DISCARD,
+		SUBTRIP_KALL,
+		BROAD_STOCK_RATE,
+		CAMS_DISCARD_RATE,
+		DISC_MORT_RATIO,
+		DISCARD,
+		CV
+	  # eval(strata_unique)
+	)
+	
+}
+)
+
+rm(res)
+		
+assign(paste0('outlist_df_',FY),  do.call(rbind, outlist))
+
+rm(outlist)
+
+}
+
+```
+
+```{r upload}
+# create tables on MAPS
+
+for(i in 18:19){
+	t1 = Sys.time()
+
+	db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
+
+	dbWriteTable(bcon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_',FY)), overwrite = T)
+	
+	t2 =  Sys.time()
+	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
+
+}
+
+
+# create tables on cams_garfo
+
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon <- dbConnect(odbc::odbc(),
+									DSN = condat$dsn,
+									UID = condat$uid,
+									PWD = condat$pwd)
+
+for(i in 18:19){
+
+	t1 = Sys.time()
+
+	db_drop_table(con = ccon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
+
+	dbWriteTable(ccon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_',FY)), overwrite = T)
+	t2 =  Sys.time()
+	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
+
+}
+
+# grant the cams_garfo table to cams_garfo_nefsc
+dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18 TO CAMS_GARFO_FOR_NEFSC")
+
+dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
+
+# check it worked!
+tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19"))
+tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF18"))
+
+tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
+tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18"))
+
+```
