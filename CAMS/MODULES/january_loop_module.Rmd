@@ -93,7 +93,7 @@ FY_TYPE = 'JAN START'
 # black seabass and scup.
 #Not sure what else is needed for herring and shad catch cap.
 
- species_nespp3 = c('212','801','802','051', '170',
+ species_nespp3 = c('801','802','051', '170',
                     '023', '121', '335', '329')  # Calendar year
  
  # species_nespp3 = c('418')
