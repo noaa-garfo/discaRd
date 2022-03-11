@@ -118,7 +118,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(sum(discard),0) as discard
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
+	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
 	group by year
   -- , carea
@@ -245,7 +245,7 @@ and b.species_itis is not null
 knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2019){
+for(jj in 2018){
 	FY <- jj
   source('recombine_groundfish_loop.R')
 	}
@@ -255,8 +255,10 @@ for(jj in 2019){
 ```{r combine all results for a given year, eval = F, purl = F}
 #build one big table for a FY
 
-for (FY in 2019){
+for (FY in 18:19){
 
+t1 = Sys.time()	
+	
 assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.RDS'), full.names = T))
 
 # cat(resfiles)			 
@@ -315,6 +317,10 @@ assign(paste0('outlist_df_',FY),  do.call(rbind, outlist))
 
 rm(outlist)
 
+t2 = Sys.time()
+
+print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+
 }
 
 ```
@@ -337,7 +343,7 @@ for(i in 18:19){
 
 # create tables on cams_garfo
 
-condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+condat <- config::get(value = "cams_garfo", file = "~/config.yml")
 
 ccon <- dbConnect(odbc::odbc(),
 									DSN = condat$dsn,
