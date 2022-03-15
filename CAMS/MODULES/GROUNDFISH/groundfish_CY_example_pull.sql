@@ -10,6 +10,8 @@ Ben Galuardi
 
 run from MAPS or CAMS_GARFO
 
+here, this selects only Federal Groundfish Ocean Pout trips; change the selection to expand
+
 */
 
 with gf as (
@@ -32,9 +34,23 @@ from gf g
 
 left join (select * from CAMS_GARFO.cams_statarea_stock) s
 on (g.species_itis = s.species_itis and g.area = s.stat_area) -- this gets the stockID strata
-left join CAMS_GARFO.CAMS_CFDETT2019AA c
+
+left join (
+   select  negear
+    ,  mesh_cat
+    , camsid
+    , VSERIAL
+    from  CAMS_GARFO.CAMS_CFDETT2019AA
+    group by negear
+    ,  mesh_cat
+    , camsid
+    , VSERIAL
+) c
 on (c.CAMSID = g.CAMSID AND c.VSERIAL = g.VTRSERNO)  -- this gets many other trip attributes
 
+WHERE g.common_name = 'OCEAN POUT'
+AND GF = 1
+AND TRIP_TYPE = 'FED'  
 
 group by  g.common_name
     , s.area_name

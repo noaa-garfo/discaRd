@@ -60,6 +60,13 @@ with ulink as (
  select distinct(link1) link1 
  from obdbs.obtrp@NOVA
  where tripext in ('C','X')
+ 
+  union all
+ 
+ select distinct(link1) link1 
+ from obdbs.asmtrp@NOVA
+ where tripext in ('C','X')
+ 
 -- and year >= 2018
 )
  
