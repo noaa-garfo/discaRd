@@ -355,3 +355,15 @@ This process does several things. It begins with the ingestion of a large amount
 2. follow individual protocols contained in modules
 3. generate commonly structured tables inline with the process
 4. run multiple years in a loop (or vectorized)  
+
+## March 11, 2022
+
+uploaded groundfish tables 
+`CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18`
+`CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19`
+
+Please note that
+- for `COD` that lobster pots should have discard = 0. This has not been implemented programmatically as of 3/11/22.
+- Scallop trip based estiamtes for `Yellowtail` and `Windowpane` flounder stocks has *NOT* been implemented yet.
+
+an example script for compiling a calendar year table, along with additional trip attributes, is provided `groundifsh_CY_example_pull.sql`
