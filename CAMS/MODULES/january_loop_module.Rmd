@@ -34,7 +34,7 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 t1 = Sys.time()
 
 # setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
-
+library(tidyverse)
 library(odbc)
 library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
@@ -42,7 +42,8 @@ library(dbplyr)
 library(ggplot2)
 # library(config)
 library(stringr)
-library(discaRd)
+#library(discaRd)
+devtools::load_all()
 options(scipen = 999)
 
 # local run
@@ -92,28 +93,34 @@ FY_TYPE = 'JAN START'
 # SMB, river herring, bluefish, summer flounder, 
 # black seabass and scup.
 #Not sure what else is needed for herring and shad catch cap.
-
- species_nespp3 = c('801','802','051', '170',
-                    '023', '121', '335', '329')  # Calendar year
+ itis <-  c('167687',
+        '168559',
+        '172567',
+        '082372',
+         '172414',
+          '082521')  # 
  
- # species_nespp3 = c('418')
+ #itis <- itis
+ itis_num <- as.numeric(itis)
  
- #Need to add river herring/shad for herring only trips... maybe it is its own module?
- #AND all the SBRM species
 
  species = tbl(bcon, sql("select *
-												from MAPS.CFG_ITIS")) %>% 
+												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+   
 	collect() %>% 
-	filter(DLR_NESPP3 %in% species_nespp3)
+  
+	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+  slice(1)
  
-species$ITIS_TSN <- as.numeric(species$SRCE_ITIS_TSN)
- species$ITIS_TSN <- as.character(species$ITIS_TSN)
+ species$ITIS_TSN <- str_sort(itis)
+ 
+#species$ITIS_TSN <- as.numeric(species$SPECIES_ITIS)
+# species$ITIS_TSN <- as.character(species$SPECIES_ITIS)
 
 #--------------------------------------------------------------------------#
 # a sumamry table for comaprison
 
-final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$SRCE_SCI_NAME, COMNAME = species$ITIS_NAME, DISCARD = NA)
-
+# final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$ITIS_TSN, COMNAME = species$COMMON_NAME, DISCARD = NA)
 #--------------------------------------------------------------------------#
 
 ```
@@ -160,7 +167,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(sum(discard),0) as discard
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	, NVL(sum(discard)/round(max(obs_kall)), 0) as dk
+	, NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
 --	where nespp3 is not null
 	group by year
@@ -262,15 +269,16 @@ stratvars = c('SPECIES_STOCK'
 
 # Begin loop
 
-for(i in 1:length(species$ITIS_TSN)){
 
-print(paste0('Running ', species$ITIS_NAME[i]))	
+for(i in 1:length(species$ITIS)){
+
+print(paste0('Running ', species$COMMON_NAME[i]))	
 	
 # species_nespp3 = species$NESPP3[i]  
 #species_itis = species$ITIS_TSN[i] 
 
-species_itis <- as.character(species$SRCE_ITIS_TSN[i])
-species_itis_srce = as.character(as.numeric(species$SRCE_ITIS_TSN[i]))
+species_itis <- as.character(species$ITIS_TSN[i])
+species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 #--------------------------------------------------------------------------#
 # Support table import by species
 
@@ -286,7 +294,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 # unique stat areas for stock ID if needed
 STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-	filter(SPECIES_ITIS == species_itis) %>%
+	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
   group_by(AREA_NAME) %>% 
   distinct(STAT_AREA) %>%
@@ -488,7 +496,7 @@ trans_rate_df = dest_strata_f %>%
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , COMNAME_EVAL = species$COMMON_NAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>%
    
@@ -502,20 +510,20 @@ trans_rate_df = dest_strata_f %>%
     																	, is.na(LINK1) & n_obs_trips < 5 &
     																		n.y < 5 ~ 'A'))
  
+ 
  final_table = final_table %>% 
+   	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'E' ~ CV.x
 												, DISCARD_SOURCE == 'T' ~ CV.x
-												, DISCARD_SOURCE == 'A' ~ CV # Im not sure this is correct?
-												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
-												)  # , DISCARD_SOURCE == 'B' ~ NA
-				 )
- 
- final_table =  final_table %>% 
-	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
-														 , is.na(LINK1) ~ DISC_MORT_RATIO*FINAL_RATE*SUBTRIP_KALL))
-
+												, DISCARD_SOURCE == 'A' ~ CV),
+	       DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*FINAL_RATE*SUBTRIP_KALL),
+	       STRATA_USED = case_when(DISCARD_SOURCE == 'E' ~ STRATA 
+	                               ,DISCARD_SOURCE == 'T' ~ STRATA
+	                               ,DISCARD_SOURCE == 'A' ~ STRATA_ASSUMED))%>%
+	rename('ACTIVITY_CODE'='ACTIVITY_CODE_1') %>% select(-SPECIES_ITIS)
+	       
  
  final_table %>% 
   dplyr::group_by(TRIP_TYPE) %>%
@@ -524,45 +532,52 @@ trans_rate_df = dest_strata_f %>%
  
  final_table$FINAL_RATE[is.na(final_table$FINAL_RATE)]<-0
  
- final_table$COMMON_NAME <- species$ITIS_NAME[i]
+ final_table$COMMON_NAME <- species$COMMON_NAME[i]
  
  sum(final_table$DISCARD, na.rm=TRUE)
 
- 
  #add subtrip kall after CV
  
  cy_discard_example = final_table %>%
 #	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-	dplyr::rename('STRATA_FULL' = 'STRATA'
-								, 'DISCARD_RATE' = 'FINAL_RATE'
-								,'n_obs_trips_f' = 'n_obs_trips') %>% 
+	dplyr::rename('DISCARD_RATE' = 'FINAL_RATE'
+								,'N_OBS_TRIPS_F' = 'n_obs_trips'
+								,'STRATA_FULL' = 'STRATA'
+								,'CAMS_DISCARD_RATE' = 'FINAL_RATE'
+								,'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL') %>% 
 	mutate(DATE_RUN = as.character(lubridate::today())
 				 , FY = as.integer(FY)) %>%
 	dplyr::select(
 	DATE_RUN,
 	FY,
-	SPECIES_ITIS_EVAL,
+	YEAR,
+	MONTH,
+	SPECIES_ITIS,
 	COMMON_NAME,
 	FY_TYPE,
-	ACTIVITY_CODE_1,
+	ACTIVITY_CODE,
+	GEARCODE,
+	NEGEAR,
 	VTRSERNO,
 	CAMSID,
+	TRIP_TYPE,
 	AREA,
 	LINK1,
-	n_obs_trips_f,
+	N_OBS_TRIPS_F,
+#	STRATA_USED,
 	STRATA_FULL,
 	STRATA_ASSUMED,
-	DISCARD_RATE,
 	DISCARD_SOURCE,
 	OBS_DISCARD,
+	SUBTRIP_KALL,
+	CAMS_DISCARD_RATE,
 	DISC_MORT_RATIO,
 	DISCARD,
 	CV,
-	SUBTRIP_KALL, 
-	eval(stratvars),
-	TRIP_TYPE
+	eval(stratvars)
 	)
  
+ 	
  unique(cy_discard_example$CV)
  
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
@@ -571,11 +586,11 @@ trans_rate_df = dest_strata_f %>%
 
 names(cy_discard_example) = toupper(names(cy_discard_example))
 
-species$ITIS_NAME[i]
+species$COMMON_NAME[i]
 
-db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BUTTERFISH_19', force = F)
+#db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_BUTTERFISH_19', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_FLUKE_19', value = cy_discard_example, overwrite = T)
 
  
  
