@@ -308,7 +308,15 @@ outlist <- lapply(res, function(x) {
 		CAMS_DISCARD_RATE,
 		DISC_MORT_RATIO,
 		DISCARD,
-		CV
+		CV,
+		SPECIES_STOCK,
+		CAMS_GEAR_GROUP,
+		MESHGROUP,
+		SECTID,
+		EM,
+		REDFISH_EXEMPTION,
+		SNE_SMALLMESH_EXEMPTION,
+		XLRG_GILLNET_EXEMPTION
 	  # eval(strata_unique)
 	)
 	
