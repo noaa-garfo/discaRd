@@ -36,6 +36,7 @@ t1 = Sys.time()
 # setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
 
 library(odbc)
+library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
 library(ggplot2)
@@ -45,19 +46,31 @@ library(discaRd)
 options(scipen = 999)
 
 # local run
-dw_maps <- config::get(value = "maps", file = "~/config.yml")
-
-# if on server..
 #dw_maps <- config::get(value = "maps", file = "~/config.yml")
 
-bcon <- dbConnect(odbc::odbc(), 
-									DSN = dw_maps$dsn, 
-									UID = dw_maps$uid, 
-									PWD = dw_maps$pwd)
+# if on server..
+dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+    sep = ""
+  )
+
+# Connect to oracle each loop in case of timeouts
+    bcon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
+      dbname = connectString
+    )
+
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('cams_discard_functions.R')
+source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```
 
@@ -79,7 +92,7 @@ species = tbl(bcon, sql("select *
 #--------------------------------------------------------------------------#
 # a sumamry table for comaprison
 
-final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$SPECIES_ITIS, COMNAME = species$COMNAME, DISCARD = NA)
+final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$SRCE_SCI_NAME, COMNAME = species$ITIS_NAME, DISCARD = NA)
 
 #--------------------------------------------------------------------------#
 
@@ -93,10 +106,13 @@ c_o_dat2 <- tbl(bcon, sql(
 " with obs_cams as (
    select year
 	, month
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
+	, case when month in (1,2,3,4,5,6) then 1
+	       when month in (7,8,9,10,11,12) then 2
 	       end as halfofyear
 	-- , carea
+  ,region
+ -- ,fleet
+ -- ,scalloparea
   , AREA
 	, vtrserno
 	, link1
@@ -113,14 +129,14 @@ c_o_dat2 <- tbl(bcon, sql(
 	, tripcategory
 	, accessarea
 	, activity_code_1
-    , permit_EFP_1
-  , permit_EFP_2
-  , permit_EFP_3
-  , permit_EFP_4
-  , redfish_exemption
-	, closed_area_exemption
-	, sne_smallmesh_exemption
-	, xlrg_gillnet_exemption
+ --   , permit_EFP_1
+ -- , permit_EFP_2
+--  , permit_EFP_3
+--  , permit_EFP_4
+--  , redfish_exemption
+--	, closed_area_exemption
+--	, sne_smallmesh_exemption
+--	, xlrg_gillnet_exemption
 	, NVL(sum(discard),0) as discard
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
@@ -129,6 +145,9 @@ c_o_dat2 <- tbl(bcon, sql(
 --	where nespp3 is not null
 	group by year
   -- , carea
+   ,region
+ -- ,fleet
+ -- ,scalloparea
   , AREA
 	, vtrserno
 	, link1
@@ -147,14 +166,14 @@ c_o_dat2 <- tbl(bcon, sql(
 	, tripcategory
 	, accessarea
 	, activity_code_1
-    , permit_EFP_1
-  , permit_EFP_2
-  , permit_EFP_3
-  , permit_EFP_4
-  , redfish_exemption
-	, closed_area_exemption
-	, sne_smallmesh_exemption
-	, xlrg_gillnet_exemption
+--    , permit_EFP_1
+--  , permit_EFP_2
+--  , permit_EFP_3
+--  , permit_EFP_4
+ -- , redfish_exemption
+--	, closed_area_exemption
+--	, sne_smallmesh_exemption
+--	, xlrg_gillnet_exemption
 	order by vtrserno asc
     ) 
 
@@ -180,25 +199,28 @@ c_o_dat2 <- tbl(bcon, sql(
 
 stratvars = c('CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
-							, 'REGION'
+							, 'AREA'
 							, 'SPECIES_STOCK'
 							, 'HALFOFYEAR'
-							)
+							, 'STOCK'
+							, 'REGION')
+						#	, 'FLEET'
+						#	, 'SCALLOPAREA')
 
 
 # Begin loop
 
 for(i in 1:length(species$ITIS_TSN)){
 
-print(paste0('Running ', species$COMNAME[i]))	
+print(paste0('Running ', species$ITIS_NAME[i]))	
 	
 # species_nespp3 = species$NESPP3[i]  
-species_itis = species$SPECIES_ITIS[i] 
+species_itis = species$SRCE_ITIS_TSN[i] 
 #--------------------------------------------------------------------------#
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from APSD.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -207,7 +229,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from APSD.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -219,7 +241,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from apsd.CAMS_STATAREA_STOCK')) %>%
   dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from apsd.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP) %>%
@@ -233,7 +255,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from apsd.CAMS_DISCARD_MO
 #--------------------------------------------------------------------------------#
 # make tables
 ddat_focal <- c_o_dat2 %>% 
-  filter(GF_YEAR == FY) %>%   ## time element is here!!
+  filter(YEAR == FY) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -247,7 +269,7 @@ ddat_focal <- c_o_dat2 %>%
 
 
 ddat_prev <- c_o_dat2 %>% 
-  filter(GF_YEAR == FY-1) %>%   ## time element is here!!
+  filter(YEAR == FY-1) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -262,7 +284,7 @@ ddat_prev <- c_o_dat2 %>%
 
 
 # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
-ddat_focal_gf = ddat_focal %>% 
+ddat_focal_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
   group_by(LINK1, VTRSERNO) %>% 
   slice(1) %>% 
@@ -270,7 +292,7 @@ ddat_focal_gf = ddat_focal %>%
 
 # and join to the unobserved trips
 
-ddat_focal_gf = ddat_focal_gf %>% 
+ddat_focal_cy = ddat_focal_cy %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)) %>% 
                group_by(VTRSERNO) %>% 
@@ -281,7 +303,7 @@ ddat_focal_gf = ddat_focal_gf %>%
 
 # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
 
-bdat_gf = ddat_focal %>% 
+bdat_cy = ddat_focal_cy %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
@@ -290,17 +312,17 @@ bdat_gf = ddat_focal %>%
 
 
 # set up trips table for previous year
-ddat_prev_gf = ddat_prev %>% 
+ddat_prev_cy = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   group_by(LINK1) %>% 
   slice(1)
 
-ddat_prev_gf = ddat_prev_gf %>% 
+ddat_prev_cy = ddat_prev_cy %>% 
   union_all(ddat_prev %>% filter(is.na(LINK1)))
 
 
 # previous year observer data needed.. 
-bdat_prev_gf = ddat_prev %>% 
+bdat_prev_cy = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
@@ -308,8 +330,8 @@ bdat_prev_gf = ddat_prev %>%
          , PRORATE = 1)
 
 # Run the discaRd functions on previous year
-d_prev = run_discard(bdat = bdat_prev_gf
-											 , ddat = ddat_prev_gf
+d_prev = run_discard(bdat = bdat_prev_cy
+											 , ddat = ddat_prev_cy
 											 , c_o_tab = ddat_prev
 											 # , year = 2018
 											 # , species_nespp3 = species_nespp3
@@ -320,8 +342,8 @@ d_prev = run_discard(bdat = bdat_prev_gf
 
 
 # Run the discaRd functions on current year
-d_focal = run_discard(bdat = bdat_gf
-											 , ddat = ddat_focal_gf
+d_focal = run_discard(bdat = bdat_cy
+											 , ddat = ddat_focal_cy
 											 , c_o_tab = ddat_focal
 											 # , year = 2019
 											 # , species_nespp3 = '081' # haddock...
@@ -437,17 +459,23 @@ print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
  
 ```
 
+
+
+
 ```{r (3) model discards}
 # Potentially limited to the focal year (for year end estimation)
 
 stratvars = c('CAMS_GEAR_GROUP'
-              , 'MESHGROUP'
-              # , 'SPECIES_STOCK'
-              , 'REGION'
-              , 'HALFOFYEAR')
+							, 'MESHGROUP'
+							, 'SPECIES_STOCK'
+							, 'HALFOFYEAR'
+							, 'STOCK'
+							, 'REGION')
+						#	, 'FLEET'
+						#	, 'SCALLOPAREA')
 
 # create a small bdat
-bdat_mod <- bdat_gf %>% 
+bdat_mod <- bdat_cy %>% 
   mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
   assign_strata(., stratvars = stratvars) %>% 
   filter(
@@ -460,10 +488,12 @@ bdat_mod <- bdat_gf %>%
          , DISC_MORT_RATIO
          , DISCARD
          , stratvars
-         # , CAMS_GEAR_GROUP
-         # , REGION
-         # , HALFOFYEAR
-         # , MESHGROUP
+         , CAMS_GEAR_GROUP
+				 , MESHGROUP
+				 , SPECIES_STOCK
+				 , HALFOFYEAR
+				 , STOCK
+				 , REGION
          )
 
 # full stratification (similar to ratio estimator)
