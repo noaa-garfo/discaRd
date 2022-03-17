@@ -316,9 +316,12 @@ outlist <- lapply(res, function(x) {
 		EM,
 		REDFISH_EXEMPTION,
 		SNE_SMALLMESH_EXEMPTION,
-		XLRG_GILLNET_EXEMPTION
+		XLRG_GILLNET_EXEMPTION,
+		TRIPCATEGORY,
+		ACCESSAREA
 	  # eval(strata_unique)
-	)
+	) %>% 
+		mutate(SCALLOP_AREA = '')
 	
 }
 )
