@@ -379,3 +379,9 @@ File size increases ~ 30%; I/O time increased from ~ 7 minutes to ~ 20 minutes (
 ## March 17, 2022
 
 Ocean Pout had a nuance in species itis codes that was causing a dupe. This was fixed and CAMS Pout discard on GFtrips is now within 11% of the DMIS result.
+
+Added scallop trip estimation and substitution of
+- Yellowtail flounder
+- Windowpane flounder
+
+*need to check order which the scallop substitution table build happens. May be creating incomaptible tables for large overall table build*
