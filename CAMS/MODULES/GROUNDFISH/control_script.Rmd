@@ -235,7 +235,7 @@ select distinct(b.species_itis)
     , COMNAME
     , a.nespp3
 from fso.v_obSpeciesStockArea a
-left join (select *  from APSD.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+left join (select *  from MAPS.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
 where stock_id not like 'OTHER'
 and b.species_itis is not null
 ")
