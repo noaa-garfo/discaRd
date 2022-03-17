@@ -10,7 +10,7 @@ Jan 28, 2022
 
 */
 
--- Run rom MAPS
+-- Run from MAPS
 
 grant select on MAPS.CAMS_STATAREA_STOCK to CAMS_GARFO
 / 
@@ -37,29 +37,29 @@ grant select on MAPS.CAMS_DISCARD_EXAMPLE_GF19 to APSD
 /
 -- Run from CAMS_GARFO
 -- CREATE TABLES
-drop table CAMS_GARFO.CAMS_STATAREA_STOCK
-/
-create table CAMS_GARFO.CAMS_STATAREA_STOCK as select * from MAPS.CAMS_STATAREA_STOCK
-/
-drop table CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK
-/
-create table CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK as  select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK
-/
-drop table CAMS_GEARCODE_STRATA
-/
-create table CAMS_GARFO.CAMS_GEARCODE_STRATA as select * from MAPS.CAMS_GEARCODE_STRATA
-/
-drop table CAMS_MASTER_GEAR
-/
-create table CAMS_GARFO.CAMS_MASTER_GEAR as select * from MAPS.CAMS_MASTER_GEAR
-/
-drop table CAMS_GARFO.CAMS_OBS_PRORATE
-/
-create table CAMS_GARFO.CAMS_OBS_PRORATE as select * from MAPS.CAMS_OBS_PRORATE
-/
-drop table CAMS_GARFO.CAMS_OBS_CATCH
-/
-create table CAMS_GARFO.CAMS_OBS_CATCH as select * from MAPS.CAMS_OBS_CATCH
+--drop table CAMS_GARFO.CAMS_STATAREA_STOCK
+--/
+--create table CAMS_GARFO.CAMS_STATAREA_STOCK as select * from MAPS.CAMS_STATAREA_STOCK
+--/
+--drop table CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK
+--/
+--create table CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK as  select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK
+--/
+--drop table CAMS_GEARCODE_STRATA
+--/
+--create table CAMS_GARFO.CAMS_GEARCODE_STRATA as select * from MAPS.CAMS_GEARCODE_STRATA
+--/
+--drop table CAMS_MASTER_GEAR
+--/
+--create table CAMS_GARFO.CAMS_MASTER_GEAR as select * from MAPS.CAMS_MASTER_GEAR
+--/
+--drop table CAMS_GARFO.CAMS_OBS_PRORATE
+--/
+--create table CAMS_GARFO.CAMS_OBS_PRORATE as select * from MAPS.CAMS_OBS_PRORATE
+--/
+--drop table CAMS_GARFO.CAMS_OBS_CATCH
+--/
+--create table CAMS_GARFO.CAMS_OBS_CATCH as select * from MAPS.CAMS_OBS_CATCH
 /
 --drop table CAMS_DISCARD_EXAMPLE_GF18
 --/
