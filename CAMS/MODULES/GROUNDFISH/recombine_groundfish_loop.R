@@ -479,11 +479,13 @@ joined_table %>%
 # save trip by trip info to RDS 
 #-------------------------------------------------------------
 
-saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.RDS')
-)
+# saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
+				
+fst::write_fst(x = joined_table, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
+
  t2 = Sys.time()
 	
-print(paste(species_itis, ' RAN IN ', round(t2-t1, 2), ' SECONDS',  sep = ''))
+print(paste(species_itis, ' RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
  
 }
 
@@ -841,7 +843,9 @@ joined_table = joined_table %>%
 				 )
  
  
- saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips_',FY,'.RDS'))
+ # saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
+
+fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
  
 t2 = Sys.time()
 	
