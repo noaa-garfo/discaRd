@@ -198,7 +198,7 @@ with ulink as (
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
           
-         left join(select * from maps.CFG_ITIS) i
+         left join(select * from maps.CFG_ITIS where SRCE_ITIS_STAT = 'valid') i
          on a.NESPP3 = i.DLR_NESPP3
       )
 
