@@ -358,7 +358,7 @@ This process does several things. It begins with the ingestion of a large amount
 
 ## March 11, 2022
 
-uploaded groundfish tables 
+uploaded groundfish tables
 `CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18`
 `CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19`
 
@@ -367,3 +367,15 @@ Please note that
 - Scallop trip based estiamtes for `Yellowtail` and `Windowpane` flounder stocks has *NOT* been implemented yet.
 
 an example script for compiling a calendar year table, along with additional trip attributes, is provided `groundifsh_CY_example_pull.sql`
+
+## March 16, 2022
+
+I'm finding that adding strata columns back on to the CAMS discard results is harder than it should be.. so, I made the move to NOT drop them in the first place.
+
+the 18 and 19 tables are now rebuilt with the strata columns (nothing else changed)
+
+File size increases ~ 30%; I/O time increased from ~ 7 minutes to ~ 20 minutes (each) to upload to Oracle..
+
+## March 17, 2022
+
+Ocean Pout had a nuance in species itis codes that was causing a dupe. This was fixed and CAMS Pout discard on GFtrips is now within 11% of the DMIS result.
