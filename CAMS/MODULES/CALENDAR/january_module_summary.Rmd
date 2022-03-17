@@ -111,15 +111,16 @@ Output tables are produced for each species. These can easily be recombined. Pre
 
 ```{r make diagnostic plot, eval = T, echo = F, fig.cap = "2019 Federal Discard Totals by Source", fig.height = 8, fig.width = 12}
 
-library(odbc)
-library(dplyr, warn.conflicts = FALSE)
-library(dbplyr)
+# library(odbc)
+# library(dplyr, warn.conflicts = FALSE)
+# library(dbplyr)
 library(ggplot2)
-# library(config)
-library(stringr)
-library(discaRd)
-library(knitr)
-library(kableExtra)
+# # library(config)
+# library(stringr)
+# library(discaRd)
+# library(knitr)
+# library(kableExtra)
+devtools::load_all()
 options(scipen = 999)
 
 discard <- read.csv("~/discaRd/CAMS/MODULES/CALENDAR/January_comparisons.csv")
@@ -227,7 +228,7 @@ strat_blackseabass <- db_blackseabass %>%
   filter(DISCARD_SOURCE != 'O') %>%
   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
@@ -236,7 +237,7 @@ strat_blackseabass <- db_blackseabass %>%
                               SPECIES,
                               STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
@@ -249,7 +250,7 @@ strat_bluefish <- db_bluefish %>%
   filter(DISCARD_SOURCE != 'O') %>%
   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
@@ -258,7 +259,7 @@ strat_bluefish <- db_bluefish %>%
                               SPECIES,
                               STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
@@ -269,7 +270,7 @@ strat_butterfish <- db_butterfish %>%
   filter(DISCARD_SOURCE != 'O') %>%
   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
@@ -278,7 +279,7 @@ strat_butterfish <- db_butterfish %>%
                               SPECIES,
                               STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
@@ -289,7 +290,7 @@ strat_longfinsquid <- db_longfinsquid %>%
   filter(DISCARD_SOURCE != 'O') %>%
   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
@@ -298,7 +299,7 @@ strat_longfinsquid <- db_longfinsquid %>%
                               SPECIES,
                               STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
@@ -309,7 +310,7 @@ strat_shortfinsquid <- db_shortfinsquid %>%
   filter(DISCARD_SOURCE != 'O') %>%
   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
@@ -318,7 +319,7 @@ strat_shortfinsquid <- db_shortfinsquid %>%
                               SPECIES,
                               STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
@@ -329,7 +330,7 @@ strat_mackerel <- db_mackerel %>%
   filter(DISCARD_SOURCE != 'O') %>%
   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
@@ -338,7 +339,7 @@ strat_mackerel <- db_mackerel %>%
                               SPECIES,
                               STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
@@ -351,22 +352,21 @@ strat_final <- rbind(strat_blackseabass, strat_bluefish,
   
   
 strat_final %>% 
-	filter(DISCARD_SOURCE != 'O' & DISCARD_RATE >0.0000001) %>% 
+	filter(DISCARD_SOURCE != 'O' & CAMS_DISCARD_RATE) %>% 
 	dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, TRIP_TYPE) %>% 
 	#slice(1) %>% 
 	ggplot()+
-	geom_histogram(aes(x = DISCARD_RATE, fill =  DISCARD_SOURCE, group= TRIP_TYPE), bins=60, position = "dodge") +
-	facet_wrap(~SPECIES, scale="free")+
+	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
+	facet_wrap(~SPECIES)+
 	theme_light()
 ```
 
-Only includes strata with discard rates >0.0000001. 
 
 
 ```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source" , fig.height = 8, fig.width = 12}
 db_final %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES, SPECIES_ITIS_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
@@ -384,19 +384,19 @@ db_blackseabass %>%
   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
              # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>% 
+             dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
 		DT::datatable(caption = 'Discard rates by Strata for Black Sea Bass')
 ```
 
@@ -408,14 +408,14 @@ db_blackseabass %>%
   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
@@ -430,14 +430,14 @@ db_butterfish %>%
   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
@@ -452,14 +452,14 @@ db_longfinsquid %>%
   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
@@ -474,14 +474,14 @@ db_shortfinsquid %>%
   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
@@ -496,14 +496,14 @@ db_mackerel %>%
   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , DISCARD_RATE = round(mean(DISCARD_RATE), digits=5)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
-              ,DISCARD_RATE
+              ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
@@ -511,3 +511,16 @@ db_mackerel %>%
              dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
 		DT::datatable(caption = 'Discard rates by Strata for Mackerel based on federal trips')
 ```
+
+
+### Appendix
+
+For more information regarding stratfication variables and discard rates by species see
+
+MAPS.CAMS_STATAREA_STOCK,
+MAPS.CAMS_DISCARD_MORTALITY_STOCK,
+MAPS.CAMS_GEARCODE_STRATA,
+MAPS.CAMS_MASTER_GEAR,
+MAPS.CAMS_OBS_CATCH,
+
+I may need to grant selection to APSD if you do not have access to MAPS.

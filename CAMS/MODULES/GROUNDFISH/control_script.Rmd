@@ -50,6 +50,7 @@ library(ggplot2)
 # library(config)
 library(stringr)
 library(discaRd)
+library(fst)
 options(scipen = 999)
 
 # local run
@@ -245,7 +246,7 @@ and b.species_itis is not null
 knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2018){
+for(jj in 2018:2019){
 	FY <- jj
   source('recombine_groundfish_loop.R')
 	}
@@ -259,11 +260,14 @@ for (FY in 18:19){
 
 t1 = Sys.time()	
 	
-assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.RDS'), full.names = T))
+# assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.RDS'), full.names = T))
+
+assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.fst'), full.names = T))
 
 # cat(resfiles)			 
 
-res = lapply(as.list(resfiles), function(x) readRDS(x))
+# res = lapply(as.list(resfiles), function(x) readRDS(x))
+res = lapply(as.list(resfiles), function(x) fst::read_fst(x))
 
 outlist <- lapply(res, function(x) { 
 		x %>% 
@@ -304,7 +308,15 @@ outlist <- lapply(res, function(x) {
 		CAMS_DISCARD_RATE,
 		DISC_MORT_RATIO,
 		DISCARD,
-		CV
+		CV,
+		SPECIES_STOCK,
+		CAMS_GEAR_GROUP,
+		MESHGROUP,
+		SECTID,
+		EM,
+		REDFISH_EXEMPTION,
+		SNE_SMALLMESH_EXEMPTION,
+		XLRG_GILLNET_EXEMPTION
 	  # eval(strata_unique)
 	)
 	
@@ -333,7 +345,7 @@ for(i in 18:19){
 
 	db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
 
-	dbWriteTable(bcon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_',FY)), overwrite = T)
+	dbWriteTable(bcon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
 	
 	t2 =  Sys.time()
 	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
@@ -343,7 +355,7 @@ for(i in 18:19){
 
 # create tables on cams_garfo
 
-condat <- config::get(value = "cams_garfo", file = "~/config.yml")
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
 
 ccon <- dbConnect(odbc::odbc(),
 									DSN = condat$dsn,
@@ -356,7 +368,7 @@ for(i in 18:19){
 
 	db_drop_table(con = ccon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
 
-	dbWriteTable(ccon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_',FY)), overwrite = T)
+	dbWriteTable(ccon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
 	t2 =  Sys.time()
 	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
 

@@ -1,6 +1,6 @@
 ---
 title: "November Year Module Summary"
-author: "Ben Galuardi modified by K.Winiarski"
+#author: "Ben Galuardi modified by K.Winiarski"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -25,7 +25,7 @@ options(knitr.kable.NA = '')
 
 ### Background 
 
-Exploration of discard estimates from november year module developed for Tilefish.
+Exploration of discard estimates from November year module 
 
 ### Steps 
 
@@ -38,8 +38,6 @@ Exploration of discard estimates from november year module developed for Tilefis
 stratvars = c('SPECIES_STOCK'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
-							, 'HALFOFYEAR'
-							, 'REGION'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 ```
@@ -56,11 +54,11 @@ stratvars = c('SPECIES_STOCK'
 # Assumed Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP'
-              , 'MESHGROUP') 
+              , 'CAMS_GEAR_GROUP')
+
 ```	
 
-4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK' and 'CAMS_GEAR_GROUP'
 
 7. A transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 
@@ -74,7 +72,7 @@ stratvars = c('SPECIES_STOCK'
 10. Discard pounds per trip are calculated according to
 
 ```{r echo = T, eval = F}
-	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
+	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
@@ -85,222 +83,240 @@ By assigning `SPECIES_STOCK` as a stratification variable, the computation time 
 
 Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to process on the server.
 
-Output tables are produced for each species. These can easily be recombined. An example table has been shared on `MAPS` and `CAMS_GARFO`.  
+Output tables are produced for each species. These can easily be recombined. Preliminary species tables have been shared on `MAPS` and `CAMS_GARFO`.  
 
 ```sql
-	MAPS.CAMS_DISCARD_EXAMPLE_CY_TILEFISH_19
-	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_TILEFISH_19
+	MAPS.CAMS_DISCARD_EXAMPLE_CY_GOLDENTILEFISH_19
+	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_GOLDENTILEFISH_19
+	
+	MAPS.CAMS_DISCARD_EXAMPLE_CY_BLUELINETILEFISH_19
+	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_BLUELINETILEFISH_19
 
 ```
 
 ### Diagnostic Plots/Tables
 
-```{r make diagnostic plot discards, eval = T, echo = F, fig.cap = "2019 Discard Totals by Method and Source", fig.height = 8, fig.width = 12}
+```{r make diagnostic plot, eval = T, echo = F, fig.cap = "2019 Federal Discard Totals by Source", fig.height = 8, fig.width = 12}
 
-library(odbc)
-library(dplyr, warn.conflicts = FALSE)
-library(dbplyr)
+# library(odbc)
+# library(dplyr, warn.conflicts = FALSE)
+# library(dbplyr)
 library(ggplot2)
-# library(config)
-library(stringr)
-library(discaRd)
-library(knitr)
-library(kableExtra)
+# # library(config)
+# library(stringr)
+# library(discaRd)
+# library(knitr)
+# library(kableExtra)
+devtools::load_all()
 options(scipen = 999)
 
 discard <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_comparisons.csv")
 
+'%ni%' <- Negate("%in%")
+
+discard <- discard %>% filter(Source %in% c("Federal"))# %>% filter(Species %ni% c("Summer flounder"))
+
+
 discard %>% 
 	ggplot()+
-	geom_bar(aes(x = Method, y = Discards, fill = Source), stat = 'identity', position = 'dodge')+
+	geom_bar(aes(x = Method, y = Discards), stat = 'identity', position = 'dodge')+
 	facet_wrap(~Species, scales = 'free')+
 	theme_light()
+
+```
+
+  
+
+
+```{r make diagnostic plot discards, eval = T, echo = F, fig.cap = "2019 CAMS State Discard Totals", fig.height = 8, fig.width = 12}
+
+discard <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_comparisons.csv")
+
+'%ni%' <- Negate("%in%")
+
+discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) %>%
+	DT::datatable(caption = 'Total discards by species for state trips')
 
 ```
 
 
 
 
-<!-- ```{r make diagnostic plot kall, eval = T, echo = F, fig.cap = "2019 KALL Totals by Method", fig.height = 8, fig.width = 12} -->
+```{r make diagnostic plot kall, eval = T, echo = F, fig.cap = "2019 KALL Totals by Method and Source", fig.height = 8, fig.width = 12}
 
-<!-- Kall <- read.csv("~/discaRd/CAMS/MODULES/MAY/May_kall.csv") -->
+Kall <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_kall.csv")
 
-<!-- Kall %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = Method, y = kall, fill = Source), stat = 'identity', position = 'dodge')+ -->
-<!-- 	#facet_wrap(~Species, scales = 'free')+ -->
-<!-- 	theme_light() -->
+Kall %>% 
+	ggplot()+
+	geom_bar(aes(x = Method, y = kall, fill = Source), stat = 'identity', position = 'dodge')+
+	#facet_wrap(~Species, scales = 'free')+
+	theme_light()
 
-<!-- ``` -->
+```
 
-
-
-<!-- ```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Mean Mackerel Discard Rates by Stock and Discard Source", fig.height = 8, fig.width = 12} -->
-
-<!-- library(odbc) -->
-<!-- library(dplyr, warn.conflicts = FALSE) -->
-<!-- library(dbplyr) -->
-<!-- library(ggplot2) -->
-<!-- # library(config) -->
-<!-- library(stringr) -->
-<!-- library(discaRd) -->
-<!-- library(knitr) -->
-<!-- library(kableExtra) -->
-<!-- options(scipen = 999) -->
-
-<!--  dw_maps <- config::get(config = "maps", file = "~/config_group.yml") -->
-
-<!-- # Connect to database - move this to config file in the future - quick addition for server -->
-<!--   connectString <- paste( -->
-<!--     "(DESCRIPTION=", -->
-<!--     "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))", -->
-<!--     "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))", -->
-<!--     sep = "" -->
-<!--   ) -->
-
-<!-- # Connect to oracle each loop in case of timeouts -->
-<!--     bcon <- ROracle::dbConnect( -->
-<!--       drv = ROracle::Oracle(), -->
-<!--       username = dw_maps$uid, -->
-<!--       password = dw_maps$pwd, -->
-<!--       dbname = connectString -->
-<!--     ) -->
-
-<!-- db_mack = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_MACKEREL_19")) %>%  -->
-<!-- 	collect() -->
-
-<!-- db_mack %>%  -->
-<!-- 	filter(DISCARD_SOURCE != 'O') %>%  -->
-<!-- 	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>%  -->
-<!-- 	slice(1) %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+ -->
-<!-- 	#facet_wrap(~COMNAME_EVAL, scales = 'free')+ -->
-<!-- 	theme_light() -->
-<!-- ``` -->
+Kall is higher for CAMS but due to differences in what species are included in landings (e.g., no clams in DMIS). 
 
 
+```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source", fig.height = 8, fig.width = 12}
+
+ dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+ 
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+    sep = ""
+  )
+
+# Connect to oracle each loop in case of timeouts
+    bcon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
+      dbname = connectString
+    )
+
+db_goldentilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_GOLDENTILEFISH_19")) %>% 
+	collect
+
+db_goldentilefish$SPECIES <- "GOLDENTILEFISH"
+
+db_bluelinetilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_BLUELINETILEFISH_19")) %>%
+	collect
+
+db_bluelinetilefish$SPECIES <- "BLUELINETILEFISH"
 
 
-<!-- ```{r make diagnostic scup plot, eval = T, echo = F, fig.cap = "Mean Scup Discard Rates by Stock and Discard Source", fig.height = 8, fig.width = 12} -->
-<!-- db_scup = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_SCUP_19")) %>%  -->
-<!-- 	collect() -->
+db_final <- rbind(db_goldentilefish, db_bluelinetilefish)
 
-<!-- db_scup %>%  -->
-<!-- 	filter(DISCARD_SOURCE != 'O') %>%  -->
-<!-- 	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>%  -->
-<!-- 	slice(1) %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+ -->
-<!-- 	#facet_wrap(~COMNAME_EVAL, scales = 'free')+ -->
-<!-- 	theme_light() -->
-<!-- ``` -->
+strat_goldentilefish <- db_goldentilefish %>% 	
+  filter(DISCARD_SOURCE != 'O') %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
+                              SPECIES,
+                              STRATA 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD
+              ,DISCARD_SOURCE
+              ,TRIP_TYPE)
+             # ,CV) 
+             #dplyr::arrange(desc(DISCARD))
 
+strat_bluelinetilefish <- db_bluelinetilefish %>%
+  filter(DISCARD_SOURCE != 'O') %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
+                              SPECIES,
+                              STRATA
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD
+              ,DISCARD_SOURCE
+              ,TRIP_TYPE)
 
-<!-- ```{r make diagnostic shortfin squid plot, eval = T, echo = F, fig.cap = "Mean Shortfin Squid Discard Rates by Stock and Discard Source", fig.height = 8, fig.width = 12} -->
-<!-- db_shortfin = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_SHORTFINSQUID_19")) %>%  -->
-<!-- 	collect() -->
-
-<!-- db_shortfin %>%  -->
-<!-- 	filter(DISCARD_SOURCE != 'O') %>%  -->
-<!-- 	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>%  -->
-<!-- 	slice(1) %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = SPECIES_STOCK, y = DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+ -->
-<!-- 	#facet_wrap(~COMNAME_EVAL, scales = 'free')+ -->
-<!-- 	theme_light() -->
-<!-- ``` -->
-
-<!-- ```{r plot 2, echo = F, fig.cap = "Total Mackerel Discard Estimates by Stock and Discard Source" , fig.height = 8, fig.width = 12} -->
-<!-- db_mack %>%  -->
-<!-- 	# filter(DISCARD_SOURCE != 'O') %>%  -->
-<!-- 	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>%  -->
-<!-- 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>%  -->
-<!-- 	# slice(1) %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+ -->
-<!-- #	facet_wrap(~COMNAME_EVAL, scales = 'free')+ -->
-<!-- 	theme_light() -->
-<!-- ``` -->
-
-
-
-<!-- ```{r plot 3, echo = F, fig.cap = "Total Scup Discard Estimates by Stock and Discard Source" , fig.height = 8, fig.width = 12} -->
-<!-- db_scup %>%  -->
-<!-- 	# filter(DISCARD_SOURCE != 'O') %>%  -->
-<!-- 	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>%  -->
-<!-- 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>%  -->
-<!-- 	# slice(1) %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+ -->
-<!-- #	facet_wrap(~COMNAME_EVAL, scales = 'free')+ -->
-<!-- 	theme_light() -->
-
-<!-- ``` -->
-
-<!-- ```{r plot 4, echo = F, fig.cap = "Total Shortfin Squid Discard Estimates by Stock and Discard Source" , fig.height = 8, fig.width = 12} -->
-<!-- db_shortfin %>%  -->
-<!-- 	# filter(DISCARD_SOURCE != 'O') %>%  -->
-<!-- 	group_by(SPECIES_ITIS_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>%  -->
-<!-- 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>%  -->
-<!-- 	# slice(1) %>%  -->
-<!-- 	ggplot()+ -->
-<!-- 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+ -->
-<!-- #	facet_wrap(~COMNAME_EVAL, scales = 'free')+ -->
-<!-- 	theme_light() -->
-
-<!-- ``` -->
-
-<!-- # ```{r table 2} -->
-<!-- # #Bring in strata for mackerel for DMIS 2019. -->
-
-<!-- # #Bring in strata for scup for DMIS 2019. -->
-
-<!-- # ``` -->
+strat_final <- rbind(strat_goldentilefish, strat_bluelinetilefish)
+  
+  
+strat_final %>% 
+	filter(DISCARD_SOURCE != 'O' & CAMS_DISCARD_RATE) %>% 
+	dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, TRIP_TYPE) %>% 
+	#slice(1) %>% 
+	ggplot()+
+	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
+	facet_wrap(~SPECIES)+
+	theme_light()
+```
 
 
-<!-- # ```{r discard rates by strata mackerel example} -->
 
-<!-- # db_mack %>%  -->
-<!-- # 	group_by(DISCARD_SOURCE -->
-<!-- # 					 , STRATA_FULL -->
-<!-- # 					 , STRATA_ASSUMED) %>%  -->
-<!-- # 	dplyr::summarise(DISCARD_RATE = max(DISCARD_RATE) -->
-<!-- # 									 , KALL = sum(SUBTRIP_KALL, na.rm = T)) %>%  -->
-<!-- # 	knitr::kable(format.args = list(big.mark = ",")) -->
+```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source" , fig.height = 8, fig.width = 12}
+db_final %>% 
+	# filter(DISCARD_SOURCE != 'O') %>% 
+	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+ facet_wrap(~SPECIES, scales = 'free')+
+	theme_light()
+```
 
-<!-- # ``` -->
-
-<!-- # ```{r discard rates by strata scup example} -->
-<!-- # db_scup %>%  -->
-<!-- # 	group_by(DISCARD_SOURCE -->
-<!-- # 					 , STRATA_FULL -->
-<!-- # 					 , STRATA_ASSUMED) %>%  -->
-<!-- # 	dplyr::summarise(DISCARD_RATE = max(DISCARD_RATE) -->
-<!-- # 									 , KALL = sum(SUBTRIP_KALL, na.rm = T)) %>%  -->
-<!-- # 	knitr::kable(format.args = list(big.mark = ",")) -->
-
-<!-- # ``` -->
-
-### Summary
-
-1. Discard estimates are a little bit lower for DMIS vs. CAMS for 2019.
+Not suprisingly, total discards at the end of the year come from strata with an in season rate. 
 
 
-### Current Issues with May Year Module
+```{r goldentilefish discard table }
 
-1. KALL differences between DMIS and CAMS (mostly clams?)
+db_goldentilefish %>% 	
+  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
+		DT::datatable(caption = 'Discard rates by Strata for Golden Tilefish')
+```
 
-2. Some trips are not getting a final discard rate (mostly state trips but some federal subtrips). 
-
-3. Having issues writing some species tables to MAPS from R.
 
 
-### Next Steps for May Year Module
+```{r bluelinetilefish discard table }
 
-1. Need to make sure I am including relevant QM nuances in calculation of discards for QM species. 
+  db_bluelinetilefish %>%
+   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
+   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                       # , CV = mean(CV, na.rm=TRUE)
+                        , DISCARD = round(sum(DISCARD))) %>%
+                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%
+   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA
+              # ,N_OBS_TRIPS_F
+               ,CAMS_DISCARD_RATE
+               ,SUBTRIP_KALL
+               ,DISC_MORT_RATIO
+               ,DISCARD) %>%
+              # ,CV)
+              dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
+ 		DT::datatable(caption = 'Discard rates by Strata for Blueline Tilefish based on federal trips')
+```
 
-2. Deeper dive into results (e.g., compare DMIS and CAMS rates by strata)
 
-3. Add summary to CAMS documentation once complete.
+### Appendix
 
+For more information regarding stratfication variables and discard rates by species see
+
+MAPS.CAMS_STATAREA_STOCK
+MAPS.CAMS_DISCARD_MORTALITY_STOCK
+MAPS.CAMS_GEARCODE_STRATA
+MAPS.CAMS_MASTER_GEAR
+MAPS.CAMS_OBS_CATCH
+
+I may need to grant selection to APSD if you do not have access to MAPS.
