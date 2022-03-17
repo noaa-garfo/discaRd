@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 											, error = FALSE, dev = 'png', dpi = 200)
 
 options(knitr.kable.NA = '')
+options(dplyr.summarise.inform = FALSE)
 ```
 
 
@@ -141,61 +142,34 @@ bcon <- dbConnect(odbc::odbc(),
 									PWD = mapsdat$pwd)
 
 db_example = tbl(bcon, sql("
-  
-with gf as (
+
     select *
     from MAPS.CAMS_DISCARD_EXAMPLE_GF19
      where GF = 1
     AND TRIP_TYPE = 'FED'
-)
-
-select g.*
-    , s.area_name as species_stock
-    , c.negear
-    , c.mesh_cat
-    , c.SECTID
-from gf g
-
-left join (select * from MAPS.cams_statarea_stock) s
-on (g.species_itis = s.species_itis and g.area = s.stat_area) -- this gets the stockID strata
-
-left join (
-    select  negear
-    ,  mesh_cat
-    , sectid
-    , camsid
-    , vtrserno
-    from  MAPS.CAMS_CATCH 
-    group by negear
-    ,  mesh_cat
-    , sectid
-    , camsid
-    , vtrserno
-) c
-on (c.CAMSID = g.CAMSID AND c.VTRSERNO = g.VTRSERNO)  -- this gets many other trip attributes
 
 ")) %>% 
 	collect()
 
-db_example %>% 
-	filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES_ITIS, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
-	slice(1) %>% 
-	ggplot()+
-	geom_bar(aes(x = SPECIES_STOCK, y = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
-	facet_wrap(~COMMON_NAME, scales = 'free')+
-	theme_light()
+# db_example %>% 
+# 	filter(DISCARD_SOURCE != 'O') %>% 
+# 	group_by(SPECIES_ITIS, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
+# 	slice(1) %>% 
+# 	ggplot()+
+# 	geom_bar(aes(x = SPECIES_STOCK, y = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+# 	facet_wrap(~COMMON_NAME, scales = 'free')+
+# 	theme_light()
 ```
 
 ```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
 db_example %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES_ITIS_EVAL, COMNAME_EVAL, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	group_by(SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK) %>% 
 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
-	facet_wrap(~COMNAME_EVAL, scales = 'free')+
+	facet_wrap(~COMMON_NAME, scales = 'free')+
 	theme_light()
 
 ```
@@ -448,7 +422,7 @@ lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>%
 ```
 
 
-```{r comparison of gear stratifications}
+```{r comparison of gear stratifications, eval = F}
 
 load('compare_gear_strata_gftrips19.Rdata')
 
@@ -492,28 +466,26 @@ bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select
 ### To-do 
 
 1. Check totals between CAMS/DMIS
-	- KALL (*DONE*)
-	- d/k rates
-	- Observed discard totals
+	- KALL (**DONE**)
+	- d/k rates 
 
-2. Complete code for non-groundfish trips in groundfish module. 
-	- combine with previous work (or not) so we have a full set of trips for each groundfish stock
+2. Complete code for non-groundfish trips in groundfish module. (**DONE**)
+	- combine with previous work (or not) so we have a full set of trips for each groundfish stock (**DONE**)
 	- Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
 
-3. Apply discard rates to State records
- - this may be done implicitly if applying rates by strata to all CAMS records (e.g. by CAMSID)
+3. Apply discard rates to State records (**DONE**)
+ - this may be done implicitly if applying rates by strata to all CAMS records (e.g. by CAMSID) 
 
 4. Incorporate EM (including MREM) records is using those values for discard amounts. This should be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
 	- how to deal with adjustment of KALL on MREM trips?
 
 ### Results/Discussion
 
-- Discard totals for CAMS are generally much lower than DMIS. 
-	- It is difficult to check rates as the strata between DMIS and CAMS are not identical. CAMS uses new meshgroupings as well as CAMS_GEAR_GROUP. 
+- Discard totals for CAMS are generally lower than DMIS. 
+- Strata between DMIS and CAMS are not identical. CAMS uses new meshgroupings as well as CAMS_GEAR_GROUP. 
+	- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences 
 	
-		- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences (see above tables)
-	
-	- A potentially major diversion between DMIS and CAMS groundfish stratification is that Quota Monitoring (DMIS) uses stock area defined biologically and parses out the designations (STOCK_ID) in tables above AFTER estimating discards. It is not used as a stratifcation variable for the species. For example, Eastern Georges Bank (EGB) is CAMS Strata. Although DMIS has a separate total for EGB, this is parsed out from the entire Geroges Bank stock. This differential stratification is the most likely source that explains differnces in estimates. Stocks that havea singular STOCK_ID (e.g. Pollock), are fairly close in their DMIS/CAMS discard estimates. 
+- One more significant differnece between DMIS and CAMS groundfish stratification is that Quota Monitoring (DMIS) uses stock area defined biologically, and parses out the designations (STOCK_ID) in tables above AFTER estimating discards. For example, Eastern Georges Bank (EGB) is CAMS Strata. Although DMIS has a separate total for EGB, this is parsed out from the entire Geroges Bank stock. This differential stratification is the most likely explanation for differnces between estimates. Stocks that havea singular STOCK_ID (e.g. Pollock), are fairly close in their DMIS/CAMS discard estimates. 
 	
 
 
