@@ -102,7 +102,6 @@ FY_TYPE = 'MAY START'
             '564151',
             '564149',
             '564145',
-            '164732',
             '164793',
             '164730',
             '164791')  # 
@@ -119,7 +118,7 @@ FY_TYPE = 'MAY START'
 	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
   slice(1)
  
- species$ITIS_TSN <- stringr:str_sort(itis)
+ species$ITIS_TSN <- stringr::str_sort(itis)
  
 #species$ITIS_TSN <- as.numeric(species$SPECIES_ITIS)
 # species$ITIS_TSN <- as.character(species$SPECIES_ITIS)
