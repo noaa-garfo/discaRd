@@ -155,7 +155,7 @@ c_o_dat2 <- tbl(bcon, sql(
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
 			 else 'non_GF' end as SECTOR_TYPE
 , case when PERMIT = '000000' then 'STATE'
-       else 'FED' end as trip_type
+       else 'FED' end as FED_OR_STATE
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -225,8 +225,8 @@ c_o_dat2 <- tbl(bcon, sql(
 	collect() 
 
 
-state_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'STATE')
-fed_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'FED')
+state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
+fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
 
 fed_trips = fed_trips %>% 
 	mutate(ROWID = 1:nrow(fed_trips)) %>% 
@@ -264,7 +264,7 @@ gf_dat = fed_trips%>%
 
 rm(c_o_dat2, fed_trips, state_trips)
 
-# non_gf_dat %>% group_by(TRIP_TYPE) %>% dplyr::summarise(n_distinct(CAMSID))
+# non_gf_dat %>% group_by(FED_OR_STATE) %>% dplyr::summarise(n_distinct(CAMSID))
 
 
 # test the removal. Success! only 362 rows removed.. 
@@ -1556,7 +1556,7 @@ start_time = Sys.time()
 				ACTIVITY_CODE,
 				VTRSERNO,
 				CAMSID,
-				TRIP_TYPE,
+				FED_OR_STATE,
 				GF,
 				AREA,
 				LINK1,
@@ -1621,7 +1621,7 @@ start_time = Sys.time()
 				ACTIVITY_CODE,
 				VTRSERNO,
 				CAMSID,
-				TRIP_TYPE,
+				FED_OR_STATE,
 				GF,
 				AREA,
 				LINK1,
@@ -1679,7 +1679,7 @@ start_time = Sys.time()
 			filter(YEAR == 2019 & MONTH >= 4) %>% 
 			bind_rows(t2 %>% 
 			filter(YEAR == 2020 & MONTH < 4)) %>% 
-			group_by(SPECIES_STOCK, ACCESSAREA, TRIP_TYPE) %>% 
+			group_by(SPECIES_STOCK, ACCESSAREA, FED_OR_STATE) %>% 
 			dplyr::summarise(round(sum(DISCARD, na.rm = T))) %>% 
 		  write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
@@ -1695,7 +1695,7 @@ start_time = Sys.time()
 		# 	bind_rows(t1 %>% 
 		# 	filter(YEAR == 2020 & MONTH < 4)) %>% 
 		# 	filter(substr(ACTIVITY_CODE, 1,3) == 'SES') %>% 
-		# 	group_by(SPECIES_STOCK, ACCESSAREA, SPECIES_ITIS, TRIP_TYPE) %>% 
+		# 	group_by(SPECIES_STOCK, ACCESSAREA, SPECIES_ITIS, FED_OR_STATE) %>% 
 		# 	dplyr::summarise(round(sum(DISCARD, na.rm = T)))
 			# write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
@@ -1754,7 +1754,7 @@ for(i in 1:length(gf_res_list)){
 		ACTIVITY_CODE,
 		VTRSERNO,
 		CAMSID,
-		TRIP_TYPE,
+		FED_OR_STATE,
 		GF,
 		AREA,
 		LINK1,
@@ -1959,7 +1959,7 @@ names(gf_discard_example) = toupper(names(gf_discard_example))
 # look at rates for cod
 
 nongf_res_list[[1]] %>% 
-	group_by(DISCARD_SOURCE, TRIP_TYPE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% 
+	group_by(DISCARD_SOURCE, FED_OR_STATE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% 
 	dplyr::summarise(max(COAL_RATE)) %>%  
 	View()
 
@@ -1973,13 +1973,13 @@ lapply(nongf_res_list, function(x)
 
 # look at cod breakdown by stock and trip type
 nongf_res_list[[1]] %>% 
-	group_by(TRIP_TYPE, SPECIES_STOCK) %>% 
+	group_by(FED_OR_STATE, SPECIES_STOCK) %>% 
 	dplyr::summarise(D = sum(DISCARD, na.rm = T)/2204.62262) %>% 
 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'D')
 
 # look at cod by gear group
 nongf_res_list[[1]] %>% 
-	group_by(TRIP_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP) %>% 
+	group_by(FED_OR_STATE, SPECIES_STOCK, CAMS_GEAR_GROUP) %>% 
 	dplyr::summarise(D = sum(DISCARD, na.rm = T)/2204.62262)
 #-------------------------------------------------------------
 # output tables by species of all trips
@@ -1990,7 +1990,7 @@ bind_summary = NULL
 for(i in 1:length(species$SPECIES_ITIS)){
 	bind_summary [[i]] = gf_res_list[[i]] %>% 
 		bind_rows(., nongf_res_list[[i]]) %>% 
-		group_by(TRIP_TYPE) %>% 
+		group_by(FED_OR_STATE) %>% 
 		dplyr::summarise(nvtr = n_distinct(VTRSERNO), ncamsid = n_distinct(CAMSID)) %>% 
 		mutate(SPECIES_ITIS_EVAL = species$SPECIES_ITIS[i])
 	

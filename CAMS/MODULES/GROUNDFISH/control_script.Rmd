@@ -103,7 +103,7 @@ c_o_dat2 <- tbl(bcon, sql(
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
 			 else 'non_GF' end as SECTOR_TYPE
 , case when PERMIT = '000000' then 'STATE'
-       else 'FED' end as trip_type
+       else 'FED' end as FED_OR_STATE
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -173,8 +173,8 @@ c_o_dat2 <- tbl(bcon, sql(
 	collect() 
 
 
-state_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'STATE')
-fed_trips = c_o_dat2 %>% filter(TRIP_TYPE == 'FED')
+state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
+fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
 
 fed_trips = fed_trips %>% 
 	mutate(ROWID = 1:nrow(fed_trips)) %>% 
@@ -271,12 +271,12 @@ res = lapply(as.list(resfiles), function(x) fst::read_fst(x))
 
 outlist <- lapply(res, function(x) { 
 		x %>% 
-		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>% 
+		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-								, 'COMMON_NAME' = 'COMNAME_EVAL'
-								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+								# , 'COMMON_NAME' = 'COMNAME_EVAL'
+								# , 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
 								) %>% 
@@ -293,7 +293,7 @@ outlist <- lapply(res, function(x) {
 		ACTIVITY_CODE,
 		VTRSERNO,
 		CAMSID,
-		TRIP_TYPE,
+		FED_OR_STATE,
 		GF,
 		AREA,
 		LINK1,
