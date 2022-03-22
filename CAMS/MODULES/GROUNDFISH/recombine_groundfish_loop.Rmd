@@ -1120,21 +1120,22 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
 
 ```{r estimate discards on scallop trips for each subACL stock, eval = T}
 scal_trips = non_gf_dat %>% 
-	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') %>% 
-	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
-  mutate( SCALLOP_AREA = case_when(PROGRAM == 'OP' ~ 'OPEN' 
-       , PROGRAM == 'NS' ~ 'NLS'
-       , PROGRAM == 'NN' ~ 'NLSN'
-       , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
-       , PROGRAM == 'NW' ~ 'NLSW'
-       , PROGRAM == '1S' ~ 'CAI'
-       , PROGRAM == '2S' ~ 'CAII'
-       , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
-	   )
-) %>% 
-	mutate(SCALLOP_AREA = dplyr::coalesce(SCALLOP_AREA, 'OPEN')) 
-
-scal_trips$ACCESSAREA[scal_trips$SCALLOP_AREA == 'OPEN'] = 'OPEN'
+	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') 
+# %>% 
+# 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
+#   mutate( SCALLOP_AREA = case_when(PROGRAM == 'OP' ~ 'OPEN' 
+#        , PROGRAM == 'NS' ~ 'NLS'
+#        , PROGRAM == 'NN' ~ 'NLSN'
+#        , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
+#        , PROGRAM == 'NW' ~ 'NLSW'
+#        , PROGRAM == '1S' ~ 'CAI'
+#        , PROGRAM == '2S' ~ 'CAII'
+#        , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
+# 	   )
+# ) %>% 
+# 	mutate(SCALLOP_AREA = dplyr::coalesce(SCALLOP_AREA, 'OPEN')) 
+# 
+# scal_trips$ACCESSAREA[scal_trips$SCALLOP_AREA == 'OPEN'] = 'OPEN'
 
 
 stratvars_scalgf = c('SPECIES_STOCK'
@@ -1388,20 +1389,69 @@ trans_rate_df = trans_rate_df %>%
 # NOTE: This is slightly different than what is used for GF trips. 
 # For non-GF trips, the Assumed rate above is GEAR/MESH.
  
-BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_scal
-																					 , species_itis = species$SPECIES_ITIS[i]
-																					 , stratvars = stratvars_scalgf[1]) %>% 
- 	mutate(SPECIES_STOCK = STRATA
- 				 , STRAT_DESC = paste(stratvars_scalgf[1], sep = '-')) %>% 
- 	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
- 	dplyr::select(-STRATA, -KALL, -BYCATCH)
+# do broad stock using discaRd...
+ # Run the discaRd functions on current year
  
+ustocks = bdat_scal$SPECIES_STOCK 
+ %>% unique()
+ 
+BROAD_STOCK_RATE_TABLE = data.frame(BROAD_STOCK_RATE = NULL, CV = NULL, SPECIES_STOCK = NULL)
+ 
+ for(k in ustocks){
+ 	
+get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, aidx = 1, stock = 'GOM'){ 	
+ 	
+btmp = 	bdat %>%
+	filter(SPECIES_STOCK == stock)
+dstmp = ddat_focal_sp %>%
+	filter(SPECIES_STOCK == stock)
+dtmp = 	ddat_focal %>%
+	filter(SPECIES_STOCK == stock)
+
+d_broad_stock = run_discard(bdat = btmp
+											 , ddat = dstmp
+											 , c_o_tab = dtmp
+											 , species_itis = species_itis
+											 , stratvars = stratvars
+											 , aidx = aidx  # this makes sure this isn't used..
+											 )
+
+data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
+			, CV_b = d_broad_stock$allest$CVTOT
+)
+
+} 
+
+BROAD_STOCK_RATE_TABLE = list()
+kk = 1
+for(k in bdat_scal$SPECIES_STOCK %>% unique()){
+BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
+										 , ddat_focal_sp = ddat_focal_scal
+										 , ddat_focal = ddat_focal
+										 , species_itis = species_itis
+										 , stratvars = stratvars_scalgf[1]
+										 , aidx = 1
+										 , stock = k 
+										 )
+kk = kk+1
+}
+
+BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+
+rm(kk)
+
+
+# BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_scal
+# 																					 , species_itis = species$SPECIES_ITIS[i]
+# 																					 , stratvars = stratvars_scalgf[1]) %>% 
+#  	mutate(SPECIES_STOCK = STRATA
+#  				 , STRAT_DESC = paste(stratvars_scalgf[1], sep = '-')) %>% 
+#  	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
+#  	dplyr::select(-STRATA, -KALL, -BYCATCH)
+#  
 print(paste0("Constructing output table for ", species_itis, " in SCALLOP YEAR ", FY)) 
 
 joined_table = assign_strata(full_strata_table, stratvars_scalgf) %>% 
-	# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
-	# dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
-	# left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
 	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK')) %>% 
 	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate  # this is an in season rate
 															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ trans_rate  # this is a final IN SEASON rate taking transition into account
@@ -1454,9 +1504,10 @@ joined_table = joined_table %>%
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
+												, DISCARD_SOURCE == 'B' ~ CV_b
 												# , DISCARD_SOURCE == 'A' ~ CV_f_a
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
-												)  # , DISCARD_SOURCE == 'B' ~ NA
+												)  
 				 )
 
 

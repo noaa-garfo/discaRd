@@ -7,21 +7,26 @@ editor_options:
 
 ```{r estimate discards on scallop trips for each subACL stock, eval = T}
 scal_trips = non_gf_dat %>% 
-	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') %>% 
-	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
-  mutate( SCALLOP_AREA = case_when(PROGRAM == 'OP' ~ 'OPEN' 
-       , PROGRAM == 'NS' ~ 'NLS'
-       , PROGRAM == 'NN' ~ 'NLSN'
-       , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
-       , PROGRAM == 'NW' ~ 'NLSW'
-       , PROGRAM == '1S' ~ 'CAI'
-       , PROGRAM == '2S' ~ 'CAII'
-       , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
-	   )
-) %>% 
-	mutate(SCALLOP_AREA = dplyr::coalesce(SCALLOP_AREA, 'OPEN')) 
+	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
-scal_trips$ACCESSAREA[scal_trips$SCALLOP_AREA == 'OPEN'] = 'OPEN'
+# the scallop_area code has been added upstream to oracle table import
+
+# %>%
+# 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
+#   mutate( SCALLOP_AREA = case_when(PROGRAM == 'OP' ~ 'OPEN' 
+#        , PROGRAM == 'NS' ~ 'NLS'
+#        , PROGRAM == 'NN' ~ 'NLSN'
+#        , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
+#        , PROGRAM == 'NW' ~ 'NLSW'
+#        , PROGRAM == '1S' ~ 'CAI'
+#        , PROGRAM == '2S' ~ 'CAII'
+#        , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
+# 	   )
+# ) %>% 
+# 	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))
+# 				 , ~SCALLOP_AREA) 
+
+# scal_trips$ACCESSAREA[scal_trips$SCALLOP_AREA == 'OPEN'] = 'OPEN'
 
 
 stratvars_scalgf = c('SPECIES_STOCK'
