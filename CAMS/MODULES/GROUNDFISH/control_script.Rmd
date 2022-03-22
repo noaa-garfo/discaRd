@@ -389,4 +389,6 @@ tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF18"))
 tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
 tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18"))
 
+# CREATE index i_camsid ON dlr_vtr(camsid)
+
 ```
