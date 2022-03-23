@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------------------------------
 
-merge CAMS catchg with obdbs_prorate
+MERGE CAMS CATCH WITH OBDBS_PRORATE
 
 match on gear (NEGEAR), mesh, link1 and AREA
 
@@ -18,25 +18,80 @@ BG 12-02-21
          make sure the multi VTR join is a multi factor join.. AREA, GEAR, MESH, LINK1
 02/04/22 added filter for observedtrips coming from CAMS.MATCH_OBS so only trips with TRIP_EXT C or X are included. 
         This is the criteria used in OBS data
-02/18/22 changed EFP columns to new EM designation        
+02/18/22 changed EFP columns to new EM designation   
+
+03/24/22 joined the process for observer proration and merging of OBS and CATCH. Pro-ration was happening imncorrectly adn is now done
+by subtrip. This is designated by VTRSERNO, and happens AFTER the merge between catch and obs. In this manner, each subtrip 
+now has the correct OBS_KALL and pro-rated discard by species. 
+
+         
+RUN FROM MAPS SCHEMA
 
 ------------------------------------------------------------------------------------------------------*/  
 
 --drop table bg_cams_obs_catch
-/
 
-drop table cams_obs_catch
-/
+with obs1 as (
+select a.*
+    from (
+ select o.link3
+            , link1
+            , vtrserno
+            , extract(year from datesail) as year
+            , o.month
+            , o.obsrflag
+            , o.area as obs_area
+            , o.negear as obs_gear
+            , o.geartype
+            , round(o.meshsize, 0) as obs_mesh
+            , o.meshgroup
+            , substr(nespp4, 1, 3) as NESPP3
+            , SUM(case when catdisp = 0 then o.livewt else 0 end) as discard
+            , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
+        
+            from (
+			    select * from maps.cams_obdbs_2017
+                union all
+                select * from maps.cams_obdbs_2018
+                union all
+                select * from maps.cams_obdbs_2019
+				union all
+                select * from maps.cams_obdbs_2020
+                union all
+                select * from maps.cams_obdbs_2021
+            )
+            o
+          group by  o.link3
+            , link1
+            , vtrserno
+            , o.month
+            , o.obsrflag
+            , o.area 
+            , o.geartype
+            , o.negear 
+            , round(o.meshsize, 0)
+            , o.meshgroup
+            , substr(nespp4, 1, 3)
+            , extract(year from datesail)
+) a
 
---drop View cams_obs_catch
+group by link3
+            , link1
+            , vtrserno
+            , year
+            , month
+            , obsrflag
+            , obs_area
+            , obs_gear
+            , geartype
+            , obs_mesh
+            , meshgroup
+            , NESPP3
+            , discard
+            , obs_haul_kept
+)
 
-/
---drop materialized view cams_obs_catch
-/
-
-create table cams_obs_catch as 
-
-with ulink as (
+, ulink as (
     select count(distinct(obs_link1)) nlink1
     , obs_vtr
     from maps.match_obs
@@ -189,7 +244,7 @@ with ulink as (
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
             , i.ITIS_TSN
             , i.ITIS_GROUP1
-        from MAPS.CAMS_OBS_PRORATE a
+        from OBS1 a
           left join (
             select distinct(NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED
@@ -215,13 +270,15 @@ trips with no link1 (unobserved)
     , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
+    , o.obsrflag
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
     , o.ITIS_GROUP1
-    , o.discard_prorate as discard
+--    , o.discard_prorate as discard
+, o.discard
     , o.obs_haul_kept
-    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -241,13 +298,15 @@ trips with no link1 (unobserved)
   , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
+    , o.obsrflag
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
     , o.ITIS_GROUP1
-    , o.discard_prorate as discard
+--    , o.discard_prorate as discard
+, o.discard
     , o.obs_haul_kept
-    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -272,13 +331,15 @@ trips with no link1 (unobserved)
   , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
+    , o.obsrflag
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
     , o.ITIS_GROUP1
-    , o.discard_prorate as discard
+--    , o.discard_prorate as discard
+, o.discard
     , o.obs_haul_kept
-    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -295,29 +356,25 @@ trips with no link1 (unobserved)
 --  and t.year = 2019
 )
 
-select * from trips_0
-union all
-select * from trips_1
-union all
-select * from trips_2
+, obs_catch as 
+( 
+    select * from trips_0
+    union all
+    select * from trips_1
+    union all
+    select * from trips_2
+)
 
-/*       Old matching criteria, no table split as above      */
---on (o.link1 = c.link1 AND c.SECGEAR_MAPPED = o.SECGEAR_MAPPED AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
+select a.*
+, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno)) as obs_haul_kall_trip
+, round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno)) as obs_nohaul_kall_trip
+, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.vtrserno)) as OBS_KALL
+, SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtrserno) / 
+   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno),0) as prorate
+, round(SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtrserno) / 
+   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno),0)*discard, 2) as discard_prorate
+ 
+from obs_catch a
+--where a.link1 is not null
+--and a.link1 = '000201908R35027'
 
-/
-
-
---
---select count(distinct(link1)) as nlink1
---, meshgroup
---, geartype
---, negear
---from cams_obs_catch
-----where meshgroup not in 'na'
---where year = 2019
---and link1 is not null
---group by negear, meshgroup, geartype
---order by negear, meshgroup
-/
-
-/ 

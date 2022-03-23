@@ -364,7 +364,7 @@ uploaded groundfish tables
 
 Please note that
 - for `COD` that lobster pots should have discard = 0. This has not been implemented programmatically as of 3/11/22.
-- Scallop trip based estiamtes for `Yellowtail` and `Windowpane` flounder stocks has *NOT* been implemented yet.
+- Scallop trip based estimates for `Yellowtail` and `Windowpane` flounder stocks has *NOT* been implemented yet.
 
 an example script for compiling a calendar year table, along with additional trip attributes, is provided `groundifsh_CY_example_pull.sql`
 
@@ -385,3 +385,59 @@ Added scallop trip estimation and substitution of
 - Windowpane flounder
 
 *need to check order which the scallop substitution table build happens. May be creating incomaptible tables for large overall table build*
+
+## March 22
+
+- Wolffish needs to have 0.08 discard mortality for ALL gears
+
+## March 23
+- moved estimation of broad stock rate to a separate loop/function in order to extract a CV
+- applied to scallop sub-module
+- applied to groundfish Trips
+- TO-DO: apply to non-gf, non-scallop trips
+
+### Issue with hand calculation of discards by strata vs. CAMS estimate for OBS Trips
+
+example modified from Chris Legault's exploration
+
+```SQL
+  select STRATA_FULL
+  , sum(OBS_DISCARD) as SUMD
+  , sum(SUBTRIP_KALL) as SUMK
+  , count (*) as NTRIPS
+  , min(n_obs_trips_f) as n_obs_trips_f
+  , avg(CAMS_DISCARD_RATE) as CAMS_DK
+  , sum(OBS_DISCARD) / sum(SUBTRIP_KALL) as CALCDK
+  from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19
+  where DISCARD_SOURCE = 'O'
+  AND species_itis = 164712
+  and link1 = '000201908R35027'
+  group by STRATA_FULL
+  order by STRATA_FULL
+```
+| STRATA_FULL           | SUMD | SUMK    | NTRIPS | N_OBS_TRIPS_F | CAMS_DK                | CALCDK                 |
+|-----------------------|------|---------|--------|---------------|------------------------|------------------------|
+| GOM_50_LM_22_NA_0_0_0 | 6.0  | 28999.0 | 3      | 73.0          | 0.00004871942648376951 | 0.00020690368633401152 |
+
+`CAMS_OBS_CATCH` has
+- OBS_KALL as 43,858
+- SUBTRIP_KALL as 28,999
+
+The issue seem to be the `OBS_KALL` is calculated during the proration step (`CAMS_OBS_PRORATE`) but is done at the trip level. Therefore, in the `discaRd` estimation, a subtrip may have the full trips `OBS_KALL` applied.
+
+The discard value is a pro-rated value. If the proration was based on a full trip, and not a subtrip, it may be over estimated.
+
+**This needs to be corrected.**
+
+The question may be approached in a few ways
+1. Apportion the `OBS_KALL` proportional to the `SUBTRIP_KALL`. For example:
+```r
+# using the CAMS_OBS_CATCH table
+dplyr::summarise(apport_obs_kall = OBS_KALL*(SUBTRIP_KALL/sum(unique(SUBTRIP_KALL))))
+```
+2. add a subtrip element (upstream or during the CATCH/OBS merge) and change where the pro-ration happens
+
+
+A secondary note is that when a strata has <5 OBS trips, the rate from CAMS will be a transition rate and cannot be hand calculated from the output.
+
+There will likely be mismatches between `OBS_KALL` and `SUBTRIP_KALL` in any case as the latter is an apportioned dealer-based landings value.
