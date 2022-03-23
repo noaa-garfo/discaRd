@@ -1,5 +1,5 @@
 ---
-title: "Skate Complex Summary"
+title: "Hake Summary"
 #author: "Ben Galuardi modified by K.Winiarski"
 date: "`r Sys.Date()`"
 output:
@@ -25,7 +25,7 @@ options(knitr.kable.NA = '')
 
 ### Background 
 
-Exploration of discard estimates from may year module developed for skates
+Exploration of discard estimates from may year module developed for hake
 
 ### Steps 
 
