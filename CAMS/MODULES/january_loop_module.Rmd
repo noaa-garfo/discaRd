@@ -98,7 +98,8 @@ FY_TYPE = 'JAN START'
         '172567',
         '082372',
          '172414',
-          '082521')  # 
+          '082521',
+        '172735')  # 
  
  #itis <- itis
  itis_num <- as.numeric(itis)
@@ -543,8 +544,9 @@ trans_rate_df = dest_strata_f %>%
 	dplyr::rename('DISCARD_RATE' = 'FINAL_RATE'
 								,'N_OBS_TRIPS_F' = 'n_obs_trips'
 								,'STRATA_FULL' = 'STRATA'
-								,'CAMS_DISCARD_RATE' = 'FINAL_RATE'
-								,'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL') %>% 
+								,'CAMS_DISCARD_RATE' = 'FINAL_RATE',
+								'ACTIVITY_CODE' = 'ACTIVITY_CODE_1')%>%
+							#	,'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL') %>% 
 	mutate(DATE_RUN = as.character(lubridate::today())
 				 , FY = as.integer(FY)) %>%
 	dplyr::select(
@@ -567,13 +569,13 @@ trans_rate_df = dest_strata_f %>%
 #	STRATA_USED,
 	STRATA_FULL,
 	STRATA_ASSUMED,
-	DISCARD_SOURCE,
+ 	DISCARD_SOURCE,
 	OBS_DISCARD,
 	SUBTRIP_KALL,
-	CAMS_DISCARD_RATE,
+ 	CAMS_DISCARD_RATE,
 	DISC_MORT_RATIO,
-	DISCARD,
-	CV,
+ 	DISCARD,
+ 	CV,
 	eval(stratvars)
 	)
  
@@ -581,6 +583,8 @@ trans_rate_df = dest_strata_f %>%
  unique(cy_discard_example$CV)
  
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
+ 
+ cy_discard_example <- cy_discard_example %>% case_when(CV = 'Inf' ~ 'NA')
  
 # cy_discard_example$DISCARD_RATE <- #round(cy_discard_example$DISCARD_RATE, 5)
 
