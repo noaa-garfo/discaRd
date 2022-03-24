@@ -120,7 +120,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from MAPS.CAMS_OBS_CATCH
+	from MAPS.CAMS_OBS_CATCH_PRORATE
 	group by year
   -- , carea
   , AREA
@@ -323,10 +323,10 @@ outlist <- lapply(res, function(x) {
 		SNE_SMALLMESH_EXEMPTION,
 		XLRG_GILLNET_EXEMPTION,
 		TRIPCATEGORY,
-		ACCESSAREA
+		ACCESSAREA,
+		SCALLOP_AREA
 	  # eval(strata_unique)
-	) %>% 
-		mutate(SCALLOP_AREA = '')
+	)
 	
 }
 )

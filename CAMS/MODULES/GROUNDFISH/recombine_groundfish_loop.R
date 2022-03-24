@@ -364,12 +364,37 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
  trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
  
- # get a table of broad stock rates from results (ARATE in pass2)
+ # get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
+
+
+BROAD_STOCK_RATE_TABLE = list()
+
+kk = 1
+
+ustocks = bdat_gf$SPECIES_STOCK %>% unique()
+
+for(k in ustocks){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_gf
+											 , ddat_focal_sp = ddat_focal_gf
+											 , ddat_focal = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars[1]
+											 # , aidx = 1
+											 , stock = k 
+											 )
+	kk = kk+1
+}
+
+BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+
+rm(kk, k) 
  
-BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>% 
- 	group_by(SPECIES_STOCK) %>% 
- 	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
+#   
+# BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>% 
+#  	group_by(SPECIES_STOCK) %>% 
+#  	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
  
+# make names specific to the sector rollup pass
  
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
   
@@ -435,6 +460,7 @@ joined_table = joined_table %>%
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
 												, DISCARD_SOURCE == 'A' ~ CV_f_a
+												, DISCARD_SOURCE == 'B' ~ CV_b
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
@@ -485,7 +511,7 @@ fst::write_fst(x = joined_table, path = paste0('/home/bgaluardi/PROJECTS/discaRd
 
  t2 = Sys.time()
 	
-print(paste(species_itis, ' RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
  
 }
 
@@ -741,13 +767,37 @@ trans_rate_df = trans_rate_df %>%
 # NOTE: This is slightly different than what is used for GF trips. 
 # For non-GF trips, the Assumed rate above is GEAR/MESH.
  
-BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_non_gf
-																					 , species_itis = species$SPECIES_ITIS[i]
-																					 , stratvars = stratvars_nongf[1]) %>% 
- 	mutate(SPECIES_STOCK = STRATA
- 				 , STRAT_DESC = paste(stratvars_nongf[1], sep = '-')) %>% 
- 	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
- 	dplyr::select(-STRATA, -KALL, -BYCATCH)
+
+ BROAD_STOCK_RATE_TABLE = list()
+
+kk = 1
+
+ustocks = bdat_non_gf$SPECIES_STOCK %>% unique()
+
+for(k in ustocks){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_non_gf
+											 , ddat_focal_sp = ddat_focal_non_gf
+											 , ddat_focal = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars_nongf[1]
+											 # , aidx = 1
+											 , stock = k 
+											 )
+	kk = kk+1
+}
+
+BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+
+rm(kk, k) 
+ 
+#  
+#  BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_non_gf
+# 																					 , species_itis = species$SPECIES_ITIS[i]
+# 																					 , stratvars = stratvars_nongf[1]) %>% 
+#  	mutate(SPECIES_STOCK = STRATA
+#  				 , STRAT_DESC = paste(stratvars_nongf[1], sep = '-')) %>% 
+#  	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
+#  	dplyr::select(-STRATA, -KALL, -BYCATCH)
  
 # print(paste0("Constructing output table for ", species_itis, " ", FY)) 
 
@@ -807,6 +857,7 @@ joined_table = joined_table %>%
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
+												, DISCARD_SOURCE == 'B' ~ CV_b
 												# , DISCARD_SOURCE == 'A' ~ CV_f_a
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
 												)  # , DISCARD_SOURCE == 'B' ~ NA
@@ -849,7 +900,7 @@ fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/
  
 t2 = Sys.time()
 	
-print(paste(species_itis, 'NON GROUNDIFSH TRIPS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
  
 }
 
@@ -857,21 +908,22 @@ print(paste(species_itis, 'NON GROUNDIFSH TRIPS RAN IN ', round(difftime(t2, t1,
 
 
 scal_trips = non_gf_dat %>% 
-	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') %>% 
-	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
-  mutate( SCALLOP_AREA = case_when(PROGRAM == 'OP' ~ 'OPEN' 
-       , PROGRAM == 'NS' ~ 'NLS'
-       , PROGRAM == 'NN' ~ 'NLSN'
-       , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
-       , PROGRAM == 'NW' ~ 'NLSW'
-       , PROGRAM == '1S' ~ 'CAI'
-       , PROGRAM == '2S' ~ 'CAII'
-       , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
-	   )
-) %>% 
-	mutate(SCALLOP_AREA = dplyr::coalesce(SCALLOP_AREA, 'OPEN')) 
-
-scal_trips$ACCESSAREA[scal_trips$SCALLOP_AREA == 'OPEN'] = 'OPEN'
+	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') 
+# %>% 
+# 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
+#   mutate( SCALLOP_AREA = case_when(PROGRAM == 'OP' ~ 'OPEN' 
+#        , PROGRAM == 'NS' ~ 'NLS'
+#        , PROGRAM == 'NN' ~ 'NLSN'
+#        , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
+#        , PROGRAM == 'NW' ~ 'NLSW'
+#        , PROGRAM == '1S' ~ 'CAI'
+#        , PROGRAM == '2S' ~ 'CAII'
+#        , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
+# 	   )
+# ) %>% 
+# 	mutate(SCALLOP_AREA = dplyr::coalesce(SCALLOP_AREA, 'OPEN')) 
+# 
+# scal_trips$ACCESSAREA[scal_trips$SCALLOP_AREA == 'OPEN'] = 'OPEN'
 
 
 stratvars_scalgf = c('SPECIES_STOCK'
@@ -882,6 +934,11 @@ stratvars_scalgf = c('SPECIES_STOCK'
 							, 'SCALLOP_AREA')
 
 scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
+
+# NEED TO LOOP OVER TWO YEARS EACH TIME BEACUSE OF MISMATCH IN GROUNDFISH/SCALLOP YEAR.. E.G. GF YEAR 2018 NEEDS SCAL YEAR 2018 AND 2019.. 
+# THIS NEEDS TO BE DONE HERE BECAUSE THE TABLE SUBSTITUTION IS THE NEXT CHUNK... 
+
+for(yy in FY:(FY+1)){
 
 for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
 
@@ -935,7 +992,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
 
 # make tables
 ddat_focal <- scal_trips %>% 
-  filter(SCAL_YEAR == FY) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
+  filter(SCAL_YEAR == yy) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -951,7 +1008,7 @@ ddat_focal <- scal_trips %>%
 
 
 ddat_prev <- scal_trips %>% 
-  filter(SCAL_YEAR == FY-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
+  filter(SCAL_YEAR == yy-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -1109,7 +1166,7 @@ trans_rate_df = trans_rate_df %>%
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
+ 				 , FISHING_YEAR = yy
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
@@ -1125,20 +1182,43 @@ trans_rate_df = trans_rate_df %>%
 # NOTE: This is slightly different than what is used for GF trips. 
 # For non-GF trips, the Assumed rate above is GEAR/MESH.
  
-BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_scal
-																					 , species_itis = species$SPECIES_ITIS[i]
-																					 , stratvars = stratvars_scalgf[1]) %>% 
- 	mutate(SPECIES_STOCK = STRATA
- 				 , STRAT_DESC = paste(stratvars_scalgf[1], sep = '-')) %>% 
- 	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
- 	dplyr::select(-STRATA, -KALL, -BYCATCH)
+# do broad stock using discaRd...
+ # Run the discaRd functions on current year
  
-print(paste0("Constructing output table for ", species_itis, " in SCALLOP YEAR ", FY)) 
+BROAD_STOCK_RATE_TABLE = list()
+
+kk = 1
+
+ustocks = bdat_scal$SPECIES_STOCK %>% unique()
+
+for(k in ustocks){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
+											 , ddat_focal_sp = ddat_focal_scal
+											 , ddat_focal = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars_scalgf[1]
+											 # , aidx = 1
+											 , stock = k 
+											 )
+	kk = kk+1
+}
+
+BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+
+rm(kk, k)
+
+
+# BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_scal
+# 																					 , species_itis = species$SPECIES_ITIS[i]
+# 																					 , stratvars = stratvars_scalgf[1]) %>% 
+#  	mutate(SPECIES_STOCK = STRATA
+#  				 , STRAT_DESC = paste(stratvars_scalgf[1], sep = '-')) %>% 
+#  	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
+#  	dplyr::select(-STRATA, -KALL, -BYCATCH)
+#  
+print(paste0("Constructing output table for ", species_itis, " in SCALLOP YEAR ", yy)) 
 
 joined_table = assign_strata(full_strata_table, stratvars_scalgf) %>% 
-	# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
-	# dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
-	# left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
 	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK')) %>% 
 	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate  # this is an in season rate
 															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ trans_rate  # this is a final IN SEASON rate taking transition into account
@@ -1148,7 +1228,7 @@ joined_table = assign_strata(full_strata_table, stratvars_scalgf) %>%
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
+ 				 , FISHING_YEAR = yy
  				 , FY_TYPE = FY_TYPE) 
 
 #-----------------------------------------------------------------------
@@ -1191,9 +1271,10 @@ joined_table = joined_table %>%
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
+												, DISCARD_SOURCE == 'B' ~ CV_b
 												# , DISCARD_SOURCE == 'A' ~ CV_f_a
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
-												)  # , DISCARD_SOURCE == 'B' ~ NA
+												)  
 				 )
 
 
@@ -1229,12 +1310,13 @@ joined_table = joined_table %>%
  
  # saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
 
-fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', FY,'.fst'))
+fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
  
 t2 = Sys.time()
 	
-print(paste(species_itis, 'SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
  
+ }
 }
 
 
@@ -1291,7 +1373,7 @@ start_time = Sys.time()
 				ACTIVITY_CODE,
 				VTRSERNO,
 				CAMSID,
-				TRIP_TYPE,
+				FED_OR_STATE,
 				GF,
 				AREA,
 				LINK1,
@@ -1356,7 +1438,7 @@ start_time = Sys.time()
 				ACTIVITY_CODE,
 				VTRSERNO,
 				CAMSID,
-				TRIP_TYPE,
+				FED_OR_STATE,
 				GF,
 				AREA,
 				LINK1,
@@ -1410,13 +1492,13 @@ start_time = Sys.time()
 		
 		
 		# test against the scallop fy 19
-		t2 %>% 
-			filter(YEAR == 2019 & MONTH >= 4) %>% 
-			bind_rows(t2 %>% 
-			filter(YEAR == 2020 & MONTH < 4)) %>% 
-			group_by(SPECIES_STOCK, ACCESSAREA, TRIP_TYPE) %>% 
-			dplyr::summarise(round(sum(DISCARD, na.rm = T))) %>% 
-		  write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
+		# t2 %>% 
+		# 	filter(YEAR == 2019 & MONTH >= 4) %>% 
+		# 	bind_rows(t2 %>% 
+		# 	filter(YEAR == 2020 & MONTH < 4)) %>% 
+		# 	group_by(SPECIES_STOCK, ACCESSAREA, FED_OR_STATE) %>% 
+		# 	dplyr::summarise(round(sum(DISCARD, na.rm = T))) %>% 
+		#   write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
 		write_fst(x = t1, path = gf_files)
 		
@@ -1430,7 +1512,7 @@ start_time = Sys.time()
 		# 	bind_rows(t1 %>% 
 		# 	filter(YEAR == 2020 & MONTH < 4)) %>% 
 		# 	filter(substr(ACTIVITY_CODE, 1,3) == 'SES') %>% 
-		# 	group_by(SPECIES_STOCK, ACCESSAREA, SPECIES_ITIS, TRIP_TYPE) %>% 
+		# 	group_by(SPECIES_STOCK, ACCESSAREA, SPECIES_ITIS, FED_OR_STATE) %>% 
 		# 	dplyr::summarise(round(sum(DISCARD, na.rm = T)))
 			# write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
