@@ -87,6 +87,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	-- , carea
   , AREA
 	, vtrserno
+  , CAMS_SUBTRIP
 	, link1
 	, docid
 	, CAMSID
@@ -121,11 +122,16 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH_PRORATE
+ 
+ WHERE YEAR >= 2017 
+  and YEAR <= 2020
+
 	group by year
   -- , carea
   , AREA
   , PERMIT
 	, vtrserno
+  , CAMS_SUBTRIP
 	, link1
 	, docid
 	, nespp3	
@@ -183,8 +189,11 @@ c_o_dat2 <- tbl(bcon, sql(
        , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
 	   )
 ) %>% 
-	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN')))
-				 # , ~SCALLOP_AREA) 
+	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>% 
+	mutate(DOCID = CAMS_SUBTRIP)
+
+# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+				 
 
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
