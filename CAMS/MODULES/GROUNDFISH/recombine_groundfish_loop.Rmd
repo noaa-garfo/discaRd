@@ -623,12 +623,37 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
  trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
  
- # get a table of broad stock rates from results (ARATE in pass2)
+ # get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
+
+
+BROAD_STOCK_RATE_TABLE = list()
+
+kk = 1
+
+ustocks = bdat_gf$SPECIES_STOCK %>% unique()
+
+for(k in ustocks){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_gf
+											 , ddat_focal_sp = ddat_focal_gf
+											 , ddat_focal = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars[1]
+											 # , aidx = 1
+											 , stock = k 
+											 )
+	kk = kk+1
+}
+
+BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+
+rm(kk, k) 
  
-BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>% 
- 	group_by(SPECIES_STOCK) %>% 
- 	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
+#   
+# BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>% 
+#  	group_by(SPECIES_STOCK) %>% 
+#  	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
  
+# make names specific to the sector rollup pass
  
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
   
@@ -694,6 +719,7 @@ joined_table = joined_table %>%
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
 												, DISCARD_SOURCE == 'A' ~ CV_f_a
+												, DISCARD_SOURCE == 'B' ~ CV_b
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
@@ -1002,13 +1028,37 @@ trans_rate_df = trans_rate_df %>%
 # NOTE: This is slightly different than what is used for GF trips. 
 # For non-GF trips, the Assumed rate above is GEAR/MESH.
  
-BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_non_gf
-																					 , species_itis = species$SPECIES_ITIS[i]
-																					 , stratvars = stratvars_nongf[1]) %>% 
- 	mutate(SPECIES_STOCK = STRATA
- 				 , STRAT_DESC = paste(stratvars_nongf[1], sep = '-')) %>% 
- 	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
- 	dplyr::select(-STRATA, -KALL, -BYCATCH)
+
+ BROAD_STOCK_RATE_TABLE = list()
+
+kk = 1
+
+ustocks = bdat_non_gf$SPECIES_STOCK %>% unique()
+
+for(k in ustocks){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_non_gf
+											 , ddat_focal_sp = ddat_focal_non_gf
+											 , ddat_focal = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars_nongf[1]
+											 # , aidx = 1
+											 , stock = k 
+											 )
+	kk = kk+1
+}
+
+BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+
+rm(kk, k) 
+ 
+#  
+#  BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_non_gf
+# 																					 , species_itis = species$SPECIES_ITIS[i]
+# 																					 , stratvars = stratvars_nongf[1]) %>% 
+#  	mutate(SPECIES_STOCK = STRATA
+#  				 , STRAT_DESC = paste(stratvars_nongf[1], sep = '-')) %>% 
+#  	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
+#  	dplyr::select(-STRATA, -KALL, -BYCATCH)
  
 # print(paste0("Constructing output table for ", species_itis, " ", FY)) 
 
@@ -1068,6 +1118,7 @@ joined_table = joined_table %>%
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
+												, DISCARD_SOURCE == 'B' ~ CV_b
 												# , DISCARD_SOURCE == 'A' ~ CV_f_a
 												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
 												)  # , DISCARD_SOURCE == 'B' ~ NA
@@ -1147,6 +1198,11 @@ stratvars_scalgf = c('SPECIES_STOCK'
 
 scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
 
+# NEED TO LOOP OVER TWO YEARS EACH TIME BEACUSE OF MISMATCH IN GROUNDFISH/SCALLOP YEAR.. E.G. GF YEAR 2018 NEEDS SCAL YEAR 2018 AND 2019.. 
+# THIS NEEDS TO BE DONE HERE BECAUSE THE TABLE SUBSTITUTION IS THE NEXT CHUNK... 
+
+for(yy in FY:(FY+1)){
+
 for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
 
 t1 = Sys.time()	
@@ -1199,7 +1255,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
 
 # make tables
 ddat_focal <- scal_trips %>% 
-  filter(SCAL_YEAR == FY) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
+  filter(SCAL_YEAR == yy) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -1215,7 +1271,7 @@ ddat_focal <- scal_trips %>%
 
 
 ddat_prev <- scal_trips %>% 
-  filter(SCAL_YEAR == FY-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
+  filter(SCAL_YEAR == yy-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -1373,7 +1429,7 @@ trans_rate_df = trans_rate_df %>%
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
+ 				 , FISHING_YEAR = yy
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
@@ -1392,53 +1448,27 @@ trans_rate_df = trans_rate_df %>%
 # do broad stock using discaRd...
  # Run the discaRd functions on current year
  
-ustocks = bdat_scal$SPECIES_STOCK 
- %>% unique()
- 
-BROAD_STOCK_RATE_TABLE = data.frame(BROAD_STOCK_RATE = NULL, CV = NULL, SPECIES_STOCK = NULL)
- 
- for(k in ustocks){
- 	
-get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, aidx = 1, stock = 'GOM'){ 	
- 	
-btmp = 	bdat %>%
-	filter(SPECIES_STOCK == stock)
-dstmp = ddat_focal_sp %>%
-	filter(SPECIES_STOCK == stock)
-dtmp = 	ddat_focal %>%
-	filter(SPECIES_STOCK == stock)
-
-d_broad_stock = run_discard(bdat = btmp
-											 , ddat = dstmp
-											 , c_o_tab = dtmp
-											 , species_itis = species_itis
-											 , stratvars = stratvars
-											 , aidx = aidx  # this makes sure this isn't used..
-											 )
-
-data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
-			, CV_b = d_broad_stock$allest$CVTOT
-)
-
-} 
-
 BROAD_STOCK_RATE_TABLE = list()
+
 kk = 1
-for(k in bdat_scal$SPECIES_STOCK %>% unique()){
-BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
-										 , ddat_focal_sp = ddat_focal_scal
-										 , ddat_focal = ddat_focal
-										 , species_itis = species_itis
-										 , stratvars = stratvars_scalgf[1]
-										 , aidx = 1
-										 , stock = k 
-										 )
-kk = kk+1
+
+ustocks = bdat_scal$SPECIES_STOCK %>% unique()
+
+for(k in ustocks){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
+											 , ddat_focal_sp = ddat_focal_scal
+											 , ddat_focal = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars_scalgf[1]
+											 # , aidx = 1
+											 , stock = k 
+											 )
+	kk = kk+1
 }
 
 BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
 
-rm(kk)
+rm(kk, k)
 
 
 # BROAD_STOCK_RATE_TABLE = make_assumed_rate(bdat_scal
@@ -1449,7 +1479,7 @@ rm(kk)
 #  	dplyr::rename('BROAD_STOCK_RATE' = 'dk') %>% 
 #  	dplyr::select(-STRATA, -KALL, -BYCATCH)
 #  
-print(paste0("Constructing output table for ", species_itis, " in SCALLOP YEAR ", FY)) 
+print(paste0("Constructing output table for ", species_itis, " in SCALLOP YEAR ", yy)) 
 
 joined_table = assign_strata(full_strata_table, stratvars_scalgf) %>% 
 	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK')) %>% 
@@ -1461,7 +1491,7 @@ joined_table = assign_strata(full_strata_table, stratvars_scalgf) %>%
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
+ 				 , FISHING_YEAR = yy
  				 , FY_TYPE = FY_TYPE) 
 
 #-----------------------------------------------------------------------
@@ -1543,12 +1573,13 @@ joined_table = joined_table %>%
  
  # saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
 
-fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', FY,'.fst'))
+fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
  
 t2 = Sys.time()
 	
-print(paste(species_itis, 'SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
  
+ }
 }
 
 
@@ -1583,134 +1614,136 @@ start_time = Sys.time()
 		res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))
 		
 		# create standard output table structures for scallop trips
-		outlist <- lapply(res_scal, function(x) { 
-				x %>% 
-				mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-				dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-			dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-										, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-										, 'COMMON_NAME' = 'COMNAME_EVAL'
-										, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-										, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-										, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-										) %>% 
-			mutate(DATE_RUN = as.character(Sys.Date())
-						 , FY = as.integer(FY)) %>%
-			dplyr::select(
-				DATE_RUN,
-				FY,
-				YEAR,
-				MONTH,
-				SPECIES_ITIS,
-				COMMON_NAME,
-				FY_TYPE,
-				ACTIVITY_CODE,
-				VTRSERNO,
-				CAMSID,
-				FED_OR_STATE,
-				GF,
-				AREA,
-				LINK1,
-				N_OBS_TRIPS_F,
-				STRATA_USED,
-				STRATA_FULL,
-				STRATA_ASSUMED,
-				DISCARD_SOURCE,
-				OBS_DISCARD,
-				SUBTRIP_KALL,
-				BROAD_STOCK_RATE,
-				CAMS_DISCARD_RATE,
-				DISC_MORT_RATIO,
-				DISCARD,
-				CV,
-				SPECIES_STOCK,
-				CAMS_GEAR_GROUP,
-				MESHGROUP,
-				SECTID,
-				EM,
-				REDFISH_EXEMPTION,
-				SNE_SMALLMESH_EXEMPTION,
-				XLRG_GILLNET_EXEMPTION,
-				TRIPCATEGORY,
-				ACCESSAREA,
-				SCALLOP_AREA
-			  # eval(strata_unique)
-			)
-			
-		}
-		)
-		
-		rm(res_scal)
+		# outlist <- lapply(res_scal, function(x) { 
+		# 		x %>% 
+		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
+		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
+		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
+		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
+		# 								) %>% 
+		# 	mutate(DATE_RUN = as.character(Sys.Date())
+		# 				 , FY = as.integer(FY)) %>%
+		# 	dplyr::select(
+		# 		DATE_RUN,
+		# 		FY,
+		# 		YEAR,
+		# 		MONTH,
+		# 		SPECIES_ITIS,
+		# 		COMMON_NAME,
+		# 		FY_TYPE,
+		# 		ACTIVITY_CODE,
+		# 		VTRSERNO,
+		# 		CAMSID,
+		# 		FED_OR_STATE,
+		# 		GF,
+		# 		AREA,
+		# 		LINK1,
+		# 		N_OBS_TRIPS_F,
+		# 		STRATA_USED,
+		# 		STRATA_FULL,
+		# 		STRATA_ASSUMED,
+		# 		DISCARD_SOURCE,
+		# 		OBS_DISCARD,
+		# 		SUBTRIP_KALL,
+		# 		BROAD_STOCK_RATE,
+		# 		CAMS_DISCARD_RATE,
+		# 		DISC_MORT_RATIO,
+		# 		DISCARD,
+		# 		CV,
+		# 		SPECIES_STOCK,
+		# 		CAMS_GEAR_GROUP,
+		# 		MESHGROUP,
+		# 		SECTID,
+		# 		EM,
+		# 		REDFISH_EXEMPTION,
+		# 		SNE_SMALLMESH_EXEMPTION,
+		# 		XLRG_GILLNET_EXEMPTION,
+		# 		TRIPCATEGORY,
+		# 		ACCESSAREA,
+		# 		SCALLOP_AREA
+		# 	  # eval(strata_unique)
+		# 	)
+		# 	
+		# }
+		# )
+		# 
+		# rm(res_scal)
 				
-		assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
+		# assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
+		assign(paste0('outlist_df_scal'),  do.call(rbind, res_scal))
 		
-		rm(outlist)
+		# rm(outlist)
 		
 		# now do the same for GF trips
 		
-		outlist <- lapply(res_gf, function(x) { 
-				x %>% 
-				mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-				dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-			dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-										, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-										, 'COMMON_NAME' = 'COMNAME_EVAL'
-										, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-										, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-										, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-										) %>% 
-			mutate(DATE_RUN = as.character(Sys.Date())
-						 , FY = as.integer(FY)) %>%
-			dplyr::select(
-				DATE_RUN,
-				FY,
-				YEAR,
-				MONTH,
-				SPECIES_ITIS,
-				COMMON_NAME,
-				FY_TYPE,
-				ACTIVITY_CODE,
-				VTRSERNO,
-				CAMSID,
-				FED_OR_STATE,
-				GF,
-				AREA,
-				LINK1,
-				N_OBS_TRIPS_F,
-				STRATA_USED,
-				STRATA_FULL,
-				STRATA_ASSUMED,
-				DISCARD_SOURCE,
-				OBS_DISCARD,
-				SUBTRIP_KALL,
-				BROAD_STOCK_RATE,
-				CAMS_DISCARD_RATE,
-				DISC_MORT_RATIO,
-				DISCARD,
-				CV,
-				SPECIES_STOCK,
-				CAMS_GEAR_GROUP,
-				MESHGROUP,
-				SECTID,
-				EM,
-				REDFISH_EXEMPTION,
-				SNE_SMALLMESH_EXEMPTION,
-				XLRG_GILLNET_EXEMPTION,
-				TRIPCATEGORY,
-				ACCESSAREA
-				# SCALLOP_AREA
-			  # eval(strata_unique)
-			) %>% 
-				mutate(SCALLOP_AREA = '')
-			
-		}
-		)
+		# outlist <- lapply(res_gf, function(x) { 
+		# 		x %>% 
+		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
+		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
+		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
+		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
+		# 								) %>% 
+		# 	mutate(DATE_RUN = as.character(Sys.Date())
+		# 				 , FY = as.integer(FY)) %>%
+		# 	dplyr::select(
+		# 		DATE_RUN,
+		# 		FY,
+		# 		YEAR,
+		# 		MONTH,
+		# 		SPECIES_ITIS,
+		# 		COMMON_NAME,
+		# 		FY_TYPE,
+		# 		ACTIVITY_CODE,
+		# 		VTRSERNO,
+		# 		CAMSID,
+		# 		FED_OR_STATE,
+		# 		GF,
+		# 		AREA,
+		# 		LINK1,
+		# 		N_OBS_TRIPS_F,
+		# 		STRATA_USED,
+		# 		STRATA_FULL,
+		# 		STRATA_ASSUMED,
+		# 		DISCARD_SOURCE,
+		# 		OBS_DISCARD,
+		# 		SUBTRIP_KALL,
+		# 		BROAD_STOCK_RATE,
+		# 		CAMS_DISCARD_RATE,
+		# 		DISC_MORT_RATIO,
+		# 		DISCARD,
+		# 		CV,
+		# 		SPECIES_STOCK,
+		# 		CAMS_GEAR_GROUP,
+		# 		MESHGROUP,
+		# 		SECTID,
+		# 		EM,
+		# 		REDFISH_EXEMPTION,
+		# 		SNE_SMALLMESH_EXEMPTION,
+		# 		XLRG_GILLNET_EXEMPTION,
+		# 		TRIPCATEGORY,
+		# 		ACCESSAREA
+		# 		# SCALLOP_AREA
+		# 	  # eval(strata_unique)
+		# 	) %>% 
+		# 		mutate(SCALLOP_AREA = '')
+		# 	
+		# }
+		# )
 		
-		rm(res_gf)
+		# rm(res_gf)
 				
-		assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
+		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
+				assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 		
-		rm(outlist)
+		# rm(outlist)
 		
 		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
 		t2 = get(paste0('outlist_df_scal'))	
@@ -1726,13 +1759,13 @@ start_time = Sys.time()
 		
 		
 		# test against the scallop fy 19
-		t2 %>% 
-			filter(YEAR == 2019 & MONTH >= 4) %>% 
-			bind_rows(t2 %>% 
-			filter(YEAR == 2020 & MONTH < 4)) %>% 
-			group_by(SPECIES_STOCK, ACCESSAREA, FED_OR_STATE) %>% 
-			dplyr::summarise(round(sum(DISCARD, na.rm = T))) %>% 
-		  write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
+		# t2 %>% 
+		# 	filter(YEAR == 2019 & MONTH >= 4) %>% 
+		# 	bind_rows(t2 %>% 
+		# 	filter(YEAR == 2020 & MONTH < 4)) %>% 
+		# 	group_by(SPECIES_STOCK, ACCESSAREA, FED_OR_STATE) %>% 
+		# 	dplyr::summarise(round(sum(DISCARD, na.rm = T))) %>% 
+		#   write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
 		write_fst(x = t1, path = gf_files)
 		
