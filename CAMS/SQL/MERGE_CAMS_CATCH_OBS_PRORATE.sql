@@ -28,8 +28,11 @@ now has the correct OBS_KALL and pro-rated discard by species.
 RUN FROM MAPS SCHEMA
 
 ------------------------------------------------------------------------------------------------------*/  
+/
+drop table maps.cams_obs_catch_prorate
+/
 
---drop table bg_cams_obs_catch
+create table maps.cams_obs_catch_prorate as 
 
 with obs1 as (
 select a.*
@@ -145,14 +148,15 @@ group by link3
         , d.camsid
         , d.year
         , d.month
-        , case when d.carea < 600 then 'N'
-               else 'S' end as region
+--        , case when d.carea < 600 then 'N'
+--               else 'S' end as region
         , case when d.month in (1,2,3,4,5,6) then 1
              when d.month in (7,8,9,10,11,12) then 2
              end as halfofyear
         , d.docid
 --        , substr(d.vtrserno, 1, 13) vtrserno
         , vtrserno
+        , vtrserno || '_' || subtrip as vtr_subtrip
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -160,13 +164,13 @@ group by link3
 --        , d.meshsize
         , NVL(d.mesh_cat, 'na') as meshgroup
         , d.area
-        , d.carea
+--        , d.carea
         , round(sum(d.LIVLB)) as subtrip_kall
         , d.sectid
         , d.GF
         , d.activity_code_1
         , d.activity_code_2
-        , d.activity_code_3
+--        , d.activity_code_3
 --        , d.permit_EFP_1
 --        , d.permit_EFP_2
 --        , d.permit_EFP_3
@@ -180,7 +184,7 @@ group by link3
         , d.accessarea
     , o.link1
     , count(distinct(vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
-    from MAPS.CAMS_CATCH d
+    from MAPS.CAMS_LANDINGS d
     left join (  --adds observer link field
          select * 
          from vtr_link
@@ -201,14 +205,15 @@ group by link3
         d.permit
         , d.year
         , d.month
-        , case when d.carea < 600 then 'N'
-               else 'S' end 
+--        , case when d.carea < 600 then 'N'
+--               else 'S' end 
         , case when d.month in (1,2,3,4,5,6) then 1
              when d.month in (7,8,9,10,11,12) then 2
              end 
         , d.camsid
         , d.docid
         , d.vtrserno
+        , d.vtrserno || '_' || d.subtrip
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -216,12 +221,12 @@ group by link3
 --        , d.meshsize
         , NVL(d.mesh_cat, 'na')
         , d.area
-        , d.carea
+--        , d.carea
         , d.sectid
         , d.GF
         , d.activity_code_1
         , d.activity_code_2
-        , d.activity_code_3
+--        , d.activity_code_3
         , d.EM
 --        , d.permit_EFP_1
 --        , d.permit_EFP_2
@@ -352,7 +357,7 @@ trips with no link1 (unobserved)
         on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA)
   where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and t.link1 is not null
-  and t.vtrserno is not null
+  and t.vtr_subtrip is not null
 --  and t.year = 2019
 )
 
@@ -366,15 +371,28 @@ trips with no link1 (unobserved)
 )
 
 select a.*
-, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno)) as obs_haul_kall_trip
-, round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno)) as obs_nohaul_kall_trip
-, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.vtrserno)) as OBS_KALL
-, SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtrserno) / 
-   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno),0) as prorate
-, round(SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtrserno) / 
-   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtrserno),0)*discard, 2) as discard_prorate
- 
+, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip)) as obs_haul_kall_trip
+, round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip)) as obs_nohaul_kall_trip
+, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.vtr_subtrip)) as OBS_KALL
+, SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtr_subtrip) / 
+   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip),0) as prorate
+, round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtr_subtrip) / 
+ NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip),0)*a.discard), 2) as discard_prorate
 from obs_catch a
+
+
+--
+--PARTITION BY LIST (year) AUTOMATIC
+--(
+--  PARTITION year2017 VALUES (2017),
+--  PARTITION year2018 VALUES (2018),
+--  PARTITION year2019 VALUES (2019),
+--  PARTITION year2020 VALUES (2020)
+----  PARTITION year2021 VALUES ('2021')
+--)
+;
+
+
 --where a.link1 is not null
 --and a.link1 = '000201908R35027'
 

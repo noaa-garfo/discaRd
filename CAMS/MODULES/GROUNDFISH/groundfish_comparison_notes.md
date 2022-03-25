@@ -441,3 +441,7 @@ dplyr::summarise(apport_obs_kall = OBS_KALL*(SUBTRIP_KALL/sum(unique(SUBTRIP_KAL
 A secondary note is that when a strata has <5 OBS trips, the rate from CAMS will be a transition rate and cannot be hand calculated from the output.
 
 There will likely be mismatches between `OBS_KALL` and `SUBTRIP_KALL` in any case as the latter is an apportioned dealer-based landings value.
+
+## 3/25/2022
+
+- Chris L was not using the correct discard column. He was also not using the correct KALL column because it wasn't included.. OBS_KALL would need to be included to get a correct d/k
