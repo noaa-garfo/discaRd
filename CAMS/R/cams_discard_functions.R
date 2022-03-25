@@ -74,7 +74,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #' @param species_itis species of interest using SPECIES ITIS code
 #' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive. 
 #'
-#' @return a tibble with LINK1, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by LINK1 (subtrip). BYCATCH is the observed discard of the species of interest.
+#' @return a tibble with LINK1, CAMS_SUBTRIP, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by CAMS_SUBTRIP (subtrip). BYCATCH is the observed discard of the species of interest.
 #' 
 #' This table is used in `discaRd`
 #' 
@@ -83,10 +83,10 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #'
 #' @examples
 make_bdat_focal <- function(bdat
-                            # , year = 2019
-                            # , species_nespp3 = '802'
+														# , year = 2019
+														# , species_nespp3 = '802'
 														, species_itis = '164712' #cod
-                            , stratvars = c('GEARTYPE','meshgroup','region','halfofyear')){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+														, stratvars = c('GEARTYPE','meshgroup','region','halfofyear')){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
 	
 	require(rlang)
 	
@@ -103,9 +103,10 @@ make_bdat_focal <- function(bdat
 	
 	bdat_focal = assign_strata(bdat_focal, stratvars = stratvars)
 	
-
+	
 	bdat_focal <- bdat_focal %>%
 		dplyr::group_by(LINK1
+										, CAMS_SUBTRIP # new field that catenates CAMSID and CAMS SUBTRIP
 										# , NEGEAR
 										# , GEARTYPE
 										# , MESHGROUP
