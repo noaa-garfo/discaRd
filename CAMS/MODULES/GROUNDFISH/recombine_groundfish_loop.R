@@ -1349,134 +1349,136 @@ start_time = Sys.time()
 		res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))
 		
 		# create standard output table structures for scallop trips
-		outlist <- lapply(res_scal, function(x) { 
-				x %>% 
-				mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-				dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-			dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-										, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-										, 'COMMON_NAME' = 'COMNAME_EVAL'
-										, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-										, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-										, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-										) %>% 
-			mutate(DATE_RUN = as.character(Sys.Date())
-						 , FY = as.integer(FY)) %>%
-			dplyr::select(
-				DATE_RUN,
-				FY,
-				YEAR,
-				MONTH,
-				SPECIES_ITIS,
-				COMMON_NAME,
-				FY_TYPE,
-				ACTIVITY_CODE,
-				VTRSERNO,
-				CAMSID,
-				FED_OR_STATE,
-				GF,
-				AREA,
-				LINK1,
-				N_OBS_TRIPS_F,
-				STRATA_USED,
-				STRATA_FULL,
-				STRATA_ASSUMED,
-				DISCARD_SOURCE,
-				OBS_DISCARD,
-				SUBTRIP_KALL,
-				BROAD_STOCK_RATE,
-				CAMS_DISCARD_RATE,
-				DISC_MORT_RATIO,
-				DISCARD,
-				CV,
-				SPECIES_STOCK,
-				CAMS_GEAR_GROUP,
-				MESHGROUP,
-				SECTID,
-				EM,
-				REDFISH_EXEMPTION,
-				SNE_SMALLMESH_EXEMPTION,
-				XLRG_GILLNET_EXEMPTION,
-				TRIPCATEGORY,
-				ACCESSAREA,
-				SCALLOP_AREA
-			  # eval(strata_unique)
-			)
-			
-		}
-		)
-		
-		rm(res_scal)
+		# outlist <- lapply(res_scal, function(x) { 
+		# 		x %>% 
+		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
+		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
+		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
+		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
+		# 								) %>% 
+		# 	mutate(DATE_RUN = as.character(Sys.Date())
+		# 				 , FY = as.integer(FY)) %>%
+		# 	dplyr::select(
+		# 		DATE_RUN,
+		# 		FY,
+		# 		YEAR,
+		# 		MONTH,
+		# 		SPECIES_ITIS,
+		# 		COMMON_NAME,
+		# 		FY_TYPE,
+		# 		ACTIVITY_CODE,
+		# 		VTRSERNO,
+		# 		CAMSID,
+		# 		FED_OR_STATE,
+		# 		GF,
+		# 		AREA,
+		# 		LINK1,
+		# 		N_OBS_TRIPS_F,
+		# 		STRATA_USED,
+		# 		STRATA_FULL,
+		# 		STRATA_ASSUMED,
+		# 		DISCARD_SOURCE,
+		# 		OBS_DISCARD,
+		# 		SUBTRIP_KALL,
+		# 		BROAD_STOCK_RATE,
+		# 		CAMS_DISCARD_RATE,
+		# 		DISC_MORT_RATIO,
+		# 		DISCARD,
+		# 		CV,
+		# 		SPECIES_STOCK,
+		# 		CAMS_GEAR_GROUP,
+		# 		MESHGROUP,
+		# 		SECTID,
+		# 		EM,
+		# 		REDFISH_EXEMPTION,
+		# 		SNE_SMALLMESH_EXEMPTION,
+		# 		XLRG_GILLNET_EXEMPTION,
+		# 		TRIPCATEGORY,
+		# 		ACCESSAREA,
+		# 		SCALLOP_AREA
+		# 	  # eval(strata_unique)
+		# 	)
+		# 	
+		# }
+		# )
+		# 
+		# rm(res_scal)
 				
-		assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
+		# assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
+		assign(paste0('outlist_df_scal'),  do.call(rbind, res_scal))
 		
-		rm(outlist)
+		# rm(outlist)
 		
 		# now do the same for GF trips
 		
-		outlist <- lapply(res_gf, function(x) { 
-				x %>% 
-				mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-				dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-			dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-										, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-										, 'COMMON_NAME' = 'COMNAME_EVAL'
-										, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-										, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-										, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-										) %>% 
-			mutate(DATE_RUN = as.character(Sys.Date())
-						 , FY = as.integer(FY)) %>%
-			dplyr::select(
-				DATE_RUN,
-				FY,
-				YEAR,
-				MONTH,
-				SPECIES_ITIS,
-				COMMON_NAME,
-				FY_TYPE,
-				ACTIVITY_CODE,
-				VTRSERNO,
-				CAMSID,
-				FED_OR_STATE,
-				GF,
-				AREA,
-				LINK1,
-				N_OBS_TRIPS_F,
-				STRATA_USED,
-				STRATA_FULL,
-				STRATA_ASSUMED,
-				DISCARD_SOURCE,
-				OBS_DISCARD,
-				SUBTRIP_KALL,
-				BROAD_STOCK_RATE,
-				CAMS_DISCARD_RATE,
-				DISC_MORT_RATIO,
-				DISCARD,
-				CV,
-				SPECIES_STOCK,
-				CAMS_GEAR_GROUP,
-				MESHGROUP,
-				SECTID,
-				EM,
-				REDFISH_EXEMPTION,
-				SNE_SMALLMESH_EXEMPTION,
-				XLRG_GILLNET_EXEMPTION,
-				TRIPCATEGORY,
-				ACCESSAREA
-				# SCALLOP_AREA
-			  # eval(strata_unique)
-			) %>% 
-				mutate(SCALLOP_AREA = '')
-			
-		}
-		)
+		# outlist <- lapply(res_gf, function(x) { 
+		# 		x %>% 
+		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
+		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
+		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
+		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
+		# 								) %>% 
+		# 	mutate(DATE_RUN = as.character(Sys.Date())
+		# 				 , FY = as.integer(FY)) %>%
+		# 	dplyr::select(
+		# 		DATE_RUN,
+		# 		FY,
+		# 		YEAR,
+		# 		MONTH,
+		# 		SPECIES_ITIS,
+		# 		COMMON_NAME,
+		# 		FY_TYPE,
+		# 		ACTIVITY_CODE,
+		# 		VTRSERNO,
+		# 		CAMSID,
+		# 		FED_OR_STATE,
+		# 		GF,
+		# 		AREA,
+		# 		LINK1,
+		# 		N_OBS_TRIPS_F,
+		# 		STRATA_USED,
+		# 		STRATA_FULL,
+		# 		STRATA_ASSUMED,
+		# 		DISCARD_SOURCE,
+		# 		OBS_DISCARD,
+		# 		SUBTRIP_KALL,
+		# 		BROAD_STOCK_RATE,
+		# 		CAMS_DISCARD_RATE,
+		# 		DISC_MORT_RATIO,
+		# 		DISCARD,
+		# 		CV,
+		# 		SPECIES_STOCK,
+		# 		CAMS_GEAR_GROUP,
+		# 		MESHGROUP,
+		# 		SECTID,
+		# 		EM,
+		# 		REDFISH_EXEMPTION,
+		# 		SNE_SMALLMESH_EXEMPTION,
+		# 		XLRG_GILLNET_EXEMPTION,
+		# 		TRIPCATEGORY,
+		# 		ACCESSAREA
+		# 		# SCALLOP_AREA
+		# 	  # eval(strata_unique)
+		# 	) %>% 
+		# 		mutate(SCALLOP_AREA = '')
+		# 	
+		# }
+		# )
 		
-		rm(res_gf)
+		# rm(res_gf)
 				
-		assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
+		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
+				assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 		
-		rm(outlist)
+		# rm(outlist)
 		
 		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
 		t2 = get(paste0('outlist_df_scal'))	

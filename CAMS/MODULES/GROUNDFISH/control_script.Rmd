@@ -183,8 +183,8 @@ c_o_dat2 <- tbl(bcon, sql(
        , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
 	   )
 ) %>% 
-	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))
-				 , ~SCALLOP_AREA) 
+	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN')))
+				 # , ~SCALLOP_AREA) 
 
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
@@ -245,6 +245,10 @@ and b.species_itis is not null
 ")
 ) %>% 
 	collect()
+
+# if only running yellowtail and windowpane
+
+species = species[c(8,10),]
 
 # make a script from RMD.. 
 knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
@@ -308,6 +312,7 @@ outlist <- lapply(res, function(x) {
 		STRATA_ASSUMED,
 		DISCARD_SOURCE,
 		OBS_DISCARD,
+		OBS_KALL,
 		SUBTRIP_KALL,
 		BROAD_STOCK_RATE,
 		CAMS_DISCARD_RATE,
