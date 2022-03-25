@@ -155,8 +155,8 @@ group by link3
              end as halfofyear
         , d.docid
 --        , substr(d.vtrserno, 1, 13) vtrserno
-        , vtrserno
-        , vtrserno || '_' || subtrip as vtr_subtrip
+        , d.vtrserno
+        , d.camsid || '_' || d.subtrip as cams_subtrip
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -213,7 +213,7 @@ group by link3
         , d.camsid
         , d.docid
         , d.vtrserno
-        , d.vtrserno || '_' || d.subtrip
+        , d.camsid || '_' || d.subtrip
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -357,7 +357,7 @@ trips with no link1 (unobserved)
         on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA)
   where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and t.link1 is not null
-  and t.vtr_subtrip is not null
+  and t.cams_subtrip is not null
 --  and t.year = 2019
 )
 
@@ -371,13 +371,13 @@ trips with no link1 (unobserved)
 )
 
 select a.*
-, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip)) as obs_haul_kall_trip
-, round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip)) as obs_nohaul_kall_trip
-, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.vtr_subtrip)) as OBS_KALL
-, SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtr_subtrip) / 
-   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip),0) as prorate
-, round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.vtr_subtrip) / 
- NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.vtr_subtrip),0)*a.discard), 2) as discard_prorate
+, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_haul_kall_trip
+, round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_nohaul_kall_trip
+, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL
+, SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0) as prorate
+, round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+ NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0)*a.discard), 2) as discard_prorate
 from obs_catch a
 
 
