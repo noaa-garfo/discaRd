@@ -118,9 +118,43 @@ joined_table %>%
 									 , obs_kall = sum(OBS_KALL)
 									 ,  DK_CALC = sum(OBS_DISCARD)/sum(OBS_KALL)
 									 , CAMS_DK = max(COAL_RATE)) %>% 
+	mutate(dk_diff = CAMS_DK- DK_CALC) %>% 
 	View()
 
 
+
+
+#----------------------------------------------#
+
+outlist_df_18 %>%
+	# filter(STRATA_USED == "") %>%
+	filter(DISCARD_SOURCE == 'O' & !is.na(COMMON_NAME)) %>% 
+	group_by(COMMON_NAME, STRATA_FULL) %>% 
+	dplyr::summarise(n = max(N_OBS_TRIPS_F),
+									 obs_d = sum(OBS_DISCARD, na.rm = T)
+									 , obs_kall = sum(OBS_KALL, na.rm = T)
+									 ,  DK_CALC = sum(OBS_DISCARD, na.rm = T)/sum(OBS_KALL, na.rm = T)
+									 , CAMS_DK = max(CAMS_DISCARD_RATE)) %>% 
+	mutate(dk_diff = CAMS_DK- DK_CALC) %>% 
+	View()
+
+
+# look at one strata
+outlist_df_18 %>% 
+	filter(STRATA_FULL == 'WGB and South_50_LM_18_EM1_0_0_0' & COMMON_NAME == 'HADDOCK' & !is.na(LINK1))
+
+
+joined_table %>% 
+	mutate(rate_diff = final_rate - trans_rate) %>% 
+	filter(n_obs_trips_f >= 5) %>%
+	group_by(FULL_STRATA) %>%
+	dplyr::select(final_rate, trans_rate, rate_diff) %>% 
+	filter(is.na(trans_rate)) %>% 
+	dplyr::summarise(max(rate_diff), max(final_rate), max(trans_rate)) %>%
+	# arrange(desc(rate_diff)) %>% 
+	View()
+
+#----------------------------------------------#
 
 library(DBI)
 library(ROracle)

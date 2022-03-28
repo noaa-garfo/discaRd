@@ -86,7 +86,7 @@ species_stock = NA  # all unit stocks
 FY <- 2019
 FY_TYPE = 'MAY START'
 
-#--------------------------------------------------------------------------#
+#---#
 # group of species
 species = tbl(bcon, sql("
 select distinct(b.species_itis)
@@ -119,7 +119,7 @@ and b.species_itis is not null
 
 final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$SPECIES_ITIS, COMNAME = species$COMNAME, DISCARD = NA)
 
-#--------------------------------------------------------------------------#
+#---#
 
 
 ```
@@ -305,7 +305,7 @@ print(paste0('Running ', species$COMNAME[i]))
 	
 # species_nespp3 = species$NESPP3[i]  
 species_itis = species$SPECIES_ITIS[i] 
-#--------------------------------------------------------------------------#
+#---#
 # Support table import by species
 
 # GEAR TABLE
@@ -343,9 +343,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   dplyr::select(-SPECIES_ITIS) %>% 
   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
-#--------------------------------------------------------------------------------#
+#---------#
 # haddock example trips with full strata either in year_t or year _t-1
-#--------------------------------------------------------------------------------#
+#---------#
 
 # print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
@@ -532,9 +532,9 @@ trans_rate_df = trans_rate_df %>%
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
-#-----------------------------------------------------------------------
+#
 # SECTOR ROLLUP
-#-----------------------------------------------------------------------
+#
 # print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
  
 stratvars_assumed = c("SPECIES_STOCK"
@@ -657,9 +657,9 @@ rm(kk, k)
  
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
   
-#-----------------------------------------------------------------------
+#
 # join full and assumed strata tables
-#-----------------------------------------------------------------------
+#
 # print(paste0("Constructing output table for ", species_itis, " ", FY)) 
 
 joined_table = assign_strata(full_strata_table, stratvars_assumed) %>% 
@@ -667,9 +667,11 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
 	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = 'SPECIES_STOCK') %>% 
-	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ trans_rate  # this is an in season rate
-															 , n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
-															 , n_obs_trips_f < 5 & n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
+	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
+															 , n_obs_trips_f < 5 & 
+															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
+															 , n_obs_trips_f < 5 & 
+															 	n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
 		                           )
 	) %>% 
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
@@ -678,9 +680,9 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
-#-----------------------------------------------------------------------
+#
 # add discard source
-#-----------------------------------------------------------------------
+#
 
 
 # >5 trips in season gets in season rate
@@ -690,13 +692,18 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 
 joined_table = joined_table %>% 
     mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
-    																	, is.na(LINK1) & n_obs_trips_f >= 5 ~ 'I'
+    																	, is.na(LINK1) & 
+    																		n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-    																	, is.na(LINK1) & n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ 'T'
-    																	, is.na(LINK1) & n_obs_trips_f < 5 &
+    																	, is.na(LINK1) & 
+    																		n_obs_trips_f < 5 & 
+    																		n_obs_trips_p >=5 ~ 'T'
+    																	, is.na(LINK1) & 
+    																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
     																		n_obs_trips_f_a >= 5 ~ 'A'
-    																	, is.na(LINK1) & n_obs_trips_f < 5 &
+    																	, is.na(LINK1) & 
+    																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
     																		n_obs_trips_p_a >= 5 ~ 'B'
     																	, is.na(LINK1) & 
@@ -707,9 +714,9 @@ joined_table = joined_table %>%
     																	)  # this may be replaced with model estimate!
     			 )
 
-#-----------------------------------------------------------------------
+#
 # make sure CV type matches DISCARD SOURCE}
-#-----------------------------------------------------------------------
+#
 
 # obs trips get 0, broad stock rate is NA
 
@@ -739,9 +746,9 @@ joined_table = joined_table %>%
 												) 
 				 )
 
-#-----------------------------------------------------------------------
+#
 # get the discard for each trip using COAL_RATE}
-#-----------------------------------------------------------------------
+#
 
 # discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
 # the KALLs should be small.. 
@@ -760,9 +767,9 @@ joined_table %>%
 	colSums(na.rm = T) %>% 
 	round()
 
-#-------------------------------------------------------------	
+#-------------------------------#	
 # save trip by trip info to RDS 
-#-------------------------------------------------------------
+#-------------------------------#
 
 # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
 				
@@ -792,7 +799,7 @@ print(paste0('Running non-groundfish trips for ', species$COMNAME[i]))
 	
 # species_nespp3 = species$NESPP3[i]  
 species_itis = species$SPECIES_ITIS[i] 
-#--------------------------------------------------------------------------#
+#---#
 # Support table import by species
 
 # GEAR TABLE
@@ -830,9 +837,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   dplyr::select(-SPECIES_ITIS) %>% 
   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
-#--------------------------------------------------------------------------------#
+#---------#
 # haddock example trips with full strata either in year_t or year _t-1
-#--------------------------------------------------------------------------------#
+#---------#
 
 # print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
@@ -1016,9 +1023,9 @@ trans_rate_df = trans_rate_df %>%
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
-#-----------------------------------------------------------------------
+#
 # join full and assumed strata tables
-#-----------------------------------------------------------------------
+#
  
 # BROAD_STOCK_RATE_TABLE = d_focal$res %>% 
 #  	group_by(SPECIES_STOCK) %>% 
@@ -1078,9 +1085,9 @@ joined_table = assign_strata(full_strata_table, stratvars_nongf) %>%
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
-#-----------------------------------------------------------------------
+#
 # add discard source
-#-----------------------------------------------------------------------
+#
 
 
 # >5 trips in season gets in season rate
@@ -1107,9 +1114,9 @@ joined_table = joined_table %>%
     																	)  # this may be replaced with model estimate!
     			 )
 
-#-----------------------------------------------------------------------
+#
 # make sure CV type matches DISCARD SOURCE}
-#-----------------------------------------------------------------------
+#
 
 # obs trips get 0, broad stock rate is NA
 
@@ -1141,9 +1148,9 @@ joined_table = joined_table %>%
 				 )
 
 
-#-----------------------------------------------------------------------
+#
 # get the discard for each trip using COAL_RATE}
-#-----------------------------------------------------------------------
+#
 
 # discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
 # the KALLs should be small.. 
@@ -1169,7 +1176,7 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
 
 ```
 
-```{r estimate discards on scallop trips for each subACL stock, eval = T}
+```{r estimate discards on scallop trips for each subACL stock, purl = F, eval = T}
 scal_trips = non_gf_dat %>% 
 	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') 
 # %>% 
@@ -1211,7 +1218,7 @@ print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR ', scal_gf_species$COMNAME[i]
 	
 # species_nespp3 = species$NESPP3[i]  
 species_itis = scal_gf_species$SPECIES_ITIS[i] 
-#--------------------------------------------------------------------------#
+#---#
 # Support table import by species
 
 # GEAR TABLE
@@ -1247,9 +1254,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   dplyr::select(-SPECIES_ITIS) %>% 
   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
-#--------------------------------------------------------------------------------#
+#---------#
 # haddock example trips with full strata either in year_t or year _t-1
-#--------------------------------------------------------------------------------#
+#---------#
 
 # print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
@@ -1433,9 +1440,9 @@ trans_rate_df = trans_rate_df %>%
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
-#-----------------------------------------------------------------------
+#
 # join full and assumed strata tables
-#-----------------------------------------------------------------------
+#
  
 # BROAD_STOCK_RATE_TABLE = d_focal$res %>% 
 #  	group_by(SPECIES_STOCK) %>% 
@@ -1494,9 +1501,9 @@ joined_table = assign_strata(full_strata_table, stratvars_scalgf) %>%
  				 , FISHING_YEAR = yy
  				 , FY_TYPE = FY_TYPE) 
 
-#-----------------------------------------------------------------------
+#
 # add discard source
-#-----------------------------------------------------------------------
+#
 
 
 # >5 trips in season gets in season rate
@@ -1523,9 +1530,9 @@ joined_table = joined_table %>%
     																	)  # this may be replaced with model estimate!
     			 )
 
-#-----------------------------------------------------------------------
+#
 # make sure CV type matches DISCARD SOURCE}
-#-----------------------------------------------------------------------
+#
 
 # obs trips get 0, broad stock rate is NA
 
@@ -1557,9 +1564,9 @@ joined_table = joined_table %>%
 				 )
 
 
-#-----------------------------------------------------------------------
+#
 # get the discard for each trip using COAL_RATE}
-#-----------------------------------------------------------------------
+#
 
 # discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
 # the KALLs should be small.. 
@@ -1586,7 +1593,7 @@ print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, un
 
 ```
 
-```{r substitute scallop trips into non-gf trips, eval = T}
+```{r substitute scallop trips into non-gf trips, purl = F, eval = T}
 
 # for(j in 2018:2019){
 start_time = Sys.time()
@@ -1746,13 +1753,14 @@ start_time = Sys.time()
 		# rm(outlist)
 		
 		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
-		t2 = get(paste0('outlist_df_scal'))	
+		t2 = get(paste0('outlist_df_scal'))	%>% 
+			filter(GF_YEAR == GF_YEAR)
 		
 		# index scallop records present in groundfish year table 
-		t2idx = t2$VTRSERNO %in% t1$VTRSERNO & t2$CAMSID %in% t1$CAMSID
+		t2idx = t2$CAMS_SUBTRIP %in% t1$CAMS_SUBTRIP # & t2$CAMSID %in% t1$CAMSID
 		
 		# index records in groundfish table to be removed
-		t1idx = t1$VTRSERNO %in% t2$VTRSERNO & t1$CAMSID %in% t2$CAMSID
+		t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
 		
 		# swap the scallop estimated trips into the groundfish records
 		t1[t1idx,] = t2[t2idx,]
