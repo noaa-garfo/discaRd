@@ -301,11 +301,12 @@ res = lapply(as.list(resfiles), function(x) fst::read_fst(x))
 outlist <- lapply(res, function(x) { 
 		x %>% 
 		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>% 
-		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		dplyr::select(-SPECIES_ITIS) %>%
+		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
 								# , 'COMMON_NAME' = 'COMNAME_EVAL'
-								# , 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
 								) %>% 
@@ -369,6 +370,28 @@ print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2,
 }
 
 ```
+
+```{r check for infinite values}
+
+# infinite values won't upload to Oracle.. 
+
+nans18 = lapply(outlist_df_18, function(x) sum(is.nan(x)))
+
+infs18 = lapply(outlist_df_18, function(x) sum(is.infinite(x)))
+
+nans19 = lapply(outlist_df_19, function(x) sum(is.nan(x)))
+
+infs19 = lapply(outlist_df_19, function(x) sum(is.infinite(x)))
+
+
+# reveals 7 CV records in 2018 that should be zero...
+
+outlist_df_18$CV[is.nan(outlist_df_18$CV)] = 0
+
+gc()
+
+```
+
 
 ```{r upload}
 # create tables on MAPS
