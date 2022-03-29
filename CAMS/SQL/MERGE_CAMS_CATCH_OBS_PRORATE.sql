@@ -29,10 +29,13 @@ RUN FROM MAPS SCHEMA
 
 ------------------------------------------------------------------------------------------------------*/  
 /
+drop table maps.cams_obs_catch
+/
 drop table maps.cams_obs_catch_prorate
 /
 
-create table maps.cams_obs_catch_prorate as 
+
+create table maps.cams_obs_catch as 
 
 with obs1 as (
 select a.*

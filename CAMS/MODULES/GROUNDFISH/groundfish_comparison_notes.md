@@ -445,3 +445,6 @@ There will likely be mismatches between `OBS_KALL` and `SUBTRIP_KALL` in any cas
 ## 3/25/2022
 
 - Chris L was not using the correct discard column. He was also not using the correct KALL column because it wasn't included.. OBS_KALL would need to be included to get a correct d/k
+
+## 3/26/22
+fixed it! notes later..
