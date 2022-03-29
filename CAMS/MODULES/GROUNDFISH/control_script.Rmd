@@ -43,7 +43,8 @@ options(dplyr.summarise.inform = FALSE)
 
 # setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
 
-library(odbc)
+# library(odbc)
+library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
 library(ggplot2)
@@ -59,10 +60,18 @@ options(scipen = 999)
 # if on server..
 dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
-bcon <- dbConnect(odbc::odbc(), 
-									DSN = dw_apsd$dsn, 
-									UID = dw_apsd$uid, 
-									PWD = dw_apsd$pwd)
+# bcon <- dbConnect(odbc::odbc(), 
+# 									DSN = dw_apsd$dsn, 
+# 									UID = dw_apsd$uid, 
+# 									PWD = dw_apsd$pwd)
+
+
+bcon <- ROracle::dbConnect(
+    drv = ROracle::Oracle(),
+    username = dw_apsd$uid,
+    password = dw_apsd$pwd,  
+    dbname = "NERO.world"
+)
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
@@ -76,8 +85,7 @@ setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
 
 # get catch and matched obs data together
 
-c_o_dat2 <- tbl(bcon, sql(
-" with obs_cams as (
+import_query = " with obs_cams as (
    select year
 	, month
   , PERMIT
@@ -87,6 +95,7 @@ c_o_dat2 <- tbl(bcon, sql(
 	-- , carea
   , AREA
 	, vtrserno
+  , CAMS_SUBTRIP
 	, link1
 	, docid
 	, CAMSID
@@ -120,12 +129,17 @@ c_o_dat2 <- tbl(bcon, sql(
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from MAPS.CAMS_OBS_CATCH_PRORATE
+	from MAPS.CAMS_OBS_CATCH
+ 
+ WHERE YEAR >= 2017 
+  and YEAR <= 2020
+
 	group by year
   -- , carea
   , AREA
   , PERMIT
 	, vtrserno
+  , CAMS_SUBTRIP
 	, link1
 	, docid
 	, nespp3	
@@ -169,9 +183,10 @@ c_o_dat2 <- tbl(bcon, sql(
   left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3         
         
 "
-  )) %>%
-	collect() %>% 
-		# filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') %>% 
+
+c_o_dat2 <- ROracle::dbGetQuery(bcon, import_query)
+		
+c_o_dat2 = c_o_dat2 %>% 
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
   mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN' 
        , PROGRAM == 'NS' ~ 'NLS'
@@ -183,8 +198,11 @@ c_o_dat2 <- tbl(bcon, sql(
        , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
 	   )
 ) %>% 
-	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN')))
-				 # , ~SCALLOP_AREA) 
+	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>% 
+	mutate(DOCID = CAMS_SUBTRIP)
+
+# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+				 
 
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
@@ -248,7 +266,7 @@ and b.species_itis is not null
 
 # if only running yellowtail and windowpane
 
-species = species[c(8,10),]
+# species = species[c(8,10),]
 
 # make a script from RMD.. 
 knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
@@ -258,7 +276,9 @@ for(jj in 2018:2019){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('recombine_groundfish_loop.R')
-	}
+}
+
+rm(list = ls())
 
 ```
 
@@ -281,11 +301,12 @@ res = lapply(as.list(resfiles), function(x) fst::read_fst(x))
 outlist <- lapply(res, function(x) { 
 		x %>% 
 		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>% 
-		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
+		dplyr::select(-SPECIES_ITIS) %>%
+		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
 								# , 'COMMON_NAME' = 'COMNAME_EVAL'
-								# , 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
 								) %>% 
@@ -350,15 +371,57 @@ print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2,
 
 ```
 
+```{r check for infinite values}
+
+# infinite values won't upload to Oracle.. 
+
+nans18 = lapply(outlist_df_18, function(x) sum(is.nan(x)))
+
+infs18 = lapply(outlist_df_18, function(x) sum(is.infinite(x)))
+
+nans19 = lapply(outlist_df_19, function(x) sum(is.nan(x)))
+
+infs19 = lapply(outlist_df_19, function(x) sum(is.infinite(x)))
+
+
+# reveals 7 CV records in 2018 that should be zero...
+
+outlist_df_18$CV[is.nan(outlist_df_18$CV)] = 0
+
+gc()
+
+```
+
+
 ```{r upload}
 # create tables on MAPS
+
+# try usiong this from now on.. 
+# ROracle::dbWriteTable()
+
+dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+
+bcon <- ROracle::dbConnect(
+    drv = ROracle::Oracle(),
+    username = dw_apsd$uid,
+    password = dw_apsd$pwd,  
+    dbname = "NERO.world"
+)
 
 for(i in 18:19){
 	t1 = Sys.time()
 
-	db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
+	# db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
+	upload_table = paste0('CAMS_DISCARD_EXAMPLE_GF',i)
+	
+	if (ROracle::dbExistsTable(bcon, upload_table, "MAPS")){
+      ROracle::dbRemoveTable(bcon, upload_table)
+	}
+	
+	    ROracle::dbWriteTable(conn = bcon, name = upload_table, value =  get(paste0('outlist_df_', i)) , row.names = FALSE, overwrite = FALSE)
+	
 
-	dbWriteTable(bcon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
+	# dbWriteTable(bcon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
 	
 	t2 =  Sys.time()
 	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
