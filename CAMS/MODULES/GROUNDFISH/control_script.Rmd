@@ -129,7 +129,7 @@ import_query = " with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from MAPS.CAMS_OBS_CATCH_PRORATE
+	from MAPS.CAMS_OBS_CATCH
  
  WHERE YEAR >= 2017 
   and YEAR <= 2020
