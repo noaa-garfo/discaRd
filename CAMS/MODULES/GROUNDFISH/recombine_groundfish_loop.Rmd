@@ -1176,7 +1176,7 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
 
 ```
 
-```{r estimate discards on scallop trips for each subACL stock, purl = F, eval = T}
+```{r estimate discards on scallop trips for each subACL stock, purl = T, eval = T}
 scal_trips = non_gf_dat %>% 
 	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') 
 # %>% 
@@ -1593,7 +1593,7 @@ print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, un
 
 ```
 
-```{r substitute scallop trips into non-gf trips, purl = F, eval = T}
+```{r substitute scallop trips into non-gf trips, purl = T, eval = T}
 
 # for(j in 2018:2019){
 start_time = Sys.time()
