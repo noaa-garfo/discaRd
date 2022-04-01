@@ -481,7 +481,6 @@ bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select
 
 2. Complete code for non-groundfish trips in groundfish module. (**DONE**)
 	- combine with previous work (or not) so we have a full set of trips for each groundfish stock (**DONE**)
-	- Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure
 
 3. Apply discard rates to State records (**DONE**)
  - this may be done implicitly if applying rates by strata to all CAMS records (e.g. by CAMSID) 
@@ -489,13 +488,14 @@ bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select
 4. Incorporate EM (including MREM) records is using those values for discard amounts. This should be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
 	- how to deal with adjustment of KALL on MREM trips?
 	
-5. Scallop trip estiamtes using Scallop Strata. This is complete (see item 2) but waiting on a correction in landings dealing with a buffer period between calendar years. 	
+5. Scallop trip estimates using Scallop Strata. 	(**Done**)
+ - Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure (**Done**)
 
-6. Add CV estiamate routine for Assumed strata; Already added this for Broad Stock Rate trips
+6. Add CV estimate routine for Assumed strata; Already added this for Broad Stock Rate trips
 
 ### Results/Discussion
 
-- Discard totals for CAMS are generally lower than DMIS. 
+- Discard totals for CAMS are now very close to DMIS for groundfish trips.  
 - Strata between DMIS and CAMS are not identical. CAMS uses new meshgroupings as well as CAMS_GEAR_GROUP. 
 	- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences 
 	
