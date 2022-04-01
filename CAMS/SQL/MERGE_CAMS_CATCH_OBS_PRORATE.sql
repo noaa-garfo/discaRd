@@ -251,7 +251,7 @@ group by link3
       select a.*
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
             , i.ITIS_TSN
-            , i.ITIS_GROUP1
+--            , i.ITIS_GROUP1
         from OBS1 a
           left join (
             select distinct(NEGEAR) as OBS_NEGEAR
@@ -261,7 +261,7 @@ group by link3
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
           
-         left join(select * from maps.CFG_ITIS where SRCE_ITIS_STAT = 'valid') i
+         left join(select * from maps.CFG_NESPP3_ITIS ) i  --where SRCE_ITIS_STAT = 'valid'
          on a.NESPP3 = i.DLR_NESPP3
       )
 
@@ -282,7 +282,7 @@ trips with no link1 (unobserved)
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
-    , o.ITIS_GROUP1
+--    , o.ITIS_GROUP1
 --    , o.discard_prorate as discard
 , o.discard
     , o.obs_haul_kept
@@ -310,7 +310,7 @@ trips with no link1 (unobserved)
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
-    , o.ITIS_GROUP1
+--    , o.ITIS_GROUP1
 --    , o.discard_prorate as discard
 , o.discard
     , o.obs_haul_kept
@@ -343,7 +343,7 @@ trips with no link1 (unobserved)
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
-    , o.ITIS_GROUP1
+--    , o.ITIS_GROUP1
 --    , o.discard_prorate as discard
 , o.discard
     , o.obs_haul_kept
@@ -376,7 +376,8 @@ trips with no link1 (unobserved)
 select a.*
 , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_haul_kall_trip
 , round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_nohaul_kall_trip
-, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL
+--, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) 
+, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL  -- will be the same as obs_haul_kall_trip
 , SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
    NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0) as prorate
 , round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
@@ -398,4 +399,7 @@ from obs_catch a
 
 --where a.link1 is not null
 --and a.link1 = '000201908R35027'
+
+grant select on maps.cams_obs_catch to apsd
+/
 
