@@ -60,9 +60,9 @@ options(scipen = 999)
 # if on server..
 dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
-# bcon <- dbConnect(odbc::odbc(), 
-# 									DSN = dw_apsd$dsn, 
-# 									UID = dw_apsd$uid, 
+# bcon <- dbConnect(odbc::odbc(),
+# 									DSN = dw_apsd$dsn,
+# 									UID = dw_apsd$uid,
 # 									PWD = dw_apsd$pwd)
 
 
@@ -101,7 +101,7 @@ import_query = " with obs_cams as (
 	, CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
-  , itis_group1
+  -- , itis_group1
     , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
@@ -144,7 +144,7 @@ import_query = " with obs_cams as (
 	, docid
 	, nespp3	
   , itis_tsn
-  , itis_group1
+  -- , itis_group1
     , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
@@ -279,6 +279,8 @@ for(jj in 2018:2019){
 }
 
 rm(list = ls())
+gc()
+.rs.restartR()
 
 ```
 
@@ -384,9 +386,12 @@ nans19 = lapply(outlist_df_19, function(x) sum(is.nan(x)))
 infs19 = lapply(outlist_df_19, function(x) sum(is.infinite(x)))
 
 
-# reveals 7 CV records in 2018 that should be zero...
+# reveals 7 CV records in 2018 that should be NA...
+# reveals ~400 CV records in 2019 that should be NA...
+# these are all Transition rates with no proper CV.. 
 
-outlist_df_18$CV[is.nan(outlist_df_18$CV)] = 0
+outlist_df_18$CV[is.nan(outlist_df_18$CV)] = NA
+outlist_df_19$CV[is.nan(outlist_df_19$CV)] = NA
 
 gc()
 
