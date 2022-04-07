@@ -340,8 +340,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   # mutate(CAREA = as.character(STAT_AREA)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(SPECIES_ITIS == species_itis) %>%
-  dplyr::select(-SPECIES_ITIS) %>% 
-  dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
+  dplyr::select(-SPECIES_ITIS) 
+# %>% 
+#   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
 #---------#
 # haddock example trips with full strata either in year_t or year _t-1
@@ -361,8 +362,8 @@ ddat_focal <- gf_dat %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>% 
-	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -377,8 +378,8 @@ ddat_prev <- gf_dat %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>%  
-		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -834,8 +835,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   # mutate(CAREA = as.character(STAT_AREA)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(SPECIES_ITIS == species_itis) %>%
-  dplyr::select(-SPECIES_ITIS) %>% 
-  dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
+  dplyr::select(-SPECIES_ITIS) 
+# %>% 
+#   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
 #---------#
 # haddock example trips with full strata either in year_t or year _t-1
@@ -855,8 +857,8 @@ ddat_focal <- non_gf_dat %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>% 
-	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -871,8 +873,8 @@ ddat_prev <- non_gf_dat %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>%  
-		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
+		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -1251,8 +1253,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
   # mutate(CAREA = as.character(STAT_AREA)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(SPECIES_ITIS == species_itis) %>%
-  dplyr::select(-SPECIES_ITIS) %>% 
-  dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
+  dplyr::select(-SPECIES_ITIS) 
+# %>% 
+#   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
 #---------#
 # haddock example trips with full strata either in year_t or year _t-1
@@ -1272,8 +1275,8 @@ ddat_focal <- scal_trips %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>% 
-	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -1288,8 +1291,8 @@ ddat_prev <- scal_trips %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>%  
-		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
+	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>% 
+	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
