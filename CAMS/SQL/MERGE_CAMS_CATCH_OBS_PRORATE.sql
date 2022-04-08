@@ -24,6 +24,9 @@ BG 12-02-21
 by subtrip. This is designated by VTRSERNO, and happens AFTER the merge between catch and obs. In this manner, each subtrip 
 now has the correct OBS_KALL and pro-rated discard by species. 
 
+04/08/22  since CAMSLANDINGS has so many years, now filter for > 2017 only
+   added parts to find and fix obs kall and discard when link3 is duped due to meshgroup similarities across subtrips
+
          
 RUN FROM MAPS SCHEMA
 
@@ -203,6 +206,7 @@ group by link3
      ) g
      on d.NEGEAR = g.VTR_NEGEAR
     
+    WHERE d.year >= 2017 -- reduces the table size.. we aren't going back in time too far for discards
     
     group by 
         d.permit
@@ -373,17 +377,105 @@ trips with no link1 (unobserved)
     select * from trips_2
 )
 
-select a.*
-, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_haul_kall_trip
-, round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_nohaul_kall_trip
---, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) 
-, round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL  -- will be the same as obs_haul_kall_trip
-, SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
-   NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0) as prorate
-, round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
- NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0)*a.discard), 2) as discard_prorate
-from obs_catch a
+, obs_catch_2 as 
+( 
 
+/* add OBS KALL amounts, prorated discard and find duped subtrips */
+
+     select a.*
+    , count(distinct(a.cams_subtrip)) OVER(PARTITION BY a.link3) as n_subtrips_link3  -- finds duped link3.. 
+    , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_haul_kall_trip
+    , round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_nohaul_kall_trip
+    --, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) 
+    , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL  -- will be the same as obs_haul_kall_trip
+    , SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+       NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0) as prorate
+    , round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+     NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0)*a.discard), 2) as discard_prorate
+    from obs_catch a
+)
+
+/* now deal with link3 dupes  */
+
+select ACCESSAREA
+,ACTIVITY_CODE_1
+,AREA
+,CAMSID
+,CAMS_SUBTRIP
+,CLOSED_AREA_EXEMPTION
+, case when n_subtrips_link3 > 1 THEN DISCARD/n_subtrips_link3 ELSE DISCARD end as DISCARD
+, case when n_subtrips_link3 > 1 THEN DISCARD_PRORATE/n_subtrips_link3 ELSE DISCARD_PRORATE end as DISCARD_PRORATE
+,DOCID
+,EM
+,GEARTYPE
+,GF
+,HALFOFYEAR
+,ITIS_TSN
+,LINK1
+,LINK3
+,MESHGROUP
+,MONTH
+,NEGEAR
+,NESPP3
+,NVTR_LINK1
+,OBSRFLAG
+,OBSVTR
+,OBS_AREA
+,OBS_GEAR
+, case when n_subtrips_link3 > 1 THEN OBS_HAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_HAUL_KALL_TRIP end as OBS_HAUL_KALL_TRIP
+, case when n_subtrips_link3 > 1 THEN OBS_HAUL_KEPT/n_subtrips_link3 ELSE OBS_HAUL_KEPT end as OBS_HAUL_KEPT 
+, case when n_subtrips_link3 > 1 THEN OBS_NOHAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_NOHAUL_KALL_TRIP end as OBS_NOHAUL_KALL_TRIP  
+, case when n_subtrips_link3 > 1 THEN OBS_KALL/n_subtrips_link3 ELSE OBS_KALL end as OBS_KALL  
+,OBS_LINK1
+,OBS_MESH
+,OBS_MESHGROUP
+,PERMIT
+,PRORATE
+,REDFISH_EXEMPTION
+,SECGEAR_MAPPED
+,SECTID
+,SNE_SMALLMESH_EXEMPTION
+,SUBTRIP_KALL
+,TRIPCATEGORY
+,VTRSERNO
+,XLRG_GILLNET_EXEMPTION
+,YEAR
+
+from obs_catch_2
+
+/
+
+CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, MONTH)
+/
+CREATE INDEX itisidx ON CAMS_OBS_CATCH(ITIS_TSN)
+/
+
+--
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set DISCARD = DISCARD/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set DISCARD_PRORATE = DISCARD_PRORATE/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_HAUL_KEPT = OBS_HAUL_KEPT/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_HAUL_KALL_TRIP = OBS_HAUL_KALL_TRIP/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_NOHAUL_KALL_TRIP = OBS_NOHAUL_KALL_TRIP/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_KALL = OBS_KALL/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
 
 --
 --PARTITION BY LIST (year) AUTOMATIC

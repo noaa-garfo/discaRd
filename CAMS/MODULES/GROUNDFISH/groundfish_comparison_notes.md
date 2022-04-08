@@ -448,3 +448,15 @@ There will likely be mismatches between `OBS_KALL` and `SUBTRIP_KALL` in any cas
 
 ## 3/26/22
 fixed it! notes later..
+
+## 4/8/22
+Duped discard amounts
+
+**Cause:** we match observer data with CAMS landings using LINK1, Area, Gear and MESHGROUP. What is happening is that while there was a change in mesh size on a trip, which initiated a new VTR, they both have the same MESHGROUP. This causes LINK3 to match up to each subtrip, causing the duped OBS pounds
+
+**Solution:** Since it's not possible to assign hauls to subtrips in these cases, the idea is to divide the OBS pounds in each record by the number of subtrips that match that haul. the effect will be duped rows for these trips but the pounds will add up correctly. This will not affect stratification level calculations either as the strata on each subtrip are the same.
+
+The OBS pounds amount will match OBDBS both by LINK1 and LINK3. there will, however, be multiple rows in CAMS_OBS_CATCH, by LINK3 and species. It will not be possible to assess which hauls occurred on which subtrip for these trips- but it won't matter for discard calculations. Essentially, these are treated as a single subtrip type of trip.
+
+- This has been implemented. CAMS_OBS_CATCH and the GF_18 and GF_19 tables have been recreated/shared.
+- wolfish mortality is now corrected
