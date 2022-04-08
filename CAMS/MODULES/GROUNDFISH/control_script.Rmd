@@ -393,6 +393,9 @@ infs19 = lapply(outlist_df_19, function(x) sum(is.infinite(x)))
 outlist_df_18$CV[is.nan(outlist_df_18$CV)] = NA
 outlist_df_19$CV[is.nan(outlist_df_19$CV)] = NA
 
+outlist_df_18$CV[is.infinite(outlist_df_18$CV)] = NA
+outlist_df_19$CV[is.infinite(outlist_df_19$CV)] = NA
+
 gc()
 
 ```
