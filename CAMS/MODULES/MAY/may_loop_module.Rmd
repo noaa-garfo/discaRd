@@ -132,7 +132,6 @@ FY_TYPE = 'MAY START'
 ```
 
 ```{r get obs and catch data from oracle, eval = T}
-
 import_query = " with obs_cams as (
    select year
 	, month
@@ -251,6 +250,8 @@ c_o_dat2 = c_o_dat2 %>%
 
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 				 
+
+
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
 
@@ -280,15 +281,13 @@ fed_trips =
 	fed_trips %>% 
 	filter(ROWID %!in% remove_id$ROWID)
 
-c_o_dat2 = fed_trips %>% 
-	#filter(GF == 0) %>% 
+c_o_dat2 <- non_gf_dat = fed_trips %>% 
+#	filter(GF == 0) %>% 
 	bind_rows(., state_trips) %>% 
 	mutate(GF = "0")
 
 # gf_dat = fed_trips%>% 
 # 	filter(GF == 1)
-# 
-# c_o_dat2 <- non_gf_dat
 
 rm(fed_trips, state_trips)
 
@@ -407,7 +406,7 @@ ddat_focal_cy = ddat_focal %>%
 ddat_focal_cy = ddat_focal_cy %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO, CAMSID) %>% 
+               group_by(VTRSERNO) %>% 
                slice(1) %>% 
                ungroup()
             )
@@ -438,7 +437,7 @@ ddat_prev_cy = ddat_prev %>%
 ddat_prev_cy = ddat_prev_cy %>% 
   union_all(ddat_prev %>% 
   						 filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO, CAMSID) %>% 
+               group_by(VTRSERNO) %>% 
                slice(1) %>% 
                ungroup()
   					)
