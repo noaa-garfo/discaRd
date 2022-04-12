@@ -209,14 +209,13 @@ db_silver = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_SILVERHAKE
 
 db_silver$SPECIES <- "SILVER HAKE"
 
+db_monkfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_MONKFISH_19")) %>%
+	collect
 
-# db_monkfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_MONKFISH_19")) %>% 
-# 	collect
-# 
-# db_monkfish$SPECIES <- "MONKFISH"
+db_monkfish$SPECIES <- "MONKFISH"
 
 
-db_final <- rbind(db_dogfish, db_offshore, db_red, db_silver)
+db_final <- rbind(db_dogfish, db_monkfish, db_offshore, db_red, db_silver)
 
 strat_dogfish <- db_dogfish %>% 	
   filter(DISCARD_SOURCE != 'O') %>%
@@ -307,27 +306,27 @@ strat_silver <- db_silver %>%
              #dplyr::arrange(desc(DISCARD))
 
 
-# strat_monkfish <- db_monkfish %>% 	
-#   filter(DISCARD_SOURCE != 'O') %>%
-#   group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
-#   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-#                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-#                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-#                       # , CV = mean(CV, na.rm=TRUE)
-#                        , DISCARD = round(sum(DISCARD))) %>%
-#                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-#   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
-#                               SPECIES,
-#                               STRATA 
-#              # ,N_OBS_TRIPS_F
-#               ,CAMS_DISCARD_RATE
-#               ,SUBTRIP_KALL
-#               ,DISC_MORT_RATIO
-#               ,DISCARD
-#               ,DISCARD_SOURCE
-#               ,TRIP_TYPE)
+strat_monkfish <- db_monkfish %>%
+  filter(DISCARD_SOURCE != 'O') %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
+                              SPECIES,
+                              STRATA
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD
+              ,DISCARD_SOURCE
+              ,TRIP_TYPE)
 
-strat_final <- rbind(strat_dogfish, strat_offshore,
+strat_final <- rbind(strat_dogfish, strat_monkfish, strat_offshore,
                      strat_red, strat_silver)
   
   
@@ -377,6 +376,28 @@ db_dogfish %>%
              # ,CV) 
              dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
 		DT::datatable(caption = 'Discard rates by Strata for Dogfish')
+```
+
+```{r monkfish discard table }
+
+db_monkfish %>% 	
+  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
+		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
 ```
 
 ```{r offshore hake discard table }

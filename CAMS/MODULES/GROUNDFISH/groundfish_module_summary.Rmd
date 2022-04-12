@@ -117,7 +117,7 @@ Output tables are produced for each species. These can easily be recombined. An 
 ```{r make diagnostic plot, eval = T, echo = F, fig.cap = "Discard Rates by Stock, Species, Discard Source", fig.height = 8, fig.width = 12}
 
 # library(odbc)
-library(RODBC)
+# library(RODBC)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
 library(ggplot2)

@@ -314,7 +314,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
 #--------------------------------------------------------------------------------#
 # make tables
 ddat_focal <- c_o_dat2 %>% 
-  filter(YEAR == FY) %>%   ## time element is here!!
+  filter(GF_YEAR == FY) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -330,7 +330,7 @@ ddat_focal <- c_o_dat2 %>%
 
 
 ddat_prev <- c_o_dat2 %>% 
-  filter(YEAR == FY-1) %>%   ## time element is here!!
+  filter(GF_YEAR == FY-1) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -518,7 +518,7 @@ trans_rate_df = dest_strata_f %>%
 	       STRATA_USED = case_when(DISCARD_SOURCE == 'E' ~ STRATA 
 	                               ,DISCARD_SOURCE == 'T' ~ STRATA
 	                               ,DISCARD_SOURCE == 'A' ~ STRATA_ASSUMED))%>%
-	rename('ACTIVITY_CODE'='ACTIVITY_CODE_1') %>% select(-SPECIES_ITIS)
+	dplyr::rename('ACTIVITY_CODE'='ACTIVITY_CODE_1') %>% select(-SPECIES_ITIS)
 	       
  
  final_table %>% 
