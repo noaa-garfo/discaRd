@@ -15,6 +15,7 @@ modified
 12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
 01-04-22 update mesh categories (meshgroup): 0-3.99 = sm, >=4 = L, FOR GILLNETS, >=8 = XL
 02-03-22 update filter for tripext to include Limited sampling trips (see obdbs.tripext@nova)
+04-12-22 changed the date filter in table 3 to match only on year rather than dateland.. this was dropping trips for timestamp reasons
 
 The year variable can be defined, and then the entire script run (F5 in sqldev)
 
@@ -26,7 +27,7 @@ RUN FROM MAPS SCHEMA
 
 */
 
-DEF year = 2019
+DEF year = 2021
 /
 DROP TABLE obdbs_cams_&year
 /
@@ -231,7 +232,7 @@ a.VMSCODE, a.VTRSERNO, a.WGTTYPE, a.YEAR,
 a.YEARLAND, b.keptall
 FROM bg_obdbs_tables_1_&year a LEFT OUTER JOIN bg_obdbs_keptall_&year b
 ON a.link1 = b.link1 
-WHERE a.DATELAND BETWEEN '01-jan-&year' AND '31-DEC-&year'
+WHERE a.year = &year
 /
 --CREATE A MESHSIZE TABLE AND ADD IT TO THE TABLE CREATED ABOVE  
 ---the first table pulls mesh sixe for otter trawl gear  
