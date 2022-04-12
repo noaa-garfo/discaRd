@@ -46,7 +46,7 @@ select a.*
  select o.link3
             , link1
             , vtrserno
-            , extract(year from datesail) as year
+            , extract(year from dateland) as year
             , o.month
             , o.obsrflag
             , o.area as obs_area
@@ -81,7 +81,7 @@ select a.*
             , round(o.meshsize, 0)
             , o.meshgroup
             , substr(nespp4, 1, 3)
-            , extract(year from datesail)
+            , extract(year from dateland)
 ) a
 
 group by link3
