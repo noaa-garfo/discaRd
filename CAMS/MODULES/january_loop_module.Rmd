@@ -584,7 +584,7 @@ trans_rate_df = dest_strata_f %>%
  
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
  
- cy_discard_example <- cy_discard_example %>% case_when(CV = 'Inf' ~ 'NA')
+ cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA  
  
 # cy_discard_example$DISCARD_RATE <- #round(cy_discard_example$DISCARD_RATE, 5)
 
@@ -596,7 +596,7 @@ species$COMMON_NAME[i]
 
 dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_FLUKE_19', value = cy_discard_example, overwrite = T)
 
- 
+
  
 # save trip by trip info to RDS 
  #saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))

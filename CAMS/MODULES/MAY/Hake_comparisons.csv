@@ -1,9 +1,9 @@
 Species,Method,Source,Year,Discards,kall
-Red hake,CAMS,State,2019,19255,342664727
-Red hake,CAMS,Federal,2019,3367855,1450915806
-White hake,CAMS,State,2019,1786,342664727
-White hake,CAMS,Federal,2019,77952,1450915806
-Silver hake,CAMS,State,2019,631,342664727
-Silver hake,CAMS,Federal,2019,3972202,1450915806
-Offshore hake,CAMS,State,2019,398,342664727
-Offshore hake,CAMS,Federal,2019,12653,1450915806
+Red hake,CAMS,State,2019,30073,334388859
+Red hake,CAMS,Federal,2019,3169246,1373378471
+Red hake,QM,Federal,2019,2872821,
+Silver hake,CAMS,State,2019,10061,334388859
+Silver hake,CAMS,Federal,2019,4188983,1373378471
+Silver hake,QM,Federal,2019,4462191,
+Offshore hake,CAMS,State,2019,476,334388859
+Offshore hake,CAMS,Federal,2019,31816,1373378471

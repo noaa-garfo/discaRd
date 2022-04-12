@@ -104,6 +104,9 @@ Output tables are produced for each species. These can easily be recombined. Pre
 	
 	MAPS.CAMS_DISCARD_EXAMPLE_CY_MACKEREL_19
 	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_MACKEREL_19
+	
+	MAPS.CAMS_DISCARD_EXAMPLE_CY_FLUKE_19
+	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_FLUKE_19
 
 ```
 
@@ -127,7 +130,7 @@ discard <- read.csv("~/discaRd/CAMS/MODULES/CALENDAR/January_comparisons.csv")
 
 '%ni%' <- Negate("%in%")
 
-discard <- discard %>% filter(Source %in% c("Federal")) %>% filter(Species %ni% c("Summer flounder"))
+discard <- discard %>% filter(Source %in% c("Federal")) 
 
 
 discard %>% 
@@ -147,7 +150,7 @@ discard <- read.csv("~/discaRd/CAMS/MODULES/CALENDAR/January_comparisons.csv")
 
 '%ni%' <- Negate("%in%")
 
-discard %>% filter(Source %in% c("State")) %>% filter(Species %ni% c("Summer flounder")) %>% dplyr::select(Species, Discards) %>%
+discard %>% filter(Source %in% c("State")) %>% #filter(Species %ni% c("Summer flounder")) %>% dplyr::select(Species, Discards) %>%
 		DT::datatable(caption = 'Total discards by species for state trips')
 
 ```
@@ -220,9 +223,15 @@ db_mackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_MACKEREL
 
 db_mackerel$SPECIES <- "MACKEREL"
 
+db_fluke = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_FLUKE_19")) %>% 
+	collect
+
+db_fluke$SPECIES <- "FLUKE"
+
 db_final <- rbind(db_blackseabass,db_bluefish,
                   db_butterfish, db_longfinsquid,
-                  db_shortfinsquid, db_mackerel)
+                  db_shortfinsquid, db_mackerel,
+                  db_fluke)
 
 strat_blackseabass <- db_blackseabass %>% 	
   filter(DISCARD_SOURCE != 'O') %>%
@@ -346,9 +355,30 @@ strat_mackerel <- db_mackerel %>%
               ,DISCARD_SOURCE
               ,TRIP_TYPE)
 
+strat_fluke <- db_fluke %>% 	
+  filter(DISCARD_SOURCE != 'O') %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
+                              SPECIES,
+                              STRATA 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD
+              ,DISCARD_SOURCE
+              ,TRIP_TYPE)
+
 strat_final <- rbind(strat_blackseabass, strat_bluefish,
                      strat_butterfish, strat_longfinsquid,
-                     strat_shortfinsquid, strat_mackerel)
+                     strat_shortfinsquid, strat_mackerel,
+                     strat_fluke)
   
   
 strat_final %>% 
@@ -512,7 +542,27 @@ db_mackerel %>%
 		DT::datatable(caption = 'Discard rates by Strata for Mackerel based on federal trips')
 ```
 
+```{r fluke discard table }
 
+db_fluke %>% 	
+  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
+		DT::datatable(caption = 'Discard rates by Strata for Fluke based on federal trips')
+```
 ### Appendix
 
 For more information regarding stratfication variables and discard rates by species see
