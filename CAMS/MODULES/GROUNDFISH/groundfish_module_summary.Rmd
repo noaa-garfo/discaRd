@@ -330,7 +330,7 @@ dmis_comp = allgf_comp %>%
 
 dmis_comp %>% 
 	DT::datatable(caption = 'DISCARD comparison, DMIS/CAMS (Uses DMIS Stock ID for summaries)') %>% 
-	formatPercentage('DMIS_CAMS_DIFF_PERC') %>% 
+	DT::formatPercentage('DMIS_CAMS_DIFF_PERC') %>% 
 	DT::formatRound(names(dmis_comp)[3:5], digits = 0, interval = 3)
 
 
@@ -426,7 +426,7 @@ lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>%
 						 	 , class = 'cell-border stripe'
 						 	 , rownames = FALSE
 							, caption = 'KALL comparison, DMIS/CAMS') %>% 
-	formatPercentage('KALL_DIFF_PERC') %>% 
+	DT::formatPercentage('KALL_DIFF_PERC') %>% 
 	DT::formatRound(c('KALL_DMIS','KALL_CAMS','KALL_DIFF'), digits = 0, interval = 3)
 
 ```

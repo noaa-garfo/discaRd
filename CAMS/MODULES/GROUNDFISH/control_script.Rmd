@@ -204,6 +204,40 @@ c_o_dat2 = c_o_dat2 %>%
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 				 
 
+# 4/13/22
+# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future 
+
+link3_na = c_o_dat2 %>% 
+	filter(!is.na(LINK1) & is.na(LINK3))
+
+
+# make these values 0 or NA or 'none' depending on the default for that field
+link3_na = link3_na %>% 
+	mutate(LINK1 = NA
+				 , DISCARD = NA
+				 , DISCARD_PRORATE = NA
+				 , OBSRFLAG = NA
+				 , OBSVTR = NA
+				 , OBS_AREA = NA
+				 , OBS_GEAR = NA
+				 , OBS_HAUL_KALL_TRIP = 0
+				 , OBS_HAUL_KEPT = 0
+				 , OBS_KALL = 0
+				 , OBS_LINK1 = NA
+				 , OBSVTR = NA
+				 , OBS_MESHGROUP = 'none'
+				 , PRORATE = NA)
+
+
+tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
+
+c_o_dat2 = c_o_dat2[tidx == F,]
+
+c_o_dat2 = c_o_dat2 %>% 
+	bind_rows(link3_na)
+
+# continue the data import
+
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
