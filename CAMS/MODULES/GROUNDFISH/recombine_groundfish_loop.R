@@ -133,7 +133,7 @@ ddat_focal_gf = ddat_focal %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
@@ -142,10 +142,11 @@ ddat_focal_gf = ddat_focal %>%
 
 ddat_focal_gf = ddat_focal_gf %>% 
   union_all(ddat_focal %>% 
-              filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO) %>% 
-               slice(1) %>% 
-               ungroup()
+              filter(is.na(LINK1))
+  # 					%>% 
+  #              group_by(VTRSERNO) %>% 
+  #              slice(1) %>% 
+  #              ungroup()
             )
 
 
@@ -166,17 +167,18 @@ ddat_prev_gf = ddat_prev %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
 
 ddat_prev_gf = ddat_prev_gf %>% 
   union_all(ddat_prev %>% 
-  						 filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO) %>% 
-               slice(1) %>% 
-               ungroup()
+  						 filter(is.na(LINK1))
+  					# %>% 
+               # group_by(VTRSERNO) %>% 
+               # slice(1) %>% 
+               # ungroup()
   					)
 
 
@@ -626,7 +628,7 @@ ddat_focal_non_gf = ddat_focal %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
@@ -635,10 +637,11 @@ ddat_focal_non_gf = ddat_focal %>%
 
 ddat_focal_non_gf = ddat_focal_non_gf %>% 
   union_all(ddat_focal %>% 
-              filter(is.na(LINK1)) %>% 
+              filter(is.na(LINK1)) 
+  					# %>% 
                # group_by(VTRSERNO, CAMSID) %>% 
                # slice(1) %>% 
-               ungroup()
+               # ungroup()
             )
 
 
@@ -659,17 +662,18 @@ ddat_prev_non_gf = ddat_prev %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
 
 ddat_prev_non_gf = ddat_prev_non_gf %>% 
   union_all(ddat_prev %>% 
-  						 filter(is.na(LINK1)) %>% 
+  						 filter(is.na(LINK1)) 
+  					# %>% 
                # group_by(VTRSERNO, CAMSID) %>% 
                # slice(1) %>% 
-               ungroup()
+               # ungroup()
   					)
 
 
@@ -1042,7 +1046,7 @@ ddat_focal_scal = ddat_focal %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
@@ -1051,10 +1055,11 @@ ddat_focal_scal = ddat_focal %>%
 
 ddat_focal_scal = ddat_focal_scal %>% 
   union_all(ddat_focal %>% 
-              filter(is.na(LINK1)) %>% 
+              filter(is.na(LINK1)) 
+  					# %>% 
                # group_by(VTRSERNO, CAMSID) %>% 
                # slice(1) %>% 
-               ungroup()
+               # ungroup()
             )
 
 
@@ -1075,17 +1080,18 @@ ddat_prev_scal = ddat_prev %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
 
 ddat_prev_scal = ddat_prev_scal %>% 
   union_all(ddat_prev %>% 
-  						 filter(is.na(LINK1)) %>% 
+  						 filter(is.na(LINK1)) 
+  					# %>% 
                # group_by(VTRSERNO, CAMSID) %>% 
                # slice(1) %>% 
-               ungroup()
+               # ungroup()
   					)
 
 

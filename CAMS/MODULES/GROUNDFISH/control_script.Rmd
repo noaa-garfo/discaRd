@@ -318,7 +318,7 @@ gc()
 
 ```
 
-```{r combine all results for a given year, eval = F, purl = F}
+```{r combine all results for a given year, eval = T, purl = F}
 #build one big table for a FY
 
 for (FY in 18:19){
