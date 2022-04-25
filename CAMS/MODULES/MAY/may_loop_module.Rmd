@@ -84,7 +84,7 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```{r define fishing year and species, eval = T}
 
-FY <- 2020
+FY <- 2019
 
 FY_TYPE = 'MAY START'
 
@@ -405,11 +405,11 @@ ddat_focal_cy = ddat_focal %>%
 
 ddat_focal_cy = ddat_focal_cy %>% 
   union_all(ddat_focal %>% 
-              filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO) %>% 
-               slice(1) %>% 
-               ungroup()
-            )
+              filter(is.na(LINK1)))  
+            #    group_by(VTRSERNO, CAMSID) %>% 
+            #    slice(1) %>% 
+            #    ungroup()
+            # )
 
 
 # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
@@ -436,11 +436,11 @@ ddat_prev_cy = ddat_prev %>%
 
 ddat_prev_cy = ddat_prev_cy %>% 
   union_all(ddat_prev %>% 
-  						 filter(is.na(LINK1)) %>% 
-               group_by(VTRSERNO) %>% 
-               slice(1) %>% 
-               ungroup()
-  					)
+  						 filter(is.na(LINK1))) #%>% 
+               # group_by(VTRSERNO,CAMSID) %>% 
+               # slice(1) %>% 
+               # ungroup()
+  				
 
 
 # previous year observer data needed.. 
@@ -639,7 +639,7 @@ for(k in ustocks){
 											 , ddat_focal_sp = ddat_focal_cy
 											 , ddat_focal = ddat_focal
 											 , species_itis = species_itis
-											 , stratvars = stratvars[1]
+											 , stratvars = stratvars[1:2]
 											 # , aidx = 1
 											 , stock = k 
 											 )
@@ -849,9 +849,13 @@ joined_table %>%
  
  cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA    
  
+ species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_DOGFISH_19', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_SMOOTHSKATE_19', value = cy_discard_example, overwrite = T)
+
+cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
+		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
 
 
 # save trip by trip info to RDS 
@@ -869,3 +873,6 @@ dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_DOGFISH_19', value = cy_disca
  
 ```
 
+rm(list = ls())
+
+.rs.restartR()
