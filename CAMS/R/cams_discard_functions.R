@@ -348,11 +348,11 @@ run_discard <- function(bdat
 get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM'){ 	
 	
 	btmp = 	bdat %>%
-		filter(SPECIES_STOCK == stock)
+		filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
 	dstmp = ddat_focal_sp %>%
-		filter(SPECIES_STOCK == stock)
+		filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
 	dtmp = 	ddat_focal %>%
-		filter(SPECIES_STOCK == stock)
+		filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
 	
 	d_broad_stock = run_discard(bdat = btmp
 															, ddat = dstmp
@@ -362,7 +362,7 @@ get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, s
 															, aidx = 1  # this makes sure this isn't used..
 	)
 	
-	data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
+	data.frame(SPECIES_STOCK = ustocks[k], CAMS_GEAR_GROUP=CAMS_GEAR_GROUP[i], BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
 						 , CV_b = d_broad_stock$allest$CVTOT
 	)
 	
