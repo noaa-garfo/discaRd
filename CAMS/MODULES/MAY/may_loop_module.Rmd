@@ -634,16 +634,20 @@ kk = 1
 
 ustocks = bdat_cy$SPECIES_STOCK %>% unique()
 
-for(k in ustocks){
-	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_cy
-											 , ddat_focal_sp = ddat_focal_cy
-											 , ddat_focal = ddat_focal
+CAMS_GEAR_GROUP = bdat_cy$CAMS_GEAR_GROUP %>% unique()
+
+for(k in 1:length(ustocks)){
+  for(i in 1:length(CAMS_GEAR_GROUP)){
+	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = rbind(bdat_prev_cy,bdat_cy)
+											 , ddat_focal_sp = rbind(ddat_prev_cy,ddat_focal_cy)
+											 , ddat_focal = rbind(ddat_prev,ddat_focal)
 											 , species_itis = species_itis
 											 , stratvars = stratvars[1:2]
 											 # , aidx = 1
 											 , stock = k 
 											 )
-	kk = kk+1
+	
+	kk = kk+1}
 }
 
 BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
