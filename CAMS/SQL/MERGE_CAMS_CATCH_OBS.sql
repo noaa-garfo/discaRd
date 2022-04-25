@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------------------------------
 
-merge CAMS catchg with obdbs_prorate
+MERGE CAMS CATCH WITH OBDBS_PRORATE
 
 match on gear (NEGEAR), mesh, link1 and AREA
 
@@ -18,25 +18,89 @@ BG 12-02-21
          make sure the multi VTR join is a multi factor join.. AREA, GEAR, MESH, LINK1
 02/04/22 added filter for observedtrips coming from CAMS.MATCH_OBS so only trips with TRIP_EXT C or X are included. 
         This is the criteria used in OBS data
-02/18/22 changed EFP columns to new EM designation        
+02/18/22 changed EFP columns to new EM designation   
+
+03/24/22 joined the process for observer proration and merging of OBS and CATCH. Pro-ration was happening imncorrectly adn is now done
+by subtrip. This is designated by VTRSERNO, and happens AFTER the merge between catch and obs. In this manner, each subtrip 
+now has the correct OBS_KALL and pro-rated discard by species. 
+
+04/08/22  since CAMSLANDINGS has so many years, now filter for > 2017 only
+   added parts to find and fix obs kall and discard when link3 is duped due to meshgroup similarities across subtrips
+
+         
+RUN FROM MAPS SCHEMA
 
 ------------------------------------------------------------------------------------------------------*/  
-
---drop table bg_cams_obs_catch
+/
+drop table maps.cams_obs_catch
+/
+drop table maps.cams_obs_catch_prorate
 /
 
-drop table cams_obs_catch
-/
 
---drop View cams_obs_catch
+create table maps.cams_obs_catch as 
 
-/
---drop materialized view cams_obs_catch
-/
+with obs1 as (
+select a.*
+    from (
+ select o.link3
+            , link1
+            , vtrserno
+            , extract(year from dateland) as year
+            , o.month
+            , o.obsrflag
+            , o.area as obs_area
+            , o.negear as obs_gear
+            , o.geartype
+            , round(o.meshsize, 0) as obs_mesh
+            , o.meshgroup
+            , substr(nespp4, 1, 3) as NESPP3
+            , SUM(case when catdisp = 0 then o.livewt else 0 end) as discard
+            , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
+        
+            from (
+			    select * from maps.cams_obdbs_2017
+                union all
+                select * from maps.cams_obdbs_2018
+                union all
+                select * from maps.cams_obdbs_2019
+				union all
+                select * from maps.cams_obdbs_2020
+                union all
+                select * from maps.cams_obdbs_2021
+            )
+            o
+          group by  o.link3
+            , link1
+            , vtrserno
+            , o.month
+            , o.obsrflag
+            , o.area 
+            , o.geartype
+            , o.negear 
+            , round(o.meshsize, 0)
+            , o.meshgroup
+            , substr(nespp4, 1, 3)
+            , extract(year from dateland)
+) a
 
-create table cams_obs_catch as 
+group by link3
+            , link1
+            , vtrserno
+            , year
+            , month
+            , obsrflag
+            , obs_area
+            , obs_gear
+            , geartype
+            , obs_mesh
+            , meshgroup
+            , NESPP3
+            , discard
+            , obs_haul_kept
+)
 
-with ulink as (
+, ulink as (
     select count(distinct(obs_link1)) nlink1
     , obs_vtr
     from maps.match_obs
@@ -90,14 +154,15 @@ with ulink as (
         , d.camsid
         , d.year
         , d.month
-        , case when d.carea < 600 then 'N'
-               else 'S' end as region
+--        , case when d.carea < 600 then 'N'
+--               else 'S' end as region
         , case when d.month in (1,2,3,4,5,6) then 1
              when d.month in (7,8,9,10,11,12) then 2
              end as halfofyear
         , d.docid
 --        , substr(d.vtrserno, 1, 13) vtrserno
-        , vtrserno
+        , d.vtrserno
+        , d.camsid || '_' || d.subtrip as cams_subtrip
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -105,13 +170,13 @@ with ulink as (
 --        , d.meshsize
         , NVL(d.mesh_cat, 'na') as meshgroup
         , d.area
-        , d.carea
+--        , d.carea
         , round(sum(d.LIVLB)) as subtrip_kall
         , d.sectid
         , d.GF
         , d.activity_code_1
         , d.activity_code_2
-        , d.activity_code_3
+--        , d.activity_code_3
 --        , d.permit_EFP_1
 --        , d.permit_EFP_2
 --        , d.permit_EFP_3
@@ -125,7 +190,7 @@ with ulink as (
         , d.accessarea
     , o.link1
     , count(distinct(vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
-    from MAPS.CAMS_CATCH d
+    from MAPS.CAMS_LANDINGS d
     left join (  --adds observer link field
          select * 
          from vtr_link
@@ -141,19 +206,21 @@ with ulink as (
      ) g
      on d.NEGEAR = g.VTR_NEGEAR
     
+    WHERE d.year >= 2017 -- reduces the table size.. we aren't going back in time too far for discards
     
     group by 
         d.permit
         , d.year
         , d.month
-        , case when d.carea < 600 then 'N'
-               else 'S' end 
+--        , case when d.carea < 600 then 'N'
+--               else 'S' end 
         , case when d.month in (1,2,3,4,5,6) then 1
              when d.month in (7,8,9,10,11,12) then 2
              end 
         , d.camsid
         , d.docid
         , d.vtrserno
+        , d.camsid || '_' || d.subtrip
 --        , d.gearcode
         , d.geartype
         , d.negear
@@ -161,12 +228,12 @@ with ulink as (
 --        , d.meshsize
         , NVL(d.mesh_cat, 'na')
         , d.area
-        , d.carea
+--        , d.carea
         , d.sectid
         , d.GF
         , d.activity_code_1
         , d.activity_code_2
-        , d.activity_code_3
+--        , d.activity_code_3
         , d.EM
 --        , d.permit_EFP_1
 --        , d.permit_EFP_2
@@ -188,8 +255,8 @@ with ulink as (
       select a.*
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
             , i.ITIS_TSN
-            , i.ITIS_GROUP1
-        from MAPS.CAMS_OBS_PRORATE a
+--            , i.ITIS_GROUP1
+        from OBS1 a
           left join (
             select distinct(NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED
@@ -198,7 +265,7 @@ with ulink as (
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
           
-         left join(select * from maps.CFG_ITIS where SRCE_ITIS_STAT = 'valid') i
+         left join(select * from maps.CFG_NESPP3_ITIS ) i  --where SRCE_ITIS_STAT = 'valid'
          on a.NESPP3 = i.DLR_NESPP3
       )
 
@@ -215,13 +282,15 @@ trips with no link1 (unobserved)
     , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
+    , o.obsrflag
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
-    , o.ITIS_GROUP1
-    , o.discard_prorate as discard
+--    , o.ITIS_GROUP1
+--    , o.discard_prorate as discard
+, o.discard
     , o.obs_haul_kept
-    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -241,13 +310,15 @@ trips with no link1 (unobserved)
   , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
+    , o.obsrflag
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
-    , o.ITIS_GROUP1
-    , o.discard_prorate as discard
+--    , o.ITIS_GROUP1
+--    , o.discard_prorate as discard
+, o.discard
     , o.obs_haul_kept
-    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -272,13 +343,15 @@ trips with no link1 (unobserved)
   , o.vtrserno as obsvtr
     , o.link1 as obs_link1
     , o.link3
+    , o.obsrflag
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
-    , o.ITIS_GROUP1
-    , o.discard_prorate as discard
+--    , o.ITIS_GROUP1
+--    , o.discard_prorate as discard
+, o.discard
     , o.obs_haul_kept
-    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -291,33 +364,134 @@ trips with no link1 (unobserved)
         on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA)
   where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and t.link1 is not null
-  and t.vtrserno is not null
+  and t.cams_subtrip is not null
 --  and t.year = 2019
 )
 
-select * from trips_0
-union all
-select * from trips_1
-union all
-select * from trips_2
+, obs_catch as 
+( 
+    select * from trips_0
+    union all
+    select * from trips_1
+    union all
+    select * from trips_2
+)
 
-/*       Old matching criteria, no table split as above      */
---on (o.link1 = c.link1 AND c.SECGEAR_MAPPED = o.SECGEAR_MAPPED AND c.meshgroup = o.meshgroup AND c.AREA = o.OBS_AREA)
+, obs_catch_2 as 
+( 
+
+/* add OBS KALL amounts, prorated discard and find duped subtrips */
+
+     select a.*
+    , count(distinct(a.cams_subtrip)) OVER(PARTITION BY a.link3) as n_subtrips_link3  -- finds duped link3.. 
+    , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_haul_kall_trip
+    , round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_nohaul_kall_trip
+    --, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) 
+    , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL  -- will be the same as obs_haul_kall_trip
+    , SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+       NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0) as prorate
+    , round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+     NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0)*a.discard), 2) as discard_prorate
+    from obs_catch a
+)
+
+/* now deal with link3 dupes  */
+
+select ACCESSAREA
+,ACTIVITY_CODE_1
+,AREA
+,CAMSID
+,CAMS_SUBTRIP
+,CLOSED_AREA_EXEMPTION
+, case when n_subtrips_link3 > 1 THEN DISCARD/n_subtrips_link3 ELSE DISCARD end as DISCARD
+, case when n_subtrips_link3 > 1 THEN DISCARD_PRORATE/n_subtrips_link3 ELSE DISCARD_PRORATE end as DISCARD_PRORATE
+,DOCID
+,EM
+,GEARTYPE
+,GF
+,HALFOFYEAR
+,ITIS_TSN
+,LINK1
+,LINK3
+,MESHGROUP
+,MONTH
+,NEGEAR
+,NESPP3
+,NVTR_LINK1
+,OBSRFLAG
+,OBSVTR
+,OBS_AREA
+,OBS_GEAR
+, case when n_subtrips_link3 > 1 THEN OBS_HAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_HAUL_KALL_TRIP end as OBS_HAUL_KALL_TRIP
+, case when n_subtrips_link3 > 1 THEN OBS_HAUL_KEPT/n_subtrips_link3 ELSE OBS_HAUL_KEPT end as OBS_HAUL_KEPT 
+, case when n_subtrips_link3 > 1 THEN OBS_NOHAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_NOHAUL_KALL_TRIP end as OBS_NOHAUL_KALL_TRIP  
+, case when n_subtrips_link3 > 1 THEN OBS_KALL/n_subtrips_link3 ELSE OBS_KALL end as OBS_KALL  
+,OBS_LINK1
+,OBS_MESH
+,OBS_MESHGROUP
+,PERMIT
+,PRORATE
+,REDFISH_EXEMPTION
+,SECGEAR_MAPPED
+,SECTID
+,SNE_SMALLMESH_EXEMPTION
+,SUBTRIP_KALL
+,TRIPCATEGORY
+,VTRSERNO
+,XLRG_GILLNET_EXEMPTION
+,YEAR
+
+from obs_catch_2
 
 /
 
+CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, MONTH)
+/
+CREATE INDEX itisidx ON CAMS_OBS_CATCH(ITIS_TSN)
+/
 
 --
---select count(distinct(link1)) as nlink1
---, meshgroup
---, geartype
---, negear
---from cams_obs_catch
-----where meshgroup not in 'na'
---where year = 2019
---and link1 is not null
---group by negear, meshgroup, geartype
---order by negear, meshgroup
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set DISCARD = DISCARD/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set DISCARD_PRORATE = DISCARD_PRORATE/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_HAUL_KEPT = OBS_HAUL_KEPT/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_HAUL_KALL_TRIP = OBS_HAUL_KALL_TRIP/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_NOHAUL_KALL_TRIP = OBS_NOHAUL_KALL_TRIP/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+--UPDATE CAMS_OBS_CATCH
+--  set OBS_KALL = OBS_KALL/n_subtrips_link3
+--    where n_subtrips_link3 > 1
+--/
+
+--
+--PARTITION BY LIST (year) AUTOMATIC
+--(
+--  PARTITION year2017 VALUES (2017),
+--  PARTITION year2018 VALUES (2018),
+--  PARTITION year2019 VALUES (2019),
+--  PARTITION year2020 VALUES (2020)
+----  PARTITION year2021 VALUES ('2021')
+--)
+;
+
+
+--where a.link1 is not null
+--and a.link1 = '000201908R35027'
+
+grant select on maps.cams_obs_catch to apsd
 /
 
-/ 
