@@ -83,9 +83,9 @@ i = 3 # monkfish
 
 species_itis = species$SPECIES_ITIS[i]
 
-mnk = run_discard( bdat = bdat_2yrs
-			, ddat_focal = ddat_cy_2yr
-			, c_o_tab = ddat_2yr
+mnk2 = run_discard( bdat = bdat_2yrs
+			, ddat_focal = ddat_cy_2yr %>% filter(FED_OR_STATE != 'STATE')
+			, c_o_tab = ddat_2yr %>% filter(FED_OR_STATE != 'STATE')
 			, species_itis = species_itis
 			, stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
 			)
