@@ -36,7 +36,8 @@ assign_strata <- function(dat, stratvars){
 #' Get Observed Discards
 #'
 #' This function is used to get observed discard values on observed trips. These values are used in place of estimated values for those trips that were observed. This is done at the the sub-trip level. 
-#' This function does not need startification. Only VTR serial number and an observed discard for desired species
+#' This function does not need stratification. Only VTR serial number and an observed discard for desired species
+#' This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH
 #' @param c_o_tab table of matched observer and commerical trips
 #' @param species_itis species of interest using SPECIES_ITIS code
 #' @return a tibble with: YEAR, VTRSERNO, GEARTYPE, MESHGROUP,KALL, DISCARD, dk
@@ -53,7 +54,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
     # filter(NESPP3 == species_nespp3) %>%
   	filter(SPECIES_ITIS == species_itis) %>% 
     # mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD))
-    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD))
+    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE))
   
   obs_discard = codat %>% 
     group_by(VTRSERNO, CAMSID
@@ -113,7 +114,7 @@ make_bdat_focal <- function(bdat
 										, STRATA
 		) %>% 
 		# be careful here... need to take the max values since they are repeated..
-		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE))
+		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T))# *max(PRORATE) take this part out! 4/27/22
 										 , BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
 		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
 		ungroup()
