@@ -37,7 +37,7 @@ assign_strata <- function(dat, stratvars){
 #'
 #' This function is used to get observed discard values on observed trips. These values are used in place of estimated values for those trips that were observed. This is done at the the sub-trip level. 
 #' This function does not need stratification. Only VTR serial number and an observed discard for desired species
-#' This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH
+#' This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH. This value must be used for assigning observed discrd to trips. It is NOT used for d/k calculations since it is pro-rated by unobserved KALL. 
 #' @param c_o_tab table of matched observer and commerical trips
 #' @param species_itis species of interest using SPECIES_ITIS code
 #' @return a tibble with: YEAR, VTRSERNO, GEARTYPE, MESHGROUP,KALL, DISCARD, dk
@@ -54,7 +54,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
     # filter(NESPP3 == species_nespp3) %>%
   	filter(SPECIES_ITIS == species_itis) %>% 
     # mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD))
-    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE))
+    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE)) 
   
   obs_discard = codat %>% 
     group_by(VTRSERNO, CAMSID
@@ -69,7 +69,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 
 
 #' Get Observed trips for discard year
-#'
+#' This function utilizes the DISCARD field in CAMS_OBS_CATCH. This value must be used for d/k calculations since it represents the observed part of a trip. 
 #' @param bdat table of observed trips that can include (and should include) multiple years
 #' @param year Year where discard estimate is needed
 #' @param species_itis species of interest using SPECIES ITIS code
@@ -79,7 +79,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #' 
 #' This table is used in `discaRd`
 #' 
-#' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it'savailable..)
+#' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it's available..)
 #' @export
 #'
 #' @examples
@@ -98,7 +98,7 @@ make_bdat_focal <- function(bdat
 	bdat_focal = bdat %>% 
 		# filter(YEAR == year) %>% 
 		# mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
-		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE)) %>%
+		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD)) %>%
 		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 	
 	
