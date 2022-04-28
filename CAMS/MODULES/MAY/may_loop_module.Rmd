@@ -281,7 +281,7 @@ fed_trips =
 	fed_trips %>% 
 	filter(ROWID %!in% remove_id$ROWID)
 
-c_o_dat2 <- non_gf_dat = fed_trips %>% 
+c_o_dat2  = fed_trips %>% 
 #	filter(GF == 0) %>% 
 	bind_rows(., state_trips) %>% 
 	mutate(GF = "0")
@@ -628,39 +628,34 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
  # get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
 
 
-BROAD_STOCK_RATE_TABLE = list()
+bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
+ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
+ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
-kk = 1
+mnk = run_discard( bdat = bdat_2yrs
+			, ddat_focal = ddat_cy_2yr
+			, c_o_tab = ddat_2yr
+			, species_itis = species_itis
+			, stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+			)
 
-ustocks = bdat_cy$SPECIES_STOCK %>% unique()
+# rate table
+mnk$allest$C
 
-CAMS_GEAR_GROUP = bdat_cy$CAMS_GEAR_GROUP %>% unique()
+SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
 
-for(k in 1:length(ustocks)){
-  for(i in 1:length(CAMS_GEAR_GROUP)){
-	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_gear_rate(bdat = rbind(bdat_prev_cy,bdat_cy)
-											 , ddat_focal_sp = rbind(ddat_prev_cy,ddat_focal_cy)
-											 , ddat_focal = rbind(ddat_prev,ddat_focal)
-											 , species_itis = species_itis
-											 , stratvars = stratvars[1:2]
-											 # , aidx = 1
-											 , stock = k 
-											 )
-	
-	kk = kk+1}
-}
+CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
 
-BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
 
-rm(kk, k) 
- 
-#   
-# BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>% 
-#  	group_by(SPECIES_STOCK) %>% 
-#  	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
- 
-# make names specific to the sector rollup pass
- 
+CV_b <- round(mnk$allest$C$RE_rse, 2)
+
+BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+
+BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
+BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+
+
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
   
 #
@@ -672,7 +667,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = 'SPECIES_STOCK') %>% 
+	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>% 
 	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
 															 , n_obs_trips_f < 5 & 
 															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -716,9 +711,9 @@ joined_table = joined_table %>%
     																		n_obs_trips_f < 5 & 
     																		n_obs_trips_p < 5 & 
     																		n_obs_trips_f_a < 5 & 
-    																		n_obs_trips_p_a < 5 ~ 'B'
-    																	)  # this may be replaced with model estimate!
-    			 )
+    																		n_obs_trips_p_a < 5 ~ 'B'))
+    															#		, is.na(LINK1) & is.na(final_rate) ~ 'NA'
+    															#		, is.na(LINK1) & is.nan(final_rate) ~ 'NA'))
 
 #
 # make sure CV type matches DISCARD SOURCE}
@@ -727,21 +722,25 @@ joined_table = joined_table %>%
 # obs trips get 0, broad stock rate is NA
 
 
+
 joined_table = joined_table %>% 
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
 												, DISCARD_SOURCE == 'A' ~ CV_f_a
 												, DISCARD_SOURCE == 'B' ~ CV_b
-												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
+											#	, DISCARD_SOURCE == 'NA' ~ 'NA'
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
 # Make note of the stratification variables used according to discard source
 
+stratvars_gear = c("SPECIES_STOCK"
+											, "CAMS_GEAR_GROUP")
+
 strata_f = paste(stratvars, collapse = ';')
 strata_a = paste(stratvars_assumed, collapse = ';')
-strata_b = stratvars[1]
+strata_b = paste(stratvars_gear, collapse = ';')
 
 joined_table = joined_table %>% 
 	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
@@ -749,8 +748,10 @@ joined_table = joined_table %>%
 												, DISCARD_SOURCE == 'T' ~ strata_f
 												, DISCARD_SOURCE == 'A' ~ strata_a
 												, DISCARD_SOURCE == 'B' ~ strata_b
+											#	, DISCARD_SOURCE == 'NA' ~ 'NA'
 												) 
 				 )
+
 
 #
 # get the discard for each trip using COAL_RATE}
@@ -848,7 +849,9 @@ joined_table %>%
 	  # eval(strata_unique)
 	)
  
- 
+ cy_discard_example <- cy_discard_example %>% dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
+ 	
+ 	
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
  
  cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA    
@@ -856,7 +859,7 @@ joined_table %>%
  species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_SMOOTHSKATE_19', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_DOGFISH_19', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
