@@ -172,7 +172,8 @@ import_query = " with obs_cams as (
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	, NVL(sum(discard),0) as discard
+	, NVL(sum(discard_prorate),0) as discard
+	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
