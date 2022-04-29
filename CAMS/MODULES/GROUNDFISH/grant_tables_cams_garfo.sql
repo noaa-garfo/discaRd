@@ -20,7 +20,7 @@ grant select on MAPS.CAMS_GEARCODE_STRATA to CAMS_GARFO, APSD
 /
 grant select on MAPS.CAMS_MASTER_GEAR to CAMS_GARFO, APSD
 /
-grant select on MAPS.CAMS_CATCH to CAMS_GARFO, APSD
+--grant select on MAPS.CAMS_CATCH to CAMS_GARFO, APSD
 /
 grant select on MAPS.CAMS_OBS_CATCH to CAMS_GARFO, APSD
 /
