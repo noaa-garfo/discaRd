@@ -36,7 +36,8 @@ assign_strata <- function(dat, stratvars){
 #' Get Observed Discards
 #'
 #' This function is used to get observed discard values on observed trips. These values are used in place of estimated values for those trips that were observed. This is done at the the sub-trip level. 
-#' This function does not need startification. Only VTR serial number and an observed discard for desired species
+#' This function does not need stratification. Only VTR serial number and an observed discard for desired species
+#' This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH. This value must be used for assigning observed discrd to trips. It is NOT used for d/k calculations since it is pro-rated by unobserved KALL. 
 #' @param c_o_tab table of matched observer and commerical trips
 #' @param species_itis species of interest using SPECIES_ITIS code
 #' @return a tibble with: YEAR, VTRSERNO, GEARTYPE, MESHGROUP,KALL, DISCARD, dk
@@ -53,7 +54,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
     # filter(NESPP3 == species_nespp3) %>%
   	filter(SPECIES_ITIS == species_itis) %>% 
     # mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD))
-    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD))
+    mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE)) 
   
   obs_discard = codat %>% 
     group_by(VTRSERNO, CAMSID
@@ -68,7 +69,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 
 
 #' Get Observed trips for discard year
-#'
+#' This function utilizes the DISCARD field in CAMS_OBS_CATCH. This value must be used for d/k calculations since it represents the observed part of a trip. 
 #' @param bdat table of observed trips that can include (and should include) multiple years
 #' @param year Year where discard estimate is needed
 #' @param species_itis species of interest using SPECIES ITIS code
@@ -78,7 +79,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #' 
 #' This table is used in `discaRd`
 #' 
-#' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it'savailable..)
+#' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it's available..)
 #' @export
 #'
 #' @examples
@@ -97,7 +98,7 @@ make_bdat_focal <- function(bdat
 	bdat_focal = bdat %>% 
 		# filter(YEAR == year) %>% 
 		# mutate(SPECIES_DISCARD = case_when(NESPP3 == species_nespp3 ~ DISCARD_PRORATE)) %>% 
-		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE)) %>%
+		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD)) %>%
 		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 	
 	
@@ -113,7 +114,7 @@ make_bdat_focal <- function(bdat
 										, STRATA
 		) %>% 
 		# be careful here... need to take the max values since they are repeated..
-		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T)*max(PRORATE))
+		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T))# *max(PRORATE) take this part out! 4/27/22
 										 , BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>% 
 		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>% 
 		ungroup()
@@ -346,24 +347,49 @@ run_discard <- function(bdat
 #' rm(kk, k)
 #' 
 get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM'){ 	
-	
-	btmp = 	bdat %>%
-		filter(SPECIES_STOCK == stock)
-	dstmp = ddat_focal_sp %>%
-		filter(SPECIES_STOCK == stock)
-	dtmp = 	ddat_focal %>%
-		filter(SPECIES_STOCK == stock)
-	
-	d_broad_stock = run_discard(bdat = btmp
-															, ddat = dstmp
-															, c_o_tab = dtmp
-															, species_itis = species_itis
-															, stratvars = stratvars
-															, aidx = 1  # this makes sure this isn't used..
-	)
-	
-	data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
-						 , CV_b = d_broad_stock$allest$CVTOT
-	)
-	
+  
+  btmp = 	bdat %>%
+    filter(SPECIES_STOCK == stock)
+  dstmp = ddat_focal_sp %>%
+    filter(SPECIES_STOCK == stock)
+  dtmp = 	ddat_focal %>%
+    filter(SPECIES_STOCK == stock)
+  
+  d_broad_stock = run_discard(bdat = btmp
+                              , ddat = dstmp
+                              , c_o_tab = dtmp
+                              , species_itis = species_itis
+                              , stratvars = stratvars
+                              , aidx = 1  # this makes sure this isn't used..
+  )
+  
+  data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
+             , CV_b = d_broad_stock$allest$CVTOT
+  )
+  
 } 
+
+
+
+get_broad_stock_gear_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM'){ 	
+  
+  btmp = 	bdat %>%
+    filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
+  dstmp = ddat_focal_sp %>%
+    filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
+  dtmp = 	ddat_focal %>%
+    filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
+  
+  d_broad_stock = run_discard(bdat = btmp
+                              , ddat = dstmp
+                              , c_o_tab = dtmp
+                              , species_itis = species_itis
+                              , stratvars = stratvars
+                              , aidx = 1  # this makes sure this isn't used..
+  )
+  
+  data.frame(SPECIES_STOCK = ustocks[k], CAMS_GEAR_GROUP=CAMS_GEAR_GROUP[i], BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
+             , CV_b = d_broad_stock$allest$CVTOT
+  )
+  
+}
