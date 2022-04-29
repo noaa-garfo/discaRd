@@ -55,7 +55,8 @@ stratvars = c('SPECIES_STOCK'
 # Assumed Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP')
+              , 'CAMS_GEAR_GROUP',
+              ,'MESHGROUP')
 
 ```	
 
@@ -67,8 +68,9 @@ stratvars = c('SPECIES_STOCK'
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
  - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
- - (O) Observed values used from obserevd trips; discard rate is NOT USED. 
-9. CV calculations are available for (I) and (T). Obtaining a CV estimate for (A) would require a *second pass* of discaRd functions.
+ - (B) Broad stock/gear rate
+ - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
+9. CV calculations are available for (I), (T), (A) and (B). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -125,14 +127,9 @@ discard <- read.csv("~/discaRd/CAMS/MODULES/MAY/May_comparisons.csv")
 
 '%ni%' <- Negate("%in%")
 
-discard <- discard %>% filter(Source %in% c("Federal"))# %>% filter(Species %ni% c("Summer flounder"))
-
-
-discard %>% 
-	ggplot()+
-	geom_bar(aes(x = Method, y = Discards), stat = 'identity', position = 'dodge')+
-	facet_wrap(~Species, scales = 'free')+
-	theme_light()
+discard %>% filter(Source == 'Federal') %>%  pivot_wider(id_cols = !Source, names_from = Method,values_from =  c(Discards, kall)) %>% mutate(diff = Discards_CAMS-Discards_QM, perc_diff = 100 * (Discards_QM - Discards_CAMS)/(Discards_CAMS)) %>% dplyr::select(Species, 
+Discards_CAMS, Discards_QM, diff, perc_diff) %>%dplyr::mutate(across(where(is.numeric), round, 2))%>% 
+		DT::datatable(caption = 'Comparison of total federal discards in FY 2019 by species and source')
 
 ```
 
@@ -169,7 +166,7 @@ Kall is higher for CAMS but due to differences in what species are included in l
 I'm assuming these QM estimates don't include all relevant strata for kall estimates?
 
 
-```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source", fig.height = 8, fig.width = 12}
+```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
 
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
  
@@ -219,7 +216,7 @@ db_final <- rbind(db_dogfish, db_monkfish, db_offshore, db_red, db_silver)
 
 strat_dogfish <- db_dogfish %>% 	
   filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -235,13 +232,13 @@ strat_dogfish <- db_dogfish %>%
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
+              ,FED_OR_STATE)
              # ,CV) 
              #dplyr::arrange(desc(DISCARD))
 
 strat_offshore <- db_offshore %>% 	
   filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -257,13 +254,13 @@ strat_offshore <- db_offshore %>%
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
+              ,FED_OR_STATE)
              # ,CV) 
              #dplyr::arrange(desc(DISCARD))
 
 strat_red <- db_red %>% 	
   filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -279,13 +276,13 @@ strat_red <- db_red %>%
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
+              ,FED_OR_STATE)
              # ,CV) 
              #dplyr::arrange(desc(DISCARD))
 
 strat_silver <- db_silver %>% 	
   filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -301,14 +298,14 @@ strat_silver <- db_silver %>%
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
+              ,FED_OR_STATE)
              # ,CV) 
              #dplyr::arrange(desc(DISCARD))
 
 
 strat_monkfish <- db_monkfish %>%
   filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -324,15 +321,27 @@ strat_monkfish <- db_monkfish %>%
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
+              ,FED_OR_STATE)
 
 strat_final <- rbind(strat_dogfish, strat_monkfish, strat_offshore,
                      strat_red, strat_silver)
   
   
 strat_final %>% 
-	filter(DISCARD_SOURCE != 'O' & CAMS_DISCARD_RATE) %>% 
-	dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, TRIP_TYPE) %>% 
+	filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=='FED') %>% 
+	dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, FED_OR_STATE) %>% 
+	#slice(1) %>% 
+	ggplot()+
+	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
+	facet_wrap(~SPECIES)+
+	theme_light()
+```
+
+```{r make diagnostic state plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for State trips", fig.height = 8, fig.width = 12}
+
+strat_final %>% 
+	filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=='STATE') %>% 
+	dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, FED_OR_STATE) %>% 
 	#slice(1) %>% 
 	ggplot()+
 	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
@@ -341,9 +350,10 @@ strat_final %>%
 ```
 
 
-```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source" , fig.height = 8, fig.width = 12}
+```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source for Federal trips" , fig.height = 8, fig.width = 12}
 db_final %>% 
-	# filter(DISCARD_SOURCE != 'O') %>% 
+	# filter(DISCARD_SOURCE != 'O')&
+  filter(FED_OR_STATE=='FED') %>% 
 	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
@@ -355,12 +365,24 @@ db_final %>%
 
 Not suprisingly, total discards at the end of the year come from strata with an in season rate. 
 
+```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source for State trips" , fig.height = 8, fig.width = 12}
+db_final %>% 
+	# filter(DISCARD_SOURCE != 'O')&
+  filter(FED_OR_STATE=='STATE') %>% 
+	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+ facet_wrap(~SPECIES, scales = 'free')+
+	theme_light()
+```
 
 ```{r dogfish discard table }
 
 db_dogfish %>% 	
-  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -376,35 +398,37 @@ db_dogfish %>%
              # ,CV) 
              dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
 		DT::datatable(caption = 'Discard rates by Strata for Dogfish')
+
 ```
 
 ```{r monkfish discard table }
 
 db_monkfish %>% 	
-  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
+  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED,
+DISCARD_SOURCE == "B" ~ STRATA_ASSUMED))%>% ungroup() %>% dplyr::select(STRATA 
              # ,N_OBS_TRIPS_F
               ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
              # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
+             dplyr::arrange(desc(DISCARD)) %>%top_n(12) %>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
 ```
 
 ```{r offshore hake discard table }
 
 db_offshore %>% 	
-  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -425,8 +449,8 @@ db_offshore %>%
 ```{r redhake discard table }
 
 db_red %>% 	
-  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
@@ -447,8 +471,8 @@ db_red %>%
 ```{r silver hake discard table }
 
 db_silver %>% 	
-  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)

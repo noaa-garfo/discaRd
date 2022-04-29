@@ -371,7 +371,7 @@ stock_dmis = tbl(bcon, sql("
 
 
 t3 = tbl(bcon, sql("select *
-									 from MAPS.CAMS_CATCH
+									 from MAPS.CAMS_LANDINGS
 									 where activity_code_1 like 'NMS%'
 									 AND RECORD_LAND >= '01-MAY-19'
 									 AND RECORD_LAND < '01-MAY-20'
