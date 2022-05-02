@@ -25,13 +25,14 @@ options(knitr.kable.NA = '')
 
 ### Background 
 
-Exploration of discard estimates from November year module 
+Exploration of discard estimates from november year module 
 
 ### Steps 
 
 1. pull all merged trips from CAMS_OBS_CATCH
 
 2. Set stratification variables for all trips
+
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
@@ -54,20 +55,26 @@ stratvars = c('SPECIES_STOCK'
 # Assumed Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP')
+              , 'CAMS_GEAR_GROUP',
+              ,'MESHGROUP')
 
 ```	
 
-4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK' and 'CAMS_GEAR_GROUP'
+4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK', 'CAMS_GEAR_GROUP'and 'MESHGROUP'.
 
 7. A transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
+
+8.  A broad stock/gear stratification is applied to subtrips that do not meet the requirements for the full or assumed stratification.  This broad stock/gear stratification utilizes observed coverage from both the focal year and the previous year as it includes gear types with low observer coverage.
 
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
  - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
- - (O) Observed values used from obserevd trips; discard rate is NOT USED. 
-9. CV calculations are available for (I) and (T). Obtaining a CV estimate for (A) would require a *second pass* of discaRd functions.
+ - (B) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
+ - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
+ - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
+
+9. CV calculations are available for (I), (T), (A) and (B). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -86,12 +93,12 @@ Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to
 Output tables are produced for each species. These can easily be recombined. Preliminary species tables have been shared on `MAPS` and `CAMS_GARFO`.  
 
 ```sql
-	MAPS.CAMS_DISCARD_EXAMPLE_CY_GOLDENTILEFISH_19
-	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_GOLDENTILEFISH_19
+	MAPS.CAMS_DISCARD_GOLDENTILEFISH_19
+	CAMS_GARFO.CAMS_DISCARD_GOLDENTILEFISH_19
 	
-	MAPS.CAMS_DISCARD_EXAMPLE_CY_BLUELINETILEFISH_19
-	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_CY_BLUELINETILEFISH_19
-
+	MAPS.CAMS_DISCARD_BLUELINETILEFISH_19
+	CAMS_GARFO.CAMS_DISCARD_BLUELINETILEFISH_19
+	
 ```
 
 ### Diagnostic Plots/Tables
@@ -114,19 +121,13 @@ discard <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_comparisons.csv")
 
 '%ni%' <- Negate("%in%")
 
-discard <- discard %>% filter(Source %in% c("Federal"))# %>% filter(Species %ni% c("Summer flounder"))
-
-
-discard %>% 
-	ggplot()+
-	geom_bar(aes(x = Method, y = Discards), stat = 'identity', position = 'dodge')+
-	facet_wrap(~Species, scales = 'free')+
-	theme_light()
+discard %>% filter(Source == 'Federal') %>%  pivot_wider(id_cols = !Source, names_from = Method,values_from =  c(Discards, kall)) %>% mutate(diff = Discards_CAMS-Discards_QM, perc_diff = 100 * (Discards_QM - Discards_CAMS)/(Discards_CAMS)) %>% dplyr::select(Species, 
+Discards_CAMS, Discards_QM, diff, perc_diff) %>%dplyr::mutate(across(where(is.numeric), round, 2))%>% 
+		DT::datatable(caption = 'Comparison of total federal discards in FY 2019 by species and source')
 
 ```
 
-  
-
+ 
 
 ```{r make diagnostic plot discards, eval = T, echo = F, fig.cap = "2019 CAMS State Discard Totals", fig.height = 8, fig.width = 12}
 
@@ -140,24 +141,7 @@ discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) 
 ```
 
 
-
-
-```{r make diagnostic plot kall, eval = T, echo = F, fig.cap = "2019 KALL Totals by Method and Source", fig.height = 8, fig.width = 12}
-
-Kall <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_kall.csv")
-
-Kall %>% 
-	ggplot()+
-	geom_bar(aes(x = Method, y = kall, fill = Source), stat = 'identity', position = 'dodge')+
-	#facet_wrap(~Species, scales = 'free')+
-	theme_light()
-
-```
-
-Kall is higher for CAMS but due to differences in what species are included in landings (e.g., no clams in DMIS). 
-
-
-```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source", fig.height = 8, fig.width = 12}
+```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
 
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
  
@@ -177,67 +161,76 @@ Kall is higher for CAMS but due to differences in what species are included in l
       dbname = connectString
     )
 
-db_goldentilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_GOLDENTILEFISH_19")) %>% 
+db_goldentilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_GOLDENTILEFISH_19")) %>% 
 	collect
 
 db_goldentilefish$SPECIES <- "GOLDENTILEFISH"
 
-db_bluelinetilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_BLUELINETILEFISH_19")) %>%
+db_bluelinetilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLUELINETILEFISH_19")) %>% 
 	collect
 
 db_bluelinetilefish$SPECIES <- "BLUELINETILEFISH"
 
-
 db_final <- rbind(db_goldentilefish, db_bluelinetilefish)
 
 strat_goldentilefish <- db_goldentilefish %>% 	
-  filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+   dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
-                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
-                              SPECIES,
-                              STRATA 
+                   dplyr::select(
+                              SPECIES
+                              ,STRATA_FULL
+                             # STRATA 
              # ,N_OBS_TRIPS_F
               ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
-             # ,CV) 
-             #dplyr::arrange(desc(DISCARD))
+              ,FED_OR_STATE)
 
-strat_bluelinetilefish <- db_bluelinetilefish %>%
-  filter(DISCARD_SOURCE != 'O') %>%
-  group_by(SPECIES, STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+strat_bluelinetilefish <- db_bluelinetilefish %>% 	
+    dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
-                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%
-  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(
-                              SPECIES,
-                              STRATA
+                   dplyr::select(
+                              SPECIES
+                              ,STRATA_FULL
+                             # STRATA 
              # ,N_OBS_TRIPS_F
               ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD
               ,DISCARD_SOURCE
-              ,TRIP_TYPE)
+              ,FED_OR_STATE)
+
 
 strat_final <- rbind(strat_goldentilefish, strat_bluelinetilefish)
   
   
+  strat_final %>% 
+	filter(FED_OR_STATE=='FED') %>% 
+#	dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>% 
+	#slice(1) %>% 
+	ggplot()+
+	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
+	facet_wrap(~SPECIES)+
+	theme_light()
+
+```
+
+```{r make diagnostic state plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for State trips", fig.height = 8, fig.width = 12}
+
 strat_final %>% 
-	filter(DISCARD_SOURCE != 'O' & CAMS_DISCARD_RATE) %>% 
-	dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, TRIP_TYPE) %>% 
+	filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=='STATE') %>% 
+	#dplyr::group_by(SPECIES, STRATA, DISCARD_SOURCE, FED_OR_STATE) %>% 
 	#slice(1) %>% 
 	ggplot()+
 	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
@@ -246,10 +239,10 @@ strat_final %>%
 ```
 
 
-
-```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source" , fig.height = 8, fig.width = 12}
+```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source for Federal trips" , fig.height = 8, fig.width = 12}
 db_final %>% 
-	# filter(DISCARD_SOURCE != 'O') %>% 
+	# filter(DISCARD_SOURCE != 'O')&
+  filter(FED_OR_STATE=='FED') %>% 
 	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
@@ -259,64 +252,144 @@ db_final %>%
 	theme_light()
 ```
 
-Not suprisingly, total discards at the end of the year come from strata with an in season rate. 
 
 
-```{r goldentilefish discard table }
+```{r plot 2, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source for State trips" , fig.height = 8, fig.width = 12}
+db_final %>% 
+	# filter(DISCARD_SOURCE != 'O')&
+  filter(FED_OR_STATE=='STATE') %>% 
+	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	# slice(1) %>% 
+	ggplot()+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+ facet_wrap(~SPECIES, scales = 'free')+
+	theme_light()
+```
+
+```{r goldentilefish federal discard table }
 
 db_goldentilefish %>% 	
-  filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-  group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
                        , DISCARD = round(sum(DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-  mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA 
+   ungroup() %>% dplyr::select(STRATA_FULL,
+                                                                                                                                          DISCARD_SOURCE 
              # ,N_OBS_TRIPS_F
               ,CAMS_DISCARD_RATE
               ,SUBTRIP_KALL
               ,DISC_MORT_RATIO
               ,DISCARD) %>%
              # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
-		DT::datatable(caption = 'Discard rates by Strata for Golden Tilefish')
+             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard rates for federal trips by strata for Goldentilefish')
+
 ```
 
 
+```{r goldentilefish state discard table }
 
-```{r bluelinetilefish discard table }
+db_goldentilefish %>% 	
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>%
+  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+   ungroup() %>% dplyr::select(STRATA_FULL,
+                                                                                                                                          DISCARD_SOURCE 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard rates for state trips by strata for goldentilefish')
 
-  db_bluelinetilefish %>%
-   filter(DISCARD_SOURCE != 'O' & TRIP_TYPE=="FED") %>%
-   group_by(STRATA_FULL, STRATA_ASSUMED, DISCARD_SOURCE, TRIP_TYPE) %>%
-   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                       # , CV = mean(CV, na.rm=TRUE)
-                        , DISCARD = round(sum(DISCARD))) %>%
-                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%
-   mutate(STRATA = case_when(DISCARD_SOURCE == "I" ~ STRATA_FULL, DISCARD_SOURCE == "A" ~ STRATA_ASSUMED)) %>% ungroup() %>% dplyr::select(STRATA
-              # ,N_OBS_TRIPS_F
-               ,CAMS_DISCARD_RATE
-               ,SUBTRIP_KALL
-               ,DISC_MORT_RATIO
-               ,DISCARD) %>%
-              # ,CV)
-              dplyr::arrange(desc(DISCARD)) %>% top_n(10) %>%
- 		DT::datatable(caption = 'Discard rates by Strata for Blueline Tilefish based on federal trips')
+```
+
+
+```{r bluelinetilefish fed discard table }
+
+db_bluelinetilefish %>% 	
+   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+   ungroup() %>% dplyr::select(STRATA_FULL,
+                                                                                                                                          DISCARD_SOURCE 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard rates by Strata for Bluelinetilefish')
+```
+
+```{r bluelinetilefish state discard table }
+
+db_bluelinetilefish %>% 	
+   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>%
+  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+   ungroup() %>% dplyr::select(STRATA_FULL,
+                                                                                                                                          DISCARD_SOURCE 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard rates by Strata for Bluelinetilefish')
+```
+
+```{r goldentilefish gear fed discard table }
+db_goldentilefish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Goldentilefish')
+```
+
+```{r goldentilefish gear state discard table }
+db_goldentilefish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Goldentilefish')
+```
+
+```{r bluelinetilefish gear fed discard table }
+db_bluelinetilefish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Bluelinetilefish')
+```
+
+```{r bluelinetilefish gear state discard table }
+db_bluelinetilefish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4 ))%>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Bluelinetilefish')
 ```
 
 
 ### Appendix
 
-For more information regarding stratfication variables and discard rates by species see
+For more information regarding stratification variables and discard rates by species see
 
 MAPS.CAMS_STATAREA_STOCK
 MAPS.CAMS_DISCARD_MORTALITY_STOCK
 MAPS.CAMS_GEARCODE_STRATA
 MAPS.CAMS_MASTER_GEAR
 MAPS.CAMS_OBS_CATCH
-
-I may need to grant selection to APSD if you do not have access to MAPS.
