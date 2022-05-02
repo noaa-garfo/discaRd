@@ -436,7 +436,7 @@ gc()
 ```
 
 
-```{r upload}
+```{r upload to MAPS}
 # create tables on MAPS
 
 # try usiong this from now on.. 
@@ -468,10 +468,17 @@ for(i in 18:19){
 	
 	t2 =  Sys.time()
 	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
+	
+	# create indices 
+	idx1 = paste0("CREATE INDEX yearidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(YEAR, MONTH)")
+	idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
+	ROracle::dbSendQuery(bcon, idx1)
+	ROracle::dbSendQuery(bcon, idx2)
 
 }
+```
 
-
+```{upload to CAMS_GARFO, eval = F}
 # create tables on cams_garfo
 
 condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
@@ -490,6 +497,12 @@ for(i in 18:19){
 	dbWriteTable(ccon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
 	t2 =  Sys.time()
 	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
+	
+		# create indices 
+	idx1 = paste0("CREATE INDEX yearidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(YEAR, MONTH)")
+	idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
+	ROracle::dbSendQuery(ccon, idx1)
+	ROracle::dbSendQuery(ccon, idx2)
 
 }
 
@@ -517,12 +530,14 @@ SELECT object_name, object_type
     FROM all_objects
     WHERE object_type = 'TABLE'
     and owner = 'MAPS'
-and object_name like 'CAMS_DISCARD_EX%'
+and object_name like 'CAMS_DISCARD%'
 															 ")
 
 st = "CREATE OR REPLACE VIEW MAPS.CAMS_DISCARD_ALL_YEARS AS "
 
-tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )[22:23]
+tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only.. 
+
+tab_line = tab_line[-23]
 
 tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = tab_line[length(tab_line)])
 

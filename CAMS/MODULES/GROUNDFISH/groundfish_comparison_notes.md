@@ -460,3 +460,34 @@ The OBS pounds amount will match OBDBS both by LINK1 and LINK3. there will, howe
 
 - This has been implemented. CAMS_OBS_CATCH and the GF_18 and GF_19 tables have been recreated/shared.
 - wolfish mortality is now corrected
+
+## 4/27/22
+
+- needed to adjust the get `get_obs_disc_vals` function because it was not pullign the pro-rated discards as the obs discard amounts..
+- Following that, it looks like we need to change the `make_bdat_focal` function. It looks like it was using both obs and unobs hauls when assigning OBS_KALL, which then feeds d/k calculations
+
+``` sql
+-- check discard results
+select link1
+, camsid
+, species_itis
+, strata_full
+, obs_discard
+, obs_kall
+, disc_mort_ratio
+, discard
+from MAPS.CAMS_DISCARD_EXAMPLE_GF19
+where camsid = '250508_20191222070000_5260337'
+--AND species_itis = '172873'
+AND species_itis = '172905'
+;
+
+-- check CAMS_OBS_CATCH
+select *
+from cams_obs_catch
+where link1 = '230201912R22046'
+--and ITIS_TSN = '172873' -- witch flounder-- 172905 winter flounder
+and ITIS_TSN = '172905'
+;
+
+```
