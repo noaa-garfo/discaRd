@@ -32,10 +32,11 @@ RUN FROM MAPS SCHEMA
 
 ------------------------------------------------------------------------------------------------------*/  
 /
+
 drop table maps.cams_obs_catch
+
 /
-drop table maps.cams_obs_catch_prorate
-/
+
 
 
 create table maps.cams_obs_catch as 
@@ -190,6 +191,7 @@ group by link3
         , d.accessarea
     , o.link1
     , count(distinct(vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
+    , count(distinct(area)) over(partition by link1) as narea_link1 -- count how many VTR areas for each link1
     from MAPS.CAMS_LANDINGS d
     left join (  --adds observer link field
          select * 
@@ -337,7 +339,7 @@ trips with no link1 (unobserved)
 )
 
 -- trips with >1 link1
-, trips_2 as ( 
+, trips_2_area_1 as ( 
 
    select t.*
   , o.vtrserno as obsvtr
@@ -347,11 +349,8 @@ trips with no link1 (unobserved)
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
---    , o.ITIS_GROUP1
---    , o.discard_prorate as discard
-, o.discard
+    , o.discard
     , o.obs_haul_kept
---    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -360,12 +359,39 @@ trips with no link1 (unobserved)
      from trips t 
    ) t
       left join (select * from obs ) o
---        on (t.link1 = o.link1)
-        on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA)
+  on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup)  -- don't use area when narea = 1
   where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  and narea_link1 = 1
   and t.link1 is not null
   and t.cams_subtrip is not null
---  and t.year = 2019
+
+)
+, trips_2_area_2 as ( 
+
+   select t.*
+  , o.vtrserno as obsvtr
+    , o.link1 as obs_link1
+    , o.link3
+    , o.obsrflag
+    , o.obs_area as obs_area
+    , o.nespp3
+    , o.ITIS_TSN
+    , o.discard
+    , o.obs_haul_kept
+    , o.obs_gear as obs_gear
+    , o.obs_mesh as obs_mesh
+    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    from ( 
+     select t.*
+     from trips t 
+   ) t
+      left join (select * from obs ) o
+        on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA) -- use area when narea >1
+  where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  and narea_link1 > 1
+  and t.link1 is not null
+  and t.cams_subtrip is not null
+
 )
 
 , obs_catch as 
@@ -374,7 +400,9 @@ trips with no link1 (unobserved)
     union all
     select * from trips_1
     union all
-    select * from trips_2
+    select * from trips_2_area_1
+    union all
+    select * from trips_2_area_2
 )
 
 , obs_catch_2 as 
