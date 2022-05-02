@@ -167,7 +167,8 @@ import_query = " with obs_cams as (
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	, NVL(sum(discard),0) as discard
+	, NVL(sum(discard_prorate),0) as discard
+	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
@@ -246,6 +247,40 @@ c_o_dat2 = c_o_dat2 %>%
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 				 
 
+# 4/13/22
+# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future 
+
+link3_na = c_o_dat2 %>% 
+	filter(!is.na(LINK1) & is.na(LINK3))
+
+
+# make these values 0 or NA or 'none' depending on the default for that field
+link3_na = link3_na %>% 
+	mutate(LINK1 = NA
+				 , DISCARD = NA
+				 , DISCARD_PRORATE = NA
+				 , OBSRFLAG = NA
+				 , OBSVTR = NA
+				 , OBS_AREA = NA
+				 , OBS_GEAR = NA
+				 , OBS_HAUL_KALL_TRIP = 0
+				 , OBS_HAUL_KEPT = 0
+				 , OBS_KALL = 0
+				 , OBS_LINK1 = NA
+				 , OBSVTR = NA
+				 , OBS_MESHGROUP = 'none'
+				 , PRORATE = NA)
+
+
+tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
+
+c_o_dat2 = c_o_dat2[tidx == F,]
+
+c_o_dat2 = c_o_dat2 %>% 
+	bind_rows(link3_na)
+
+# continue the data import
+
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
@@ -276,7 +311,7 @@ fed_trips =
 	fed_trips %>% 
 	filter(ROWID %!in% remove_id$ROWID)
 
-c_o_dat2  = fed_trips %>% 
+c_o_dat2 = fed_trips %>% 
 #	filter(GF == 0) %>% 
 	bind_rows(., state_trips) %>% 
 	mutate(GF = "0")
@@ -847,14 +882,27 @@ joined_table %>%
  cy_discard_example <- cy_discard_example %>% dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
  	
  	
+
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
  
  cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA    
  
+ cy_discard_example$CAMS_DISCARD_RATE[is.nan(cy_discard_example$CAMS_DISCARD_RATE)]<-NA
+ 
+ cy_discard_example$CAMS_DISCARD_RATE[is.infinite(cy_discard_example$CAMS_DISCARD_RATE)] <- NA 
+ 
+ cy_discard_example$BROAD_STOCK_RATE[is.nan(cy_discard_example$BROAD_STOCK_RATE)]<-NA
+ 
+ cy_discard_example$BROAD_STOCK_RATE[is.infinite(cy_discard_example$BROAD_STOCK_RATE)] <- NA 
+ 
+ cy_discard_example$DISCARD[is.nan(cy_discard_example$DISCARD)]<-NA
+ 
+ cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA     
+ 
  species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_DOGFISH_19', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_FLUKE_19', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
