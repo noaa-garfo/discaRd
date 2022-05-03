@@ -1,17 +1,17 @@
-Species,Method,Source,Year,Discards,kall
-Clearnose skate,CAMS,State,2019,304960,334388859
-Clearnose skate,CAMS,Federal,2019,1893472,1373378471
-Little skate,CAMS,State,2019,488955,334388859
-Little skate,CAMS,Federal,2019,14541779,1373378471
-Rosette skate,CAMS,State,2019,260,334388859
-Rosette skate,CAMS,Federal,2019,60265,1373378471
-Barndoor skate,CAMS,State,2019,32429,334388859
-Barndoor skate,CAMS,Federal,2019,4330887,1373378471
-Winter skate,CAMS,State,2019,154566,334388859
-Winter skate,CAMS,Federal,2019,5004059,1373378471
-Thorny skate,CAMS,State,2019,693,334388859
-Thorny skate,CAMS,Federal,2019,398022,1373378471
-Smooth skate,CAMS,State,2019,268,334388859
-Smooth skate,CAMS,Federal,2019,1035017,1373378471
-Skate complex,QM,Federal,2019,13144115,966325.608
-Skate complex,CAMS,Federal,2019,27263501,1373378471
+Species,Method,Source,Year,Discards,kall,,,
+Clearnose skate,CAMS,State,2019,1609504,335044541,,,
+Clearnose skate,CAMS,Federal,2019,2716167,1710733125,,,
+Little skate,CAMS,State,2019,414801,335044541,,,
+Little skate,CAMS,Federal,2019,15984004,1710733125,,,
+Rosette skate,CAMS,State,2019,895,335044541,,,
+Rosette skate,CAMS,Federal,2019,68255,1710733125,,,
+Barndoor skate,CAMS,State,2019,1194283,335044541,,,
+Barndoor skate,CAMS,Federal,2019,5103575,1710733125,,,
+Winter skate,CAMS,State,2019,171591,335044541,,,
+Winter skate,CAMS,Federal,2019,5771635,1710733125,,,
+Thorny skate,CAMS,State,2019,387954,335044541,,,
+Thorny skate,CAMS,Federal,2019,528896,1710733125,,,
+Smooth skate,CAMS,State,2019,175487,335044541,,,
+Smooth skate,CAMS,Federal,2019,1342956,1710733125,,,
+Skate complex,QM,Federal,2019,13144115,3176452.306,,,
+Skate complex,CAMS,Federal,2019,31515488,1710733125,,,
