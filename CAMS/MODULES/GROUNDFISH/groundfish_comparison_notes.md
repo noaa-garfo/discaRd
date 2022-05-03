@@ -463,7 +463,7 @@ The OBS pounds amount will match OBDBS both by LINK1 and LINK3. there will, howe
 
 ## 4/27/22
 
-- needed to adjust the get `get_obs_disc_vals` function because it was not pullign the pro-rated discards as the obs discard amounts..
+- needed to adjust the get `get_obs_disc_vals` function because it was not pulling the pro-rated discards as the obs discard amounts..
 - Following that, it looks like we need to change the `make_bdat_focal` function. It looks like it was using both obs and unobs hauls when assigning OBS_KALL, which then feeds d/k calculations
 
 ``` sql
