@@ -1,5 +1,5 @@
 ---
-title: "November loop for discards"
+title: "January loop for discards"
 output:
   pdf_document: 
     highlight: zenburn
@@ -84,17 +84,22 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```{r define fishing year and species, eval = T}
 
-FY <- 2018
+FY <- 2019
 
-FY_TYPE = 'NOV START'
+FY_TYPE = 'JAN START'
 
 #--------------------------------------------------------------------------#
 # group of species ITIS codes.. 
 # SMB, river herring, bluefish, summer flounder, 
 # black seabass and scup.
 #Not sure what else is needed for herring and shad catch cap.
- itis <-  c('168546',
-            '168543')
+ itis <-  c('167687',
+        '168559',
+        '172567',
+        '082372',
+         '172414',
+          '082521',
+        '172735')  # 
  
  #itis <- itis
  itis_num <- as.numeric(itis)
@@ -316,7 +321,6 @@ c_o_dat2 = fed_trips %>%
 
 rm(fed_trips, state_trips)
 
-
 ```
 
 
@@ -382,7 +386,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
 #--------------------------------------------------------------------------------#
 # make tables
 ddat_focal <- c_o_dat2 %>% 
-  filter(GF_YEAR == FY) %>%   ## time element is here!!
+  filter(YEAR == FY) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -399,7 +403,7 @@ ddat_focal <- c_o_dat2 %>%
 
 
 ddat_prev <- c_o_dat2 %>% 
-  filter(GF_YEAR == FY-1) %>%   ## time element is here!!
+  filter(YEAR == FY-1) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
          ,SEADAYS = 0
@@ -878,6 +882,7 @@ joined_table %>%
  cy_discard_example <- cy_discard_example %>% dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
  	
  	
+
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
  
  cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA    
@@ -892,12 +897,12 @@ joined_table %>%
  
  cy_discard_example$DISCARD[is.nan(cy_discard_example$DISCARD)]<-NA
  
- cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA    
+ cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA     
  
  species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_GOLDENTILEFISH_18', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_FLUKE_19', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
