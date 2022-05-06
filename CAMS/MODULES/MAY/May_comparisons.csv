@@ -1,15 +1,15 @@
-Species,Method,Source,Year,Discards,kall,,,,,
-Monkfish,CAMS,State,2019,3221395,335044541,,,,,
-Monkfish,CAMS,Federal,2019,17265424,1710733125,,,,,
-Monkfish,QM,Federal,2019,14592605,,,,,,
-Dogfish,CAMS,State,2019,2792030,335044541,,,,,
-Dogfish,CAMS,Federal,2019,5061276,1710722188,,,,,
-Dogfish,QM,Federal,2019,5602641,17256522,,,,,
-Red hake,CAMS,State,2019,84293,335044541,,,,,
-Red hake,CAMS,Federal,2019,3416021,1710733125,,,,,
-Red hake,QM,Federal,2019,2872821,,,,,,
-Silver hake,CAMS,State,2019,105454,335044541,,,,,
-Silver hake,CAMS,Federal,2019,4542163,1710733125,,,,,
-Silver hake,QM,Federal,2019,4462191,,,,,,
-Offshore hake,CAMS,State,2019,34760,335044541,,,,,
-Offshore hake,CAMS,Federal,2019,232,1710733125,,,,,
+Species,Method,Source,Year,Discards,kall
+Monkfish,CAMS,State,2019,3437265,322296448
+Monkfish,CAMS,Federal,2019,17320048,1712184481
+Monkfish,QM,Federal,2019,14592605,
+Dogfish,CAMS,State,2019,1355926,322296448
+Dogfish,CAMS,Federal,2019,4899300,1712184481
+Dogfish,QM,Federal,2019,5602641,17256522
+Red hake,CAMS,State,2019,92748,322296448
+Red hake,CAMS,Federal,2019,3238862,1712184481
+Red hake,QM,Federal,2019,2872821,
+Silver hake,CAMS,State,2019,118223,322296448
+Silver hake,CAMS,Federal,2019,4504107,1712184481
+Silver hake,QM,Federal,2019,4462191,
+Offshore hake,CAMS,State,2019,327,322296448
+Offshore hake,CAMS,Federal,2019,35063,1712184481
