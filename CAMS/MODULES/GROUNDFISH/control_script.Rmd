@@ -97,6 +97,7 @@ import_query = " with obs_cams as (
 	, vtrserno
   , CAMS_SUBTRIP
 	, link1
+	, link3
 	, docid
 	, CAMSID
 	, nespp3
@@ -142,6 +143,7 @@ import_query = " with obs_cams as (
 	, vtrserno
   , CAMS_SUBTRIP
 	, link1
+	, link3
 	, docid
 	, nespp3	
   , itis_tsn
@@ -301,16 +303,16 @@ and b.species_itis is not null
 
 # if only running yellowtail and windowpane
 
-# species = species[c(8,10),]
+species = species[c(7,10),]
 
 # make a script from RMD.. 
-knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
+knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
 for(jj in 2018:2019){
 	FY <- jj
 	FY_TYPE = 'MAY START'
-  source('recombine_groundfish_loop.R')
+  source('groundfish_loop_050422.R')
 }
 
 rm(list = ls())
@@ -322,7 +324,7 @@ gc()
 ```{r combine all results for a given year, eval = T, purl = F}
 #build one big table for a FY
 
-for (FY in 18:19){
+for (FY in 2018:2019){
 
 t1 = Sys.time()	
 	
@@ -390,13 +392,40 @@ outlist <- lapply(res, function(x) {
 		SCALLOP_AREA
 	  # eval(strata_unique)
 	)
-	
+		
 }
 )
 
 rm(res)
+
+# convert list to data frame
+ outlist = do.call(rbind, outlist)
+
+# adjust for DISACRD_SOURCE = N, nan and infinite values	
+	
+	outlist <- outlist %>% 
+ 	dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
+ 	dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
+ 	
+ 	
+ outlist$CV[is.nan(outlist$CV)]<-NA
+ 
+ outlist$CV[is.infinite(outlist$CV)] <- NA    
+ 
+outlist$CAMS_DISCARD_RATE[is.nan(outlist$CAMS_DISCARD_RATE)]<-NA
+ 
+ outlist$CAMS_DISCARD_RATE[is.infinite(outlist$CAMS_DISCARD_RATE)] <- NA 
+ 
+ outlist$BROAD_STOCK_RATE[is.nan(outlist$BROAD_STOCK_RATE)]<-NA
+ 
+ outlist$BROAD_STOCK_RATE[is.infinite(outlist$BROAD_STOCK_RATE)] <- NA 
+ 
+ outlist$DISCARD[is.nan(outlist$DISCARD)]<-NA
+ 
+ outlist$DISCARD[is.infinite(outlist$DISCARD)] <- NA 
+
 		
-assign(paste0('outlist_df_',FY),  do.call(rbind, outlist))
+assign(paste0('outlist_df_',FY),  outlist)
 
 rm(outlist)
 
@@ -406,9 +435,11 @@ print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2,
 
 }
 
+gc()
+
 ```
 
-```{r check for infinite values}
+```{r check for infinite values, eval = F}
 
 # infinite values won't upload to Oracle.. 
 
@@ -451,7 +482,7 @@ bcon <- ROracle::dbConnect(
     dbname = "NERO.world"
 )
 
-for(i in 18:19){
+for(i in 2018:2019){
 	t1 = Sys.time()
 
 	# db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
