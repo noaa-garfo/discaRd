@@ -70,11 +70,11 @@ stratvars = c('SPECIES_STOCK'
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
  - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
- - (B) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
+ - (G) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (A) and (B). 
+9. CV calculations are available for (I), (T), (A) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -83,7 +83,7 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
+			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (G) rates 	 
 ```
 
 By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 

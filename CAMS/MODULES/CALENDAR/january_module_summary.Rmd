@@ -70,11 +70,11 @@ stratvars = c('SPECIES_STOCK'
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
  - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
- - (B) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
+ - (G) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (A) and (B). 
+9. CV calculations are available for (I), (T), (A) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -83,7 +83,7 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
+			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (G) rates 	 
 ```
 
 By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
@@ -113,6 +113,9 @@ Output tables are produced for each species. These can easily be recombined. Pre
 	
 	MAPS.CAMS_DISCARD_FLUKE_19
 	CAMS_GARFO.CAMS_DISCARD_FLUKE_19
+	
+	MAPS.CAMS_DISCARD_SCUP_19
+	CAMS_GARFO.CAMS_DISCARD_SCUP_19
 
 
 ```
@@ -212,9 +215,14 @@ db_fluke = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_FLUKE_19")) %>%
 
 db_fluke$SPECIES <- "FLUKE"
 
+db_scup = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SCUP_19")) %>%
+	collect
+
+db_scup$SPECIES <- "SCUP"
+
 
 db_final <- rbind(db_blackseabass, db_bluefish, db_butterfish, db_longfinsquid, 
-                  db_shortfinsquid, db_mackerel, db_fluke)
+                  db_shortfinsquid, db_mackerel, db_fluke, db_scup)
 
 strat_blackseabass <- db_blackseabass %>% 	
    dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
@@ -353,11 +361,32 @@ strat_fluke <- db_fluke %>%
               ,DISCARD_SOURCE
               ,FED_OR_STATE)
 
+strat_scup <- db_scup %>%
+  dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                   dplyr::select(
+                              SPECIES
+                              ,STRATA_FULL
+                             # STRATA 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD
+              ,DISCARD_SOURCE
+              ,FED_OR_STATE)
+
+
+
 
 
 strat_final <- rbind(strat_blackseabass, strat_bluefish, strat_butterfish,
                      strat_longfinsquid, strat_shortfinsquid, strat_mackerel,
-                     strat_fluke)
+                     strat_fluke, strat_scup)
   
   
   strat_final %>% 
@@ -738,6 +767,53 @@ db_fluke %>%
 		DT::datatable(caption = 'Discard rates for state trips by Strata for Fluke')
 ```
 
+
+```{r scup federal discard table }
+
+db_scup %>% 	
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
+  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+   ungroup() %>% dplyr::select(STRATA_FULL,
+                                                                                                                                          DISCARD_SOURCE 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard rates for federal trips by strata for Scup')
+```
+
+```{r scup state discard table }
+
+db_scup %>% 	
+  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>%
+  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
+  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
+                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
+                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
+                      # , CV = mean(CV, na.rm=TRUE)
+                       , DISCARD = round(sum(DISCARD))) %>%
+                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
+   ungroup() %>% dplyr::select(STRATA_FULL,
+                                                                                                                                          DISCARD_SOURCE 
+             # ,N_OBS_TRIPS_F
+              ,CAMS_DISCARD_RATE
+              ,SUBTRIP_KALL
+              ,DISC_MORT_RATIO
+              ,DISCARD) %>%
+             # ,CV) 
+             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard rates for state trips by Strata for Scup')
+```
+
 ```{r blackseabass gear fed discard table }
 db_blackseabass %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Blackseabass')
@@ -808,6 +884,15 @@ db_fluke %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_G
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Fluke')
 ```
 
+```{r scup gear fed discard table }
+db_scup %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Scup')
+```
+
+```{r scup gear state discard table }
+db_scup %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Scup')
+```
 ### Appendix
 
 For more information regarding stratification variables and discard rates by species see
