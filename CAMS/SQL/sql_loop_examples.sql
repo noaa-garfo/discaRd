@@ -1,15 +1,19 @@
 --The first checks for a list of all table names in a schema , and loops through the list giving grant select to CAMS_GARFO
 
 BEGIN
-   FOR cur_rec IN (SELECT object_name, object_type
-                     FROM user_objects
-                    WHERE object_type IN
-                             ('TABLE'))
+   FOR cur_rec IN (
+    SELECT object_name, object_type
+    FROM all_objects
+    WHERE object_type = 'TABLE'
+    and owner = 'MAPS'
+ and object_name like 'CAMS_DISCARD_%'
+ and object_name not like '%DISCARD_MORTALITY%'
+)
    LOOP
       BEGIN
             EXECUTE IMMEDIATE    'GRANT SELECT ON '
                               --|| cur_rec.object_type
-                              || ' "'
+                              || 'MAPS"."'
                               || cur_rec.object_name
                               || '" TO CAMS_GARFO';
       EXCEPTION
@@ -34,8 +38,8 @@ BEGIN
     FROM all_objects
     WHERE object_type = 'TABLE'
     and owner = 'MAPS'
-    --and object_name = 'CAMS_CFDETS_2019_AA'
-and object_name like 'CAMS_%'
+ and object_name like 'CAMS_DISCARD_%'
+ and object_name not like '%DISCARD_MORTALITY%'
    )
    LOOP
       BEGIN
@@ -155,31 +159,8 @@ and object_name like 'CAMS_DISCARD_EX%'
 END;
 
 
-CREATE OR REPLACE VIEW MAPS.CAMS_DISCARD_ALL_YEARS AS 
-select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19 
-UNION ALL 
-select * from MAPS.CAMS_DISCARD_EXAMPLE_GF18
-;
-
-select distinct(species_itis)
-from MAPS.CAMS_DISCARD_ALL_YEARS
-;
-
-select round(sum(discard)) as total_discard
-, species_stock
-, COMMON_NAME
-, species_itis
-, FY
-, GF
-from MAPS.CAMS_DISCARD_ALL_YEARS
-group by species_itis, fy, species_stock, GF, COMMON_NAME
-order by COMMON_NAME
-
-
 
 ;
 
-CREATE OR REPLACE VIEW MAPS.CAMS_DISCARD_ALL_YEARS AS 
-select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_BARNDOORSKATE_19 
-UNION ALL 
-select * from MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19  
+
+ 
