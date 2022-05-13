@@ -491,3 +491,31 @@ and ITIS_TSN = '172905'
 ;
 
 ```
+
+
+## 5/3/22
+
+`CAMS_SUBTRIP` has not been included in our final discard output tables..
+
+`VTRSERNO and CAMSID` may be used to add `PRORATE` back onto results..
+
+```SQL
+with dp as (
+    select vtrserno
+    , camsid
+    , max(prorate) prorate
+    from cams_obs_catch
+    where GF = 1
+    and year in( 2019, 2020)
+    group by camsid, vtrserno
+  )
+
+ select c.*, dp.prorate
+from CAMS_DISCARD_EXAMPLE_GF19 c
+left join (select * from dp) dp
+on (c.camsid = dp.camsid and c.vtrserno = dp.vtrserno)
+where GF = 1
+and c.vtrserno is not null
+and DISCARD_SOURCE = 'O'
+and COMMON_NAME = 'COD'
+```
