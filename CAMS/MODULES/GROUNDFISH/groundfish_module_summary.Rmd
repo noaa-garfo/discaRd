@@ -31,11 +31,11 @@ Discards of groundfish species are used for several purposes throughout the year
 This means a full accounting of groundfish discards occurs in several steps. 
 
 
-### Steps for Groundfish
+### Steps for Groundfish Trips
 
-1. pull all merged trips from CAMS_OBS_CATCH
+1. Pull all merged trips from `CAMS_OBS_CATCH`. Here, it is a good idea to pull only a few years and not the whole table, which is ~12 years of data
 
-2. separate Groundfish trips from non-groundfish trips (Use CAMS `GF` column)
+2. Separate Groundfish trips from non-groundfish trips (Use CAMS `GF` column)
 
 3. Set stratification variables for groundfish trips
 
@@ -58,7 +58,7 @@ stratvars = c( 'SPECIES_STOCK'
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
-	- EFP and Exemptions come from the CAMS trip atributes View (`MAPS.STG_TRIP_ATTR`), which complements `MAPS.DLR_VTR`
+	- EFP and Exemptions are built in to `CAMS_LANDINGS`, the precurdor for `CAMS_OBS_CATCH`
 	
 4. Perform *first pass* of `discaRd`
 	- there are two sub-passes for year t and year t-1
@@ -76,7 +76,7 @@ stratvars = c('SPECIES_STOCK'
               ) 
 ```	
 
-6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
+6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
 
 7. For each *pass*, a transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 
@@ -98,7 +98,6 @@ stratvars = c('SPECIES_STOCK'
 				 
 			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
 ```
-
 
 By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
 
@@ -154,7 +153,7 @@ bcon <- ROracle::dbConnect(
 db_example = tbl(bcon, sql("
 
     select *
-    from MAPS.CAMS_DISCARD_EXAMPLE_GF19
+    from MAPS.CAMS_DISCARD_EXAMPLE_GF2019
      where GF = 1
     AND FED_OR_STATE = 'FED'
 
@@ -431,7 +430,6 @@ lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>%
 
 ```
 
-
 ```{r comparison of gear stratifications, eval = F}
 
 load('compare_gear_strata_gftrips19.Rdata')
@@ -473,11 +471,130 @@ bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select
 ```
 
 
+### Steps for estimation of groundfish discard on non-Groundfish Trips
+
+1. same as above
+
+2. same as above
+
+3. Set stratification variables
+
+```{r, echo = T, eval = F}
+# Full (First Pass) Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              ,'CAMS_GEAR_GROUP'
+							, 'MESHGROUP'
+						  , 'TRIPCATEGORY'
+						  , 'ACCESSAREA')
+```
+
+	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
+	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
+	- TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
+	- ACCESS AREA is specific to scallop trips and indicates Scallop Access Area
+
+4. Run first pass of `discaRd` for full startififcation
+	- there are sub-passes for year t and year t-1
+	
+5. Run a second pass using a coarsened stratification : 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+
+	
+```{r, echo = T, eval = F}
+# Second Pass Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              , 'CAMS_GEAR_GROUP',
+              ,'MESHGROUP')
+
+```	
+
+
+6. Run a third pass using Stock and Gear only
+```{r, echo = T, eval = F}
+# Third PAss Stratification variables
+
+stratvars = c('SPECIES_STOCK'
+              , 'CAMS_GEAR_GROUP',
+              ,'MESHGROUP')
+
+```	
+
+7. Trips/Gear strata that are unobserved after these steps are not assigned rates as no observer coverage exists for these gear types (e.g. Menhaden purse seine)
+
+8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
+ - (I) in season rate; >= 5 trips in Full Stratification
+ - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
+ - (GM) Assigment is from the second pass (e.g. Stock/Gear/Meshgroup). This is the rate when there were <5 trips in season and <5 in previous season at the full stratification level.
+ - (G) Assigment is from the second pass (e.g. Stock/Gear). 
+ - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
+ - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
+
+9. CV calculations are available for (I), (T), (G) and (GM). 
+
+10. Discard pounds per trip are calculated according to
+
+```{r echo = T, eval = F}
+	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
+	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
+				 
+	# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (GM) and (G) rates 	 
+```
+
+
+
+```{r plot non groundfish trips, echo = F, fig.cap = "Non-groudfish trips: Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
+
+
+non_gf = tbl(bcon, sql("
+
+    select SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
+    , sum(DISCARD) as DSUM
+    from MAPS.CAMS_DISCARD_EXAMPLE_GF2019
+     where GF = 0
+     group by SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
+
+")) %>% 
+	collect()
+
+	ggplot(non_gf)+
+	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	facet_wrap(~COMMON_NAME, scales = 'free')+
+	theme_light()
+
+```
+
+
+```{r non-gf trips table}
+	
+	non_gf = tbl(bcon, sql("
+
+    select COMMON_NAME, SPECIES_STOCK, FED_OR_STATE
+    , sum(DISCARD) as DISCARD
+    , sum(subtrip_kall) as KALL
+    , count(distinct(VTRSERNO)) as N_VTR
+    from MAPS.CAMS_DISCARD_EXAMPLE_GF2019
+     where GF = 0
+     group by COMMON_NAME,SPECIES_STOCK, FED_OR_STATE
+
+")) %>% 
+		collect()	
+
+	
+	non_gf %>% 
+	DT::datatable(caption = 'Non-groundfish trips: Discard Estimate by Stock, Species, Discard Source (using CAMS Stock ID)') %>% 
+	DT::formatRound(c('N_VTR','KALL','DISCARD'), digits = 0, interval = 3)
+
+```
+
+
 ### To-do 
 
 1. Check totals between CAMS/DMIS
 	- KALL (**DONE**)
-	- d/k rates 
+	- d/k rates ()
 
 2. Complete code for non-groundfish trips in groundfish module. (**DONE**)
 	- combine with previous work (or not) so we have a full set of trips for each groundfish stock (**DONE**)

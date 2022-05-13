@@ -97,6 +97,7 @@ import_query = " with obs_cams as (
 	, vtrserno
   , CAMS_SUBTRIP
 	, link1
+	, link3
 	, docid
 	, CAMSID
 	, nespp3
@@ -142,6 +143,7 @@ import_query = " with obs_cams as (
 	, vtrserno
   , CAMS_SUBTRIP
 	, link1
+	, link3
 	, docid
 	, nespp3	
   , itis_tsn
@@ -301,16 +303,16 @@ and b.species_itis is not null
 
 # if only running yellowtail and windowpane
 
-# species = species[c(8,10),]
+species = species[c(7,10),]
 
 # make a script from RMD.. 
-knitr::purl('recombine_groundfish_loop.Rmd', documentation = 0)
+knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
 for(jj in 2018:2019){
 	FY <- jj
 	FY_TYPE = 'MAY START'
-  source('recombine_groundfish_loop.R')
+  source('groundfish_loop_050422.R')
 }
 
 rm(list = ls())
@@ -322,7 +324,7 @@ gc()
 ```{r combine all results for a given year, eval = T, purl = F}
 #build one big table for a FY
 
-for (FY in 18:19){
+for (FY in 2018:2019){
 
 t1 = Sys.time()	
 	
@@ -390,13 +392,40 @@ outlist <- lapply(res, function(x) {
 		SCALLOP_AREA
 	  # eval(strata_unique)
 	)
-	
+		
 }
 )
 
 rm(res)
+
+# convert list to data frame
+ outlist = do.call(rbind, outlist)
+
+# adjust for DISACRD_SOURCE = N, nan and infinite values	
+	
+	outlist <- outlist %>% 
+ 	dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
+ 	dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
+ 	
+ 	
+ outlist$CV[is.nan(outlist$CV)]<-NA
+ 
+ outlist$CV[is.infinite(outlist$CV)] <- NA    
+ 
+outlist$CAMS_DISCARD_RATE[is.nan(outlist$CAMS_DISCARD_RATE)]<-NA
+ 
+ outlist$CAMS_DISCARD_RATE[is.infinite(outlist$CAMS_DISCARD_RATE)] <- NA 
+ 
+ outlist$BROAD_STOCK_RATE[is.nan(outlist$BROAD_STOCK_RATE)]<-NA
+ 
+ outlist$BROAD_STOCK_RATE[is.infinite(outlist$BROAD_STOCK_RATE)] <- NA 
+ 
+ outlist$DISCARD[is.nan(outlist$DISCARD)]<-NA
+ 
+ outlist$DISCARD[is.infinite(outlist$DISCARD)] <- NA 
+
 		
-assign(paste0('outlist_df_',FY),  do.call(rbind, outlist))
+assign(paste0('outlist_df_',FY),  outlist)
 
 rm(outlist)
 
@@ -406,9 +435,11 @@ print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2,
 
 }
 
+gc()
+
 ```
 
-```{r check for infinite values}
+```{r check for infinite values, eval = F}
 
 # infinite values won't upload to Oracle.. 
 
@@ -451,7 +482,7 @@ bcon <- ROracle::dbConnect(
     dbname = "NERO.world"
 )
 
-for(i in 18:19){
+for(i in 2018:2019){
 	t1 = Sys.time()
 
 	# db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
@@ -478,52 +509,8 @@ for(i in 18:19){
 }
 ```
 
-```{upload to CAMS_GARFO, eval = F}
-# create tables on cams_garfo
 
-condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
-
-ccon <- dbConnect(odbc::odbc(),
-									DSN = condat$dsn,
-									UID = condat$uid,
-									PWD = condat$pwd)
-
-for(i in 18:19){
-
-	t1 = Sys.time()
-
-	db_drop_table(con = ccon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
-
-	dbWriteTable(ccon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
-	t2 =  Sys.time()
-	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
-	
-		# create indices 
-	idx1 = paste0("CREATE INDEX yearidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(YEAR, MONTH)")
-	idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
-	ROracle::dbSendQuery(ccon, idx1)
-	ROracle::dbSendQuery(ccon, idx2)
-
-}
-
-# grant the cams_garfo table to cams_garfo_nefsc
-dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18 TO CAMS_GARFO_FOR_NEFSC")
-
-dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
-
-# check it worked!
-tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19"))
-tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF18"))
-
-tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
-tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF18"))
-
-# CREATE index i_camsid ON dlr_vtr(camsid)
-
-```
-
-```{r make a view for all discards}
-# get list of discard tables on MAPS
+```{r grant all discard tables from MAPS to CAMS_GARFO}
 
 tab_list = ROracle::dbGetQuery(bcon, " 
 SELECT object_name, object_type
@@ -531,13 +518,80 @@ SELECT object_name, object_type
     WHERE object_type = 'TABLE'
     and owner = 'MAPS'
 and object_name like 'CAMS_DISCARD%'
+and object_name not like '%DISCARD_MORTALITY%'
 															 ")
 
-st = "CREATE OR REPLACE VIEW MAPS.CAMS_DISCARD_ALL_YEARS AS "
+  sq = paste0("GRANT SELECT ON MAPS.", tab_list$OBJECT_NAME," TO CAMS_GARFO")
+	
+  # sq = stringr::str_flatten(sq)
+  
+  for(i in 1:nrow(tab_list)){
+  	ROracle::dbSendQuery(bcon, sq[i])
+  }
+```
 
-tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only.. 
+```{r  create tables on cams_garfo}
+ # now make the tables on CAMS_GARFO
 
-tab_line = tab_line[-23]
+condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+
+ccon = ROracle::dbConnect(
+    drv = ROracle::Oracle(),
+    username = condat$uid,
+    password = condat$pwd,  
+    dbname = "NERO.world"
+)
+
+
+tab_list_cm = ROracle::dbGetQuery(ccon, " 
+SELECT object_name, object_type
+    FROM all_objects
+    WHERE object_type = 'TABLE'
+    and owner = 'CAMS_GARFO'
+and object_name like 'CAMS_DISCARD%'
+and object_name not like '%DISCARD_MORTALITY%'
+															 "
+)
+
+# remove all the old tables
+ for(i in 1:nrow(tab_list_cm)){
+    	if(ROracle::dbExistsTable(ccon, tab_list_cm$OBJECT_NAME[i])){
+    		ROracle::dbRemoveTable(ccon, tab_list_cm$OBJECT_NAME[i])
+    	}
+ }
+
+
+# make a list of tables to  add
+  make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list$OBJECT_NAME," AS SELECT * FROM MAPS.", tab_list$OBJECT_NAME)
+  
+# make the tables from MAPS
+  for(i in 1:nrow(tab_list)){
+  	print(paste0("MAKING TABLE ",  make_tab_sq[i], " ON CAMS_GARFO"))
+  	ROracle::dbSendQuery(ccon, make_tab_sq[i])
+  }
+
+```
+
+
+```{r make a view for all discards on CAMS_GARFO}
+# get list of discard tables on CAMS_GARFO
+
+tab_list = ROracle::dbGetQuery(ccon, " 
+SELECT object_name, object_type
+    FROM all_objects
+    WHERE object_type = 'TABLE'
+    and owner = 'CAMS_GARFO'
+and object_name like 'CAMS_DISCARD%'
+and object_name not like '%DISCARD_MORTALITY%'
+															 ")
+
+st = "CREATE OR REPLACE VIEW CAMS_GARFO.CAMS_DISCARD_ALL_YEARS AS "
+
+tab_line = paste0("select * from CAMS_GARFO.", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only.. 
+
+# bidx = grep('*MORTALITY*', tab_line)
+# 
+# tab_line = tab_line[-bidx]
 
 tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = tab_line[length(tab_line)])
 
@@ -547,6 +601,33 @@ tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = t
 sq = stringr::str_c(st, stringr::str_flatten(tab_line))
 
 # pass the script to make a view
-ROracle::dbSendQuery(bcon, sq)
+ROracle::dbSendQuery(ccon, sq)
+
+
+# Grant to CAMS_GARFO
+
+# ROracle::dbSendQuery(bcon, "GRANT SELECT ON MAPS.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
+
+# Grant to CAMS_GARFO_FOR_NEFSC
+
+ROracle::dbSendQuery(ccon, "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO_FOR_NEFSC")
+
+# test it!
+
+
+ROracle::dbGetQuery(ccon, "
+	select round(sum(discard)) as total_discard
+	, species_stock
+	, COMMON_NAME
+	, species_itis
+	, FY
+	, GF
+	from CAMS_GARFO.CAMS_DISCARD_ALL_YEARS
+	group by species_itis, fy, species_stock, GF, COMMON_NAME
+	order by COMMON_NAME
+	"
+)
+
+
 ```
 
