@@ -6,8 +6,8 @@ Ben Galuardi
 
 ## Description
 
--   **OUTPUT TABLE:** APSD.BG_CAMS_OBS_CATCH
--   **YEARS:** 2018-2020
+-   **OUTPUT TABLE:** CAMS_GARFO.CAMS_OBS_CATCH
+-   **YEARS:** 2017-2020
 -   **RESOLUTION:** VTRSERNO (subtrip)\~LINK1
 -   **DEVELOPMENT LANGUAGE:** SQL
 -   **CODE:**
@@ -15,13 +15,24 @@ Ben Galuardi
 
 ## Data Sources
 
--   CAMS Apportionment and Trip attributes (GARFO)
+-   CAMS_GARFO.CAMS_LANDINGS (GARFO)
 -   CAMS prorated observer data
     -   NEFOP (NEFSC)
     -   ASM (NEFSC)
 
-![Figure 1. APSD.BG_CAMS_OBS_CATCH table
-lineage](document_CAMS_OBS_CATCH_files/figure-gfm/table_flow0-1.png)
+<!-- -->
+
+    ## PhantomJS not found. You can install it with webshot::install_phantomjs(). If it is installed, please make sure the phantomjs executable can be found via the PATH variable.
+
+<div class="figure">
+
+<div id="htmlwidget-95f9ef4c594ee28ca561" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-95f9ef4c594ee28ca561">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
+<p class="caption">
+Figure 1. APSD.BG_CAMS_OBS_CATCH table lineage
+</p>
+
+</div>
 
 ## Approach
 
@@ -29,65 +40,68 @@ The use of a combined catch and observation table allows for a single
 source table to be used in discard estimation. Previous methods took a
 two table approach, where catch information and observer records were
 stratified independently, and then matched to calculate discard (e.g.,
-*D* = *K* \* *d*/*k*). This approach had the possibility of mismatches
-between observed strata and trip strata. In reality, this cannot occur.
-We therefore do trip by trip matching, using `gear`, `meshgroup`,
-`statistical area`, and `LINK1`, to match observer recorded species
-discards with commercial trip activity.
+![D = K\*d/k](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;D%20%3D%20K%2Ad%2Fk "D = K*d/k")).
+This approach had the possibility of mismatches between observed strata
+and trip strata. In reality, this cannot occur. We therefore do trip by
+trip matching, using `gear`, `meshgroup`, `statistical area`, and
+`LINK1`, to match observer recorded species discards with commercial
+trip activity.
 
 The primary driver for this approach was to use the trip recorded
 metrics as the stratification source. This reduces the possibility of
-mismatches and removes much of the hard-coding that has been used to
-date. Upfront matching also allows observed discards to easily be used
-as the official discard for a particular trip. Furthermore, we recognize
-that data errors either from the catch, or observer data, will result in
-a non-match. This likely reduces the total pool of observed trips that
-are being used, but we feel the benefits of using outweigh a reduced
-sample size. Quality control of these data are outside the purview of
-the CAMS project. Last, we only use observed trips (`LINK1`) where valid
-`LINK3` (hauls) occurred to alleviate issues of multiple `LINK1` records
-for a single subtrip.
+mismatches and removes much of the hard-coding of the past. Upfront
+matching also allows observed discards to easily be used as the official
+discard for a particular trip. Furthermore, we recognize that data
+errors either from the catch, or observer data, will result in a
+non-match. This likely reduces the total pool of observed trips that are
+being used, but we feel the benefits of using this apporach outweigh a
+reduced sample size. Quality control of these data are outside the
+purview of the CAMS project. Last, we only use observed trips (`LINK1`)
+where valid `LINK3` (hauls) occurred to alleviate issues of multiple
+`LINK1` records for a single subtrip.
 
 The matching occurs in a staged manner. All commercial trips with a
-`LINK1` field that is not null get a value for how many unique VTR
-serial numbers are associated with it. The vast majority of observed
-trips have a single VTR, and only require matching by `LINK1`. For
-multiple VTR trips, a match as described above is used (`gear`,
-`meshgroup`, `statistical area`, and `LINK1`).
+non-null `LINK1` field get a value for how many unique VTR serial
+numbers are associated with it. The vast majority of observed trips have
+a single VTR, and only require matching by `LINK1`. For multiple VTR
+trips, a match as described above is used (`gear`, `meshgroup`,
+`statistical area`, and `LINK1`). Further, we only match on
+`statistical area` when more than one area is reported for a trip. This
+reduces data loss from observer recorded area mismatches to VTR recorded
+area.
 
 `meshgroup` has been defined several ways depending on the data stream.
-CAMS is using the following definition for `meshgroup`
+CAMS initiated a subgroup which determined the most pragmatic definition
+for `meshgroup` based on clustering of recorded mesh sizes in both
+observer and cacth records.
 
 All nets:
 
--   `small` : \< 3.99 (inches)
--   `medium` : 4-5.74 (inches)
--   `large` : \>= 5.75 (inches)
+-   `small` : \< 3.99 (inches) <!-- - `medium` :  4-5.74 (inches) -->
+-   `large` : \>= 4.00 (inches)
 
 Gill Nets:
 
 -   `extra large` \>= 8 (inches)
 
 `gear` groupings for matching purposes required a mapping of NEGEAR
-codes from observed and commercial trips to common gear codes
-(e.g. `DRS`, `PTO`, etc). The relationship in our database tables
+codes from observed and commercial trips to VTR three-character gear
+codes (e.g. `DRS`, `PTO`, etc). The relationship in our database tables
 (VLGEAR, FVTR_GEAR) are many-to-many and do not map easily. Furthermore,
 there are several NEGEAR codes in VTR that do not occur in observer
 records, and vice versa. Therefore, a support table,
-`MAPS.SECGEAR_MAPPED` was constructed to facilitate gear matching.
+`MAPS.CFG_OBS_VTR_GEARMAP` was constructed to facilitate gear matching.
 
-IMPORTANT!: The table itself is a hybrid. For trips that were not
-observed, there will be a single row with all trip metrics and a total
-`KALL` per subtrip. When a trip was observed, there are multiple rows
-where the trip metric information is repeated, and each row shows
+IMPORTANT!: The `CAMS_OBS_CATCH` table is a hybrid. For trips that were
+not observed, there will be a single row, with all trip metrics, and a
+total `KALL` per subtrip. When a trip was observed, there are multiple
+rows, where the trip metric information is repeated and each row shows
 species, discarded amount, and other observer recorded information for
-each row. Total `KALL` CANNOT be calculated without filtering rows by
-`LINK1` to indicate an observed trip or not. These steps are outlined in
-subsequent R modules used to run discaRd.
+each row. Total `KALL` **CANNOT** be calculated without filtering rows
+by `LINK1` to indicate an observed trip or not. These steps are outlined
+in subsequent R modules used to run `discaRd`.
 
 ## Data Dictionary
-
-    ## Warning: package 'knitr' was built under R version 4.0.5
 
 | Name                    | Description                                  | Data Type    |
 |:------------------------|:---------------------------------------------|:-------------|
