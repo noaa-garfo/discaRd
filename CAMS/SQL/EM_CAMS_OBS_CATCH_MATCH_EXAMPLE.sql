@@ -84,7 +84,7 @@ with em19 as (
     ,  b.secgearfish||'-'||b.meshgroup||'-'||b.area as em_strata
     , i.itis_tsn
     , i.dlr_sppname
-    , s.discard_source
+--    , s.discard_source
     FROM (
      select a.*
      , case when mesh_cat is null then 'NA' 
@@ -150,7 +150,7 @@ select  e.cams_subtrip
 , e.itis_tsn as EM_ITIS
 , e.em_strata 
 , e.stock_id
- , s.discard_source
+-- , s.discard_source
  , g.*
 from cams_garfo.cams_discard_example_gf2019 g
 left join (select * from emd) e
