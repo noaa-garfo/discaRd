@@ -2936,8 +2936,8 @@ pre code {
 </ul></li>
 </ul>
 <div class="figure">
-<div id="htmlwidget-774899b83eab39219fa0" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-774899b83eab39219fa0">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-13c0d82a390528dad364" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-13c0d82a390528dad364">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
 Figure 1. APSD.BG_CAMS_OBS_CATCH table lineage
 </p>
@@ -3000,6 +3000,15 @@ many-to-many and do not map easily. Furthermore, there are several
 NEGEAR codes in VTR that do not occur in observer records, and vice
 versa. Therefore, a support table, <code>MAPS.CFG_OBS_VTR_GEARMAP</code>
 was constructed to facilitate gear matching.</p>
+<div id="prorated-discard" class="section level3">
+<h3>Prorated discard</h3>
+<p>Following the standard approach taken for groundfish quota
+monitoring, observed discards on unobserved hauls are prorated within a
+subtrip. This is done by applying a ratio of kept all on the entire trip
+to kept all on the unobserved hauls only:</p>
+<p><span class="math display">\[d_{total} =
+d_{observedhauls}*(1+KALL_{unobserved
+hauls}/KALL_{subtrip})\]</span></p>
 <p>IMPORTANT!: The <code>CAMS_OBS_CATCH</code> table is a hybrid. For
 trips that were not observed, there will be a single row, with all trip
 metrics, and a total <code>KALL</code> per subtrip. When a trip was
@@ -3009,6 +3018,7 @@ observer recorded information for each row. Total <code>KALL</code>
 <strong>CANNOT</strong> be calculated without filtering rows by
 <code>LINK1</code> to indicate an observed trip or not. These steps are
 outlined in subsequent R modules used to run <code>discaRd</code>.</p>
+</div>
 </div>
 <div id="data-dictionary" class="section level2">
 <h2>Data Dictionary</h2>
