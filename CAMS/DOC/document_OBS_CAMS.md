@@ -6,8 +6,8 @@ Ben Galuardi
 
 ## Description
 
--   **OUTPUT TABLE:** APSD.OBDBS_CAMS\_<YYYY>
--   **YEARS:** 2017-2020
+-   **OUTPUT TABLE:** CAMS_OBDBS\_*YYYY*
+-   **YEARS:** 2017-2021
 -   **RESOLUTION:** LINK3\~LINK1
 -   **DEVELOPMENT LANGUAGE:** SQL
 -   **CODE:**
@@ -17,8 +17,31 @@ Ben Galuardi
 
 -   OBDBS (NEFOP, @NOVA, NEFSC)
 
-![Figure 1. APSD.OBDBS_CAMS<YYYY> table
-lineage](document_OBS_CAMS_files/figure-gfm/table_flow0-1.png)
+-   `obdbs.obtrp`
+
+-   `obdbs.obhau`
+
+-   `obdbs.obspp`
+
+-   `obdbs.obfishdisp`
+
+-   `obdbs.asmtrp`
+
+-   `obdbs.asmhau`
+
+-   `obdbs.asmspp`
+
+-   `obdbs.obfishdisp`
+
+-   `obdbs.obspecconv`
+
+-   `obdbs.obotgh`
+
+-   `obdbs.asmotgh`
+
+-   `obdbs.obgggh`
+
+-   `obdbs.asmgggh`
 
 ## Approach
 
@@ -96,4 +119,4 @@ details on individual input tables.
 | GEARTYPE     | Gear description                        | VARCHAR2(34) |
 | ACCESSAREA   | Scallop Access Area                     | VARCHAR2(4)  |
 | TRIPCATEGORY | Scallop fleet designtion (LA, GEN, ALL) | VARCHAR2(7)  |
-| MESHGROUP    | Observer recorded mesh category         | VARCHAR2(3)  |
+| MESHGROUP    | CAMS meshgroup: sm, lg, xlg, na         | VARCHAR2(3)  |
