@@ -85,24 +85,21 @@ setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
 
 # get catch and matched obs data together
 
-import_query = " with obs_cams as (
+import_query = "  with obs_cams as (
    select year
 	, month
   , PERMIT
 	, case when month in (5,6,7,8,9,10) then 1
 	       when month in (11,12,1,2,3,4) then 2
 	       end as halfofyear
-	-- , carea
   , AREA
 	, vtrserno
-  , CAMS_SUBTRIP
+	, CAMS_SUBTRIP
 	, link1
-	, link3
 	, docid
 	, CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
-  -- , itis_group1
     , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
@@ -117,37 +114,26 @@ import_query = " with obs_cams as (
 	, tripcategory
 	, accessarea
 	, activity_code_1
-  --, permit_EFP_1
-  --, permit_EFP_2
-  --, permit_EFP_3
-  --, permit_EFP_4
   , EM
   , redfish_exemption
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	, NVL(sum(discard_prorate),0) as discard
+	, NVL(sum(discard),0) as discard
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
- 
- WHERE YEAR >= 2017 
-  and YEAR <= 2020
-
 	group by year
-  -- , carea
+
   , AREA
   , PERMIT
 	, vtrserno
-  , CAMS_SUBTRIP
+	, CAMS_SUBTRIP
 	, link1
-	, link3
 	, docid
 	, nespp3	
   , itis_tsn
-  -- , itis_group1
     , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
@@ -165,10 +151,6 @@ import_query = " with obs_cams as (
 	, tripcategory
 	, accessarea
 	, activity_code_1
-  --  , permit_EFP_1
-  --, permit_EFP_2
-  --, permit_EFP_3
-  --, permit_EFP_4
   , EM
   , redfish_exemption
 	, closed_area_exemption
@@ -177,13 +159,19 @@ import_query = " with obs_cams as (
 	order by vtrserno asc
     ) 
 
-  select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
-  , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
+  select case when o.MONTH in (1,2,3,4) then o.YEAR-1 else o.YEAR end as GF_YEAR
+  , case when o.MONTH in (1,2,3) then o.YEAR-1 else o.YEAR end as SCAL_YEAR
   , o.*
-  , c.match_nespp3
-  , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
+  , c.date_trip
   from obs_cams o
-  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3         
+  left join (
+      select 
+      distinct(camsid)
+      , date_trip
+      from maps.cams_landings
+  ) c 
+  on o.camsid = c.camsid  
+   
         
 "
 
@@ -303,13 +291,13 @@ and b.species_itis is not null
 
 # if only running yellowtail and windowpane
 
-species = species[c(7,10),]
+species = species[7,] #species[c(7,10),]
 
 # make a script from RMD.. 
 knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2018:2019){
+for(jj in 2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('groundfish_loop_050422.R')
