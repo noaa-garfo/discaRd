@@ -96,6 +96,7 @@ import_query = "  with obs_cams as (
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1
+	, link3
 	, docid
 	, CAMSID
 	, nespp3
@@ -131,6 +132,7 @@ import_query = "  with obs_cams as (
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1
+	, link3
 	, docid
 	, nespp3	
   , itis_tsn
@@ -269,6 +271,8 @@ gf_dat = fed_trips%>%
 
 rm(c_o_dat2, fed_trips, state_trips)
 
+gc()
+
 ```
 
 ```{r define fishing year and species and run RMD as a script, eval = T}
@@ -291,13 +295,13 @@ and b.species_itis is not null
 
 # if only running yellowtail and windowpane
 
-species = species[7,] #species[c(7,10),]
+# species = species[7,] #species[c(7,10),]
 
 # make a script from RMD.. 
 knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2021){
+for(jj in 2018:2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('groundfish_loop_050422.R')
@@ -309,158 +313,12 @@ gc()
 
 ```
 
-```{r combine all results for a given year, eval = T, purl = F}
-#build one big table for a FY
+```{r pare and upload, eval = T, purl = F}
+#build one big table for a FY for each species in a folder of results
 
-for (FY in 2018:2019){
+source('parse_upload_discard.R')
 
-t1 = Sys.time()	
-	
-# assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.RDS'), full.names = T))
-
-assign('resfiles', list.files(path = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', pattern = paste0(FY,'.fst'), full.names = T))
-
-# cat(resfiles)			 
-
-# res = lapply(as.list(resfiles), function(x) readRDS(x))
-res = lapply(as.list(resfiles), function(x) fst::read_fst(x))
-
-outlist <- lapply(res, function(x) { 
-		x %>% 
-		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>% 
-		dplyr::select(-SPECIES_ITIS) %>%
-		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
-	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-								# , 'COMMON_NAME' = 'COMNAME_EVAL'
-								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-								) %>% 
-	mutate(DATE_RUN = as.character(Sys.Date())
-				 , FY = as.integer(FY)) %>%
-	dplyr::select(
-		DATE_RUN,
-		FY,
-		YEAR,
-		MONTH,
-		SPECIES_ITIS,
-		COMMON_NAME,
-		FY_TYPE,
-		ACTIVITY_CODE,
-		VTRSERNO,
-		CAMSID,
-		FED_OR_STATE,
-		GF,
-		AREA,
-		LINK1,
-		N_OBS_TRIPS_F,
-		STRATA_USED,
-		STRATA_FULL,
-		STRATA_ASSUMED,
-		DISCARD_SOURCE,
-		OBS_DISCARD,
-		OBS_KALL,
-		SUBTRIP_KALL,
-		BROAD_STOCK_RATE,
-		CAMS_DISCARD_RATE,
-		DISC_MORT_RATIO,
-		DISCARD,
-		CV,
-		SPECIES_STOCK,
-		CAMS_GEAR_GROUP,
-		MESHGROUP,
-		SECTID,
-		EM,
-		REDFISH_EXEMPTION,
-		SNE_SMALLMESH_EXEMPTION,
-		XLRG_GILLNET_EXEMPTION,
-		TRIPCATEGORY,
-		ACCESSAREA,
-		SCALLOP_AREA
-	  # eval(strata_unique)
-	)
-		
-}
-)
-
-rm(res)
-
-# convert list to data frame
- outlist = do.call(rbind, outlist)
-
-# adjust for DISACRD_SOURCE = N, nan and infinite values	
-	
-	outlist <- outlist %>% 
- 	dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
- 	dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
- 	
- 	
- outlist$CV[is.nan(outlist$CV)]<-NA
- 
- outlist$CV[is.infinite(outlist$CV)] <- NA    
- 
-outlist$CAMS_DISCARD_RATE[is.nan(outlist$CAMS_DISCARD_RATE)]<-NA
- 
- outlist$CAMS_DISCARD_RATE[is.infinite(outlist$CAMS_DISCARD_RATE)] <- NA 
- 
- outlist$BROAD_STOCK_RATE[is.nan(outlist$BROAD_STOCK_RATE)]<-NA
- 
- outlist$BROAD_STOCK_RATE[is.infinite(outlist$BROAD_STOCK_RATE)] <- NA 
- 
- outlist$DISCARD[is.nan(outlist$DISCARD)]<-NA
- 
- outlist$DISCARD[is.infinite(outlist$DISCARD)] <- NA 
-
-		
-assign(paste0('outlist_df_',FY),  outlist)
-
-rm(outlist)
-
-t2 = Sys.time()
-
-print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
-
-}
-
-gc()
-
-```
-
-```{r check for infinite values, eval = F}
-
-# infinite values won't upload to Oracle.. 
-
-nans18 = lapply(outlist_df_18, function(x) sum(is.nan(x)))
-
-infs18 = lapply(outlist_df_18, function(x) sum(is.infinite(x)))
-
-nans19 = lapply(outlist_df_19, function(x) sum(is.nan(x)))
-
-infs19 = lapply(outlist_df_19, function(x) sum(is.infinite(x)))
-
-
-# reveals 7 CV records in 2018 that should be NA...
-# reveals ~400 CV records in 2019 that should be NA...
-# these are all Transition rates with no proper CV.. 
-
-outlist_df_18$CV[is.nan(outlist_df_18$CV)] = NA
-outlist_df_19$CV[is.nan(outlist_df_19$CV)] = NA
-
-outlist_df_18$CV[is.infinite(outlist_df_18$CV)] = NA
-outlist_df_19$CV[is.infinite(outlist_df_19$CV)] = NA
-
-gc()
-
-```
-
-
-```{r upload to MAPS}
-# create tables on MAPS
-
-# try usiong this from now on.. 
-# ROracle::dbWriteTable()
-
+# connect 
 dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
 bcon <- ROracle::dbConnect(
@@ -470,31 +328,14 @@ bcon <- ROracle::dbConnect(
     dbname = "NERO.world"
 )
 
-for(i in 2018:2019){
-	t1 = Sys.time()
-
-	# db_drop_table(con = bcon, table = paste0('CAMS_DISCARD_EXAMPLE_GF',i), force = F)
-	upload_table = paste0('CAMS_DISCARD_EXAMPLE_GF',i)
+for (FY in 2018:2019){
 	
-	if (ROracle::dbExistsTable(bcon, upload_table, "MAPS")){
-      ROracle::dbRemoveTable(bcon, upload_table)
-	}
-	
-	    ROracle::dbWriteTable(conn = bcon, name = upload_table, value =  get(paste0('outlist_df_', i)) , row.names = FALSE, overwrite = FALSE)
-	
-
-	# dbWriteTable(bcon, name = paste0('CAMS_DISCARD_EXAMPLE_GF',i), value =  get(paste0('outlist_df_', i)), overwrite = T)
-	
-	t2 =  Sys.time()
-	print(paste0('Year ', i, ' took ', round(difftime(t2, t1, units = "mins"),2), ' minutes to save'))
-	
-	# create indices 
-	idx1 = paste0("CREATE INDEX yearidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(YEAR, MONTH)")
-	idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
-	ROracle::dbSendQuery(bcon, idx1)
-	ROracle::dbSendQuery(bcon, idx2)
+parse_upload_discard(bcon, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
 
 }
+
+gc()
+
 ```
 
 
@@ -530,12 +371,12 @@ ccon = ROracle::dbConnect(
     dbname = "NERO.world"
 )
 
-
+# make a list of tables to  add
 tab_list_cm = ROracle::dbGetQuery(ccon, " 
 SELECT object_name, object_type
     FROM all_objects
     WHERE object_type = 'TABLE'
-    and owner = 'CAMS_GARFO'
+    and owner = 'MAPS'
 and object_name like 'CAMS_DISCARD%'
 and object_name not like '%DISCARD_MORTALITY%'
 															 "
@@ -549,12 +390,12 @@ and object_name not like '%DISCARD_MORTALITY%'
  }
 
 
-# make a list of tables to  add
+# make a script version of the list of tables to  add
   make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list$OBJECT_NAME," AS SELECT * FROM MAPS.", tab_list$OBJECT_NAME)
   
 # make the tables from MAPS
   for(i in 1:nrow(tab_list)){
-  	print(paste0("MAKING TABLE ",  make_tab_sq[i], " ON CAMS_GARFO"))
+  	print(paste0("MAKING TABLE ",  tab_list$OBJECT_NAME[i], " ON CAMS_GARFO"))
   	ROracle::dbSendQuery(ccon, make_tab_sq[i])
   }
 
@@ -592,7 +433,7 @@ sq = stringr::str_c(st, stringr::str_flatten(tab_line))
 ROracle::dbSendQuery(ccon, sq)
 
 
-# Grant to CAMS_GARFO
+# Grant to CAMS_GARFO @NOVA
 
 # ROracle::dbSendQuery(bcon, "GRANT SELECT ON MAPS.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
 
