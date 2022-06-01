@@ -381,9 +381,6 @@ strat_scup <- db_scup %>%
               ,FED_OR_STATE)
 
 
-
-
-
 strat_final <- rbind(strat_blackseabass, strat_bluefish, strat_butterfish,
                      strat_longfinsquid, strat_shortfinsquid, strat_mackerel,
                      strat_fluke, strat_scup)
