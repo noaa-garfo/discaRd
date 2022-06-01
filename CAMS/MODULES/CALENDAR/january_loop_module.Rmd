@@ -100,7 +100,11 @@ FY_TYPE = 'JAN START'
          '172414',
           '082521',
         '172735',
-        '169182')  # 
+        '169182',
+         '164499',
+        '160617',
+        '168546',
+        '161722')  # 
  
  #itis <- itis
  itis_num <- as.numeric(itis)
@@ -177,7 +181,7 @@ import_query = " with obs_cams as (
 	from MAPS.CAMS_OBS_CATCH
  
  WHERE YEAR >= 2017 
-  and YEAR <= 2020
+  and YEAR <= 2021
 
 	group by year
   -- , carea
@@ -905,7 +909,7 @@ joined_table %>%
  species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_SCUP_19', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')

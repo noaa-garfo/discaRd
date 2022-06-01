@@ -84,7 +84,7 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```{r define fishing year and species, eval = T}
 
-FY <- 2020
+FY <- 2019
 
 FY_TYPE = 'MAY START'
 
@@ -144,7 +144,6 @@ import_query = " with obs_cams as (
 	, vtrserno
   , CAMS_SUBTRIP
 	, link1
-	, link3
 	, docid
 	, CAMSID
 	, nespp3
@@ -173,15 +172,14 @@ import_query = " with obs_cams as (
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	, NVL(sum(discard_prorate),0) as discard
-	, NVL(sum(discard_prorate),0) as discard_prorate
+	, NVL(sum(discard),0) as discard
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
  
  WHERE YEAR >= 2017 
-  and YEAR <= 2021
+  and YEAR <= 2020
 
 	group by year
   -- , carea
@@ -190,7 +188,6 @@ import_query = " with obs_cams as (
 	, vtrserno
   , CAMS_SUBTRIP
 	, link1
-	, link3
 	, docid
 	, nespp3	
   , itis_tsn
@@ -254,40 +251,6 @@ c_o_dat2 = c_o_dat2 %>%
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 				 
 
-# 4/13/22
-# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future 
-
-link3_na = c_o_dat2 %>% 
-	filter(!is.na(LINK1) & is.na(LINK3))
-
-
-# make these values 0 or NA or 'none' depending on the default for that field
-link3_na = link3_na %>% 
-	mutate(LINK1 = NA
-				 , DISCARD = NA
-				 , DISCARD_PRORATE = NA
-				 , OBSRFLAG = NA
-				 , OBSVTR = NA
-				 , OBS_AREA = NA
-				 , OBS_GEAR = NA
-				 , OBS_HAUL_KALL_TRIP = 0
-				 , OBS_HAUL_KEPT = 0
-				 , OBS_KALL = 0
-				 , OBS_LINK1 = NA
-				 , OBSVTR = NA
-				 , OBS_MESHGROUP = 'none'
-				 , PRORATE = NA)
-
-
-tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
-
-c_o_dat2 = c_o_dat2[tidx == F,]
-
-c_o_dat2 = c_o_dat2 %>% 
-	bind_rows(link3_na)
-
-# continue the data import
-
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
@@ -318,7 +281,7 @@ fed_trips =
 	fed_trips %>% 
 	filter(ROWID %!in% remove_id$ROWID)
 
-c_o_dat2 = fed_trips %>% 
+c_o_dat2 <- non_gf_dat = fed_trips %>% 
 #	filter(GF == 0) %>% 
 	bind_rows(., state_trips) %>% 
 	mutate(GF = "0")
@@ -660,40 +623,95 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
   mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate)) 
   
  trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
+ 
+ 
+ stratvars_gear = c("SPECIES_STOCK"
+											, "CAMS_GEAR_GROUP")
+
+
+### All tables in previous run can be re-used wiht diff stratification
+
+# Run the discaRd functions on previous year
+d_prev_pass3 = run_discard(bdat = rbind(bdat_cy, bdat_prev_cy)
+											 , ddat = rbind(ddat_focal_cy, ddat_prev_cy)
+											 , c_o_tab = rbind(ddat_focal,ddat_prev)
+											 # , year = 2018
+											 # , species_nespp3 = species_nespp3
+										   , species_itis = species_itis
+											 , stratvars = stratvars_gear
+											 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used.. 
+											, aidx = c(1)  # this creates an unstratified broad stock rate
+											 )
+
+
+# Run the discaRd functions on current year
+d_focal_pass3 = run_discard(bdat = rbind(bdat_cy, bdat_prev_cy)
+											 , ddat = rbind(ddat_focal_cy, ddat_prev_cy)
+											 , c_o_tab = rbind(ddat_focal,ddat_prev)
+											 # , year = 2019
+											 # , species_nespp3 = '081' # haddock...
+											 # , species_nespp3 = species_nespp3  #'081' #cod...
+											 , species_itis = species_itis
+											 , stratvars = stratvars_gear
+											 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used.. 
+											, aidx = c(1)  # this creates an unstratified broad stock rate
+											 )
+
+# summarize each result for convenience
+dest_strata_p_pass3 = d_prev_pass3$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+dest_strata_f_pass3 = d_focal_pass3$allest$C %>% summarise(STRATA = STRATA
+                       , N = N
+                       , n = n
+                       , orate = round(n/N, 2)
+                       , drate = RE_mean
+                       , KALL = K, disc_est = round(D)
+                       , CV = round(RE_rse, 2)
+										)
+
+# substitute transition rates where needed
+
+trans_rate_df_pass3 = dest_strata_f_pass3 %>% 
+  left_join(., dest_strata_p_pass3, by = 'STRATA') %>% 
+  mutate(STRATA = STRATA
+         , n_obs_trips_f = n.x
+  			 , n_obs_trips_p = n.y
+         , in_season_rate = drate.x
+         , previous_season_rate = drate.y
+  ) %>% 
+	mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>% 
+  mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+                                         , l_assumed_rate = previous_season_rate
+                                         , l_inseason_rate = in_season_rate
+                                         )
+         ) %>% 
+  dplyr::select(STRATA
+         , n_obs_trips_f
+         , n_obs_trips_p
+         , in_season_rate 
+         , previous_season_rate 
+         , trans_rate
+         , CV_f = CV.x
+         )
+
+
+trans_rate_df_pass3 = trans_rate_df_pass3 %>% 
+  mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate)) 
+  
+ trans_rate_df_pass3$final_rate = coalesce(trans_rate_df_pass3$final_rate, trans_rate_df_pass3$in_season_rate)
 
  
- # get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
-
-
-bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
-ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
-ddat_2yr = bind_rows(ddat_prev, ddat_focal)
-
-mnk = run_discard( bdat = bdat_2yrs
-			, ddat_focal = ddat_cy_2yr
-			, c_o_tab = ddat_2yr
-			, species_itis = species_itis
-			, stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
-			)
-
-# rate table
-mnk$allest$C
-
-SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
-
-CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
-
-BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
-
-CV_b <- round(mnk$allest$C$RE_rse, 2)
-
-BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
-
-BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
-
 
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
+
+names(trans_rate_df_pass3) = paste0(names(trans_rate_df_pass3), '_b')
   
 #
 # join full and assumed strata tables
@@ -703,8 +721,11 @@ names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 joined_table = assign_strata(full_strata_table, stratvars_assumed) %>% 
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
+#   assign_strata(full_strata_table, stratvars_gear) %>% 
+# 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
+# 	dplyr::rename(STRATA_GEAR = STRATA) %>% 
 	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>% 
+	left_join(., y = trans_rate_df_pass3, by = c('STRATA_GEAR' = 'STRATA_b')) %>% 
 	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
 															 , n_obs_trips_f < 5 & 
 															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -712,7 +733,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 															 	n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
 		                           )
 	) %>% 
-	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
+	mutate(COAL_RATE = coalesce(COAL_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
  				 , FISHING_YEAR = FY
@@ -743,13 +764,14 @@ joined_table = joined_table %>%
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
-    																		n_obs_trips_p_a >= 5 ~ 'G'
+    																		n_obs_trips_p_a >= 5 ~ 'B'
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 & 
     																		n_obs_trips_p < 5 & 
     																		n_obs_trips_f_a < 5 & 
-    																		n_obs_trips_p_a < 5 ~ 'G'))
-    												
+    																		n_obs_trips_p_a < 5 ~ 'B'
+    																	)  # this may be replaced with model estimate!
+    			 )
 
 #
 # make sure CV type matches DISCARD SOURCE}
@@ -758,21 +780,17 @@ joined_table = joined_table %>%
 # obs trips get 0, broad stock rate is NA
 
 
-
 joined_table = joined_table %>% 
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
 												, DISCARD_SOURCE == 'A' ~ CV_f_a
-												, DISCARD_SOURCE == 'G' ~ CV_b
-											#	, DISCARD_SOURCE == 'NA' ~ 'NA'
+												, DISCARD_SOURCE == 'B' ~ CV_b
+												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
 												)  # , DISCARD_SOURCE == 'B' ~ NA
 				 )
 
 # Make note of the stratification variables used according to discard source
-
-stratvars_gear = c("SPECIES_STOCK"
-											, "CAMS_GEAR_GROUP")
 
 strata_f = paste(stratvars, collapse = ';')
 strata_a = paste(stratvars_assumed, collapse = ';')
@@ -783,10 +801,9 @@ joined_table = joined_table %>%
 												, DISCARD_SOURCE == 'I' ~ strata_f
 												, DISCARD_SOURCE == 'T' ~ strata_f
 												, DISCARD_SOURCE == 'A' ~ strata_a
-												, DISCARD_SOURCE == 'G' ~ strata_b
+												, DISCARD_SOURCE == 'B' ~ strata_b
 												) 
 				 )
-
 
 #
 # get the discard for each trip using COAL_RATE}
@@ -884,29 +901,15 @@ joined_table %>%
 	  # eval(strata_unique)
 	)
  
- cy_discard_example <- cy_discard_example %>% dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
- 	
- 	
+ 
  cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
  
  cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA    
  
-cy_discard_example$CAMS_DISCARD_RATE[is.nan(cy_discard_example$CAMS_DISCARD_RATE)]<-NA
- 
- cy_discard_example$CAMS_DISCARD_RATE[is.infinite(cy_discard_example$CAMS_DISCARD_RATE)] <- NA 
- 
- cy_discard_example$BROAD_STOCK_RATE[is.nan(cy_discard_example$BROAD_STOCK_RATE)]<-NA
- 
- cy_discard_example$BROAD_STOCK_RATE[is.infinite(cy_discard_example$BROAD_STOCK_RATE)] <- NA 
- 
- cy_discard_example$DISCARD[is.nan(cy_discard_example$DISCARD)]<-NA
- 
- cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA 
- 
  species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_DOGFISH_20', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_SMOOTHSKATE_19', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
