@@ -379,6 +379,7 @@ SELECT object_name, object_type
     and owner = 'MAPS'
 and object_name like 'CAMS_DISCARD%'
 and object_name not like '%DISCARD_MORTALITY%'
+ -- and created >= SYSDATE - 10   --include if we want to only copy over newer tables. should work well for a weekly run or similar.. 
 															 "
 )
 
@@ -395,6 +396,7 @@ and object_name not like '%DISCARD_MORTALITY%'
   
 # make the tables from MAPS
   for(i in 1:nrow(tab_list)){
+  	if(DBI::dbExistsTable(ccon, tab_list$OBJECT_NAME[i])) next
   	print(paste0("MAKING TABLE ",  tab_list$OBJECT_NAME[i], " ON CAMS_GARFO"))
   	ROracle::dbSendQuery(ccon, make_tab_sq[i])
   }
@@ -412,6 +414,7 @@ SELECT object_name, object_type
     and owner = 'CAMS_GARFO'
 and object_name like 'CAMS_DISCARD%'
 and object_name not like '%DISCARD_MORTALITY%'
+and object_name not like '%CY%'  -- gets rid of experimental tables
 															 ")
 
 st = "CREATE OR REPLACE VIEW CAMS_GARFO.CAMS_DISCARD_ALL_YEARS AS "
