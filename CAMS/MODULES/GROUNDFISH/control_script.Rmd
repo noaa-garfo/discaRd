@@ -45,6 +45,8 @@ options(dplyr.summarise.inform = FALSE)
 
 # library(odbc)
 library(ROracle)
+library(keyring)
+library(apsdFuns)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
 library(ggplot2)
@@ -54,24 +56,27 @@ library(discaRd)
 library(fst)
 options(scipen = 999)
 
+# unlock keyring
+keyring::keyring_unlock("apsd_ma")
+
 # local run
 # dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
 # if on server..
-dw_apsd <- config::get(value = "maps", file = "~/config.yml")
-
-# bcon <- dbConnect(odbc::odbc(),
-# 									DSN = dw_apsd$dsn,
-# 									UID = dw_apsd$uid,
-# 									PWD = dw_apsd$pwd)
+# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
 
-bcon <- ROracle::dbConnect(
-    drv = ROracle::Oracle(),
-    username = dw_apsd$uid,
-    password = dw_apsd$pwd,  
-    dbname = "NERO.world"
-)
+# connect to MAPS
+
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+# 
+# con_maps <- ROracle::dbConnect(
+#     drv = ROracle::Oracle(),
+#     username = dw_apsd$uid,
+#     password = dw_apsd$pwd,  
+#     dbname = "NERO.world"
+# )
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
@@ -177,7 +182,7 @@ import_query = "  with obs_cams as (
         
 "
 
-c_o_dat2 <- ROracle::dbGetQuery(bcon, import_query)
+c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
 		
 c_o_dat2 = c_o_dat2 %>% 
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
@@ -281,7 +286,7 @@ gc()
 
 #--------------------------------------------------------------------------#
 # group of species
-species = tbl(bcon, sql("
+species = tbl(con_maps, sql("
 select distinct(b.species_itis)
     , COMNAME
     , a.nespp3
@@ -313,24 +318,28 @@ gc()
 
 ```
 
-```{r pare and upload, eval = T, purl = F}
+```{r parse and upload, eval = T, purl = F}
 #build one big table for a FY for each species in a folder of results
 
 source('parse_upload_discard.R')
 
-# connect 
-dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+# connect to maps again
+keyring::keyring_unlock("apsd_ma")
 
-bcon <- ROracle::dbConnect(
-    drv = ROracle::Oracle(),
-    username = dw_apsd$uid,
-    password = dw_apsd$pwd,  
-    dbname = "NERO.world"
-)
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+# 
+# con_maps <- ROracle::dbConnect(
+#     drv = ROracle::Oracle(),
+#     username = dw_apsd$uid,
+#     password = dw_apsd$pwd,  
+#     dbname = "NERO.world"
+# )
 
 for (FY in 2018:2019){
 	
-parse_upload_discard(bcon, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
 
 }
 
@@ -338,10 +347,9 @@ gc()
 
 ```
 
-
 ```{r grant all discard tables from MAPS to CAMS_GARFO}
 
-tab_list = ROracle::dbGetQuery(bcon, " 
+tab_list = ROracle::dbGetQuery(con_maps, " 
 SELECT object_name, object_type
     FROM all_objects
     WHERE object_type = 'TABLE'
@@ -355,24 +363,26 @@ and object_name not like '%DISCARD_MORTALITY%'
   # sq = stringr::str_flatten(sq)
   
   for(i in 1:nrow(tab_list)){
-  	ROracle::dbSendQuery(bcon, sq[i])
+  	ROracle::dbSendQuery(con_maps, sq[i])
   }
 ```
 
 ```{r  create tables on cams_garfo}
  # now make the tables on CAMS_GARFO
 
-condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
-ccon = ROracle::dbConnect(
-    drv = ROracle::Oracle(),
-    username = condat$uid,
-    password = condat$pwd,  
-    dbname = "NERO.world"
-)
+# condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+# 
+# con_cams = ROracle::dbConnect(
+#     drv = ROracle::Oracle(),
+#     username = condat$uid,
+#     password = condat$pwd,  
+#     dbname = "NERO.world"
+# )
 
 # make a list of tables to  add
-tab_list_cm = ROracle::dbGetQuery(ccon, " 
+tab_list_cm = ROracle::dbGetQuery(con_cams, " 
 SELECT object_name, object_type
     FROM all_objects
     WHERE object_type = 'TABLE'
@@ -385,8 +395,8 @@ and object_name not like '%DISCARD_MORTALITY%'
 
 # remove all the old tables
  for(i in 1:nrow(tab_list_cm)){
-    	if(ROracle::dbExistsTable(ccon, tab_list_cm$OBJECT_NAME[i])){
-    		ROracle::dbRemoveTable(ccon, tab_list_cm$OBJECT_NAME[i])
+    	if(ROracle::dbExistsTable(con_cams, tab_list_cm$OBJECT_NAME[i])){
+    		ROracle::dbRemoveTable(con_cams, tab_list_cm$OBJECT_NAME[i])
     	}
  }
 
@@ -396,18 +406,40 @@ and object_name not like '%DISCARD_MORTALITY%'
   
 # make the tables from MAPS
   for(i in 1:nrow(tab_list)){
-  	if(DBI::dbExistsTable(ccon, tab_list$OBJECT_NAME[i])) next
+  	if(DBI::dbExistsTable(con_cams, tab_list$OBJECT_NAME[i])) next
   	print(paste0("MAKING TABLE ",  tab_list$OBJECT_NAME[i], " ON CAMS_GARFO"))
-  	ROracle::dbSendQuery(ccon, make_tab_sq[i])
+  	ROracle::dbSendQuery(con_cams, make_tab_sq[i])
   }
 
 ```
 
+```{r add comments to tables on MAPS and CAMS_GARFO}
+#===============================================
+# comments
+
+print(paste("Updating Oracle comments"))
+
+definitions <-
+	googlesheets4::read_sheet(
+		"https://docs.google.com/spreadsheets/d/1YorwnjozdPwVFJPabC7Ikta6wNzlhzkUtO1TPRbR9-s/edit?usp=sharing"
+	)
+save(definitions, file = "data/definitions.rda")
+devtools::load_all()
+
+# con_maps <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+
+add_comments(con = con_maps, schema = "MAPS") # 3-10 minutes
+
+add_comments(con = con_cams, schema = "CAMS_GARFO") # 3-10 minutes
+
+# dbDisconnect(con_maps)
+
+```
 
 ```{r make a view for all discards on CAMS_GARFO}
 # get list of discard tables on CAMS_GARFO
 
-tab_list = ROracle::dbGetQuery(ccon, " 
+tab_list = ROracle::dbGetQuery(con_cams, " 
 SELECT object_name, object_type
     FROM all_objects
     WHERE object_type = 'TABLE'
@@ -433,21 +465,21 @@ tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = t
 sq = stringr::str_c(st, stringr::str_flatten(tab_line))
 
 # pass the script to make a view
-ROracle::dbSendQuery(ccon, sq)
+ROracle::dbSendQuery(con_cams, sq)
 
 
 # Grant to CAMS_GARFO @NOVA
 
-# ROracle::dbSendQuery(bcon, "GRANT SELECT ON MAPS.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
+# ROracle::dbSendQuery(con_maps, "GRANT SELECT ON MAPS.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
 
 # Grant to CAMS_GARFO_FOR_NEFSC
 
-ROracle::dbSendQuery(ccon, "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO_FOR_NEFSC")
+ROracle::dbSendQuery(con_cams, "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO_FOR_NEFSC")
 
 # test it!
 
 
-ROracle::dbGetQuery(ccon, "
+ROracle::dbGetQuery(con_cams, "
 	select round(sum(discard)) as total_discard
 	, species_stock
 	, COMMON_NAME
