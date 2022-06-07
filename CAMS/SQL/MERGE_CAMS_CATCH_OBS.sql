@@ -520,6 +520,6 @@ CREATE INDEX itisidx ON CAMS_OBS_CATCH(ITIS_TSN)
 --where a.link1 is not null
 --and a.link1 = '000201908R35027'
 
-grant select on maps.cams_obs_catch to apsd
+grant select on maps.cams_obs_catch to apsd, cams_garfo
 /
 
