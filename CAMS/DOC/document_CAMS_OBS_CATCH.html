@@ -2771,6 +2771,230 @@ var createPalette = {
 
 });
 </script>
+<script>$(document).ready(function(){
+    if (typeof $('[data-toggle="tooltip"]').tooltip === 'function') {
+        $('[data-toggle="tooltip"]').tooltip();
+    }
+    if ($('[data-toggle="popover"]').popover === 'function') {
+        $('[data-toggle="popover"]').popover();
+    }
+});
+</script>
+<style type="text/css">
+.lightable-minimal {
+border-collapse: separate;
+border-spacing: 16px 1px;
+width: 100%;
+margin-bottom: 10px;
+}
+.lightable-minimal td {
+margin-left: 5px;
+margin-right: 5px;
+}
+.lightable-minimal th {
+margin-left: 5px;
+margin-right: 5px;
+}
+.lightable-minimal thead tr:last-child th {
+border-bottom: 2px solid #00000050;
+empty-cells: hide;
+}
+.lightable-minimal tbody tr:first-child td {
+padding-top: 0.5em;
+}
+.lightable-minimal.lightable-hover tbody tr:hover {
+background-color: #f5f5f5;
+}
+.lightable-minimal.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-classic {
+border-top: 0.16em solid #111111;
+border-bottom: 0.16em solid #111111;
+width: 100%;
+margin-bottom: 10px;
+margin: 10px 5px;
+}
+.lightable-classic tfoot tr td {
+border: 0;
+}
+.lightable-classic tfoot tr:first-child td {
+border-top: 0.14em solid #111111;
+}
+.lightable-classic caption {
+color: #222222;
+}
+.lightable-classic td {
+padding-left: 5px;
+padding-right: 5px;
+color: #222222;
+}
+.lightable-classic th {
+padding-left: 5px;
+padding-right: 5px;
+font-weight: normal;
+color: #222222;
+}
+.lightable-classic thead tr:last-child th {
+border-bottom: 0.10em solid #111111;
+}
+.lightable-classic.lightable-hover tbody tr:hover {
+background-color: #F9EEC1;
+}
+.lightable-classic.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-classic-2 {
+border-top: 3px double #111111;
+border-bottom: 3px double #111111;
+width: 100%;
+margin-bottom: 10px;
+}
+.lightable-classic-2 tfoot tr td {
+border: 0;
+}
+.lightable-classic-2 tfoot tr:first-child td {
+border-top: 3px double #111111;
+}
+.lightable-classic-2 caption {
+color: #222222;
+}
+.lightable-classic-2 td {
+padding-left: 5px;
+padding-right: 5px;
+color: #222222;
+}
+.lightable-classic-2 th {
+padding-left: 5px;
+padding-right: 5px;
+font-weight: normal;
+color: #222222;
+}
+.lightable-classic-2 tbody tr:last-child td {
+border-bottom: 3px double #111111;
+}
+.lightable-classic-2 thead tr:last-child th {
+border-bottom: 1px solid #111111;
+}
+.lightable-classic-2.lightable-hover tbody tr:hover {
+background-color: #F9EEC1;
+}
+.lightable-classic-2.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-material {
+min-width: 100%;
+white-space: nowrap;
+table-layout: fixed;
+font-family: Roboto, sans-serif;
+border: 1px solid #EEE;
+border-collapse: collapse;
+margin-bottom: 10px;
+}
+.lightable-material tfoot tr td {
+border: 0;
+}
+.lightable-material tfoot tr:first-child td {
+border-top: 1px solid #EEE;
+}
+.lightable-material th {
+height: 56px;
+padding-left: 16px;
+padding-right: 16px;
+}
+.lightable-material td {
+height: 52px;
+padding-left: 16px;
+padding-right: 16px;
+border-top: 1px solid #eeeeee;
+}
+.lightable-material.lightable-hover tbody tr:hover {
+background-color: #f5f5f5;
+}
+.lightable-material.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-material.lightable-striped tbody td {
+border: 0;
+}
+.lightable-material.lightable-striped thead tr:last-child th {
+border-bottom: 1px solid #ddd;
+}
+.lightable-material-dark {
+min-width: 100%;
+white-space: nowrap;
+table-layout: fixed;
+font-family: Roboto, sans-serif;
+border: 1px solid #FFFFFF12;
+border-collapse: collapse;
+margin-bottom: 10px;
+background-color: #363640;
+}
+.lightable-material-dark tfoot tr td {
+border: 0;
+}
+.lightable-material-dark tfoot tr:first-child td {
+border-top: 1px solid #FFFFFF12;
+}
+.lightable-material-dark th {
+height: 56px;
+padding-left: 16px;
+padding-right: 16px;
+color: #FFFFFF60;
+}
+.lightable-material-dark td {
+height: 52px;
+padding-left: 16px;
+padding-right: 16px;
+color: #FFFFFF;
+border-top: 1px solid #FFFFFF12;
+}
+.lightable-material-dark.lightable-hover tbody tr:hover {
+background-color: #FFFFFF12;
+}
+.lightable-material-dark.lightable-striped tbody tr:nth-child(even) {
+background-color: #FFFFFF12;
+}
+.lightable-material-dark.lightable-striped tbody td {
+border: 0;
+}
+.lightable-material-dark.lightable-striped thead tr:last-child th {
+border-bottom: 1px solid #FFFFFF12;
+}
+.lightable-paper {
+width: 100%;
+margin-bottom: 10px;
+color: #444;
+}
+.lightable-paper tfoot tr td {
+border: 0;
+}
+.lightable-paper tfoot tr:first-child td {
+border-top: 1px solid #00000020;
+}
+.lightable-paper thead tr:last-child th {
+color: #666;
+vertical-align: bottom;
+border-bottom: 1px solid #00000020;
+line-height: 1.15em;
+padding: 10px 5px;
+}
+.lightable-paper td {
+vertical-align: middle;
+border-bottom: 1px solid #00000010;
+line-height: 1.15em;
+padding: 7px 5px;
+}
+.lightable-paper.lightable-hover tbody tr:hover {
+background-color: #F9EEC1;
+}
+.lightable-paper.lightable-striped tbody tr:nth-child(even) {
+background-color: #00000008;
+}
+.lightable-paper.lightable-striped tbody td {
+border: 0;
+}
+</style>
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -2936,8 +3160,8 @@ pre code {
 </ul></li>
 </ul>
 <div class="figure">
-<div id="htmlwidget-13c0d82a390528dad364" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-13c0d82a390528dad364">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-4400d80fc32cc4ec1a12" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-4400d80fc32cc4ec1a12">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_LANDINGS --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
 Figure 1. APSD.BG_CAMS_OBS_CATCH table lineage
 </p>
@@ -3022,229 +3246,507 @@ outlined in subsequent R modules used to run <code>discaRd</code>.</p>
 </div>
 <div id="data-dictionary" class="section level2">
 <h2>Data Dictionary</h2>
-<table>
-<colgroup>
-<col width="29%" />
-<col width="54%" />
-<col width="15%" />
-</colgroup>
+<table class="table table-striped table-hover table-condensed table-responsive" style="font-size: 10px; width: auto !important; ">
 <thead>
-<tr class="header">
-<th align="left">Name</th>
-<th align="left">Description</th>
-<th align="left">Data Type</th>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+COLUMN
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+DESCRIPTION
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+DATA TYPE
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">PERMIT</td>
-<td align="left">6 digit permit number</td>
-<td align="left">VARCHAR2(6)</td>
+<tr>
+<td style="text-align:left;">
+ACCESSAREA
+</td>
+<td style="text-align:left;">
+Scallop Access Area, only relevant for scallop trips
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">DMIS_TRIP_ID</td>
-<td align="left">CAMS unique trip identifier</td>
-<td align="left">VARCHAR2(60)</td>
+<tr>
+<td style="text-align:left;">
+ACTIVITY_CODE_1
+</td>
+<td style="text-align:left;">
+VMS declaration
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">YEAR</td>
-<td align="left">Calendar Year</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+AREA
+</td>
+<td style="text-align:left;">
+The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
+code. Unknown = 000. For CAMS data, refer to AREA_SOURCE and
+AREA_IMP_METHOD for metadata about AREA.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">MONTH</td>
-<td align="left">Month</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+CAMSID
+</td>
+<td style="text-align:left;">
+Unique trip identification code within CAMS
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">REGION</td>
-<td align="left">N (AREA &lt; 600) or S (AREA &gt;= 600)</td>
-<td align="left">CHAR(1)</td>
+<tr>
+<td style="text-align:left;">
+CAMS_SUBTRIP
+</td>
+<td style="text-align:left;">
+Catenation of CAMSID and SUBTRIP in CAMS_LANDINGS
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">HALFOFYEAR</td>
-<td align="left">1 (Jan - June) or 2 (July-Dec)</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+CLOSED_AREA_EXEMPTION
+</td>
+<td style="text-align:left;">
+Groundfish specific stratification
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">DOCID</td>
-<td align="left">VTR Document ID</td>
-<td align="left">VARCHAR2(40)</td>
+<tr>
+<td style="text-align:left;">
+DISCARD
+</td>
+<td style="text-align:left;">
+Species discard as recorded on the subtrip
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">VTRSERNO</td>
-<td align="left">VTR serial number; identifies subtrip</td>
-<td align="left">VARCHAR2(13)</td>
+<tr>
+<td style="text-align:left;">
+DISCARD_PRORATE
+</td>
+<td style="text-align:left;">
+Species discard as prorated by KALL on unobserved hauls
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="odd">
-<td align="left">GEARCODE</td>
-<td align="left">three letter VTR gear code</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+DOCID
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">GEARTYPE</td>
-<td align="left">Gear description</td>
-<td align="left">VARCHAR2(34)</td>
+<tr>
+<td style="text-align:left;">
+EM
+</td>
+<td style="text-align:left;">
+EM program, groundfish trips only
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">NEGEAR</td>
-<td align="left">two digit gearcode; used by NEFOP</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+GEARTYPE
+</td>
+<td style="text-align:left;">
+Gear description
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">MESH</td>
-<td align="left">VTR mesh size in inches</td>
-<td align="left">NUMBER(6,1)</td>
+<tr>
+<td style="text-align:left;">
+GF
+</td>
+<td style="text-align:left;">
+Indicator of whether the trip was classified as groundfish or not. 1 =
+groundfish trip. 0 = non-groundfish trip.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">MESHGROUP</td>
-<td align="left">Categoried mesh: sm, lg, xlg, na</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+HALFOFYEAR
+</td>
+<td style="text-align:left;">
+1 (Jan - June) or 2 (July-Dec)
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">AREA</td>
-<td align="left">statistical area from VTR</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+ITIS_TSN
+</td>
+<td style="text-align:left;">
+Integrated Taxonomic Information System (ITIS) - Taxonomic Species
+Number (TSN). NULL for No-Catch records.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">CAREA</td>
-<td align="left">Calculated Statisticl area from VTR position</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+LINK1
+</td>
+<td style="text-align:left;">
+Observer LINK1 if trip was obsevered
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">SUBTRIP_KALL</td>
-<td align="left">Total live pounds from subtrip</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+LINK3
+</td>
+<td style="text-align:left;">
+Observer recorded haul
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">SECTOR_ID</td>
-<td align="left">Groundfish sector membership</td>
-<td align="left">VARCHAR2(50)</td>
+<tr>
+<td style="text-align:left;">
+MESHGROUP
+</td>
+<td style="text-align:left;">
+CAMS meshgroup: sm, lg, xlg, na
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">ACTIVITY_CODE_1</td>
-<td align="left">VMS declaration</td>
-<td align="left">VARCHAR2(18)</td>
+<tr>
+<td style="text-align:left;">
+MONTH
+</td>
+<td style="text-align:left;">
+The numeric month (1-12) of the vessel landing or negative dealer
+report.
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="odd">
-<td align="left">ACTIVITY_CODE_2</td>
-<td align="left">VMS declaration (if more than 1)</td>
-<td align="left">VARCHAR2(18)</td>
+<tr>
+<td style="text-align:left;">
+NEGEAR
+</td>
+<td style="text-align:left;">
+Northeast Gear code. Unknown = 000. Refer to GEAR_SOURCE for metadata
+about gear in final tables.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">ACTIVITY_CODE_3</td>
-<td align="left">VMS declaration (if more than 2)</td>
-<td align="left">VARCHAR2(18)</td>
+<tr>
+<td style="text-align:left;">
+NESPP3
+</td>
+<td style="text-align:left;">
+The Northeast Species code, without the market category, i.e. the first
+3 digits of NESPP4. Legacy code. For 2020+ use ITIS_TSN.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PERMIT_EFP_1</td>
-<td align="left">EFP trip fishing under</td>
-<td align="left">VARCHAR2(50)</td>
+<tr>
+<td style="text-align:left;">
+NVTR_LINK1
+</td>
+<td style="text-align:left;">
+Number of VTRs per observed trip (Link1)
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">PERMIT_EFP_2</td>
-<td align="left">EFP trip fishing under</td>
-<td align="left">VARCHAR2(50)</td>
+<tr>
+<td style="text-align:left;">
+OBSRFLAG
+</td>
+<td style="text-align:left;">
+Flag for whether the haul was observed
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PERMIT_EFP_3</td>
-<td align="left">EFP trip fishing under</td>
-<td align="left">VARCHAR2(50)</td>
+<tr>
+<td style="text-align:left;">
+OBSVTR
+</td>
+<td style="text-align:left;">
+Observer recorded VTR serial number
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">PERMIT_EFP_4</td>
-<td align="left">EFP trip fishing under</td>
-<td align="left">VARCHAR2(50)</td>
+<tr>
+<td style="text-align:left;">
+OBS_AREA
+</td>
+<td style="text-align:left;">
+The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
+code reported by the observer. Unknown = 000.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">REDFISH_EXEMPTION</td>
-<td align="left">Exemption fishing under</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+OBS_GEAR
+</td>
+<td style="text-align:left;">
+Observer recorded gear (NEGEAR)
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">CLOSED_AREA_EXEMPTION</td>
-<td align="left">Exemption fishing under</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+OBS_HAUL_KALL_TRIP
+</td>
+<td style="text-align:left;">
+Kept all pounds recorded by observer on observed hauls. This is the
+value used in d/k calculations
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="odd">
-<td align="left">SNE_SMALLMESH_EXEMPTION</td>
-<td align="left">Exemption fishing under</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+OBS_HAUL_KEPT
+</td>
+<td style="text-align:left;">
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">XLRG_GILLNET_EXEMPTION</td>
-<td align="left">Exemption fishing under</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+OBS_NOHAUL_KALL_TRIP
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="odd">
-<td align="left">TRIPCATEGORY</td>
-<td align="left">Scallop fleet designtion (LA, GEN, ALL)</td>
-<td align="left">CHAR(3)</td>
+<tr>
+<td style="text-align:left;">
+OBS_KALL
+</td>
+<td style="text-align:left;">
+Total Kept pounds on an obserevd trip as recorded by observer. This
+included both observed and unobserved hauls
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">ACCESSAREA</td>
-<td align="left">Scallop Access Area</td>
-<td align="left">VARCHAR2(4)</td>
+<tr>
+<td style="text-align:left;">
+OBS_LINK1
+</td>
+<td style="text-align:left;">
+Obsever recorded LINK1
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">LINK1</td>
-<td align="left">Observer LINK1 if trip was obsevered</td>
-<td align="left">VARCHAR2(35)</td>
+<tr>
+<td style="text-align:left;">
+OBS_MESH
+</td>
+<td style="text-align:left;">
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">OBSVTR</td>
-<td align="left">Observer recorded VTR serial number</td>
-<td align="left">VARCHAR2(15)</td>
+<tr>
+<td style="text-align:left;">
+OBS_MESHGROUP
+</td>
+<td style="text-align:left;">
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">OBS_LINK1</td>
-<td align="left">Obsever recorded LINK1</td>
-<td align="left">VARCHAR2(15)</td>
+<tr>
+<td style="text-align:left;">
+PERMIT
+</td>
+<td style="text-align:left;">
+Vessel permit number assigned by the Northeast Regional Offices Vessel
+Permit System (VPS). 000000=no permit or no vessel, check hull number;
+190998=Unknown undertonnage vessel; 390998=Unknown tonnage vessel.
+490998=Unknown
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">LINK3</td>
-<td align="left">Observer recorded haul</td>
-<td align="left">VARCHAR2(19)</td>
+<tr>
+<td style="text-align:left;">
+PRORATE
+</td>
+<td style="text-align:left;">
+ratio of total kept_all / observed kept all
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="odd">
-<td align="left">OBS_AREA</td>
-<td align="left">Observer recorded statistical area</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+REDFISH_EXEMPTION
+</td>
+<td style="text-align:left;">
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">NESPP3</td>
-<td align="left">three digit species code</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+SECGEAR_MAPPED
+</td>
+<td style="text-align:left;">
+Gearmapping used for matching VTR subtrip to LINK3
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">DISCARD</td>
-<td align="left">Prorated observer recorded discard</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+SECTID
+</td>
+<td style="text-align:left;">
+Groundfish Sector ID number
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">OBS_HAUL_KEPT</td>
-<td align="left">Observer recorded total pounds kept per haul</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+SNE_SMALLMESH_EXEMPTION
+</td>
+<td style="text-align:left;">
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">OBS_KALL</td>
-<td align="left">Observer recorded total pounds kept per trip</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+SUBTRIP_KALL
+</td>
+<td style="text-align:left;">
+Kept all of subtrip from CAMS_LANDINGS
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
-<tr class="even">
-<td align="left">OBS_GEAR</td>
-<td align="left">Observer recorded gear (NEGEAR)</td>
-<td align="left">VARCHAR2(3)</td>
+<tr>
+<td style="text-align:left;">
+TRIPCATEGORY
+</td>
+<td style="text-align:left;">
+Scallop fleet designation, if applicable
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="odd">
-<td align="left">OBS_MESH</td>
-<td align="left">Observer recorded meshsize</td>
-<td align="left">NUMBER</td>
+<tr>
+<td style="text-align:left;">
+VTRSERNO
+</td>
+<td style="text-align:left;">
+A unique serial number used to identify a vessel trip report. NULL =
+Unknown
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
-<tr class="even">
-<td align="left">OBS_MESHGROUP</td>
-<td align="left">Observer recorded mesh category</td>
-<td align="left">VARCHAR2(4)</td>
+<tr>
+<td style="text-align:left;">
+XLRG_GILLNET_EXEMPTION
+</td>
+<td style="text-align:left;">
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+YEAR
+</td>
+<td style="text-align:left;">
+The year in which the landings or negative report occurred.
+</td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
 </tbody>
 </table>
