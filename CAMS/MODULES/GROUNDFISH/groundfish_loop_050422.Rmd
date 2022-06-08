@@ -59,7 +59,7 @@ options(scipen = 999)
 # if on server..
 dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
-bcon <- dbConnect(odbc::odbc(), 
+con_maps <- dbConnect(odbc::odbc(), 
 									DSN = dw_apsd$dsn, 
 									UID = dw_apsd$uid, 
 									PWD = dw_apsd$pwd)
@@ -88,7 +88,7 @@ FY_TYPE = 'MAY START'
 
 #---#
 # group of species
-species = tbl(bcon, sql("
+species = tbl(con_maps, sql("
 select distinct(b.species_itis)
     , COMNAME
     , a.nespp3
@@ -101,7 +101,7 @@ and b.species_itis is not null
 	collect()
 
 
-# species = tbl(bcon, sql("
+# species = tbl(con_maps, sql("
 #     select distinct(nespp3) as nespp3
 #     from fso.v_obSpeciesStockArea 
 #     where stock_id not like 'OTHER'
@@ -128,7 +128,7 @@ final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$SPECIES_ITIS,
 
 # get catch and matched obs data together
 
-c_o_dat2 <- tbl(bcon, sql(
+c_o_dat2 <- tbl(con_maps, sql(
 "  with obs_cams as (
    select year
 	, month
@@ -302,7 +302,7 @@ species_itis = species$SPECIES_ITIS[i]
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -311,7 +311,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -324,7 +324,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 #   dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP
@@ -763,13 +763,48 @@ joined_table %>%
 	colSums(na.rm = T) %>% 
 	round()
 
+
 #-------------------------------#	
-# save trip by trip info to RDS 
+# substitute EM data on EM trips
+#-------------------------------#
+
+print(paste0('Adding EM values for ', species$COMNAME[i], ' Groundfish Trips ', FY))
+
+em_tab = ROracle::dbGetQuery(conn = con_maps, statement = "
+			 select  SPECIES_ITIS as SPECIES_ITIS_EVAL
+			 , EM_COMPARISON
+			 , VTR_DISCARD
+			 , EM_DISCARD
+			 , DELTA_DISCARD
+			 , NMFS_DISCARD
+			 , NMFS_DISCARD_SOURCE
+			 , SERIAL_NUM as VTRSERNO
+			 from GF_EM_DELTA_VTR_DISCARD
+			 ") %>% 
+	      as_tibble()
+
+emjoin = joined_table %>% 
+	left_join(., em_tab, by = c('VTRSERNO', 'SPECIES_ITIS_EVAL')) %>% 
+	mutate(DISCARD = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD
+														 , DISCARD_SOURCE == 'O' ~ DISCARD
+														 , !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD)
+	) %>% 
+		mutate(DISCARD_SOURCE = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD_SOURCE
+														 , DISCARD_SOURCE == 'O' ~ DISCARD_SOURCE
+														 ,  !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD_SOURCE)
+	) %>%
+	dplyr::select(names(joined_table))
+
+# emjoin %>% group_by(DISCARD_SOURCE, NMFS_DISCARD_SOURCE) %>% dplyr::summarise(sum(DISCARD_MOD, na.rm = T))
+
+
+#-------------------------------#	
+# save trip by trip info to .fst file
 #-------------------------------#
 
 # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
 				
-fst::write_fst(x = joined_table, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
+fst::write_fst(x = emjoin, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
  t2 = Sys.time()
 	
@@ -799,7 +834,7 @@ species_itis = species$SPECIES_ITIS[i]
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -808,7 +843,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -821,7 +856,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 #   dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP
@@ -1308,7 +1343,7 @@ species_itis = scal_gf_species$SPECIES_ITIS[i]
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
 	filter(SPECIES_ITIS == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
@@ -1316,7 +1351,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
   group_by(AREA_NAME, SPECIES_ITIS) %>% 
@@ -1326,7 +1361,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   ungroup() 
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP
@@ -1749,7 +1784,6 @@ print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, un
 
 ```
 
-
 ```{r estimate discards on scallop trips for each subACL stock using subroutine, purl = T, eval = T}
 if(species_itis %in% c('172909', '172746')){
 
@@ -2068,9 +2102,9 @@ for(i in 1:nrow(species)){
 	# tname_cgfn = paste0('CAMS_DISCARD_EXAMPLE_',species$SPECIES_ITIS[i],'_19')
 		
 	# create example table on MAPS
-	db_drop_table(con = bcon, table = tname, force = F)
+	db_drop_table(con = con_maps, table = tname, force = F)
 	
-	# dbWriteTable(bcon, name = tname, value = outlist[[i]], overwrite = T)
+	# dbWriteTable(con_maps, name = tname, value = outlist[[i]], overwrite = T)
 	
 	# create table ins cams_garfo
 	db_drop_table(ccon, tname)
@@ -2080,7 +2114,7 @@ for(i in 1:nrow(species)){
 	# grant the cams_garfo table to cams_garfo_nefsc
 	# dbSendQuery(ccon, statement = paste0("GRANT SELECT ON ", tname," TO CAMS_GARFO_FOR_NEFSC"))
 	
-	# tbl(bcon, sql(paste0("select * from ", tname)))
+	# tbl(con_maps, sql(paste0("select * from ", tname)))
 	
 	# tbl(ccon, sql(paste0("select * from ", tname)))
 
@@ -2099,12 +2133,12 @@ ccon <- dbConnect(odbc::odbc(),
 									PWD = condat$pwd)
 
 # create example table on MAPS
-db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_GF19', force = F)
+db_drop_table(con = con_maps, table = 'MAPS.CAMS_DISCARD_EXAMPLE_GF19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist_df, overwrite = T)
+dbWriteTable(con_maps, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist_df, overwrite = T)
 
 # grant table to cams_garfo
-# dbSendQuery(bcon, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
+# dbSendQuery(con_maps, statement = "GRANT SELECT ON MAPS.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO")
 
 # create table ins cams_garfo
 db_drop_table(ccon, "CAMS_DISCARD_EXAMPLE_GF19")
@@ -2115,7 +2149,7 @@ dbWriteTable(ccon, name = 'CAMS_DISCARD_EXAMPLE_GF19', value = outlist_df, overw
 dbSendQuery(ccon, statement = "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19 TO CAMS_GARFO_FOR_NEFSC")
 
 # check it worked!
-tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19"))
+tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_EXAMPLE_GF19"))
 
 tbl(ccon, sql("select * from CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19"))
 
