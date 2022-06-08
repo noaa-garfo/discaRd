@@ -1,5 +1,5 @@
 ---
-title: "CAMS: CAMS_DISCARDS_ALL_YEARS"
+title: "CAMS:CAMS_DISCARDS_ALL_YEARS"
 #author: "Ben Galuardi"
 output:
   html_document: default
@@ -44,44 +44,44 @@ library(dplyr, warn.conflicts = FALSE)
 ```
 
 ## Summary
-
+This table provides discard estimates by subtrip for both GF and non GF species. Table output is from the GF and Non GF discard modules available in the R package discaRd.
 
 ## Description
 
 - **OUTPUT TABLE:** CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS
-- **YEARS:** 200X-Present
-- **RESOLUTION:** VTRSERNO (subtrip)~LINK1 by species
+- **YEARS:** 200X+
+- **RESOLUTION:** Species discard estimate by VTRSERNO (subtrip)
 - **DEVELOPMENT LANGUAGE:** N/A
 - **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
 
 
 ## Data Sources
+MAPS.CAMS_OBS_CATCH
+MAPS.GF_EM_DISCARDS_ARCH
+MAPS.GF_EM_DELTA_VTR_DISCARDS
+MAPS.CAMS_DISCARD_MORTALITY_STOCK
+MAPS.CAMS_OBS_CATCH
+MAPS.CAMS_GEARCODE_STRATA
+MAPS.CAMS_STATAREA_STOCK
 
-
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage"}
+```{r table_flow_1, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage for GF species"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_OBS_CATCH --> GF Discard Module
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF Discard Module
-  MAPS.CAMS_GEARCODE_STRATA --> GF Discard Module
-  MAPS.CAMS_STATAREA_STOCK --> GF Discard Module
-  MAPS.CAMS_GF_EM_DELTA_VTR_DISCARDS --> GF Discard Module
-  MAPS.CAMS_GF_EM_DISCARDS_ARCHIVE --> GF Discard Module
-  MAPS.CAMS_OBS_CATCH --> Non GF Discard Module
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> Non GF Discard Module
-  MAPS.CAMS_GEARCODE_STRATA --> Non GF Discard Module
-  MAPS.CAMS_STATAREA_STOCK --> Non GF Discard Module
-  GF Discard Module --> MAPS.CAMS_DISCARDS_ALL_YEARS
-  Non GF Discard Module --> MAPS.CAMS_DISCARDS_ALL_YEARS
+  MAPS.CAMS_OBS_CATCH --> GF_Discard_Module
+  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF_Discard_Module
+  MAPS.CAMS_GEARCODE_STRATA --> GF_Discard_Module
+  MAPS.CAMS_STATAREA_STOCK --> GF_Discard_Module
+  MAPS.CAMS_GF_EM_DISCARDS_ARCH --> GF_Discard_Module
+  MAPS.CAMS_GF_EM_DELTA_VTR_DISCARDS --> GF_Discard_Module
+  GF_Discard_Module --> CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS
         ")
 ```
-
 ## Approach
 GF module:
 
-1. Pull all merged trips from `CAMS_OBS_CATCH`. Here, it is a good idea to pull only a few years and not the whole table, which is ~12 years of data
+1. Pull all merged trips from `CAMS_OBS_CATCH`.
 
-2. Separate Groundfish trips from non-groundfish trips (Use CAMS `GF` column)
+2. Filter to only Groundfish trips (Use `GF` column)
 
 3. Set stratification variables for groundfish trips
 
@@ -89,7 +89,6 @@ GF module:
 # FULL Stratification variables
 
 stratvars = c( 'SPECIES_STOCK'
-							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               , 'SECTID'
@@ -99,7 +98,7 @@ stratvars = c( 'SPECIES_STOCK'
               , "XLRG_GILLNET_EXEMPTION"
               )
 ```
-
+By Species:
 	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
@@ -131,7 +130,10 @@ stratvars = c('SPECIES_STOCK'
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
  - (A) Assumed rate. This is the *second pass* rate when there were >=5 trips in season
  - (B) Broad stock rate is used when other criteria are not met. 
- - (O) Observed values used from obserevd trips; discard rate is NOT USED. 
+ - (O) Observed values used from observed trips; discard rate is NOT USED. 
+ - (VTR) VTR estimates from EM trips prior to implementation of the audit model during GF FY21.
+ - (Delta) Delta estimates from EM trips after implementation of the audit model.
+ - (EM) EM estimates from EM trips where EM was reviewed. 
  
 9. CV calculations are available for (I), (T), and (A). Obtaining a CV estimate for (B) would require a *third pass* of discaRd functions. (O) rates are not used and final discard values are not estimated. 
 
@@ -190,8 +192,7 @@ stratvars = c('SPECIES_STOCK'
 # Third PAss Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP',
-              ,'MESHGROUP')
+              , 'CAMS_GEAR_GROUP')
 
 ```	
 
@@ -200,12 +201,12 @@ stratvars = c('SPECIES_STOCK'
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (GM) Assigment is from the second pass (e.g. Stock/Gear/Meshgroup). This is the rate when there were <5 trips in season and <5 in previous season at the full stratification level.
- - (G) Assigment is from the second pass (e.g. Stock/Gear). 
+ - (GM) Broad stock/gear/mesh size rate. This is the rate when there were <5 trips in season and <5 in previous season.
+ - (G) Broad stock/gear rate. <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (G) and (GM). 
+9. CV calculations are available for (I), (T), (GM) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -217,7 +218,19 @@ stratvars = c('SPECIES_STOCK'
 	# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (GM) and (G) rates 
 ```
 
-### Steps 
+```{r table_flow_2, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 2.   CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage"}
+DiagrammeR::mermaid("
+  graph LR
+  MAPS.CAMS_OBS_CATCH --> Non_GF_Discard_Module
+  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> Non_GF_Discard_Module
+  MAPS.CAMS_GEARCODE_STRATA --> Non_GF_Discard_Module
+  MAPS.CAMS_STATAREA_STOCK --> Non_GF_Discard_Module
+  Non_GF_Discard_Module --> CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS
+        ")
+```
+
+## Approach
+Non GF module:
 
 1. pull all merged trips from CAMS_OBS_CATCH
 
@@ -232,7 +245,7 @@ stratvars = c('SPECIES_STOCK'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 ```
-
+By Species:
 	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
@@ -259,12 +272,12 @@ stratvars = c('SPECIES_STOCK'
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
- - (G) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
+ - (GM) Broad stock/gear/mesh size rate. This is the rate when there were <5 trips in season and <5 in previous season.
+ - (G) Broad stock/gear rate. <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (A) and (G). 
+9. CV calculations are available for (I), (T), (GM) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -276,9 +289,10 @@ stratvars = c('SPECIES_STOCK'
 			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (G) rates 	 
 ```
 
+
 ## Data Dictionary
 ```{r echo = F}
-comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_DISCARDS_ALL_YEARS'")
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_DISCARD_MONKFISH_19'")
 
 comments %>%
 dplyr::select(

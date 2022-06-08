@@ -1,0 +1,100 @@
+---
+title: "CAMS: GF_EM_DELTA_VTR_DISCARD"
+#author: "Ben Galuardi"
+output:
+  html_document: default
+  github_document:
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(odbc)
+library(ROracle)
+library(dplyr, warn.conflicts = FALSE)
+
+
+ dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+# 
+ # bcon <- dbConnect(odbc::odbc(), 
+ # 									DSN = dw_maps$dsn, 
+ # 									UID = dw_maps$uid, 
+ # 									PWD = dw_maps$pwd)
+
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+    sep = ""
+  )
+
+# Connect to oracle each loop in case of timeouts
+    bcon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
+      dbname = connectString
+    )
+
+```
+
+## Summary
+This table contains VTR discard estimates, EM discard estimates for EM reviewed GF trips and delta model estimates for unreviewed EM trips from FY21 forward. From May 1, 2021 to December 31, 2021 VTR estimates were used until adequate data was available to fit the delta model. Discards from observer coverage take precedent over discard estimates from EM. 
+
+
+## Description
+
+- **OUTPUT TABLE:** CAMS_GARFO.GF_EM_DELTA_VTR_DISCARD
+- **YEARS:** 2021+
+- **RESOLUTION:** Species discard estimate by VTRSERNO (subtrip)
+- **DEVELOPMENT LANGUAGE:** R
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
+
+
+## Data Sources
+nemis.NEMIS_TRIP_MV@nova
+nemis.NEMIS_HAUL_MV@nova
+nemis.NEMIS_CATCH_MV@nova
+noaa.document 
+noaa.images 
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.GF_EM_DELTA_VTR_DISCARD table lineage"}
+DiagrammeR::mermaid("
+  graph LR
+nemis.NEMIS_TRIP_MV --> MAPS.GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_HAUL_MV --> MAPS.GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_CATCH_MV --> MAPS.GF_EM_DELTA_VTR_DISCARD
+noaa.document --> MAPS.GF_EM_DELTA_VTR_DISCARD
+noaa.images --> MAPS.GF_EM_DELTA_VTR_DISCARD
+        ")
+```
+
+## Approach
+Criteria for EM data to be used to fit delta model:
+(ct_tot >= 30 AND fishnk_pct >= .1) THEN 'N' ELSE haul_observed
+
+Delta model:
+ EM_DISCARD ~ LOG_EVTR_DISCARD + (1+LOG_EVTR_DISCARD|SPECIES_ID) + (1+LOG_EVTR_DISCARD | PERMIT)
+
+
+ 
+## Data Dictionary
+
+```{r echo = F}
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'GF_EM_DELTA_VTR_DISCARD'")
+
+comments %>%
+dplyr::select(
+COLUMN = COLUMN_NAME,
+DESCRIPTION = COMMENTS) %>%
+knitr::kable(booktabs = TRUE) %>%
+kableExtra::kable_styling(bootstrap_options = c("striped", 
+"hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
+font_size = 10)
+```
+
+
