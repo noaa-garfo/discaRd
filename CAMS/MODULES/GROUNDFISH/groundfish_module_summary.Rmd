@@ -495,7 +495,7 @@ stratvars = c('SPECIES_STOCK'
 	- TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
 	- ACCESS AREA is specific to scallop trips and indicates Scallop Access Area
 
-4. Run first pass of `discaRd` for full startififcation
+4. Run first pass of `discaRd` for full stratification
 	- there are sub-passes for year t and year t-1
 	
 5. Run a second pass using a coarsened stratification : 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
@@ -526,8 +526,8 @@ stratvars = c('SPECIES_STOCK'
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (GM) Assigment is from the second pass (e.g. Stock/Gear/Meshgroup). This is the rate when there were <5 trips in season and <5 in previous season at the full stratification level.
- - (G) Assigment is from the second pass (e.g. Stock/Gear). 
+ - (GM) Assignment is from the second pass (e.g. Stock/Gear/Meshgroup). This is the rate when there were <5 trips in season and <5 in previous season at the full stratification level.
+ - (G) Assignment is from the second pass (e.g. Stock/Gear). 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
