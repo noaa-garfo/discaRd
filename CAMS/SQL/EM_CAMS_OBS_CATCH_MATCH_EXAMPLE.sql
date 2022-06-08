@@ -123,6 +123,7 @@ with em19 as (
     , c.vtrserno
     , c.camsid
     , cams_subtrip
+    , e.haul_id
     from cams c, em19 e
     where GF = 1
     and c.docid = e.docid
@@ -140,6 +141,7 @@ with em19 as (
     , e.dlr_sppname
     , c.vtrserno
     , c.camsid
+    , e.haul_id
     
     order by docid, cams_subtrip, EM_STRATA
 )
@@ -150,14 +152,19 @@ select  e.cams_subtrip
 , e.itis_tsn as EM_ITIS
 , e.em_strata 
 , e.stock_id
+<<<<<<< Updated upstream
  , s.discard_source
+=======
+, e.haul_id
+-- , s.discard_source
+>>>>>>> Stashed changes
  , g.*
-from cams_garfo.cams_discard_example_gf2019 g
+from cams_garfo.cams_discard_all_years g
 left join (select * from emd) e
     on (g.camsid = e.camsid and g.vtrserno = e.vtrserno and g.species_itis = e.itis_tsn)
 
 where EM_STRATA is not null
-and g.camsid = '242648_20200312045800_24264820031117'
+--and g.camsid = '242648_20200312045800_24264820031117'
 order by g.vtrserno, species_itis
 
 

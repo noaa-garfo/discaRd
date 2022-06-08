@@ -74,7 +74,7 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 # con_maps <- ROracle::dbConnect(
 #     drv = ROracle::Oracle(),
 #     username = dw_apsd$uid,
-#     password = dw_apsd$pwd,  
+#     password = dw_apsd$pwd,
 #     dbname = "NERO.world"
 # )
 

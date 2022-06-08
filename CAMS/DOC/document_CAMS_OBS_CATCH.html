@@ -3162,8 +3162,13 @@ discard estimation.</p>
 </ul></li>
 </ul>
 <div class="figure">
+<<<<<<< HEAD
 <div id="htmlwidget-972ac5d11c8a364ea7a6" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
 <script type="application/json" data-for="htmlwidget-972ac5d11c8a364ea7a6">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n        "},"evals":[],"jsHooks":[]}</script>
+=======
+<div id="htmlwidget-4400d80fc32cc4ec1a12" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-4400d80fc32cc4ec1a12">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_LANDINGS --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 <p class="caption">
 Figure 1. APSD.BG_CAMS_OBS_CATCH table lineage
 </p>
@@ -3257,6 +3262,12 @@ COLUMN
 <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
 DESCRIPTION
 </th>
+<<<<<<< HEAD
+=======
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+DATA TYPE
+</th>
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </tr>
 </thead>
 <tbody>
@@ -3265,7 +3276,14 @@ DESCRIPTION
 ACCESSAREA
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Scallop Access Area, only relevant for scallop trips
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3273,6 +3291,7 @@ NA
 ACTIVITY_CODE_1
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
 </td>
 </tr>
@@ -3282,54 +3301,122 @@ AREA
 </td>
 <td style="text-align:left;">
 NA
+=======
+VMS declaration
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
+<<<<<<< HEAD
 CAMSID
 </td>
 <td style="text-align:left;">
 NA
+=======
+AREA
+</td>
+<td style="text-align:left;">
+The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
+code. Unknown = 000. For CAMS data, refer to AREA_SOURCE and
+AREA_IMP_METHOD for metadata about AREA.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
+<<<<<<< HEAD
 CAMS_SUBTRIP
 </td>
 <td style="text-align:left;">
 NA
+=======
+CAMSID
+</td>
+<td style="text-align:left;">
+Unique trip identification code within CAMS
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
+<<<<<<< HEAD
 CLOSED_AREA_EXEMPTION
 </td>
 <td style="text-align:left;">
 NA
+=======
+CAMS_SUBTRIP
+</td>
+<td style="text-align:left;">
+Catenation of CAMSID and SUBTRIP in CAMS_LANDINGS
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
+<<<<<<< HEAD
 DISCARD
 </td>
 <td style="text-align:left;">
 NA
+=======
+CLOSED_AREA_EXEMPTION
+</td>
+<td style="text-align:left;">
+Groundfish specific stratification
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
+<<<<<<< HEAD
 DISCARD_PRORATE
 </td>
 <td style="text-align:left;">
 NA
+=======
+DISCARD
+</td>
+<td style="text-align:left;">
+Species discard as recorded on the subtrip
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
+<<<<<<< HEAD
 DATE_TRIP
 </td>
 <td style="text-align:left;">
 NA
+=======
+DISCARD_PRORATE
+</td>
+<td style="text-align:left;">
+Species discard as prorated by KALL on unobserved hauls
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3339,13 +3426,26 @@ DOCID
 <td style="text-align:left;">
 NA
 </td>
+<<<<<<< HEAD
+=======
+<td style="text-align:left;">
+VARCHAR2
+</td>
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </tr>
 <tr>
 <td style="text-align:left;">
 EM
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+EM program, groundfish trips only
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3353,7 +3453,14 @@ NA
 GEARTYPE
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Gear description
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3361,7 +3468,15 @@ NA
 GF
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Indicator of whether the trip was classified as groundfish or not. 1 =
+groundfish trip. 0 = non-groundfish trip.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3369,7 +3484,14 @@ NA
 HALFOFYEAR
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+1 (Jan - June) or 2 (July-Dec)
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3377,7 +3499,15 @@ NA
 ITIS_TSN
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Integrated Taxonomic Information System (ITIS) - Taxonomic Species
+Number (TSN). NULL for No-Catch records.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3385,7 +3515,14 @@ NA
 LINK1
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Observer LINK1 if trip was obsevered
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3393,7 +3530,14 @@ NA
 LINK3
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Observer recorded haul
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3401,7 +3545,14 @@ NA
 MESHGROUP
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+CAMS meshgroup: sm, lg, xlg, na
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3409,7 +3560,15 @@ NA
 MONTH
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+The numeric month (1-12) of the vessel landing or negative dealer
+report.
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3417,7 +3576,15 @@ NA
 NEGEAR
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Northeast Gear code. Unknown = 000. Refer to GEAR_SOURCE for metadata
+about gear in final tables.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3425,7 +3592,15 @@ NA
 NESPP3
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+The Northeast Species code, without the market category, i.e. the first
+3 digits of NESPP4. Legacy code. For 2020+ use ITIS_TSN.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3433,7 +3608,14 @@ NA
 NVTR_LINK1
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Number of VTRs per observed trip (Link1)
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3441,7 +3623,14 @@ NA
 OBSRFLAG
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Flag for whether the haul was observed
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3449,7 +3638,14 @@ NA
 OBSVTR
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Observer recorded VTR serial number
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3457,7 +3653,15 @@ NA
 OBS_AREA
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
+code reported by the observer. Unknown = 000.
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3465,7 +3669,14 @@ NA
 OBS_GEAR
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Observer recorded gear (NEGEAR)
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3473,7 +3684,15 @@ NA
 OBS_HAUL_KALL_TRIP
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Kept all pounds recorded by observer on observed hauls. This is the
+value used in d/k calculations
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3481,7 +3700,14 @@ NA
 OBS_HAUL_KEPT
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3491,13 +3717,27 @@ OBS_NOHAUL_KALL_TRIP
 <td style="text-align:left;">
 NA
 </td>
+<<<<<<< HEAD
+=======
+<td style="text-align:left;">
+NUMBER
+</td>
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </tr>
 <tr>
 <td style="text-align:left;">
 OBS_KALL
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Total Kept pounds on an obserevd trip as recorded by observer. This
+included both observed and unobserved hauls
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3505,7 +3745,14 @@ NA
 OBS_LINK1
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Obsever recorded LINK1
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3513,7 +3760,14 @@ NA
 OBS_MESH
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3521,7 +3775,14 @@ NA
 OBS_MESHGROUP
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3529,7 +3790,17 @@ NA
 PERMIT
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Vessel permit number assigned by the Northeast Regional Offices Vessel
+Permit System (VPS). 000000=no permit or no vessel, check hull number;
+190998=Unknown undertonnage vessel; 390998=Unknown tonnage vessel.
+490998=Unknown
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3537,7 +3808,14 @@ NA
 PRORATE
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+ratio of total kept_all / observed kept all
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3545,7 +3823,14 @@ NA
 REDFISH_EXEMPTION
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3553,7 +3838,14 @@ NA
 SECGEAR_MAPPED
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Gearmapping used for matching VTR subtrip to LINK3
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3561,7 +3853,14 @@ NA
 SECTID
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Groundfish Sector ID number
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3569,7 +3868,14 @@ NA
 SNE_SMALLMESH_EXEMPTION
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3577,7 +3883,14 @@ NA
 SUBTRIP_KALL
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Kept all of subtrip from CAMS_LANDINGS
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3585,7 +3898,14 @@ NA
 TRIPCATEGORY
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Scallop fleet designation, if applicable
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3593,7 +3913,15 @@ NA
 VTRSERNO
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+A unique serial number used to identify a vessel trip report. NULL =
+Unknown
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3601,7 +3929,14 @@ NA
 XLRG_GILLNET_EXEMPTION
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 <tr>
@@ -3609,7 +3944,14 @@ NA
 YEAR
 </td>
 <td style="text-align:left;">
+<<<<<<< HEAD
 NA
+=======
+The year in which the landings or negative report occurred.
+</td>
+<td style="text-align:left;">
+NUMBER
+>>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 </tbody>
