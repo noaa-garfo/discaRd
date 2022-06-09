@@ -44,7 +44,7 @@ library(dplyr, warn.conflicts = FALSE)
 
 
 ## Summary
-This discard support table translates species VTR gear code to the CAMS gear code used for discard stratification based on gear stratification used in current stock assessments and quota monitoring.  Species specific gear stratifications have agreed upon by a discard working group.
+This discard support table translates species VTR gear code to the CAMS gear code used for discard stratification based on gear stratification used in current stock assessments and quota monitoring.  Species specific gear stratifications have been agreed upon by a discards working group.
 
 ## Description
 
