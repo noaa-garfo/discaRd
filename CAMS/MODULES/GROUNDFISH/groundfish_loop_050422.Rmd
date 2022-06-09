@@ -701,6 +701,7 @@ joined_table = joined_table %>%
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
+    																		n_obs_trips_f_a < 5 &
     																		n_obs_trips_p_a >= 5 ~ 'B' # Broad stock is only for GF now
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 & 
