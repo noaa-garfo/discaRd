@@ -1,6 +1,6 @@
 ---
-title: "CAMS: CAMS_DISCARD_MORTALITY_STOCK"
-#author: "K. Winiarski"
+title: "CAMS: CAMS_STATAREA_STOCK"
+#author: "Ben Galuardi"
 output:
   html_document: default
   github_document:
@@ -9,10 +9,7 @@ always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, 
-											message=FALSE, cache=FALSE,
-											progress = TRUE, verbose = FALSE)
-
+knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(odbc)
@@ -42,31 +39,33 @@ library(dplyr, warn.conflicts = FALSE)
       password = dw_maps$pwd,
       dbname = connectString
     )
+
 ```
 
 
 ## Summary
-Mortality rates by area and gear from this discard estimation support table are based on values used in current stock assessments and quota monitoring.  Discard mortality rates have been agreed upon by a CAMS discard working group.
+This discard support table translates species stat areas to species stock areas used for discard stratification based on area stratifications used in current stock assessments and quota monitoring.  Species specific area stratifications have agreed upon by a discard working group.
+
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK
+- **OUTPUT TABLE:** CAMS_GARFO.CAMS_STATAREA_STOCK
 - **YEARS:** N/A
-- **RESOLUTION:** Discard mortality rates by area and gear.
+- **RESOLUTION:** N/A
 - **DEVELOPMENT LANGUAGE:** N/A
-- **CODE:** N/A
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_DISCARD_MORTALITY_STOCK table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_STATAREA_STOCK table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF_and_Non_GF_Discard_Modules
+  MAPS.CAMS_STATAREA_STOCK --> GF_and_Non_GF_Discard_Modules
         ")
 ```
 
 ## Data Dictionary
 
 ```{r echo = F}
-comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_DISCARD_MORTALITY_STOCK'")
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_STATAREA_STOCK'")
 
 comments %>%
 dplyr::select(
@@ -77,4 +76,5 @@ kableExtra::kable_styling(bootstrap_options = c("striped",
 "hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
 font_size = 10)
 ```
+
 

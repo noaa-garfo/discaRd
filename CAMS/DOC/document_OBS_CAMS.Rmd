@@ -2,14 +2,16 @@
 title: "CAMS: Observer Tables for Discards"
 author: "Ben Galuardi"
 output:
-  github_document:
   html_document: default
+  github_document:
   pdf_document: default
 always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, 
+											message=FALSE, cache=FALSE,
+											progress = TRUE, verbose = FALSE)
 ```
 
 ## Summary
@@ -17,38 +19,53 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Description
 
-- **OUTPUT TABLE:** APSD.OBDBS_CAMS_<YYYY>
-- **YEARS:** 2017-2020
+- **OUTPUT TABLE:** CAMS_OBDBS_*YYYY*
+- **YEARS:** 2017-2021
 - **RESOLUTION:** LINK3~LINK1
 - **DEVELOPMENT LANGUAGE:** SQL
 - **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
 
 
 ## Data Sources
-- OBDBS (NEFOP, @NOVA, NEFSC)
+OBDBS (NEFOP, ASM, @NOVA, NEFSC)
 
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1. APSD.OBDBS_CAMS<YYYY> table lineage"}
+```{r table_flow0, eval = F, echo=F, fig.height=3,fig.width=8, fig.cap="Figure 1. cams_obdbs<YYYY> table lineage"}
 DiagrammeR::mermaid(diagram = "
-  graph LR 
-  A((obdbs.obtrp)) --> Z[apsd.obdbs_camsYYYY]
-  B((obdbs.obhau)) --> Z[apsd.obdbs_camsYYYY]
-  C((obdbs.obspp)) --> Z[apsd.obdbs_camsYYYY]
-  D((obdbs.obfishdisp)) --> Z[apsd.obdbs_camsYYYY]
-  E((obdbs.asmtrp)) --> Z[apsd.obdbs_camsYYYY]
-  F((obdbs.asmhau)) --> Z[apsd.obdbs_camsYYYY]
-  G((obdbs.asmspp)) --> Z[apsd.obdbs_camsYYYY]
-  H((obdbs.obfishdisp)) --> Z[apsd.obdbs_camsYYYY]
-  I((obdbs.obspecconv)) --> Z[apsd.obdbs_camsYYYY]
-  J((obdbs.obotgh)) --> Z[apsd.obdbs_camsYYYY]
-  K((obdbs.asmotgh)) --> Z[apsd.obdbs_camsYYYY]
-  L((obdbs.obgggh)) --> Z[apsd.obdbs_camsYYYY]
-  M((obdbs.asmgggh)) --> Z[apsd.obdbs_camsYYYY]
+  graph TD
+  A((obdbs.obtrp)) --> Z[cams_obdbsYYYY]
+  B((obdbs.obhau)) --> Z[cams_obdbsYYYY]
+  C((obdbs.obspp)) --> Z[cams_obdbsYYYY]
+  D((obdbs.obfishdisp)) --> Z[cams_obdbsYYYY]
+  E((obdbs.asmtrp)) --> Z[cams_obdbsYYYY]
+  F((obdbs.asmhau)) --> Z[cams_obdbsYYYY]
+  G((obdbs.asmspp)) --> Z[cams_obdbsYYYY]
+  H((obdbs.obfishdisp)) --> Z[cams_obdbsYYYY]
+  I((obdbs.obspecconv)) --> Z[cams_obdbsYYYY]
+  J((obdbs.obotgh)) --> Z[cams_obdbsYYYY]
+  K((obdbs.asmotgh)) --> Z[cams_obdbsYYYY]
+  L((obdbs.obgggh)) --> Z[cams_obdbsYYYY]
+  M((obdbs.asmgggh)) --> Z[cams_obdbsYYYY]
   
  
   
         ")
 ```
+
+- `obdbs.obtrp`
+- `obdbs.obhau`
+- `obdbs.obspp`
+- `obdbs.obfishdisp`
+- `obdbs.asmtrp`
+- `obdbs.asmhau`
+- `obdbs.asmspp`
+- `obdbs.obfishdisp`
+- `obdbs.obspecconv`
+- `obdbs.obotgh`
+- `obdbs.asmotgh`
+- `obdbs.obgggh`
+- `obdbs.asmgggh`
+
 
 ## Approach
 

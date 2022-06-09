@@ -9,10 +9,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Ben Galuardi" />
 
 
-<title>CAMS: Observer &amp; Catch Table</title>
+<title>CAMS: CAMS_GEARCODE_STRATA</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -3130,125 +3129,35 @@ pre code {
 
 
 
-<h1 class="title toc-ignore">CAMS: Observer &amp; Catch Table</h1>
-<h4 class="author">Ben Galuardi</h4>
+<h1 class="title toc-ignore">CAMS: CAMS_GEARCODE_STRATA</h1>
 
 </div>
 
 
 <div id="summary" class="section level2">
 <h2>Summary</h2>
-<p>This is the main observer and catch matching table used for CAMS
-discard estimation.</p>
+<p>This discard support table translates species VTR gear code to the
+CAMS gear code used for discard stratification based on gear
+stratification used in current stock assessments and quota monitoring.
+Species specific gear stratifications have agreed upon by a discard
+working group.</p>
 </div>
 <div id="description" class="section level2">
 <h2>Description</h2>
 <ul>
-<li><strong>OUTPUT TABLE:</strong> CAMS_GARFO.CAMS_OBS_CATCH</li>
-<li><strong>YEARS:</strong> 2017+</li>
-<li><strong>RESOLUTION:</strong> VTRSERNO (subtrip)~LINK1</li>
-<li><strong>DEVELOPMENT LANGUAGE:</strong> SQL</li>
-<li><strong>CODE:</strong> <a href="https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS" class="uri">https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS</a></li>
-</ul>
-</div>
-<div id="data-sources" class="section level2">
-<h2>Data Sources</h2>
-<ul>
-<li>CAMS_GARFO.CAMS_LANDINGS (GARFO)</li>
-<li>CAMS prorated observer data
-<ul>
-<li>NEFOP (NEFSC)</li>
-<li>ASM (NEFSC)</li>
-</ul></li>
+<li><strong>OUTPUT TABLE:</strong> CAMS_GARFO.CAMS_GEARCODE_STRATA</li>
+<li><strong>YEARS:</strong> N/A</li>
+<li><strong>RESOLUTION:</strong> Gearcode translation from VTR gear code
+to cams_gear_group by species</li>
+<li><strong>DEVELOPMENT LANGUAGE:</strong> N/A</li>
+<li><strong>CODE:</strong> N/A</li>
 </ul>
 <div class="figure">
-<<<<<<< HEAD
-<div id="htmlwidget-972ac5d11c8a364ea7a6" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-972ac5d11c8a364ea7a6">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n        "},"evals":[],"jsHooks":[]}</script>
-=======
-<div id="htmlwidget-4400d80fc32cc4ec1a12" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-4400d80fc32cc4ec1a12">{"x":{"diagram":"\n  graph LR\n  NEFOP --> MAPS.CAMS_OBDBS_YYYY\n  ASM --> MAPS.CAMS_OBDBS_YYYY\n  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_LANDINGS --> MAPS.CAMS_OBS_CATCH\n  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH\n\n        "},"evals":[],"jsHooks":[]}</script>
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
+<div id="htmlwidget-fe42d92d7441be74fc85" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fe42d92d7441be74fc85">{"x":{"diagram":"\n  graph LR\n  MAPS.CAMS_GEARCODE_STRATA --> GF_and_Non_GF_Discard_Modules\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
-Figure 1. APSD.BG_CAMS_OBS_CATCH table lineage
+Figure 1. MAPS.CAMS_GEARCODE_STRATA table lineage
 </p>
-</div>
-</div>
-<div id="approach" class="section level2">
-<h2>Approach</h2>
-<p>The use of a combined catch and observation table allows for a single
-source table to be used in discard estimation. Previous methods took a
-two table approach, where catch information and observer records were
-stratified independently, and then matched to calculate discard (e.g.,
-<span class="math inline">\(D = K*d/k\)</span>). This approach had the
-possibility of mismatches between observed strata and trip strata. In
-reality, this cannot occur. We therefore do trip by trip matching, using
-<code>gear</code>, <code>meshgroup</code>,
-<code>statistical area</code>, and <code>LINK1</code>, to match observer
-recorded species discards with commercial trip activity.</p>
-<p>The primary driver for this approach was to use the trip recorded
-metrics as the stratification source. This reduces the possibility of
-mismatches and removes much of the hard-coding of the past. Upfront
-matching also allows observed discards to easily be used as the official
-discard for a particular trip. Furthermore, we recognize that data
-errors either from the catch, or observer data, will result in a
-non-match. This likely reduces the total pool of observed trips that are
-being used, but we feel the benefits of using this apporach outweigh a
-reduced sample size. Quality control of these data are outside the
-purview of the CAMS project. Last, we only use observed trips
-(<code>LINK1</code>) where valid <code>LINK3</code> (hauls) occurred to
-alleviate issues of multiple <code>LINK1</code> records for a single
-subtrip.</p>
-<p>The matching occurs in a staged manner. All commercial trips with a
-non-null <code>LINK1</code> field get a value for how many unique VTR
-serial numbers are associated with it. The vast majority of observed
-trips have a single VTR, and only require matching by
-<code>LINK1</code>. For multiple VTR trips, a match as described above
-is used (<code>gear</code>, <code>meshgroup</code>,
-<code>statistical area</code>, and <code>LINK1</code>). Further, we only
-match on <code>statistical area</code> when more than one area is
-reported for a trip. This reduces data loss from observer recorded area
-mismatches to VTR recorded area.</p>
-<p><code>meshgroup</code> has been defined several ways depending on the
-data stream. CAMS initiated a subgroup which determined the most
-pragmatic definition for <code>meshgroup</code> based on clustering of
-recorded mesh sizes in both observer and cacth records.</p>
-<p>All nets:</p>
-<ul>
-<li><code>small</code> : &lt; 3.99 (inches)
-<!-- - `medium` :  4-5.74 (inches) --></li>
-<li><code>large</code> : &gt;= 4.00 (inches)</li>
-</ul>
-<p>Gill Nets:</p>
-<ul>
-<li><code>extra large</code> &gt;= 8 (inches)</li>
-</ul>
-<p><code>gear</code> groupings for matching purposes required a mapping
-of NEGEAR codes from observed and commercial trips to VTR
-three-character gear codes (e.g. <code>DRS</code>, <code>PTO</code>,
-etc). The relationship in our database tables (VLGEAR, FVTR_GEAR) are
-many-to-many and do not map easily. Furthermore, there are several
-NEGEAR codes in VTR that do not occur in observer records, and vice
-versa. Therefore, a support table, <code>MAPS.CFG_OBS_VTR_GEARMAP</code>
-was constructed to facilitate gear matching.</p>
-<div id="prorated-discard" class="section level3">
-<h3>Prorated discard</h3>
-<p>Following the standard approach taken for groundfish quota
-monitoring, observed discards on unobserved hauls are prorated within a
-subtrip. This is done by applying a ratio of kept all on the entire trip
-to kept all on the unobserved hauls only:</p>
-<p><span class="math display">\[d_{total} =
-d_{observedhauls}*(1+KALL_{unobserved
-hauls}/KALL_{subtrip})\]</span></p>
-<p>IMPORTANT!: The <code>CAMS_OBS_CATCH</code> table is a hybrid. For
-trips that were not observed, there will be a single row, with all trip
-metrics, and a total <code>KALL</code> per subtrip. When a trip was
-observed, there are multiple rows, where the trip metric information is
-repeated and each row shows species, discarded amount, and other
-observer recorded information for each row. Total <code>KALL</code>
-<strong>CANNOT</strong> be calculated without filtering rows by
-<code>LINK1</code> to indicate an observed trip or not. These steps are
-outlined in subsequent R modules used to run <code>discaRd</code>.</p>
 </div>
 </div>
 <div id="data-dictionary" class="section level2">
@@ -3262,329 +3171,15 @@ COLUMN
 <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
 DESCRIPTION
 </th>
-<<<<<<< HEAD
-=======
-<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
-DATA TYPE
-</th>
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:left;">
-ACCESSAREA
+COMMON_NAME
 </td>
 <td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Scallop Access Area, only relevant for scallop trips
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-ACTIVITY_CODE_1
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AREA
-</td>
-<td style="text-align:left;">
-NA
-=======
-VMS declaration
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<<<<<<< HEAD
-CAMSID
-</td>
-<td style="text-align:left;">
-NA
-=======
-AREA
-</td>
-<td style="text-align:left;">
-The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
-code. Unknown = 000. For CAMS data, refer to AREA_SOURCE and
-AREA_IMP_METHOD for metadata about AREA.
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<<<<<<< HEAD
-CAMS_SUBTRIP
-</td>
-<td style="text-align:left;">
-NA
-=======
-CAMSID
-</td>
-<td style="text-align:left;">
-Unique trip identification code within CAMS
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<<<<<<< HEAD
-CLOSED_AREA_EXEMPTION
-</td>
-<td style="text-align:left;">
-NA
-=======
-CAMS_SUBTRIP
-</td>
-<td style="text-align:left;">
-Catenation of CAMSID and SUBTRIP in CAMS_LANDINGS
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<<<<<<< HEAD
-DISCARD
-</td>
-<td style="text-align:left;">
-NA
-=======
-CLOSED_AREA_EXEMPTION
-</td>
-<td style="text-align:left;">
-Groundfish specific stratification
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<<<<<<< HEAD
-DISCARD_PRORATE
-</td>
-<td style="text-align:left;">
-NA
-=======
-DISCARD
-</td>
-<td style="text-align:left;">
-Species discard as recorded on the subtrip
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<<<<<<< HEAD
-DATE_TRIP
-</td>
-<td style="text-align:left;">
-NA
-=======
-DISCARD_PRORATE
-</td>
-<td style="text-align:left;">
-Species discard as prorated by KALL on unobserved hauls
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-DOCID
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<<<<<<< HEAD
-=======
-<td style="text-align:left;">
-VARCHAR2
-</td>
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</tr>
-<tr>
-<td style="text-align:left;">
-EM
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-EM program, groundfish trips only
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-GEARTYPE
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Gear description
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-GF
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Indicator of whether the trip was classified as groundfish or not. 1 =
-groundfish trip. 0 = non-groundfish trip.
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-HALFOFYEAR
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-1 (Jan - June) or 2 (July-Dec)
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-ITIS_TSN
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Integrated Taxonomic Information System (ITIS) - Taxonomic Species
-Number (TSN). NULL for No-Catch records.
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-LINK1
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Observer LINK1 if trip was obsevered
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-LINK3
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Observer recorded haul
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-MESHGROUP
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-CAMS meshgroup: sm, lg, xlg, na
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-MONTH
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-The numeric month (1-12) of the vessel landing or negative dealer
-report.
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-NEGEAR
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Northeast Gear code. Unknown = 000. Refer to GEAR_SOURCE for metadata
-about gear in final tables.
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
+Species common name
 </td>
 </tr>
 <tr>
@@ -3592,366 +3187,33 @@ VARCHAR2
 NESPP3
 </td>
 <td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
 The Northeast Species code, without the market category, i.e. the first
 3 digits of NESPP4. Legacy code. For 2020+ use ITIS_TSN.
 </td>
+</tr>
+<tr>
 <td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
+SPECIES_ITIS
+</td>
+<td style="text-align:left;">
+Itis code for species. equivalent to ITIS_TSN
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-NVTR_LINK1
+CAMS_GEAR_GROUP
 </td>
 <td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Number of VTRs per observed trip (Link1)
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
+CAMS gear group used for discard stratification. Species and stock
+specific
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-OBSRFLAG
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Flag for whether the haul was observed
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBSVTR
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Observer recorded VTR serial number
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_AREA
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
-code reported by the observer. Unknown = 000.
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_GEAR
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Observer recorded gear (NEGEAR)
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_HAUL_KALL_TRIP
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Kept all pounds recorded by observer on observed hauls. This is the
-value used in d/k calculations
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_HAUL_KEPT
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-equivalent field in OBDBS
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_NOHAUL_KALL_TRIP
+VTR_GEAR_CODE
 </td>
 <td style="text-align:left;">
 NA
-</td>
-<<<<<<< HEAD
-=======
-<td style="text-align:left;">
-NUMBER
-</td>
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_KALL
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Total Kept pounds on an obserevd trip as recorded by observer. This
-included both observed and unobserved hauls
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_LINK1
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Obsever recorded LINK1
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_MESH
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-equivalent field in OBDBS
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-OBS_MESHGROUP
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-equivalent field in OBDBS
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-PERMIT
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Vessel permit number assigned by the Northeast Regional Offices Vessel
-Permit System (VPS). 000000=no permit or no vessel, check hull number;
-190998=Unknown undertonnage vessel; 390998=Unknown tonnage vessel.
-490998=Unknown
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-PRORATE
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-ratio of total kept_all / observed kept all
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-REDFISH_EXEMPTION
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Exemption fishing under
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SECGEAR_MAPPED
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Gearmapping used for matching VTR subtrip to LINK3
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SECTID
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Groundfish Sector ID number
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SNE_SMALLMESH_EXEMPTION
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Exemption fishing under
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SUBTRIP_KALL
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Kept all of subtrip from CAMS_LANDINGS
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-TRIPCATEGORY
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Scallop fleet designation, if applicable
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-VTRSERNO
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-A unique serial number used to identify a vessel trip report. NULL =
-Unknown
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-XLRG_GILLNET_EXEMPTION
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-Exemption fishing under
-</td>
-<td style="text-align:left;">
-VARCHAR2
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-YEAR
-</td>
-<td style="text-align:left;">
-<<<<<<< HEAD
-NA
-=======
-The year in which the landings or negative report occurred.
-</td>
-<td style="text-align:left;">
-NUMBER
->>>>>>> de680e852fafb9882a43d0df51275de0d8a02e3d
 </td>
 </tr>
 </tbody>
