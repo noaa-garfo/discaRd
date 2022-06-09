@@ -155,6 +155,7 @@ group by link3
         , d.camsid
         , d.year
         , d.month
+        , d.date_trip
 --        , case when d.carea < 600 then 'N'
 --               else 'S' end as region
         , case when d.month in (1,2,3,4,5,6) then 1
@@ -214,6 +215,7 @@ group by link3
         d.permit
         , d.year
         , d.month
+        , d.date_trip
 --        , case when d.carea < 600 then 'N'
 --               else 'S' end 
         , case when d.month in (1,2,3,4,5,6) then 1
@@ -433,6 +435,7 @@ select ACCESSAREA
 ,CLOSED_AREA_EXEMPTION
 , case when n_subtrips_link3 > 1 THEN DISCARD/n_subtrips_link3 ELSE DISCARD end as DISCARD
 , case when n_subtrips_link3 > 1 THEN DISCARD_PRORATE/n_subtrips_link3 ELSE DISCARD_PRORATE end as DISCARD_PRORATE
+,DATE_TRIP
 ,DOCID
 ,EM
 ,GEARTYPE
