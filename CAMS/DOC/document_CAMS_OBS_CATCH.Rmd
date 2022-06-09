@@ -6,21 +6,53 @@ output:
   github_document:
   pdf_document: default
 always_allow_html: true
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, 
 											message=FALSE, cache=FALSE,
 											progress = TRUE, verbose = FALSE)
+
+
+library(tidyverse)
+library(odbc)
+library(ROracle)
+library(dplyr, warn.conflicts = FALSE)
+
+
+ dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+# 
+ # bcon <- dbConnect(odbc::odbc(), 
+ # 									DSN = dw_maps$dsn, 
+ # 									UID = dw_maps$uid, 
+ # 									PWD = dw_maps$pwd)
+
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+    sep = ""
+  )
+
+# Connect to oracle each loop in case of timeouts
+    bcon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
+      dbname = connectString
+    )
 ```
 
 ## Summary
-
+This is the main observer and catch matching table used for CAMS discard estimation. 
 
 ## Description
 
 - **OUTPUT TABLE:** CAMS_GARFO.CAMS_OBS_CATCH
-- **YEARS:** 2017-2020
+- **YEARS:** 2017+
 - **RESOLUTION:** VTRSERNO (subtrip)~LINK1
 - **DEVELOPMENT LANGUAGE:** SQL
 - **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
@@ -38,9 +70,8 @@ DiagrammeR::mermaid("
   NEFOP --> MAPS.CAMS_OBDBS_YYYY
   ASM --> MAPS.CAMS_OBDBS_YYYY
   MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH
-  MAPS.CAMS_CATCH --> MAPS.CAMS_OBS_CATCH
+  MAPS.CAMS_LANDINGS --> MAPS.CAMS_OBS_CATCH
   MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH
-
         ")
 ```
 
@@ -78,13 +109,71 @@ IMPORTANT!: The `CAMS_OBS_CATCH` table is a hybrid. For trips that were not obse
 ## Data Dictionary
 
 ```{r echo = F}
+<<<<<<< HEAD
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_OBS_CATCH'")
+
+comments %>%
+dplyr::select(
+COLUMN = COLUMN_NAME,
+DESCRIPTION = COMMENTS) %>%
+knitr::kable(booktabs = TRUE) %>%
+kableExtra::kable_styling(bootstrap_options = c("striped", 
+"hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
+font_size = 10)
+=======
 
 library(readxl)
 library(knitr)
+library(ROracle)
+library(dplyr)
 
-dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx', sheet = 'obs_catch')
+# local run
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
-kable(dat)
+# if on server..
+dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+
+# bcon <- dbConnect(odbc::odbc(),
+# 									DSN = dw_apsd$dsn,
+# 									UID = dw_apsd$uid,
+# 									PWD = dw_apsd$pwd)
+
+
+bcon <- ROracle::dbConnect(
+    drv = ROracle::Oracle(),
+    username = dw_apsd$uid,
+    password = dw_apsd$pwd,  
+    dbname = "NERO.world"
+)
+
+# dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx', sheet = 'obs_catch')
+# 
+# kable(dat)
+
+cflen_comments <- ROracle::dbGetQuery(bcon, "
+SELECT a.COLUMN_NAME, a.COMMENTS, b.data_type 
+FROM all_col_comments a,  all_tab_cols b
+WHERE a.owner = 'MAPS' 
+AND a.table_name = 'CAMS_OBS_CATCH'
+AND a.COLUMN_NAME = b.COLUMN_NAME
+AND b.table_name = 'CAMS_OBS_CATCH'
+"
+																			)
+cflen_comments %>%
+	dplyr::select(
+		COLUMN = COLUMN_NAME,
+		DESCRIPTION = COMMENTS
+		, `DATA TYPE` = DATA_TYPE
+	) %>%
+	knitr::kable(booktabs = TRUE) %>%
+	kableExtra::kable_styling(bootstrap_options = c("striped", 
+																									"hover", 
+																									"condensed", 
+																									"responsive"),
+														full_width = FALSE,
+														position = "left",
+														fixed_thead = TRUE,
+														font_size = 10)
 
 ```
 

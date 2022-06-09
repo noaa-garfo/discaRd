@@ -911,8 +911,8 @@ joined_table %>%
 
 dbWriteTable(bcon, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_discard_example, overwrite = T)
 
-cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
-		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
+cy_discard_example %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
+		DT::datatable(caption = 'Discard rates by Strata for Atlantic Herring')
 
 
 # save trip by trip info to RDS 

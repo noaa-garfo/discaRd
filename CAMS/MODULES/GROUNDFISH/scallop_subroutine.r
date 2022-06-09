@@ -1,3 +1,10 @@
+# script to estimate yellowtail and windowpane discards on scallop trips
+# Ben Galuardi
+# 6/6/22 (or earlier..)
+#
+# called from groundfish discard module when species_itis = yellowtail/windowpane
+
+
 # {r estimate discards on scallop trips for each subACL stock, purl = T, eval = T}
 scal_trips = non_gf_dat %>% 
 	filter(substr(ACTIVITY_CODE_1,1,3) == 'SES') 

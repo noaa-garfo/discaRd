@@ -84,7 +84,7 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```{r define fishing year and species, eval = T}
 
-FY <- 2020
+FY <- 2021
 
 FY_TYPE = 'MAY START'
 
@@ -906,7 +906,7 @@ cy_discard_example$CAMS_DISCARD_RATE[is.nan(cy_discard_example$CAMS_DISCARD_RATE
  species$COMMON_NAME[i]
 #db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_DOGFISH_20', value = cy_discard_example, overwrite = T)
+dbWriteTable(bcon, name = 'CAMS_DISCARD_MONKFISH_20', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')

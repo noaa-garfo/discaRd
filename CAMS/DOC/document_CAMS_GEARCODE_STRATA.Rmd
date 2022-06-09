@@ -1,6 +1,6 @@
 ---
-title: "CAMS: CAMS_DISCARD_MORTALITY_STOCK"
-#author: "K. Winiarski"
+title: "CAMS: CAMS_GEARCODE_STRATA"
+#author: "Ben Galuardi"
 output:
   html_document: default
   github_document:
@@ -9,10 +9,7 @@ always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, 
-											message=FALSE, cache=FALSE,
-											progress = TRUE, verbose = FALSE)
-
+knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(odbc)
@@ -42,31 +39,33 @@ library(dplyr, warn.conflicts = FALSE)
       password = dw_maps$pwd,
       dbname = connectString
     )
+
 ```
 
 
 ## Summary
-Mortality rates by area and gear from this discard estimation support table are based on values used in current stock assessments and quota monitoring.  Discard mortality rates have been agreed upon by a CAMS discard working group.
+This discard support table translates species VTR gear code to the CAMS gear code used for discard stratification based on gear stratification used in current stock assessments and quota monitoring.  Species specific gear stratifications have been agreed upon by a discards working group.
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK
+- **OUTPUT TABLE:** CAMS_GARFO.CAMS_GEARCODE_STRATA
 - **YEARS:** N/A
-- **RESOLUTION:** Discard mortality rates by area and gear.
+- **RESOLUTION:** Gearcode translation from VTR gear code to cams_gear_group by species
 - **DEVELOPMENT LANGUAGE:** N/A
 - **CODE:** N/A
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_DISCARD_MORTALITY_STOCK table lineage"}
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_GEARCODE_STRATA table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF_and_Non_GF_Discard_Modules
+  MAPS.CAMS_GEARCODE_STRATA --> GF_and_Non_GF_Discard_Modules
         ")
 ```
 
 ## Data Dictionary
 
 ```{r echo = F}
-comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_DISCARD_MORTALITY_STOCK'")
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_GEARCODE_STRATA'")
 
 comments %>%
 dplyr::select(
