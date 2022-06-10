@@ -48,7 +48,7 @@ This table contains VTR discard estimates, EM discard estimates for EM reviewed 
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.GF_EM_DELTA_VTR_DISCARD
+- **OUTPUT TABLE:** GF_EM_DELTA_VTR_DISCARD
 - **YEARS:** 2021+
 - **RESOLUTION:** Species discard estimate by VTRSERNO (subtrip)
 - **DEVELOPMENT LANGUAGE:** R
@@ -62,14 +62,14 @@ nemis.NEMIS_CATCH_MV@nova
 noaa.document 
 noaa.images 
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.GF_EM_DELTA_VTR_DISCARD table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   GF_EM_DELTA_VTR_DISCARD table lineage"}
 DiagrammeR::mermaid("
   graph LR
-nemis.NEMIS_TRIP_MV --> MAPS.GF_EM_DELTA_VTR_DISCARD
-nemis.NEMIS_HAUL_MV --> MAPS.GF_EM_DELTA_VTR_DISCARD
-nemis.NEMIS_CATCH_MV --> MAPS.GF_EM_DELTA_VTR_DISCARD
-noaa.document --> MAPS.GF_EM_DELTA_VTR_DISCARD
-noaa.images --> MAPS.GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_TRIP_MV --> GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_HAUL_MV --> GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_CATCH_MV --> GF_EM_DELTA_VTR_DISCARD
+noaa.document --> GF_EM_DELTA_VTR_DISCARD
+noaa.images --> GF_EM_DELTA_VTR_DISCARD
         ")
 ```
 
@@ -81,7 +81,6 @@ Delta model:
  EM_DISCARD ~ LOG_EVTR_DISCARD + (1+LOG_EVTR_DISCARD|SPECIES_ID) + (1+LOG_EVTR_DISCARD | PERMIT)
 
 
- 
 ## Data Dictionary
 
 ```{r echo = F}

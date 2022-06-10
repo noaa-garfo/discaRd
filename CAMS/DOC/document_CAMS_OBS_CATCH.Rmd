@@ -51,7 +51,7 @@ This is the main observer and catch matching table used for CAMS discard estimat
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_OBS_CATCH
+- **OUTPUT TABLE:** CAMS_OBS_CATCH
 - **YEARS:** 2017+
 - **RESOLUTION:** VTRSERNO (subtrip)~LINK1
 - **DEVELOPMENT LANGUAGE:** SQL
@@ -59,19 +59,19 @@ This is the main observer and catch matching table used for CAMS discard estimat
 
 
 ## Data Sources
-- CAMS_GARFO.CAMS_LANDINGS (GARFO)
+- CAMS_LANDINGS (GARFO)
 - CAMS prorated observer data
 	+ NEFOP (NEFSC)
 	+ ASM (NEFSC)
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   APSD.BG_CAMS_OBS_CATCH table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_OBS_CATCH table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  NEFOP --> MAPS.CAMS_OBDBS_YYYY
-  ASM --> MAPS.CAMS_OBDBS_YYYY
-  MAPS.SECGEAR_MAPPED --> MAPS.CAMS_OBS_CATCH
-  MAPS.CAMS_LANDINGS --> MAPS.CAMS_OBS_CATCH
-  MAPS.CAMS_OBDBS_YYYY --> MAPS.CAMS_OBS_CATCH
+  NEFOP --> CAMS_OBDBS_YYYY
+  ASM --> CAMS_OBDBS_YYYY
+  SECGEAR_MAPPED --> CAMS_OBS_CATCH
+  CAMS_LANDINGS --> CAMS_OBS_CATCH
+  CAMS_OBDBS_YYYY --> CAMS_OBS_CATCH
         ")
 ```
 
@@ -109,7 +109,7 @@ IMPORTANT!: The `CAMS_OBS_CATCH` table is a hybrid. For trips that were not obse
 ## Data Dictionary
 
 ```{r echo = F}
-<<<<<<< HEAD
+
 comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_OBS_CATCH'")
 
 comments %>%
@@ -120,60 +120,4 @@ knitr::kable(booktabs = TRUE) %>%
 kableExtra::kable_styling(bootstrap_options = c("striped", 
 "hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
 font_size = 10)
-=======
-
-library(readxl)
-library(knitr)
-library(ROracle)
-library(dplyr)
-
-# local run
-# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
-
-# if on server..
-dw_apsd <- config::get(value = "maps", file = "~/config.yml")
-
-# bcon <- dbConnect(odbc::odbc(),
-# 									DSN = dw_apsd$dsn,
-# 									UID = dw_apsd$uid,
-# 									PWD = dw_apsd$pwd)
-
-
-bcon <- ROracle::dbConnect(
-    drv = ROracle::Oracle(),
-    username = dw_apsd$uid,
-    password = dw_apsd$pwd,  
-    dbname = "NERO.world"
-)
-
-# dat = readxl::read_xlsx('bg_obs_catch_columns.xlsx', sheet = 'obs_catch')
-# 
-# kable(dat)
-
-cflen_comments <- ROracle::dbGetQuery(bcon, "
-SELECT a.COLUMN_NAME, a.COMMENTS, b.data_type 
-FROM all_col_comments a,  all_tab_cols b
-WHERE a.owner = 'MAPS' 
-AND a.table_name = 'CAMS_OBS_CATCH'
-AND a.COLUMN_NAME = b.COLUMN_NAME
-AND b.table_name = 'CAMS_OBS_CATCH'
-"
-																			)
-cflen_comments %>%
-	dplyr::select(
-		COLUMN = COLUMN_NAME,
-		DESCRIPTION = COMMENTS
-		, `DATA TYPE` = DATA_TYPE
-	) %>%
-	knitr::kable(booktabs = TRUE) %>%
-	kableExtra::kable_styling(bootstrap_options = c("striped", 
-																									"hover", 
-																									"condensed", 
-																									"responsive"),
-														full_width = FALSE,
-														position = "left",
-														fixed_thead = TRUE,
-														font_size = 10)
-
 ```
-

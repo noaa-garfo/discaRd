@@ -48,7 +48,7 @@ This table provides discard estimates by subtrip for both GF and non GF species.
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS
+- **OUTPUT TABLE:** CAMS_DISCARDS_ALL_YEARS
 - **YEARS:** 200X+
 - **RESOLUTION:** Species discard estimate by VTRSERNO (subtrip)
 - **DEVELOPMENT LANGUAGE:** N/A
@@ -56,24 +56,24 @@ This table provides discard estimates by subtrip for both GF and non GF species.
 
 
 ## Data Sources
-MAPS.CAMS_OBS_CATCH
-MAPS.GF_EM_DISCARDS_ARCH
-MAPS.GF_EM_DELTA_VTR_DISCARDS
-MAPS.CAMS_DISCARD_MORTALITY_STOCK
-MAPS.CAMS_OBS_CATCH
-MAPS.CAMS_GEARCODE_STRATA
-MAPS.CAMS_STATAREA_STOCK
+CAMS_OBS_CATCH
+GF_EM_DISCARDS_ARCH
+GF_EM_DELTA_VTR_DISCARDS
+CAMS_DISCARD_MORTALITY_STOCK
+CAMS_OBS_CATCH
+CAMS_GEARCODE_STRATA
+CAMS_STATAREA_STOCK
 
-```{r table_flow_1, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage for GF species"}
+```{r table_flow_1, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_DISCARD_ALL_YEARS table lineage for GF species"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_OBS_CATCH --> GF_Discard_Module
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF_Discard_Module
-  MAPS.CAMS_GEARCODE_STRATA --> GF_Discard_Module
-  MAPS.CAMS_STATAREA_STOCK --> GF_Discard_Module
-  MAPS.CAMS_GF_EM_DISCARDS_ARCH --> GF_Discard_Module
-  MAPS.CAMS_GF_EM_DELTA_VTR_DISCARDS --> GF_Discard_Module
-  GF_Discard_Module --> CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS
+  CAMS_OBS_CATCH --> GF_Discard_Module
+  CAMS_DISCARD_MORTALITY_STOCK --> GF_Discard_Module
+  CAMS_GEARCODE_STRATA --> GF_Discard_Module
+  CAMS_STATAREA_STOCK --> GF_Discard_Module
+  CAMS_GF_EM_DISCARDS_ARCH --> GF_Discard_Module
+  CAMS_GF_EM_DELTA_VTR_DISCARDS --> GF_Discard_Module
+  GF_Discard_Module --> CAMS_DISCARDS_ALL_YEARS
         ")
 ```
 ## Approach
@@ -92,18 +92,17 @@ stratvars = c( 'SPECIES_STOCK'
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               , 'SECTID'
-              , 'EM'  # previously was four columns of EFP information.. 
+              , 'EM'
               , "REDFISH_EXEMPTION"
               , "SNE_SMALLMESH_EXEMPTION"
-              , "XLRG_GILLNET_EXEMPTION"
-              )
+              , "XLRG_GILLNET_EXEMPTION")
 ```
 By Species:
-	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
-	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+	- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+	- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
-	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
-	- EFP and Exemptions are built in to `CAMS_LANDINGS`, the precurdor for `CAMS_OBS_CATCH`
+	- SECTID comes from a CAMS matching table (`MATCH_MULT_SECTID`)
+	- EFP and Exemptions are built in to `CAMS_LANDINGS`, the precursor for `CAMS_OBS_CATCH`
 	
 4. Perform *first pass* of `discaRd`
 	- there are two sub-passes for year t and year t-1
@@ -115,10 +114,9 @@ By Species:
 # Assumed Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP'
-              , 'MESHGROUP'
-							, 'SECTOR_TYPE'
-              ) 
+              ,'CAMS_GEAR_GROUP'
+              ,'MESHGROUP'
+							,'SECTOR_TYPE') 
 ```	
 
 6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
@@ -144,7 +142,6 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
 ```
 
 ### Steps for estimation of groundfish discard on non-Groundfish Trips
@@ -165,8 +162,8 @@ stratvars = c('SPECIES_STOCK'
 						  , 'ACCESSAREA')
 ```
 
-	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
-	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+	- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+	- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
 	- ACCESS AREA is specific to scallop trips and indicates Scallop Access Area
@@ -181,7 +178,7 @@ stratvars = c('SPECIES_STOCK'
 # Second Pass Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP',
+              ,'CAMS_GEAR_GROUP'
               ,'MESHGROUP')
 
 ```	
@@ -192,7 +189,7 @@ stratvars = c('SPECIES_STOCK'
 # Third PAss Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP')
+              ,'CAMS_GEAR_GROUP')
 
 ```	
 
@@ -202,7 +199,7 @@ stratvars = c('SPECIES_STOCK'
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
  - (GM) Broad stock/gear/mesh size rate. This is the rate when there were <5 trips in season and <5 in previous season.
- - (G) Broad stock/gear rate. <5 trips in season and <5 trips in previous season 
+ - (G) Broad stock/gear rate. <5 trips in season and <5 trips in previous season
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
@@ -215,17 +212,16 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-	# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (GM) and (G) rates 
 ```
 
-```{r table_flow_2, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 2.   CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage"}
+```{r table_flow_2, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 2.   CAMS_DISCARD_ALL_YEARS table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_OBS_CATCH --> Non_GF_Discard_Module
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> Non_GF_Discard_Module
-  MAPS.CAMS_GEARCODE_STRATA --> Non_GF_Discard_Module
-  MAPS.CAMS_STATAREA_STOCK --> Non_GF_Discard_Module
-  Non_GF_Discard_Module --> CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS
+  CAMS_OBS_CATCH --> Non_GF_Discard_Module
+  CAMS_DISCARD_MORTALITY_STOCK --> Non_GF_Discard_Module
+  CAMS_GEARCODE_STRATA --> Non_GF_Discard_Module
+  CAMS_STATAREA_STOCK --> Non_GF_Discard_Module
+  Non_GF_Discard_Module --> CAMS_DISCARDS_ALL_YEARS
         ")
 ```
 
@@ -246,10 +242,10 @@ stratvars = c('SPECIES_STOCK'
 						  , 'ACCESSAREA')
 ```
 By Species:
-	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
-	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+	- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+	- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
-	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
+	- SECTID comes from a CAMS matching table (`MATCH_MULT_SECTID`)
 
 3. Run `discaRd`
 	- there are sub-passes for year t and year t-1
@@ -258,7 +254,7 @@ By Species:
 # Assumed Stratification variables
 
 stratvars = c('SPECIES_STOCK'
-              , 'CAMS_GEAR_GROUP',
+              , 'CAMS_GEAR_GROUP'
               ,'MESHGROUP')
 
 ```	
@@ -286,7 +282,6 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (G) rates 	 
 ```
 
 
