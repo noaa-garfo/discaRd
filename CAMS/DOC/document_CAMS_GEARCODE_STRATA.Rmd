@@ -48,17 +48,17 @@ This discard support table translates species VTR gear code to the CAMS gear cod
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_GEARCODE_STRATA
+- **OUTPUT TABLE:** CAMS_GEARCODE_STRATA
 - **YEARS:** N/A
 - **RESOLUTION:** Gearcode translation from VTR gear code to cams_gear_group by species
 - **DEVELOPMENT LANGUAGE:** N/A
 - **CODE:** N/A
 
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_GEARCODE_STRATA table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_GEARCODE_STRATA table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_GEARCODE_STRATA --> GF_and_Non_GF_Discard_Modules
+  CAMS_GEARCODE_STRATA --> GF_and_Non_GF_Discard_Modules
         ")
 ```
 
