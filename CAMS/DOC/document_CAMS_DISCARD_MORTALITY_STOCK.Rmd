@@ -50,16 +50,16 @@ Mortality rates by area and gear from this discard estimation support table are 
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_DISCARD_MORTALITY_STOCK
+- **OUTPUT TABLE:** CAMS_DISCARD_MORTALITY_STOCK
 - **YEARS:** N/A
 - **RESOLUTION:** Discard mortality rates by area and gear.
 - **DEVELOPMENT LANGUAGE:** N/A
 - **CODE:** N/A
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_DISCARD_MORTALITY_STOCK table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_DISCARD_MORTALITY_STOCK table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF_and_Non_GF_Discard_Modules
+  CAMS_DISCARD_MORTALITY_STOCK --> GF_and_Non_GF_Discard_Modules
         ")
 ```
 

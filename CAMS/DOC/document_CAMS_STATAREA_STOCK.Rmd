@@ -49,16 +49,16 @@ This discard support table translates species stat areas to species stock areas 
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.CAMS_STATAREA_STOCK
+- **OUTPUT TABLE:** CAMS_STATAREA_STOCK
 - **YEARS:** N/A
 - **RESOLUTION:** N/A
 - **DEVELOPMENT LANGUAGE:** N/A
 - **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MAPS.CAMS_STATAREA_STOCK table lineage"}
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_STATAREA_STOCK table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  MAPS.CAMS_STATAREA_STOCK --> GF_and_Non_GF_Discard_Modules
+  CAMS_STATAREA_STOCK --> GF_and_Non_GF_Discard_Modules
         ")
 ```
 
