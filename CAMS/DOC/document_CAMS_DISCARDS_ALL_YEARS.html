@@ -3143,8 +3143,7 @@ available in the R package discaRd.</p>
 <div id="description" class="section level2">
 <h2>Description</h2>
 <ul>
-<li><strong>OUTPUT TABLE:</strong>
-CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS</li>
+<li><strong>OUTPUT TABLE:</strong> CAMS_DISCARDS_ALL_YEARS</li>
 <li><strong>YEARS:</strong> 200X+</li>
 <li><strong>RESOLUTION:</strong> Species discard estimate by VTRSERNO
 (subtrip)</li>
@@ -3154,15 +3153,14 @@ CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS</li>
 </div>
 <div id="data-sources" class="section level2">
 <h2>Data Sources</h2>
-<p>MAPS.CAMS_OBS_CATCH MAPS.GF_EM_DISCARDS_ARCH
-MAPS.GF_EM_DELTA_VTR_DISCARDS MAPS.CAMS_DISCARD_MORTALITY_STOCK
-MAPS.CAMS_OBS_CATCH MAPS.CAMS_GEARCODE_STRATA
-MAPS.CAMS_STATAREA_STOCK</p>
+<p>CAMS_OBS_CATCH GF_EM_DISCARDS_ARCH GF_EM_DELTA_VTR_DISCARDS
+CAMS_DISCARD_MORTALITY_STOCK CAMS_OBS_CATCH CAMS_GEARCODE_STRATA
+CAMS_STATAREA_STOCK</p>
 <div class="figure">
-<div id="htmlwidget-30d8e52d00873c2d3c99" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-30d8e52d00873c2d3c99">{"x":{"diagram":"\n  graph LR\n  MAPS.CAMS_OBS_CATCH --> GF_Discard_Module\n  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> GF_Discard_Module\n  MAPS.CAMS_GEARCODE_STRATA --> GF_Discard_Module\n  MAPS.CAMS_STATAREA_STOCK --> GF_Discard_Module\n  MAPS.CAMS_GF_EM_DISCARDS_ARCH --> GF_Discard_Module\n  MAPS.CAMS_GF_EM_DELTA_VTR_DISCARDS --> GF_Discard_Module\n  GF_Discard_Module --> CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-b1f0b044552f616d1bf4" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-b1f0b044552f616d1bf4">{"x":{"diagram":"\n  graph LR\n  CAMS_OBS_CATCH --> GF_Discard_Module\n  CAMS_DISCARD_MORTALITY_STOCK --> GF_Discard_Module\n  CAMS_GEARCODE_STRATA --> GF_Discard_Module\n  CAMS_STATAREA_STOCK --> GF_Discard_Module\n  CAMS_GF_EM_DISCARDS_ARCH --> GF_Discard_Module\n  CAMS_GF_EM_DELTA_VTR_DISCARDS --> GF_Discard_Module\n  GF_Discard_Module --> CAMS_DISCARDS_ALL_YEARS\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
-Figure 1. CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage for GF species
+Figure 1. CAMS_DISCARD_ALL_YEARS table lineage for GF species
 </p>
 </div>
 </div>
@@ -3181,18 +3179,17 @@ stratvars = c( &#39;SPECIES_STOCK&#39;
               , &#39;CAMS_GEAR_GROUP&#39;
               , &#39;MESHGROUP&#39;
               , &#39;SECTID&#39;
-              , &#39;EM&#39;  # previously was four columns of EFP information.. 
+              , &#39;EM&#39;
               , &quot;REDFISH_EXEMPTION&quot;
               , &quot;SNE_SMALLMESH_EXEMPTION&quot;
-              , &quot;XLRG_GILLNET_EXEMPTION&quot;
-              )</code></pre>
+              , &quot;XLRG_GILLNET_EXEMPTION&quot;)</code></pre>
 <p>By Species: - SPECIES_STOCK is taken from CAMS support table
-<code>MAPS.CAMS_STATAREA_STOCK</code> - CAMS_GEAR_GROUP is derived from
-a support table (<code>MAPS.CAMS_GEARCODE_STRATA</code>) - MESHGROUP is
+<code>CAMS_STATAREA_STOCK</code> - CAMS_GEAR_GROUP is derived from a
+support table (<code>CAMS_GEARCODE_STRATA</code>) - MESHGROUP is
 hardcoded for all trips according to decisions made by the mesh subgroup
 (see summary when available) - SECTID comes from a CAMS matching table
-(<code>MAPS.MATCH_MULT_SECTID</code>) - EFP and Exemptions are built in
-to <code>CAMS_LANDINGS</code>, the precurdor for
+(<code>MATCH_MULT_SECTID</code>) - EFP and Exemptions are built in to
+<code>CAMS_LANDINGS</code>, the precursor for
 <code>CAMS_OBS_CATCH</code></p>
 <ol start="4" style="list-style-type: decimal">
 <li>Perform <em>first pass</em> of <code>discaRd</code>
@@ -3209,10 +3206,9 @@ rates rolled up for all Sectors
 <pre class="r"><code># Assumed Stratification variables
 
 stratvars = c(&#39;SPECIES_STOCK&#39;
-              , &#39;CAMS_GEAR_GROUP&#39;
-              , &#39;MESHGROUP&#39;
-                            , &#39;SECTOR_TYPE&#39;
-              ) </code></pre>
+              ,&#39;CAMS_GEAR_GROUP&#39;
+              ,&#39;MESHGROUP&#39;
+                            ,&#39;SECTOR_TYPE&#39;) </code></pre>
 <ol start="6" style="list-style-type: decimal">
 <li><p>The discaRd functions allow for an assumed rate to be calculated.
 This assumed rate is relative to the stratification used in the
@@ -3259,9 +3255,7 @@ estimated.</p></li>
 </ol>
 <pre class="r"><code>    mutate(coalesce(DISC_MORT_RATIO, 1)) %&gt;%
     mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
-                                                         , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
-                 
-            # COAL_RATE is the final discard rate used. It is &#39;coalesced&#39; from the (I), (A) and (B) rates    </code></pre>
+                                                         , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)</code></pre>
 <div id="steps-for-estimation-of-groundfish-discard-on-non-groundfish-trips" class="section level3">
 <h3>Steps for estimation of groundfish discard on non-Groundfish
 Trips</h3>
@@ -3277,8 +3271,8 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
                             , &#39;MESHGROUP&#39;
                           , &#39;TRIPCATEGORY&#39;
                           , &#39;ACCESSAREA&#39;)</code></pre>
-<pre><code>- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
-- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
+<pre><code>- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 - MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 - TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
 - ACCESS AREA is specific to scallop trips and indicates Scallop Access Area</code></pre>
@@ -3293,7 +3287,7 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
 <pre class="r"><code># Second Pass Stratification variables
 
 stratvars = c(&#39;SPECIES_STOCK&#39;
-              , &#39;CAMS_GEAR_GROUP&#39;,
+              ,&#39;CAMS_GEAR_GROUP&#39;
               ,&#39;MESHGROUP&#39;)</code></pre>
 <ol start="6" style="list-style-type: decimal">
 <li>Run a third pass using Stock and Gear only</li>
@@ -3301,7 +3295,7 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
 <pre class="r"><code># Third PAss Stratification variables
 
 stratvars = c(&#39;SPECIES_STOCK&#39;
-              , &#39;CAMS_GEAR_GROUP&#39;)</code></pre>
+              ,&#39;CAMS_GEAR_GROUP&#39;)</code></pre>
 <ol start="7" style="list-style-type: decimal">
 <li><p>Trips/Gear strata that are unobserved after these steps are not
 assigned rates as no observer coverage exists for these gear types
@@ -3339,14 +3333,12 @@ USED.</li>
 </ol>
 <pre class="r"><code>    mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %&gt;%
     mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
-                                                         , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
-                 
-    # COAL_RATE is the final discard rate used. It is &#39;coalesced&#39; from the (I), (GM) and (G) rates </code></pre>
+                                                         , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)</code></pre>
 <div class="figure">
-<div id="htmlwidget-28f8caf366ae68b578f6" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-28f8caf366ae68b578f6">{"x":{"diagram":"\n  graph LR\n  MAPS.CAMS_OBS_CATCH --> Non_GF_Discard_Module\n  MAPS.CAMS_DISCARD_MORTALITY_STOCK --> Non_GF_Discard_Module\n  MAPS.CAMS_GEARCODE_STRATA --> Non_GF_Discard_Module\n  MAPS.CAMS_STATAREA_STOCK --> Non_GF_Discard_Module\n  Non_GF_Discard_Module --> CAMS_GARFO.CAMS_DISCARDS_ALL_YEARS\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-6f91d21076be683695d6" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6f91d21076be683695d6">{"x":{"diagram":"\n  graph LR\n  CAMS_OBS_CATCH --> Non_GF_Discard_Module\n  CAMS_DISCARD_MORTALITY_STOCK --> Non_GF_Discard_Module\n  CAMS_GEARCODE_STRATA --> Non_GF_Discard_Module\n  CAMS_STATAREA_STOCK --> Non_GF_Discard_Module\n  Non_GF_Discard_Module --> CAMS_DISCARDS_ALL_YEARS\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
-Figure 2. CAMS_GARFO.CAMS_DISCARD_ALL_YEARS table lineage
+Figure 2. CAMS_DISCARD_ALL_YEARS table lineage
 </p>
 </div>
 </div>
@@ -3366,11 +3358,11 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
                           , &#39;TRIPCATEGORY&#39;
                           , &#39;ACCESSAREA&#39;)</code></pre>
 <p>By Species: - SPECIES_STOCK is taken from CAMS support table
-<code>MAPS.CAMS_STATAREA_STOCK</code> - CAMS_GEAR_GROUP is derived from
-a support table (<code>MAPS.CAMS_GEARCODE_STRATA</code>) - MESHGROUP is
+<code>CAMS_STATAREA_STOCK</code> - CAMS_GEAR_GROUP is derived from a
+support table (<code>CAMS_GEARCODE_STRATA</code>) - MESHGROUP is
 hardcoded for all trips according to decisions made by the mesh subgroup
 (see summary when available) - SECTID comes from a CAMS matching table
-(<code>MAPS.MATCH_MULT_SECTID</code>)</p>
+(<code>MATCH_MULT_SECTID</code>)</p>
 <ol start="3" style="list-style-type: decimal">
 <li>Run <code>discaRd</code>
 <ul>
@@ -3380,7 +3372,7 @@ hardcoded for all trips according to decisions made by the mesh subgroup
 <pre class="r"><code># Assumed Stratification variables
 
 stratvars = c(&#39;SPECIES_STOCK&#39;
-              , &#39;CAMS_GEAR_GROUP&#39;,
+              , &#39;CAMS_GEAR_GROUP&#39;
               ,&#39;MESHGROUP&#39;)</code></pre>
 <ol start="4" style="list-style-type: decimal">
 <li><p>The discaRd functions allow for an assumed rate to be calculated.
@@ -3428,9 +3420,7 @@ USED.</li>
 </ol>
 <pre class="r"><code>    mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %&gt;%
     mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
-                                                         , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
-                 
-            # COAL_RATE is the final discard rate used. It is &#39;coalesced&#39; from the (I), (A) and (G) rates    </code></pre>
+                                                         , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)</code></pre>
 </div>
 <div id="data-dictionary" class="section level2">
 <h2>Data Dictionary</h2>
