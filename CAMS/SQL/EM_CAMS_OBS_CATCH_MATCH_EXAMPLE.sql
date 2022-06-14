@@ -152,12 +152,9 @@ select  e.cams_subtrip
 , e.itis_tsn as EM_ITIS
 , e.em_strata 
 , e.stock_id
-<<<<<<< Updated upstream
  , s.discard_source
-=======
 , e.haul_id
 -- , s.discard_source
->>>>>>> Stashed changes
  , g.*
 from cams_garfo.cams_discard_all_years g
 left join (select * from emd) e
@@ -203,4 +200,3 @@ grant select on cams_garfo.cams_discard_example_gf2019 to apsd
  group by docid, dlr_sppname
 
 /
-24264820032416
