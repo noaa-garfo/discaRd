@@ -1,0 +1,87 @@
+---
+title: "CAMS: MV_NEMIS_ALL_PTNS_EM_TRIPS_I"
+#author: "Ben Galuardi"
+output:
+  html_document: default
+  github_document:
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(odbc)
+library(ROracle)
+library(dplyr, warn.conflicts = FALSE)
+
+
+ dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+# 
+ # bcon <- dbConnect(odbc::odbc(), 
+ # 									DSN = dw_maps$dsn, 
+ # 									UID = dw_maps$uid, 
+ # 									PWD = dw_maps$pwd)
+
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+    sep = ""
+  )
+
+# Connect to oracle each loop in case of timeouts
+    bcon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
+      dbname = connectString
+    )
+
+```
+
+## Summary
+
+
+
+## Description
+
+- **OUTPUT TABLE:** MV_NEMIS_ALL_PTNS_EM_TRIPS_I
+- **YEARS:** 2020+
+- **RESOLUTION:** Trip
+- **DEVELOPMENT LANGUAGE:** 
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
+
+
+## Data Sources
+
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MV_NEMIS_ALL_PTNS_EM_TRIPS_I table lineage"}
+DiagrammeR::mermaid("
+  graph LR
+
+        ")
+```
+
+## Approach
+
+
+
+## Data Dictionary
+
+```{r echo = F}
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'MV_NEMIS_ALL_PTNS_EM_TRIPS_I'")
+
+comments %>%
+dplyr::select(
+COLUMN = COLUMN_NAME,
+DESCRIPTION = COMMENTS) %>%
+knitr::kable(booktabs = TRUE) %>%
+kableExtra::kable_styling(bootstrap_options = c("striped", 
+"hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
+font_size = 10)
+```
+
+
