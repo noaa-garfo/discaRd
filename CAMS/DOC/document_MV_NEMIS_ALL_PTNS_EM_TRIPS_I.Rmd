@@ -1,5 +1,5 @@
 ---
-title: "CAMS: CAMS_GEARCODE_STRATA"
+title: "CAMS: MV_NEMIS_ALL_PTNS_EM_TRIPS_I"
 #author: "Ben Galuardi"
 output:
   html_document: default
@@ -42,30 +42,37 @@ library(dplyr, warn.conflicts = FALSE)
 
 ```
 
-
 ## Summary
-This discard support table translates species VTR gear code to the CAMS gear code used for discard stratification based on gear stratification used in current stock assessments and quota monitoring.  Species specific gear stratifications have been agreed upon by a discards working group.
+
+
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GEARCODE_STRATA
-- **YEARS:** N/A
-- **RESOLUTION:** Gearcode translation from VTR gear code to cams_gear_group by species
-- **DEVELOPMENT LANGUAGE:** N/A
-- **CODE:** N/A
+- **OUTPUT TABLE:** MV_NEMIS_ALL_PTNS_EM_TRIPS_I
+- **YEARS:** 2020+
+- **RESOLUTION:** Trip
+- **DEVELOPMENT LANGUAGE:** 
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
 
 
-```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   CAMS_GEARCODE_STRATA table lineage"}
+## Data Sources
+
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   MV_NEMIS_ALL_PTNS_EM_TRIPS_I table lineage"}
 DiagrammeR::mermaid("
   graph LR
-  CAMS_GEARCODE_STRATA --> GF_and_Non_GF_Discard_Modules
+
         ")
 ```
+
+## Approach
+
+
 
 ## Data Dictionary
 
 ```{r echo = F}
-comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_GEARCODE_STRATA'")
+comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'MV_NEMIS_ALL_PTNS_EM_TRIPS_I'")
 
 comments %>%
 dplyr::select(
@@ -76,4 +83,5 @@ kableExtra::kable_styling(bootstrap_options = c("striped",
 "hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
 font_size = 10)
 ```
+
 
