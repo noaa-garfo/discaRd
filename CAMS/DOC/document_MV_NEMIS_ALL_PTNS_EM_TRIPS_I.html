@@ -11,7 +11,7 @@
 
 
 
-<title>CAMS: GF_EM_DELTA_VTR_DISCARD</title>
+<title>CAMS: MV_NEMIS_ALL_PTNS_EM_TRIPS_I</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -3129,49 +3129,36 @@ pre code {
 
 
 
-<h1 class="title toc-ignore">CAMS: GF_EM_DELTA_VTR_DISCARD</h1>
+<h1 class="title toc-ignore">CAMS: MV_NEMIS_ALL_PTNS_EM_TRIPS_I</h1>
 
 </div>
 
 
 <div id="summary" class="section level2">
 <h2>Summary</h2>
-<p>This table contains VTR discard estimates, EM discard estimates for
-EM reviewed GF trips and delta model estimates for unreviewed EM trips
-from FY21 forward. From May 1, 2021 to December 31, 2021 VTR estimates
-were used until adequate data was available to fit the delta model.
-Discards from observer coverage take precedent over discard estimates
-from EM.</p>
 </div>
 <div id="description" class="section level2">
 <h2>Description</h2>
 <ul>
-<li><strong>OUTPUT TABLE:</strong> GF_EM_DELTA_VTR_DISCARD</li>
-<li><strong>YEARS:</strong> 2021+</li>
-<li><strong>RESOLUTION:</strong> Species discard estimate by VTRSERNO
-(subtrip)</li>
-<li><strong>DEVELOPMENT LANGUAGE:</strong> R</li>
+<li><strong>OUTPUT TABLE:</strong> MV_NEMIS_ALL_PTNS_EM_TRIPS_I</li>
+<li><strong>YEARS:</strong> 2020+</li>
+<li><strong>RESOLUTION:</strong> Trip</li>
+<li><strong>DEVELOPMENT LANGUAGE:</strong></li>
 <li><strong>CODE:</strong> <a href="https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS" class="uri">https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS</a></li>
 </ul>
 </div>
 <div id="data-sources" class="section level2">
 <h2>Data Sources</h2>
-<p><a href="mailto:nemis.NEMIS_TRIP_MV@nova" class="email">nemis.NEMIS_TRIP_MV@nova</a> <a href="mailto:nemis.NEMIS_HAUL_MV@nova" class="email">nemis.NEMIS_HAUL_MV@nova</a> <a href="mailto:nemis.NEMIS_CATCH_MV@nova" class="email">nemis.NEMIS_CATCH_MV@nova</a> noaa.document
-noaa.images</p>
 <div class="figure">
-<div id="htmlwidget-a1c96435d1899ac78442" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-a1c96435d1899ac78442">{"x":{"diagram":"\n  graph LR\nnemis.NEMIS_TRIP_MV --> GF_EM_DELTA_VTR_DISCARD\nnemis.NEMIS_HAUL_MV --> GF_EM_DELTA_VTR_DISCARD\nnemis.NEMIS_CATCH_MV --> GF_EM_DELTA_VTR_DISCARD\nnoaa.document --> GF_EM_DELTA_VTR_DISCARD\nnoaa.images --> GF_EM_DELTA_VTR_DISCARD\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-252a2df5cf465040f249" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-252a2df5cf465040f249">{"x":{"diagram":"\n  graph LR\n\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
-Figure 1. GF_EM_DELTA_VTR_DISCARD table lineage
+Figure 1. MV_NEMIS_ALL_PTNS_EM_TRIPS_I table lineage
 </p>
 </div>
 </div>
 <div id="approach" class="section level2">
 <h2>Approach</h2>
-<p>Criteria for EM data to be used to fit delta model: (ct_tot &gt;= 30
-AND fishnk_pct &gt;= .1) THEN ‘N’ ELSE haul_observed</p>
-<p>Delta model: EM_DISCARD ~ LOG_EVTR_DISCARD +
-(1+LOG_EVTR_DISCARD|SPECIES_ID) + (1+LOG_EVTR_DISCARD | PERMIT)</p>
 </div>
 <div id="data-dictionary" class="section level2">
 <h2>Data Dictionary</h2>
@@ -3189,7 +3176,18 @@ DESCRIPTION
 <tbody>
 <tr>
 <td style="text-align:left;">
-FISHING_YEAR
+PERMIT
+</td>
+<td style="text-align:left;">
+Vessel permit number assigned by the Northeast Regional Offices Vessel
+Permit System (VPS). 000000=no permit or no vessel, check hull number;
+190998=Unknown undertonnage vessel; 390998=Unknown tonnage vessel.
+490998=Unknown
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DAS_ID
 </td>
 <td style="text-align:left;">
 NA
@@ -3197,7 +3195,151 @@ NA
 </tr>
 <tr>
 <td style="text-align:left;">
-PERMIT
+ACTIVITY_CODE
+</td>
+<td style="text-align:left;">
+VMS declaration
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CONFIRMATION_NUM
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+PTNS_SAIL
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AMS_SAIL
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AMS_LAND
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+COMBINED_DATE
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TRIP_STATUS
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TRIP_STATUS_NAME
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+FMP
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+COLLECTION_NAME
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+INDUSTRY_FUNDED_MONITORING
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+FISHING_EXEMPTION
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+GROUNDFISH_CLOSED_AREA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EM_PROGRAM_ID
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EFP_PROGRAM_ID
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+COVERAGE_OUTCOME_REASON
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CANCEL_REASON
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+REALIZED_COVERAGE_TYPE
+</td>
+<td style="text-align:left;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+REALIZED_PROVIDER_CODE
 </td>
 <td style="text-align:left;">
 NA
@@ -3213,7 +3355,7 @@ NA
 </tr>
 <tr>
 <td style="text-align:left;">
-DATE_SAIL
+VTR_SAIL
 </td>
 <td style="text-align:left;">
 NA
@@ -3221,7 +3363,7 @@ NA
 </tr>
 <tr>
 <td style="text-align:left;">
-DATE_LAND
+VTR_LAND
 </td>
 <td style="text-align:left;">
 NA
@@ -3229,7 +3371,7 @@ NA
 </tr>
 <tr>
 <td style="text-align:left;">
-SERIAL_NUM
+AMSVTR_ACTIVITY_CODE
 </td>
 <td style="text-align:left;">
 NA
@@ -3237,7 +3379,7 @@ NA
 </tr>
 <tr>
 <td style="text-align:left;">
-IMGID
+REFRESH_DATE
 </td>
 <td style="text-align:left;">
 NA
@@ -3245,119 +3387,7 @@ NA
 </tr>
 <tr>
 <td style="text-align:left;">
-GEARCODE
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-MESH
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-MESH_CAT
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AREA
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-NTOWS
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SPECIES_ID
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-NESPP3
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SPECIES_ITIS
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-EM_COMPARISON
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-VTR_DISCARD
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-EM_DISCARD
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-DELTA_DISCARD
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-NMFS_DISCARD
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-NMFS_DISCARD_SOURCE
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-MODEL_DATE
+LOAD_ID
 </td>
 <td style="text-align:left;">
 NA

@@ -47,7 +47,7 @@ This table contains archived EM estimates for EM reviewed GF trips from 2018 to 
 
 ## Description
 
-- **OUTPUT TABLE:** CAMS_GARFO.GF_EM_DISCARD_ARCH
+- **OUTPUT TABLE:** GF_EM_DISCARD_ARCH
 - **YEARS:** 2018-2020
 - **RESOLUTION:** Species discard estimate by VTRSERNO (subtrip)
 - **DEVELOPMENT LANGUAGE:** SQL
