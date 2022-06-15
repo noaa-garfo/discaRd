@@ -1786,9 +1786,18 @@ print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, un
 ```
 
 ```{r estimate discards on scallop trips for each subACL stock using subroutine, purl = T, eval = T}
-if(species_itis %in% c('172909', '172746')){
 
-	source('scallop_subroutine.r')
+# do only the yellowtail and windowpane for scallop trips
+
+species = species %>% 
+	filter(SPECIES_ITIS %in% c('172909', '172746'))
+
+# for(species_itis %in% c('172909', '172746')){
+
+for(i in 1:length(species$SPECIES_ITIS)){
+  species_itis = species$SPECIES_ITIS[i]
+	
+  source('scallop_subroutine.r')
 
 	}
 
@@ -1796,14 +1805,15 @@ if(species_itis %in% c('172909', '172746')){
 ```
 
 ```{r substitute scallop trips into non-gf trips, purl = T, eval = T}
-if(species_itis %in% c('172909', '172746')){
+# if(species_itis %in% c('172909', '172746')){
 
+for(i in 1:length(species$SPECIES_ITIS)){
 # for(j in 2018:2019){
 start_time = Sys.time()
 		
 	GF_YEAR = FY
 
-	for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
+	# for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
 			
 		print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$COMNAME[i], ' for Groundfish Year ', GF_YEAR))
 			
@@ -1823,139 +1833,16 @@ start_time = Sys.time()
 		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))
 		res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))
 		
-		# create standard output table structures for scallop trips
-		# outlist <- lapply(res_scal, function(x) { 
-		# 		x %>% 
-		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
-		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-		# 								) %>% 
-		# 	mutate(DATE_RUN = as.character(Sys.Date())
-		# 				 , FY = as.integer(FY)) %>%
-		# 	dplyr::select(
-		# 		DATE_RUN,
-		# 		FY,
-		# 		YEAR,
-		# 		MONTH,
-		# 		SPECIES_ITIS,
-		# 		COMMON_NAME,
-		# 		FY_TYPE,
-		# 		ACTIVITY_CODE,
-		# 		VTRSERNO,
-		# 		CAMSID,
-		# 		FED_OR_STATE,
-		# 		GF,
-		# 		AREA,
-		# 		LINK1,
-		# 		N_OBS_TRIPS_F,
-		# 		STRATA_USED,
-		# 		STRATA_FULL,
-		# 		STRATA_ASSUMED,
-		# 		DISCARD_SOURCE,
-		# 		OBS_DISCARD,
-		# 		SUBTRIP_KALL,
-		# 		BROAD_STOCK_RATE,
-		# 		CAMS_DISCARD_RATE,
-		# 		DISC_MORT_RATIO,
-		# 		DISCARD,
-		# 		CV,
-		# 		SPECIES_STOCK,
-		# 		CAMS_GEAR_GROUP,
-		# 		MESHGROUP,
-		# 		SECTID,
-		# 		EM,
-		# 		REDFISH_EXEMPTION,
-		# 		SNE_SMALLMESH_EXEMPTION,
-		# 		XLRG_GILLNET_EXEMPTION,
-		# 		TRIPCATEGORY,
-		# 		ACCESSAREA,
-		# 		SCALLOP_AREA
-		# 	  # eval(strata_unique)
-		# 	)
-		# 	
-		# }
-		# )
-		# 
-		# rm(res_scal)
-				
 		# assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
 		assign(paste0('outlist_df_scal'),  do.call(rbind, res_scal))
 		
-		# rm(outlist)
 		
-		# now do the same for GF trips
-		
-		# outlist <- lapply(res_gf, function(x) { 
-		# 		x %>% 
-		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
-		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-		# 								) %>% 
-		# 	mutate(DATE_RUN = as.character(Sys.Date())
-		# 				 , FY = as.integer(FY)) %>%
-		# 	dplyr::select(
-		# 		DATE_RUN,
-		# 		FY,
-		# 		YEAR,
-		# 		MONTH,
-		# 		SPECIES_ITIS,
-		# 		COMMON_NAME,
-		# 		FY_TYPE,
-		# 		ACTIVITY_CODE,
-		# 		VTRSERNO,
-		# 		CAMSID,
-		# 		FED_OR_STATE,
-		# 		GF,
-		# 		AREA,
-		# 		LINK1,
-		# 		N_OBS_TRIPS_F,
-		# 		STRATA_USED,
-		# 		STRATA_FULL,
-		# 		STRATA_ASSUMED,
-		# 		DISCARD_SOURCE,
-		# 		OBS_DISCARD,
-		# 		SUBTRIP_KALL,
-		# 		BROAD_STOCK_RATE,
-		# 		CAMS_DISCARD_RATE,
-		# 		DISC_MORT_RATIO,
-		# 		DISCARD,
-		# 		CV,
-		# 		SPECIES_STOCK,
-		# 		CAMS_GEAR_GROUP,
-		# 		MESHGROUP,
-		# 		SECTID,
-		# 		EM,
-		# 		REDFISH_EXEMPTION,
-		# 		SNE_SMALLMESH_EXEMPTION,
-		# 		XLRG_GILLNET_EXEMPTION,
-		# 		TRIPCATEGORY,
-		# 		ACCESSAREA
-		# 		# SCALLOP_AREA
-		# 	  # eval(strata_unique)
-		# 	) %>% 
-		# 		mutate(SCALLOP_AREA = '')
-		# 	
-		# }
-		# )
-		
-		# rm(res_gf)
 				
 		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
 				assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 		
-		# rm(outlist)
-		
-		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
+		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR)) %>% 
+			dplyr::select(-DATE_TRIP.1)
 		t2 = get(paste0('outlist_df_scal'))	%>% 
 			filter(GF_YEAR == GF_YEAR)
 		
@@ -1965,8 +1852,14 @@ start_time = Sys.time()
 		# index records in groundfish table to be removed
 		t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
 		
+		
+		# make sure columns match
+		didx  = match(names(t1), names(t2)) 
+		
 		# swap the scallop estimated trips into the groundfish records
-		t1[t1idx,] = t2[t2idx,]
+		
+		
+		t1[t1idx, ] = t2[t2idx, didx]
 		
 		
 		# test against the scallop fy 19
@@ -1997,7 +1890,7 @@ start_time = Sys.time()
 	
 	}
 	
-}
+# }
 ```
 
 ```{r combine gf and non-gf trips, eval = F, purl = F}

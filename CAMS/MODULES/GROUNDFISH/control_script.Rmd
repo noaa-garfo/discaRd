@@ -304,7 +304,7 @@ and b.species_itis is not null
 knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2021){
+for(jj in 2019:2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('groundfish_loop_050422.R')
@@ -313,7 +313,7 @@ for(jj in 2021){
 # clean the workspace; restart likely not necessary anymore 
 rm(list = ls())
 gc()
-# .rs.restartR()
+.rs.restartR()
 
 ```
 
@@ -349,7 +349,7 @@ gc()
 ```{r parse and upload, eval = T, purl = F}
 #build one big table for a FY for each species in a folder of results
 
-source('parse_upload_discard.R')
+source('~/PROJECTS/discaRd/CAMS/R/cams_discard_functions.R')
 
 # connect to maps again
 keyring::keyring_unlock("apsd_ma")

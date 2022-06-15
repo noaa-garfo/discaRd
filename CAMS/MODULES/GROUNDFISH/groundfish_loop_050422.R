@@ -50,7 +50,7 @@ species_itis = species$SPECIES_ITIS[i]
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -59,7 +59,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -72,7 +72,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 #   dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP
@@ -449,6 +449,7 @@ joined_table = joined_table %>%
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
+    																		n_obs_trips_f_a < 5 &
     																		n_obs_trips_p_a >= 5 ~ 'B' # Broad stock is only for GF now
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 & 
@@ -511,13 +512,48 @@ joined_table %>%
 	colSums(na.rm = T) %>% 
 	round()
 
+
 #-------------------------------#	
-# save trip by trip info to RDS 
+# substitute EM data on EM trips
+#-------------------------------#
+
+print(paste0('Adding EM values for ', species$COMNAME[i], ' Groundfish Trips ', FY))
+
+em_tab = ROracle::dbGetQuery(conn = con_maps, statement = "
+			 select  SPECIES_ITIS as SPECIES_ITIS_EVAL
+			 , EM_COMPARISON
+			 , VTR_DISCARD
+			 , EM_DISCARD
+			 , DELTA_DISCARD
+			 , NMFS_DISCARD
+			 , NMFS_DISCARD_SOURCE
+			 , SERIAL_NUM as VTRSERNO
+			 from GF_EM_DELTA_VTR_DISCARD
+			 ") %>% 
+	      as_tibble()
+
+emjoin = joined_table %>% 
+	left_join(., em_tab, by = c('VTRSERNO', 'SPECIES_ITIS_EVAL')) %>% 
+	mutate(DISCARD = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD
+														 , DISCARD_SOURCE == 'O' ~ DISCARD
+														 , !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD)
+	) %>% 
+		mutate(DISCARD_SOURCE = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD_SOURCE
+														 , DISCARD_SOURCE == 'O' ~ DISCARD_SOURCE
+														 ,  !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD_SOURCE)
+	) %>%
+	dplyr::select(names(joined_table))
+
+# emjoin %>% group_by(DISCARD_SOURCE, NMFS_DISCARD_SOURCE) %>% dplyr::summarise(sum(DISCARD_MOD, na.rm = T))
+
+
+#-------------------------------#	
+# save trip by trip info to .fst file
 #-------------------------------#
 
 # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
 				
-fst::write_fst(x = joined_table, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
+fst::write_fst(x = emjoin, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
  t2 = Sys.time()
 	
@@ -545,7 +581,7 @@ species_itis = species$SPECIES_ITIS[i]
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -554,7 +590,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -567,7 +603,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 #   dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP
@@ -1010,22 +1046,32 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
 
 
 
-if(species_itis %in% c('172909', '172746')){
 
-	source('scallop_subroutine.r')
+# do only the yellowtail and windowpane for scallop trips
+
+species = species %>% 
+	filter(SPECIES_ITIS %in% c('172909', '172746'))
+
+# for(species_itis %in% c('172909', '172746')){
+
+for(i in 1:length(species$SPECIES_ITIS)){
+  species_itis = species$SPECIES_ITIS[i]
+	
+  source('scallop_subroutine.r')
 
 	}
 
 
 
-if(species_itis %in% c('172909', '172746')){
+# if(species_itis %in% c('172909', '172746')){
 
+for(i in 1:length(species$SPECIES_ITIS)){
 # for(j in 2018:2019){
 start_time = Sys.time()
 		
 	GF_YEAR = FY
 
-	for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
+	# for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
 			
 		print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$COMNAME[i], ' for Groundfish Year ', GF_YEAR))
 			
@@ -1045,139 +1091,16 @@ start_time = Sys.time()
 		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))
 		res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))
 		
-		# create standard output table structures for scallop trips
-		# outlist <- lapply(res_scal, function(x) { 
-		# 		x %>% 
-		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
-		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-		# 								) %>% 
-		# 	mutate(DATE_RUN = as.character(Sys.Date())
-		# 				 , FY = as.integer(FY)) %>%
-		# 	dplyr::select(
-		# 		DATE_RUN,
-		# 		FY,
-		# 		YEAR,
-		# 		MONTH,
-		# 		SPECIES_ITIS,
-		# 		COMMON_NAME,
-		# 		FY_TYPE,
-		# 		ACTIVITY_CODE,
-		# 		VTRSERNO,
-		# 		CAMSID,
-		# 		FED_OR_STATE,
-		# 		GF,
-		# 		AREA,
-		# 		LINK1,
-		# 		N_OBS_TRIPS_F,
-		# 		STRATA_USED,
-		# 		STRATA_FULL,
-		# 		STRATA_ASSUMED,
-		# 		DISCARD_SOURCE,
-		# 		OBS_DISCARD,
-		# 		SUBTRIP_KALL,
-		# 		BROAD_STOCK_RATE,
-		# 		CAMS_DISCARD_RATE,
-		# 		DISC_MORT_RATIO,
-		# 		DISCARD,
-		# 		CV,
-		# 		SPECIES_STOCK,
-		# 		CAMS_GEAR_GROUP,
-		# 		MESHGROUP,
-		# 		SECTID,
-		# 		EM,
-		# 		REDFISH_EXEMPTION,
-		# 		SNE_SMALLMESH_EXEMPTION,
-		# 		XLRG_GILLNET_EXEMPTION,
-		# 		TRIPCATEGORY,
-		# 		ACCESSAREA,
-		# 		SCALLOP_AREA
-		# 	  # eval(strata_unique)
-		# 	)
-		# 	
-		# }
-		# )
-		# 
-		# rm(res_scal)
-				
 		# assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
 		assign(paste0('outlist_df_scal'),  do.call(rbind, res_scal))
 		
-		# rm(outlist)
 		
-		# now do the same for GF trips
-		
-		# outlist <- lapply(res_gf, function(x) { 
-		# 		x %>% 
-		# 		mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
-		# 		dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
-		# 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-		# 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-		# 								, 'COMMON_NAME' = 'COMNAME_EVAL'
-		# 								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-		# 								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-		# 								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-		# 								) %>% 
-		# 	mutate(DATE_RUN = as.character(Sys.Date())
-		# 				 , FY = as.integer(FY)) %>%
-		# 	dplyr::select(
-		# 		DATE_RUN,
-		# 		FY,
-		# 		YEAR,
-		# 		MONTH,
-		# 		SPECIES_ITIS,
-		# 		COMMON_NAME,
-		# 		FY_TYPE,
-		# 		ACTIVITY_CODE,
-		# 		VTRSERNO,
-		# 		CAMSID,
-		# 		FED_OR_STATE,
-		# 		GF,
-		# 		AREA,
-		# 		LINK1,
-		# 		N_OBS_TRIPS_F,
-		# 		STRATA_USED,
-		# 		STRATA_FULL,
-		# 		STRATA_ASSUMED,
-		# 		DISCARD_SOURCE,
-		# 		OBS_DISCARD,
-		# 		SUBTRIP_KALL,
-		# 		BROAD_STOCK_RATE,
-		# 		CAMS_DISCARD_RATE,
-		# 		DISC_MORT_RATIO,
-		# 		DISCARD,
-		# 		CV,
-		# 		SPECIES_STOCK,
-		# 		CAMS_GEAR_GROUP,
-		# 		MESHGROUP,
-		# 		SECTID,
-		# 		EM,
-		# 		REDFISH_EXEMPTION,
-		# 		SNE_SMALLMESH_EXEMPTION,
-		# 		XLRG_GILLNET_EXEMPTION,
-		# 		TRIPCATEGORY,
-		# 		ACCESSAREA
-		# 		# SCALLOP_AREA
-		# 	  # eval(strata_unique)
-		# 	) %>% 
-		# 		mutate(SCALLOP_AREA = '')
-		# 	
-		# }
-		# )
-		
-		# rm(res_gf)
 				
 		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
 				assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 		
-		# rm(outlist)
-		
-		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
+		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR)) %>% 
+			dplyr::select(-DATE_TRIP.1)
 		t2 = get(paste0('outlist_df_scal'))	%>% 
 			filter(GF_YEAR == GF_YEAR)
 		
@@ -1187,8 +1110,14 @@ start_time = Sys.time()
 		# index records in groundfish table to be removed
 		t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
 		
+		
+		# make sure columns match
+		didx  = match(names(t1), names(t2)) 
+		
 		# swap the scallop estimated trips into the groundfish records
-		t1[t1idx,] = t2[t2idx,]
+		
+		
+		t1[t1idx, ] = t2[t2idx, didx]
 		
 		
 		# test against the scallop fy 19
@@ -1219,4 +1148,4 @@ start_time = Sys.time()
 	
 	}
 	
-}
+# }
