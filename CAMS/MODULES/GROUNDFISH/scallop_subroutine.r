@@ -63,14 +63,14 @@ for(yy in FY:(FY+1)){
 	# 	
 		t1 = Sys.time()	
 		
-		print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", species$COMNAME))	
+		print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", species$COMNAME[i]))	
 		
 		# species_itis = scal_gf_species$SPECIES_ITIS[i] 
 		#---#
 		# Support table import by species
 		
 		# GEAR TABLE
-		CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+		CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
 			collect() %>% 
 			dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
 			filter(SPECIES_ITIS == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
@@ -78,7 +78,7 @@ for(yy in FY:(FY+1)){
 		
 		# Stat areas table  
 		# unique stat areas for stock ID if needed
-		STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+		STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 			filter(SPECIES_ITIS == species_itis) %>%
 			collect() %>% 
 			group_by(AREA_NAME, SPECIES_ITIS) %>% 
@@ -88,7 +88,7 @@ for(yy in FY:(FY+1)){
 			ungroup() 
 		
 		# Mortality table
-		CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+		CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
 			collect() %>%
 			mutate(SPECIES_STOCK = AREA_NAME
 						 , GEARCODE = CAMS_GEAR_GROUP
@@ -497,6 +497,9 @@ for(yy in FY:(FY+1)){
 			mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 																 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 			)
+		
+		joined_table = joined_table %>% 
+			dplyr::select(-DATE_TRIP.1)
 		
 		
 		fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
