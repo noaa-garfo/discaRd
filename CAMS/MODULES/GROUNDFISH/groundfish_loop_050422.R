@@ -1049,13 +1049,13 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
 
 # do only the yellowtail and windowpane for scallop trips
 
-species = species %>% 
+scal_gf_species = species %>% 
 	filter(SPECIES_ITIS %in% c('172909', '172746'))
 
 # for(species_itis %in% c('172909', '172746')){
 
-for(i in 1:length(species$SPECIES_ITIS)){
-  species_itis = species$SPECIES_ITIS[i]
+for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
+  species_itis = scal_gf_species$SPECIES_ITIS[i]
 	
   source('scallop_subroutine.r')
 
@@ -1065,7 +1065,7 @@ for(i in 1:length(species$SPECIES_ITIS)){
 
 # if(species_itis %in% c('172909', '172746')){
 
-for(i in 1:length(species$SPECIES_ITIS)){
+for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
 # for(j in 2018:2019){
 start_time = Sys.time()
 		

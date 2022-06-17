@@ -590,34 +590,34 @@ non_gf = tbl(bcon, sql("
 ```
 
 
-### To-do 
+<!-- ### To-do  -->
 
-1. Check totals between CAMS/DMIS
-	- KALL (**DONE**)
-	- d/k rates ()
+<!-- 1. Check totals between CAMS/DMIS -->
+<!-- 	- KALL (**DONE**) -->
+<!-- 	- d/k rates () -->
 
-2. Complete code for non-groundfish trips in groundfish module. (**DONE**)
-	- combine with previous work (or not) so we have a full set of trips for each groundfish stock (**DONE**)
+<!-- 2. Complete code for non-groundfish trips in groundfish module. (**DONE**) -->
+<!-- 	- combine with previous work (or not) so we have a full set of trips for each groundfish stock (**DONE**) -->
 
-3. Apply discard rates to State records (**DONE**)
- - this may be done implicitly if applying rates by strata to all CAMS records (e.g. by CAMSID) 
+<!-- 3. Apply discard rates to State records (**DONE**) -->
+<!--  - this may be done implicitly if applying rates by strata to all CAMS records (e.g. by CAMSID)  -->
 
-4. Incorporate EM (including MREM) records is using those values for discard amounts. This should be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?)
-	- how to deal with adjustment of KALL on MREM trips?
+<!-- 4. Incorporate EM (including MREM) records is using those values for discard amounts. This should be a matter of substitution on a trip by trip basis. This may yield another `DISCARD_SOURCE` (e.g. (EM)?) -->
+<!-- 	- how to deal with adjustment of KALL on MREM trips? -->
+
+<!-- 5. Scallop trip estimates using Scallop Strata. 	(**Done**) -->
+<!--  - Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure (**Done**) -->
+
+<!-- 6. Add CV estimate routine for Assumed strata; Already added this for Broad Stock Rate trips -->
+
+<!-- ### Results/Discussion -->
+
+<!-- - Discard totals for CAMS are now very close to DMIS for groundfish trips.   -->
+<!-- - Strata between DMIS and CAMS are not identical. CAMS uses new meshgroupings as well as CAMS_GEAR_GROUP.  -->
+<!-- 	- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences  -->
 	
-5. Scallop trip estimates using Scallop Strata. 	(**Done**)
- - Scallop Trips: Dan C. does this separately from other trips. Stratifies GF discard rates by - Gear (Trawl/Dredge) - Fleet (LA/LAGC) - does NOT stratify by Access Area/Open; only by stock area - Yellowtail and Windowpane stocks are derived from scallop in season QM procedure (**Done**)
+<!-- - One more significant difference between DMIS and CAMS groundfish stratification is that Quota Monitoring (DMIS) uses stock area defined biologically, and parses out the designations (STOCK_ID) in tables above AFTER estimating discards. For example, Eastern Georges Bank (EGB) is CAMS Strata. Although DMIS has a separate total for EGB, this is parsed out from the entire Georges Bank stock. This differential stratification is the most likely explanation for differences between estimates. Stocks that have a singular STOCK_ID (e.g. Pollock), are fairly close in their DMIS/CAMS discard estimates.  -->
 
-6. Add CV estimate routine for Assumed strata; Already added this for Broad Stock Rate trips
-
-### Results/Discussion
-
-- Discard totals for CAMS are now very close to DMIS for groundfish trips.  
-- Strata between DMIS and CAMS are not identical. CAMS uses new meshgroupings as well as CAMS_GEAR_GROUP. 
-	- Comparisons between using CAMS_GEAR_GROUP and a more specific gear factorization (SECGEAR_MAPPED) show only slight differences 
-	
-- One more significant difference between DMIS and CAMS groundfish stratification is that Quota Monitoring (DMIS) uses stock area defined biologically, and parses out the designations (STOCK_ID) in tables above AFTER estimating discards. For example, Eastern Georges Bank (EGB) is CAMS Strata. Although DMIS has a separate total for EGB, this is parsed out from the entire Georges Bank stock. This differential stratification is the most likely explanation for differences between estimates. Stocks that have a singular STOCK_ID (e.g. Pollock), are fairly close in their DMIS/CAMS discard estimates. 
-	
 
 
 
