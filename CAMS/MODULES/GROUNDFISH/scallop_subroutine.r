@@ -16,7 +16,7 @@ stratvars_scalgf = c('SPECIES_STOCK'
 										 , 'ACCESSAREA'
 										 , 'SCALLOP_AREA')
 
-scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
+# scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
 
 # NEED TO LOOP OVER TWO YEARS EACH TIME BEACUSE OF MISMATCH IN GROUNDFISH/SCALLOP YEAR.. E.G. GF YEAR 2018 NEEDS SCAL YEAR 2018 AND 2019.. 
 # THIS NEEDS TO BE DONE HERE BECAUSE THE TABLE SUBSTITUTION IS THE NEXT CHUNK... 
@@ -63,7 +63,7 @@ for(yy in FY:(FY+1)){
 	# 	
 		t1 = Sys.time()	
 		
-		print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", species$COMNAME[i]))	
+		print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", scal_gf_species$COMNAME[i]))	
 		
 		# species_itis = scal_gf_species$SPECIES_ITIS[i] 
 		#---#
@@ -274,7 +274,7 @@ for(yy in FY:(FY+1)){
 			right_join(., y = d_focal$res, by = 'STRATA') %>% 
 			as_tibble() %>% 
 			mutate(SPECIES_ITIS_EVAL = species_itis
-						 , COMNAME_EVAL = species$COMNAME[i]
+						 , COMNAME_EVAL = scal_gf_species$COMNAME[i]
 						 , FISHING_YEAR = yy
 						 , FY_TYPE = FY_TYPE) %>% 
 			dplyr::rename(FULL_STRATA = STRATA) 
@@ -411,7 +411,7 @@ for(yy in FY:(FY+1)){
 			) %>% 
 			mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 			mutate(SPECIES_ITIS_EVAL = species_itis
-						 , COMNAME_EVAL = species$COMNAME[i]
+						 , COMNAME_EVAL = scal_gf_species$COMNAME[i]
 						 , FISHING_YEAR = FY
 						 , FY_TYPE = FY_TYPE) 
 		

@@ -304,7 +304,7 @@ and b.species_itis is not null
 knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2019:2021){
+for(jj in 2020:2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('groundfish_loop_050422.R')
