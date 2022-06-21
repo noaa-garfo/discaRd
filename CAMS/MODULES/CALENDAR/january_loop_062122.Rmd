@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 											, error = FALSE, dev = 'png', dpi = 200)
 ```
 
-```{r setup, eval = F}
+```{r setup, eval = F, purl = F}
 
 t1 = Sys.time()
 
@@ -82,7 +82,7 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```
 
-```{r define fishing year and species, eval = T}
+```{r define fishing year and species, eval = T, purl = F}
 
 FY <- 2019
 
@@ -131,7 +131,7 @@ FY_TYPE = 'JAN START'
 
 ```
 
-```{r get obs and catch data from oracle, eval = T}
+```{r get obs and catch data from oracle, eval = T, purl = F}
 import_query = " with obs_cams as (
    select year
 	, month
@@ -331,7 +331,7 @@ rm(fed_trips, state_trips)
 ```
 
 
-```{r subset tables join and run }
+```{r subset tables join and run, purl = T}
 
 # Stratification variables
 
@@ -828,7 +828,15 @@ joined_table %>%
   dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
             Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
  
+ fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
+ 
+t2 = Sys.time()
+	
+print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+``` 
+ 
 
+```{r build one big table for a FY, eval = F, purl = F}
  #add subtrip kall after CV
  
  	cy_discard_example <- joined_table %>% 
