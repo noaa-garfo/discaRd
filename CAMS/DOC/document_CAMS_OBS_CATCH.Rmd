@@ -22,7 +22,7 @@ library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
 
 
- dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+ dw_maps <- config::get(value = "maps", file = "~/config.yml")
 # 
  # bcon <- dbConnect(odbc::odbc(), 
  # 									DSN = dw_maps$dsn, 
@@ -30,19 +30,19 @@ library(dplyr, warn.conflicts = FALSE)
  # 									PWD = dw_maps$pwd)
 
 # Connect to database - move this to config file in the future - quick addition for server
-  connectString <- paste(
-    "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
-    sep = ""
-  )
+  # connectString <- paste(
+  #   "(DESCRIPTION=",
+  #   "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+  #   "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+  #   sep = ""
+  # )
 
 # Connect to oracle each loop in case of timeouts
     bcon <- ROracle::dbConnect(
       drv = ROracle::Oracle(),
       username = dw_maps$uid,
       password = dw_maps$pwd,
-      dbname = connectString
+      dbname = "NERO.world"
     )
 ```
 
@@ -79,7 +79,7 @@ DiagrammeR::mermaid("
 
 The use of a combined catch and observation table allows for a single source table to be used in discard estimation. Previous methods took a two table approach, where catch information and observer records were stratified independently, and then matched to calculate discard (e.g., $D = K*d/k$). This approach had the possibility of mismatches between observed strata and trip strata. In reality, this cannot occur. We therefore do trip by trip matching, using `gear`, `meshgroup`, `statistical area`, and `LINK1`, to match observer recorded species discards with commercial trip activity. 
 
-The primary driver for this approach was to use the trip recorded metrics as the stratification source. This reduces the possibility of mismatches and removes much of the hard-coding of the past. Upfront matching also allows observed discards to easily be used as the official discard for a particular trip. Furthermore, we recognize that data errors either from the catch, or observer data, will result in a non-match. This likely reduces the total pool of observed trips that are being used, but we feel the benefits of using this apporach outweigh a reduced sample size. Quality control of these data are outside the purview of the CAMS project. Last, we only use observed trips (`LINK1`) where valid `LINK3` (hauls) occurred to alleviate issues of multiple `LINK1` records for a single subtrip. 
+The primary driver for this approach was to use the trip recorded metrics as the stratification source. This reduces the possibility of mismatches and removes much of the hard-coding of the past. Upfront matching also allows observed discards to easily be used as the official discard for a particular trip. Furthermore, we recognize that data errors either from the catch, or observer data, will result in a non-match. This likely reduces the total pool of observed trips that are being used, but we feel the benefits of using this approach outweigh a reduced sample size. Quality control of these data are outside the purview of the CAMS project. Last, we only use observed trips (`LINK1`) where valid `LINK3` (hauls) occurred to alleviate issues of multiple `LINK1` records for a single subtrip. 
 
 The matching occurs in a staged manner. All commercial trips with a non-null `LINK1` field get a value for how many unique VTR serial numbers are associated with it. The vast majority of observed trips have a single VTR, and only require matching by `LINK1`. For multiple VTR trips, a match as described above is used (`gear`, `meshgroup`, `statistical area`, and `LINK1`). Further, we only match on `statistical area` when more than one area is reported for a trip. This reduces data loss from observer recorded area mismatches to VTR recorded area.
 
@@ -110,14 +110,28 @@ IMPORTANT!: The `CAMS_OBS_CATCH` table is a hybrid. For trips that were not obse
 
 ```{r echo = F}
 
-comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_OBS_CATCH'")
-
-comments %>%
-dplyr::select(
-COLUMN = COLUMN_NAME,
-DESCRIPTION = COMMENTS) %>%
-knitr::kable(booktabs = TRUE) %>%
-kableExtra::kable_styling(bootstrap_options = c("striped", 
-"hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
-font_size = 10)
+cflen_comments <- ROracle::dbGetQuery(bcon, "
+SELECT a.COLUMN_NAME, a.COMMENTS, b.data_type 
+FROM all_col_comments a,  all_tab_cols b
+WHERE a.owner = 'MAPS' 
+AND a.table_name = 'CAMS_OBS_CATCH'
+AND a.COLUMN_NAME = b.COLUMN_NAME
+AND b.table_name = 'CAMS_OBS_CATCH'
+"
+																			)
+cflen_comments %>%
+	dplyr::select(
+		COLUMN = COLUMN_NAME,
+		DESCRIPTION = COMMENTS
+		, `DATA TYPE` = DATA_TYPE
+	) %>%
+	knitr::kable(booktabs = TRUE) %>%
+	kableExtra::kable_styling(bootstrap_options = c("striped", 
+																									"hover", 
+																									"condensed", 
+																									"responsive"),
+														full_width = FALSE,
+														position = "left",
+														fixed_thead = TRUE,
+														font_size = 10)
 ```

@@ -368,7 +368,7 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 #     dbname = "NERO.world"
 # )
 
-for (FY in 2021){
+for (FY in 2018:2021){
 	
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
 
@@ -456,12 +456,13 @@ definitions <-
 	googlesheets4::read_sheet(
 		"https://docs.google.com/spreadsheets/d/1YorwnjozdPwVFJPabC7Ikta6wNzlhzkUtO1TPRbR9-s/edit?usp=sharing"
 	)
-save(definitions, file = "data/definitions.rda")
-devtools::load_all()
+
+# save(definitions, file = "data/definitions.rda")
+devtools::load_all('~/PROJECTS/MAPS/')
 
 # con_maps <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
-add_comments(con = con_maps, schema = "MAPS") # 3-10 minutes
+add_comments(con = con_maps, schema = "MAPS", definitions = definitions) # 3-10 minutes
 
 add_comments(con = con_cams, schema = "CAMS_GARFO") # 3-10 minutes
 
