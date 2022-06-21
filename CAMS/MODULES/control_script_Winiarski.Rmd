@@ -318,7 +318,7 @@ gc()
 ```
 
 
-```{r run calendar year species RMD as a script, eval = F}
+```{r run calendar year species RMD as a script, eval = T}
 
 # this section may be repeated for other modules with other lists of species
 
@@ -343,7 +343,7 @@ itis <-  c(
  itis_num <- as.numeric(itis)
  
 
- species = tbl(bcon, sql("select *
+ species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
@@ -352,16 +352,18 @@ itis <-  c(
   slice(1)
  
  species$ITIS_TSN <- stringr::str_sort(itis)
- 
+
+# make sure the folder is correct 
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/') 
 
 # make a script from RMD.. 
 knitr::purl('january_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
-for(jj in 2020:2021){
+for(jj in 2020){
 	FY <- jj
 	FY_TYPE = 'JANUARY START'
-  source('january_loop_062122.Rmd')
+  source('january_loop_062122.R')  # this is the script created via purl just above
 }
 
 # clean the workspace; restart likely not necessary anymore 
@@ -405,7 +407,8 @@ itis <-  c(
   slice(1)
  
  species$ITIS_TSN <- stringr::str_sort(itis)
-
+ 
+ 
 # make a script from RMD.. 
 knitr::purl('may_loop_062122.Rmd', documentation = 0)
 
