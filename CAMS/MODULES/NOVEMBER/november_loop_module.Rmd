@@ -730,7 +730,7 @@ joined_table = joined_table %>%
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
-    																		n_obs_trips_f_a >= 5 ~ 'A'
+    																		n_obs_trips_f_a >= 5 ~ 'GM'
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
@@ -755,7 +755,7 @@ joined_table = joined_table %>%
 	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
 												, DISCARD_SOURCE == 'I' ~ CV_f
 												, DISCARD_SOURCE == 'T' ~ CV_f
-												, DISCARD_SOURCE == 'A' ~ CV_f_a
+												, DISCARD_SOURCE == 'GM' ~ CV_f_a
 												, DISCARD_SOURCE == 'G' ~ CV_b
 											#	, DISCARD_SOURCE == 'NA' ~ 'NA'
 												)  # , DISCARD_SOURCE == 'B' ~ NA
@@ -774,7 +774,7 @@ joined_table = joined_table %>%
 	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
 												, DISCARD_SOURCE == 'I' ~ strata_f
 												, DISCARD_SOURCE == 'T' ~ strata_f
-												, DISCARD_SOURCE == 'A' ~ strata_a
+												, DISCARD_SOURCE == 'GM' ~ strata_a
 												, DISCARD_SOURCE == 'G' ~ strata_b
 											#	, DISCARD_SOURCE == 'NA' ~ 'NA'
 												) 
