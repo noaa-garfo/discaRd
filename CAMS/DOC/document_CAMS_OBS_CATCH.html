@@ -3162,8 +3162,8 @@ discard estimation.</p>
 </ul></li>
 </ul>
 <div class="figure">
-<div id="htmlwidget-86c6f0a0b42926560a44" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-86c6f0a0b42926560a44">{"x":{"diagram":"\n  graph LR\n  NEFOP --> CAMS_OBDBS_YYYY\n  ASM --> CAMS_OBDBS_YYYY\n  SECGEAR_MAPPED --> CAMS_OBS_CATCH\n  CAMS_LANDINGS --> CAMS_OBS_CATCH\n  CAMS_OBDBS_YYYY --> CAMS_OBS_CATCH\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-caeb37392685881f0e70" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-caeb37392685881f0e70">{"x":{"diagram":"\n  graph LR\n  NEFOP --> CAMS_OBDBS_YYYY\n  ASM --> CAMS_OBDBS_YYYY\n  SECGEAR_MAPPED --> CAMS_OBS_CATCH\n  CAMS_LANDINGS --> CAMS_OBS_CATCH\n  CAMS_OBDBS_YYYY --> CAMS_OBS_CATCH\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
 Figure 1. CAMS_OBS_CATCH table lineage
 </p>
@@ -3188,7 +3188,7 @@ matching also allows observed discards to easily be used as the official
 discard for a particular trip. Furthermore, we recognize that data
 errors either from the catch, or observer data, will result in a
 non-match. This likely reduces the total pool of observed trips that are
-being used, but we feel the benefits of using this apporach outweigh a
+being used, but we feel the benefits of using this approach outweigh a
 reduced sample size. Quality control of these data are outside the
 purview of the CAMS project. Last, we only use observed trips
 (<code>LINK1</code>) where valid <code>LINK3</code> (hauls) occurred to
@@ -3257,6 +3257,9 @@ COLUMN
 <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
 DESCRIPTION
 </th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+DATA TYPE
+</th>
 </tr>
 </thead>
 <tbody>
@@ -3265,7 +3268,10 @@ DESCRIPTION
 ACCESSAREA
 </td>
 <td style="text-align:left;">
-NA
+Scallop Access Area, only relevant for scallop trips
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3273,7 +3279,10 @@ NA
 ACTIVITY_CODE_1
 </td>
 <td style="text-align:left;">
-NA
+VMS declaration
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3281,7 +3290,12 @@ NA
 AREA
 </td>
 <td style="text-align:left;">
-NA
+The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
+code. Unknown = 000. For CAMS data, refer to AREA_SOURCE and
+AREA_IMP_METHOD for metadata about AREA.
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3289,7 +3303,10 @@ NA
 CAMSID
 </td>
 <td style="text-align:left;">
-NA
+Unique trip identification code within CAMS
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3297,7 +3314,10 @@ NA
 CAMS_SUBTRIP
 </td>
 <td style="text-align:left;">
-NA
+Catenation of CAMSID and SUBTRIP in CAMS_LANDINGS
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3305,7 +3325,10 @@ NA
 CLOSED_AREA_EXEMPTION
 </td>
 <td style="text-align:left;">
-NA
+Groundfish specific stratification
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3313,7 +3336,10 @@ NA
 DISCARD
 </td>
 <td style="text-align:left;">
-NA
+Species discard as recorded on the subtrip
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3321,7 +3347,10 @@ NA
 DISCARD_PRORATE
 </td>
 <td style="text-align:left;">
-NA
+Species discard as prorated by KALL on unobserved hauls
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3331,6 +3360,9 @@ DATE_TRIP
 <td style="text-align:left;">
 NA
 </td>
+<td style="text-align:left;">
+DATE
+</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -3339,13 +3371,19 @@ DOCID
 <td style="text-align:left;">
 NA
 </td>
+<td style="text-align:left;">
+VARCHAR2
+</td>
 </tr>
 <tr>
 <td style="text-align:left;">
 EM
 </td>
 <td style="text-align:left;">
-NA
+EM program, groundfish trips only
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3353,7 +3391,10 @@ NA
 GEARTYPE
 </td>
 <td style="text-align:left;">
-NA
+Gear description
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3361,7 +3402,11 @@ NA
 GF
 </td>
 <td style="text-align:left;">
-NA
+Indicator of whether the trip was classified as groundfish or not. 1 =
+groundfish trip. 0 = non-groundfish trip.
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3369,7 +3414,10 @@ NA
 HALFOFYEAR
 </td>
 <td style="text-align:left;">
-NA
+1 (Jan - June) or 2 (July-Dec)
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3377,7 +3425,11 @@ NA
 ITIS_TSN
 </td>
 <td style="text-align:left;">
-NA
+Integrated Taxonomic Information System (ITIS) - Taxonomic Species
+Number (TSN). NULL for No-Catch records.
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3385,7 +3437,10 @@ NA
 LINK1
 </td>
 <td style="text-align:left;">
-NA
+Observer LINK1 if trip was obsevered
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3393,7 +3448,10 @@ NA
 LINK3
 </td>
 <td style="text-align:left;">
-NA
+Observer recorded haul
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3401,7 +3459,10 @@ NA
 MESHGROUP
 </td>
 <td style="text-align:left;">
-NA
+CAMS meshgroup: sm, lg, xlg, na
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3409,7 +3470,11 @@ NA
 MONTH
 </td>
 <td style="text-align:left;">
-NA
+The numeric month (1-12) of the vessel landing or negative dealer
+report.
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3417,7 +3482,11 @@ NA
 NEGEAR
 </td>
 <td style="text-align:left;">
-NA
+Northeast Gear code. Unknown = 000. Refer to GEAR_SOURCE for metadata
+about gear in final tables.
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3425,7 +3494,11 @@ NA
 NESPP3
 </td>
 <td style="text-align:left;">
-NA
+The Northeast Species code, without the market category, i.e. the first
+3 digits of NESPP4. Legacy code. For 2020+ use ITIS_TSN.
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3433,7 +3506,10 @@ NA
 NVTR_LINK1
 </td>
 <td style="text-align:left;">
-NA
+Number of VTRs per observed trip (Link1)
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3441,7 +3517,10 @@ NA
 OBSRFLAG
 </td>
 <td style="text-align:left;">
-NA
+Flag for whether the haul was observed
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3449,7 +3528,10 @@ NA
 OBSVTR
 </td>
 <td style="text-align:left;">
-NA
+Observer recorded VTR serial number
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3457,7 +3539,11 @@ NA
 OBS_AREA
 </td>
 <td style="text-align:left;">
-NA
+The Northwest Atlantic Fisheries Organization (NAFO) Statistical Area
+code reported by the observer. Unknown = 000.
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3465,7 +3551,10 @@ NA
 OBS_GEAR
 </td>
 <td style="text-align:left;">
-NA
+Observer recorded gear (NEGEAR)
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3473,7 +3562,11 @@ NA
 OBS_HAUL_KALL_TRIP
 </td>
 <td style="text-align:left;">
-NA
+Kept all pounds recorded by observer on observed hauls. This is the
+value used in d/k calculations
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3481,7 +3574,10 @@ NA
 OBS_HAUL_KEPT
 </td>
 <td style="text-align:left;">
-NA
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3491,13 +3587,20 @@ OBS_NOHAUL_KALL_TRIP
 <td style="text-align:left;">
 NA
 </td>
+<td style="text-align:left;">
+NUMBER
+</td>
 </tr>
 <tr>
 <td style="text-align:left;">
 OBS_KALL
 </td>
 <td style="text-align:left;">
-NA
+Total Kept pounds on an obserevd trip as recorded by observer. This
+included both observed and unobserved hauls
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3505,7 +3608,10 @@ NA
 OBS_LINK1
 </td>
 <td style="text-align:left;">
-NA
+Obsever recorded LINK1
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3513,7 +3619,10 @@ NA
 OBS_MESH
 </td>
 <td style="text-align:left;">
-NA
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3521,7 +3630,10 @@ NA
 OBS_MESHGROUP
 </td>
 <td style="text-align:left;">
-NA
+equivalent field in OBDBS
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3529,7 +3641,13 @@ NA
 PERMIT
 </td>
 <td style="text-align:left;">
-NA
+Vessel permit number assigned by the Northeast Regional Offices Vessel
+Permit System (VPS). 000000=no permit or no vessel, check hull number;
+190998=Unknown undertonnage vessel; 390998=Unknown tonnage vessel.
+490998=Unknown
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3537,7 +3655,10 @@ NA
 PRORATE
 </td>
 <td style="text-align:left;">
-NA
+ratio of total kept_all / observed kept all
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3545,7 +3666,10 @@ NA
 REDFISH_EXEMPTION
 </td>
 <td style="text-align:left;">
-NA
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3553,7 +3677,10 @@ NA
 SECGEAR_MAPPED
 </td>
 <td style="text-align:left;">
-NA
+Gearmapping used for matching VTR subtrip to LINK3
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3561,7 +3688,10 @@ NA
 SECTID
 </td>
 <td style="text-align:left;">
-NA
+Groundfish Sector ID number
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3569,7 +3699,10 @@ NA
 SNE_SMALLMESH_EXEMPTION
 </td>
 <td style="text-align:left;">
-NA
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3577,7 +3710,10 @@ NA
 SUBTRIP_KALL
 </td>
 <td style="text-align:left;">
-NA
+Kept all of subtrip from CAMS_LANDINGS
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 <tr>
@@ -3585,7 +3721,10 @@ NA
 TRIPCATEGORY
 </td>
 <td style="text-align:left;">
-NA
+Scallop fleet designation, if applicable
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3593,7 +3732,11 @@ NA
 VTRSERNO
 </td>
 <td style="text-align:left;">
-NA
+A unique serial number used to identify a vessel trip report. NULL =
+Unknown
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3601,7 +3744,10 @@ NA
 XLRG_GILLNET_EXEMPTION
 </td>
 <td style="text-align:left;">
-NA
+Exemption fishing under
+</td>
+<td style="text-align:left;">
+VARCHAR2
 </td>
 </tr>
 <tr>
@@ -3609,7 +3755,10 @@ NA
 YEAR
 </td>
 <td style="text-align:left;">
-NA
+The year in which the landings or negative report occurred.
+</td>
+<td style="text-align:left;">
+NUMBER
 </td>
 </tr>
 </tbody>
