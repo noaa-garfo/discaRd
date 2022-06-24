@@ -80,14 +80,28 @@ stratvars = c('SPECIES_STOCK'
 
 7. For each *pass*, a transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 
-8. The two *passes* are joined in a hierarchical manner. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
+8. The two *passes* are joined in a hierarchical manner. Rates and `DISCARD_SOURCE` for groundfish estimates from groundfish trips are as follows (in parentheses):
+
+
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (A) Assumed rate. This is the *second pass* rate when there were >=5 trips in season
+ - (A) Assumed rate. This is the *second pass* rate that rolls up all Sectors. Common Pool trips are separated in this strata.
  - (B) Broad stock rate is used when other criteria are not met. 
- - (O) Observed values used from obserevd trips; discard rate is NOT USED. 
+ - (EM) Electronic monitoring (EM) video based estimate. If the trip is reviewed and passed; and there was no human observer on board. 
+ - (VTR) VTR (self-reported) discard estimate on an EM trip that was reviewed and failed; and there was no human observer on board. 
+ - (DELTA) Delta model estimate of VTR discard on an EM trip that was reviewed and failed; and there was no human observer on board. 
+ - (O) Observed values used from observed trips; discard rate is NOT USED. 
  
-9. CV calculations are available for (I), (T), and (A). Obtaining a CV estimate for (B) would require a *third pass* of discaRd functions. (O) rates are not used and final discard values are not estimated. 
+groundfish estimates from non-groundfish trips are as follows:
+
+ - (I) in season rate; >= 5 trips in Full Stratification
+ - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
+ - (GM) Assignment is from the second pass (e.g. Stock/Gear/Meshgroup). This is the rate when there were <5 trips in season and <5 in previous season at the full stratification level.
+ - (G) Assignment is from the *second pass* (e.g. Stock/Gear). This rate uses two years of information (e.g. current year and previous year).
+ - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
+ - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
+ 
+9. CV calculations are available for (I), (T), (GM), (G) and (A). (O) rates are not used and final discard values are not estimated. 
 
 10. Discard pounds per trip are calculated according to
 
@@ -101,13 +115,36 @@ stratvars = c('SPECIES_STOCK'
 
 By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
 
-Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~12 seconds to process on the server.
+Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~12 seconds to process on the server. non-groundfish trips take ~1-2 minutes as there are many more trips and table rows. 
 
-Output tables are produced for each species. These can easily be recombined. An example table has been shared on `MAPS` and `CAMS_GARFO`
+Output tables are produced for each species and fishing year. These are then combined into a single `View` on `MAPS` and `CAMS_GARFO`
 
 ```sql
-	MAPS.CAMS_DISCARD_EXAMPLE_GF19
-	CAMS_GARFO.CAMS_DISCARD_EXAMPLE_GF19
+	MAPS.CAMS_DISCARD_ALL_YEARS
+	CAMS_GARFO.CAMS_DISCARD_ALL_YEARS
+	
+	/* Get groundfish discards from groundfish trips for FY 2019 
+	   FY 2021 currently has EM values
+	*/
+	
+	    select *
+    from MAPS.CAMS_DISCARD_ALL_YEARS
+     where GF = 1
+    AND FED_OR_STATE = 'FED'
+    AND FY = 2019
+    AND SPECIES_ITIS in ('172877' ,
+    '164712' ,
+    '164732' ,
+    '166774',
+    '171341',
+    '172873',
+    '172909',
+    '164727',
+    '172933',
+    '172746',
+    '172905',
+    '164744', 
+    '630979')
 
 ```
 
@@ -116,7 +153,7 @@ Output tables are produced for each species. These can easily be recombined. An 
 ```{r make diagnostic plot, eval = T, echo = F, fig.cap = "Discard Rates by Stock, Species, Discard Source", fig.height = 8, fig.width = 12}
 
 # library(odbc)
-# library(RODBC)
+library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
 library(dbplyr)
 library(ggplot2)
@@ -136,26 +173,42 @@ options(scipen = 999)
 # 									PWD = condat$pwd)
 
 
-mapsdat <- config::get(value = "maps", file = "~/config.yml")
+# mapsdat <- config::get(value = "maps", file = "~/config.yml")
+# 
+# con_maps <- ROracle::dbConnect(
+#     drv = ROracle::Oracle(),
+#     username = mapsdat$uid,
+#     password = mapsdat$pwd,  
+#     dbname = "NERO.world"
+# )
 
-bcon <- ROracle::dbConnect(
-    drv = ROracle::Oracle(),
-    username = mapsdat$uid,
-    password = mapsdat$pwd,  
-    dbname = "NERO.world"
-)
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
-# bcon <- dbConnect(odbc::odbc(), 
+# con_maps <- dbConnect(odbc::odbc(), 
 # 									DSN = mapsdat$dsn, 
 # 									UID = mapsdat$uid, 
 # 									PWD = mapsdat$pwd)
 
-db_example = tbl(bcon, sql("
+db_example = tbl(con_maps, sql("
 
     select *
-    from MAPS.CAMS_DISCARD_EXAMPLE_GF2019
+    from MAPS.CAMS_DISCARD_ALL_YEARS
      where GF = 1
     AND FED_OR_STATE = 'FED'
+    AND FY = 2019
+    AND SPECIES_ITIS in ('172877' ,
+    '164712' ,
+    '164732' ,
+    '166774',
+    '171341',
+    '172873',
+    '172909',
+    '164727',
+    '172933',
+    '172746',
+    '172905',
+    '164744', 
+    '630979')
 
 ")) %>% 
 	collect()
@@ -202,9 +255,9 @@ db_example %>%
 ```{r DMIS CAMS DISCARD COMPARISON, echo = F}
 
 
-match_stockid <- function(bcon, species_itis){
+match_stockid <- function(con_maps, species_itis){
 	
-	stock_dmis = tbl(bcon, sql("
+	stock_dmis = tbl(con_maps, sql("
     select stock_id
     , comname
     , area
@@ -220,7 +273,7 @@ match_stockid <- function(bcon, species_itis){
 		filter(SPECIES_ITIS == species_itis)
 	
 	 
- t2 = 	tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+ t2 = 	tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
  filter(SPECIES_ITIS == species_itis) %>% 
  	collect() %>%
  	mutate('AREA' = as.character(STAT_AREA))
@@ -237,7 +290,7 @@ match_stockid <- function(bcon, species_itis){
 }
 
 
-species = tbl(bcon, sql("
+species = tbl(con_maps, sql("
 select distinct(b.species_itis)
     , COMNAME
     , a.nespp3
@@ -249,7 +302,7 @@ and b.species_itis is not null
 ) %>% 
 	collect()
 
-discard2019 = tbl(bcon, sql("
+discard2019 = tbl(con_maps, sql("
 select round(sum(POKGMASS_DISCARD)) POKGMASS
 ,round(sum(CODGMSS_DISCARD)) CODGMSS
 ,round(sum(CODGBE_DISCARD)) CODGBE
@@ -302,7 +355,7 @@ for(j in species$SPECIES_ITIS){
 	comp_list[[ii]] <- db_example %>% 
 		filter(SPECIES_ITIS == j)
 	
-	sid = match_stockid(bcon, j) %>% 
+	sid = match_stockid(con_maps, j) %>% 
 		dplyr::select(DMIS_STOCK_ID, AREA, CAMS_STOCK_AREA)
 	
 	comp_list[[ii]] = comp_list[[ii]] %>% 
@@ -340,9 +393,9 @@ dmis_comp %>%
 ```{r DMIS CAMS KALL Comparison}
 
 
-get_dmis_kall_stock <- function(bcon, species_itis){
+get_dmis_kall_stock <- function(con_maps, species_itis){
 
- t1 = tbl(bcon, sql("
+ t1 = tbl(con_maps, sql("
   select *
   from apsd.dmis_all_years
   where fishing_year = 2019
@@ -351,10 +404,10 @@ get_dmis_kall_stock <- function(bcon, species_itis){
  )
 )
  
- t2 = 	tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+ t2 = 	tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
  filter(SPECIES_ITIS == species_itis)
  
-stock_dmis = tbl(bcon, sql("
+stock_dmis = tbl(con_maps, sql("
     select stock_id
     , comname
     , area
@@ -369,7 +422,7 @@ stock_dmis = tbl(bcon, sql("
 
 
 
-t3 = tbl(bcon, sql("select *
+t3 = tbl(con_maps, sql("select *
 									 from MAPS.CAMS_LANDINGS
 									 where activity_code_1 like 'NMS%'
 									 AND RECORD_LAND >= '01-MAY-19'
@@ -399,7 +452,7 @@ t3 = tbl(bcon, sql("select *
 
 # make the table 
 
-species = tbl(bcon, sql("
+species = tbl(con_maps, sql("
 select distinct(b.species_itis)
     , COMNAME
     , a.nespp3
@@ -414,7 +467,7 @@ and b.species_itis is not null
 
 species$SPECIES_ITIS %>% 
 	as.list() %>%
-lapply(., function(i) get_dmis_kall_stock(bcon, i)) %>% 
+lapply(., function(i) get_dmis_kall_stock(con_maps, i)) %>% 
 	do.call(rbind, .) %>% 
 	mutate(KALL_DIFF = KALL_DMIS - KALL_CAMS
 				 , KALL_DIFF_PERC = round((KALL_DMIS - KALL_CAMS)/KALL_DMIS, 3)) %>% 
@@ -548,13 +601,33 @@ stratvars = c('SPECIES_STOCK'
 ```{r plot non groundfish trips, echo = F, fig.cap = "Non-groudfish trips: Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
 
 
-non_gf = tbl(bcon, sql("
+non_gf = tbl(con_maps, sql("
 
-    select SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
+    select SPECIES_ITIS,
+    COMMON_NAME, 
+    DISCARD_SOURCE,
+    SPECIES_STOCK
     , sum(DISCARD) as DSUM
-    from MAPS.CAMS_DISCARD_EXAMPLE_GF2019
+    from MAPS.CAMS_DISCARD_ALL_YEARS
      where GF = 0
+     AND FED_OR_STATE = 'FED'
+    AND FY = 2019
+    AND SPECIES_ITIS in ('172877' ,
+    '164712' ,
+    '164732' ,
+    '166774',
+    '171341',
+    '172873',
+    '172909',
+    '164727',
+    '172933',
+    '172746',
+    '172905',
+    '164744', 
+    '630979'
+    )
      group by SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
+     
 
 ")) %>% 
 	collect()
@@ -569,14 +642,30 @@ non_gf = tbl(bcon, sql("
 
 ```{r non-gf trips table}
 	
-	non_gf = tbl(bcon, sql("
+	non_gf = tbl(con_maps, sql("
 
     select COMMON_NAME, SPECIES_STOCK, FED_OR_STATE
     , sum(DISCARD) as DISCARD
     , sum(subtrip_kall) as KALL
     , count(distinct(VTRSERNO)) as N_VTR
-    from MAPS.CAMS_DISCARD_EXAMPLE_GF2019
+    from MAPS.CAMS_DISCARD_ALL_YEARS
      where GF = 0
+     AND FED_OR_STATE = 'FED'
+    AND FY = 2019
+    AND SPECIES_ITIS in ('172877' ,
+    '164712' ,
+    '164732' ,
+    '166774',
+    '171341',
+    '172873',
+    '172909',
+    '164727',
+    '172933',
+    '172746',
+    '172905',
+    '164744', 
+    '630979'
+    )
      group by COMMON_NAME,SPECIES_STOCK, FED_OR_STATE
 
 ")) %>% 
