@@ -318,7 +318,7 @@ gc()
 ```
 
 
-```{r run calendar year species RMD as a script, eval = F}
+```{r run calendar year species RMD as a script, eval = T}
 
 # this section may be repeated for other modules with other lists of species
 
@@ -339,7 +339,7 @@ itis <-  c(
  itis_num <- as.numeric(itis)
  
 
- species = tbl(bcon, sql("select *
+ species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
@@ -348,20 +348,22 @@ itis <-  c(
   slice(1)
  
  species$ITIS_TSN <- stringr::str_sort(itis)
- 
+
+# make sure the folder is correct 
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/') 
 
 # make a script from RMD.. 
 knitr::purl('january_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
-for(jj in 2020:2021){
+for(jj in 2018:2021){
 	FY <- jj
 	FY_TYPE = 'JANUARY START'
-  source('january_loop_062122.Rmd')
+  source('january_loop_062122.R')  # this is the script created via purl just above
 }
 
 # clean the workspace; restart likely not necessary anymore 
-rm(list = ls())
+# rm(list = ls())
 gc()
 # .rs.restartR()
 
@@ -401,7 +403,8 @@ itis <-  c(
   slice(1)
  
  species$ITIS_TSN <- stringr::str_sort(itis)
-
+ 
+ 
 # make a script from RMD.. 
 knitr::purl('may_loop_062122.Rmd', documentation = 0)
 
@@ -413,7 +416,7 @@ for(jj in 2020:2021>){
 }
 
 # clean the workspace; restart likely not necessary anymore 
-rm(list = ls())
+# rm(list = ls())
 gc()
 # .rs.restartR()
 
@@ -484,17 +487,18 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 #     dbname = "NERO.world"
 # )
 
-for (FY in 2020:2021){
+for (FY in 2018:2021){
 	
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
   
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
 
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
-
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
-
 }
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
+# 
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
+# 
+# }
 
 gc()
 
@@ -527,7 +531,7 @@ and object_name not like '%DISCARD_MORTALITY%'
 ```{r  create tables on cams_garfo}
  # now make the tables on CAMS_GARFO
 
-con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'bgaluardi_cams_garfo')
 
 # condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
 # 
@@ -588,7 +592,7 @@ devtools::load_all('~/PROJECTS/MAPS/')
 
 add_comments(con = con_maps, schema = "MAPS", definitions = definitions) # 3-10 minutes
 
-add_comments(con = con_cams, schema = "CAMS_GARFO") # 3-10 minutes
+add_comments(con = con_cams, schema = "CAMS_GARFO", definitions = definitions) # 3-10 minutes
 
 # dbDisconnect(con_maps)
 
