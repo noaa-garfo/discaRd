@@ -19,29 +19,20 @@ library(odbc)
 library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
 
+# unlock keyring
+keyring::keyring_unlock("apsd_ma")
 
- dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
-# 
- # bcon <- dbConnect(odbc::odbc(), 
- # 									DSN = dw_maps$dsn, 
- # 									UID = dw_maps$uid, 
- # 									PWD = dw_maps$pwd)
+# local run
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
-# Connect to database - move this to config file in the future - quick addition for server
-  connectString <- paste(
-    "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
-    sep = ""
-  )
+# if on server..
+# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 
-# Connect to oracle each loop in case of timeouts
-    bcon <- ROracle::dbConnect(
-      drv = ROracle::Oracle(),
-      username = dw_maps$uid,
-      password = dw_maps$pwd,
-      dbname = connectString
-    )
+
+# connect to MAPS
+
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
 ```
 
 

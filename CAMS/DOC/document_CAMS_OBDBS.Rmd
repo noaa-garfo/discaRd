@@ -12,6 +12,21 @@ always_allow_html: true
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, 
 											message=FALSE, cache=FALSE,
 											progress = TRUE, verbose = FALSE)
+
+# unlock keyring
+keyring::keyring_unlock("apsd_ma")
+
+# local run
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+# if on server..
+# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+
+
+# connect to MAPS
+
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
 ```
 
 ## Summary
