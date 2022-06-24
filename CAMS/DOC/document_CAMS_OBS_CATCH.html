@@ -3162,8 +3162,8 @@ discard estimation.</p>
 </ul></li>
 </ul>
 <div class="figure">
-<div id="htmlwidget-caeb37392685881f0e70" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
-<script type="application/json" data-for="htmlwidget-caeb37392685881f0e70">{"x":{"diagram":"\n  graph LR\n  NEFOP --> CAMS_OBDBS_YYYY\n  ASM --> CAMS_OBDBS_YYYY\n  SECGEAR_MAPPED --> CAMS_OBS_CATCH\n  CAMS_LANDINGS --> CAMS_OBS_CATCH\n  CAMS_OBDBS_YYYY --> CAMS_OBS_CATCH\n        "},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-4e372688a8c4c529afce" style="width:768px;height:288px;" class="DiagrammeR html-widget"></div>
+<script type="application/json" data-for="htmlwidget-4e372688a8c4c529afce">{"x":{"diagram":"\n  graph LR\n  NEFOP --> CAMS_OBDBS_YYYY\n  ASM --> CAMS_OBDBS_YYYY\n  SECGEAR_MAPPED --> CAMS_OBS_CATCH\n  CAMS_LANDINGS --> CAMS_OBS_CATCH\n  CAMS_OBDBS_YYYY --> CAMS_OBS_CATCH\n        "},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
 Figure 1. CAMS_OBS_CATCH table lineage
 </p>
@@ -3358,7 +3358,8 @@ NUMBER
 DATE_TRIP
 </td>
 <td style="text-align:left;">
-NA
+Hierachical detemined date of trip based on date landed. Order is : VTR
+&gt; AMS &gt; Dealer
 </td>
 <td style="text-align:left;">
 DATE
@@ -3369,7 +3370,7 @@ DATE
 DOCID
 </td>
 <td style="text-align:left;">
-NA
+Document ID from VTR. One per trip regardless of numebr fof subtrips.
 </td>
 <td style="text-align:left;">
 VARCHAR2
@@ -3585,7 +3586,8 @@ NUMBER
 OBS_NOHAUL_KALL_TRIP
 </td>
 <td style="text-align:left;">
-NA
+Kept all pounds recorded by observer on unobserved hauls. These are not
+used in d/k calculations but are used to prorate discard
 </td>
 <td style="text-align:left;">
 NUMBER
@@ -3596,7 +3598,7 @@ NUMBER
 OBS_KALL
 </td>
 <td style="text-align:left;">
-Total Kept pounds on an obserevd trip as recorded by observer. This
+Total Kept pounds on an observed trip as recorded by observer. This
 included both observed and unobserved hauls
 </td>
 <td style="text-align:left;">
