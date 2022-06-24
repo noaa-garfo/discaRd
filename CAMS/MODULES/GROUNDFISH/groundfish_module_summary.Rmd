@@ -565,6 +565,7 @@ stratvars = c('SPECIES_STOCK'
 
 
 6. Run a third pass using Stock and Gear only
+*Note: This pass uses data from the focal and previous year. 
 ```{r, echo = T, eval = F}
 # Third PAss Stratification variables
 
