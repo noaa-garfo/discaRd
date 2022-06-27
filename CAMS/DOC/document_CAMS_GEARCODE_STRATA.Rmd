@@ -16,20 +16,36 @@ library(odbc)
 library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
 
-# unlock keyring
-keyring::keyring_unlock("apsd_ma")
+# # unlock keyring
+# keyring::keyring_unlock("apsd_ma")
+# 
+# # local run
+# # dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+# 
+# # if on server..
+# # dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+# 
+# 
+# # connect to MAPS
+# 
+# con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
-# local run
-# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
 
-# if on server..
-# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+```
 
+```{r, include = FALSE, echo = FALSE}
+Sys.setenv(TZ = "America/New_York")
+Sys.setenv(ORA_SDTZ = "America/New_York")
+  
+if(file.exists(here::here("vignettes/articles", "pw.csv"))) {
+  pw_df <- readr::read_csv(here::here("vignettes/articles", "pw.csv"), col_types = "c")
+  pw <- pw_df$pw
+} else {
+  pw <- rstudioapi::askForPassword("Enter keyring password")
+}
 
-# connect to MAPS
-
-con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
-
+keyring::keyring_unlock("apsd_ma", password = pw) # will prompt for password
+con_maps <- apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 ```
 
 
@@ -55,7 +71,7 @@ DiagrammeR::mermaid("
 ## Data Dictionary
 
 ```{r echo = F}
-comments <- ROracle::dbGetQuery(bcon, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_GEARCODE_STRATA'")
+comments <- ROracle::dbGetQuery(con_maps, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'CAMS_GEARCODE_STRATA'")
 
 comments %>%
 dplyr::select(
