@@ -171,15 +171,15 @@ import_query = "  with obs_cams as (
   select case when o.MONTH in (1,2,3,4) then o.YEAR-1 else o.YEAR end as GF_YEAR
   , case when o.MONTH in (1,2,3) then o.YEAR-1 else o.YEAR end as SCAL_YEAR
   , o.*
-  , c.date_trip
+ -- , c.date_trip
   from obs_cams o
-  left join (
-      select 
-      distinct(camsid)
-      , date_trip
-      from maps.cams_landings
-  ) c 
-  on o.camsid = c.camsid  
+ -- left join (
+ --     select 
+ --     distinct(camsid)
+ --     , date_trip
+ --     from maps.cams_landings
+ -- ) c 
+ -- on o.camsid = c.camsid  
    
         
 "
@@ -275,6 +275,10 @@ non_gf_dat = fed_trips %>%
 
 gf_dat = fed_trips%>% 
 	filter(GF == 1)
+
+# need this for anything not in the groundfish loop... 
+all_dat = non_gf_dat %>% 
+	bind_rows(., gf_dat)
 
 rm(c_o_dat2, fed_trips, state_trips)
 
@@ -372,6 +376,8 @@ gc()
 
 ```{r run may year species RMD as a script, eval = F}
 
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/MAY")
+
 # this section may be repeated for other modules with other lists of species
 
 #--------------------------------------------------------------------------#
@@ -394,7 +400,7 @@ itis <-  c(
  itis_num <- as.numeric(itis)
  
 
- species = tbl(bcon, sql("select *
+ species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
@@ -409,7 +415,7 @@ itis <-  c(
 knitr::purl('may_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
-for(jj in 2020:2021>){
+for(jj in 2018:2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('may_loop_062122.R')
@@ -492,13 +498,13 @@ for (FY in 2018:2021){
 # parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
   
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
-
-}
-# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
+# 
+# }
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
 # 
 # parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 # 
-# }
+}
 
 gc()
 
