@@ -71,7 +71,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCAR
 
 #--------------------------------------------------------------------------------#
 # make tables
-ddat_focal <- non_gf_dat %>% 
+ddat_focal <- all_dat %>% 
   filter(YEAR == FY) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
@@ -89,7 +89,7 @@ ddat_focal <- non_gf_dat %>%
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
-ddat_prev <- non_gf_dat %>% 
+ddat_prev <- all_dat %>% 
   filter(YEAR == FY-1) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
