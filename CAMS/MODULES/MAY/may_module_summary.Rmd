@@ -93,20 +93,20 @@ Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to
 Output tables are produced for each species. These can easily be recombined. Preliminary species tables have been shared on `MAPS` and `CAMS_GARFO`.  
 
 ```sql
-	MAPS.CAMS_DISCARD_DOGFISH_19
-	CAMS_GARFO.CAMS_DISCARD_DOGFISH_19
+	MAPS.CAMS_DISCARD_DOGFISHSPINY_2019
+	CAMS_GARFO.CAMS_DISCARD_DOGFISHSPINY_2019
 	
-	MAPS.CAMS_DISCARD_MONKFISH_19
-	CAMS_GARFO.CAMS_DISCARD_MONKFISH_19
+	MAPS.CAMS_DISCARD_MONKFISH_2019
+	CAMS_GARFO.CAMS_DISCARD_MONKFISH_2019
 	
-	MAPS.CAMS_DISCARD_OFFSHOREHAKE_19
-	CAMS_GARFO.CAMS_DISCARD_OFFSHOREHAKE_19
+	MAPS.CAMS_DISCARD_OFFSHOREHAKE_2019
+	CAMS_GARFO.CAMS_DISCARD_OFFSHOREHAKE_2019
 	
-	MAPS.CAMS_DISCARD_REDHAKE_19
-	CAMS_GARFO.CAMS_DISCARD_REDHAKE_19
+	MAPS.CAMS_DISCARD_REDHAKE_2019
+	CAMS_GARFO.CAMS_DISCARD_REDHAKE_2019
 	
-	MAPS.CAMS_DISCARD_SILVERHAKE_19
-	CAMS_GARFO.CAMS_DISCARD_SILVERHAKE_19
+	MAPS.CAMS_DISCARD_SILVERHAKE_2019
+	CAMS_GARFO.CAMS_DISCARD_SILVERHAKE_2019
 
 
 ```
@@ -171,27 +171,27 @@ discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) 
       dbname = connectString
     )
 
-db_dogfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_DOGFISH_19")) %>% 
+db_dogfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_DOGFISHSPINY_2019")) %>% 
 	collect
 
 db_dogfish$SPECIES <- "DOGFISH"
 
-db_offshore = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_OFFSHOREHAKE_19")) %>% 
+db_offshore = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_OFFSHOREHAKE_2019")) %>% 
 	collect
 
 db_offshore$SPECIES <- "OFFSHORE HAKE"
 
-db_red = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_REDHAKE_19")) %>% 
+db_red = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_REDHAKE_2019")) %>% 
 	collect
 
 db_red$SPECIES <- "RED HAKE"
 
-db_silver = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SILVERHAKE_19")) %>% 
+db_silver = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SILVERHAKE_2019")) %>% 
 	collect
 
 db_silver$SPECIES <- "SILVER HAKE"
 
-db_monkfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MONKFISH_19")) %>%
+db_monkfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MONKFISH_2019")) %>%
 	collect
 
 db_monkfish$SPECIES <- "MONKFISH"
