@@ -93,29 +93,29 @@ Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to
 Output tables are produced for each species. These can easily be recombined. Preliminary species tables have been shared on `MAPS` and `CAMS_GARFO`.  
 
 ```sql
-	MAPS.CAMS_DISCARD_BLACKSEABASS_19
-	CAMS_GARFO.CAMS_DISCARD_BLACKSEABASS_19
+	MAPS.CAMS_DISCARD_BLACKSEA_BASS_2019
+	CAMS_GARFO.CAMS_DISCARD_BLACKSEA_BASS_2019
 	
-	MAPS.CAMS_DISCARD_BLUEFISH_19
-	CAMS_GARFO.CAMS_DISCARD_BLUEFISH_19
+	MAPS.CAMS_DISCARD_BLUEFISH_2019
+	CAMS_GARFO.CAMS_DISCARD_BLUEFISH_2019
 	
-	MAPS.CAMS_DISCARD_BUTTERFISH_19
-	CAMS_GARFO.CAMS_DISCARD_BUTTERFISH_19
+	MAPS.CAMS_DISCARD_BUTTERFISH_2019
+	CAMS_GARFO.CAMS_DISCARD_BUTTERFISH_2019
 	
-	MAPS.CAMS_DISCARD_LONGFINSQUID_19
-	CAMS_GARFO.CAMS_DISCARD_LONGFINSQUID_19
+	MAPS.CAMS_DISCARD_SQUIDATLLONG_FIN_2019
+	CAMS_GARFO.CAMS_DISCARD_SQUIDATLLONG_FIN_2019
 	
-	MAPS.CAMS_DISCARD_SHORTFINSQUID_19
-	CAMS_GARFO.CAMS_DISCARD_SHORTFINSQUID_19
+	MAPS.CAMS_DISCARD_SQUIDSHORT_FIN_2019
+	CAMS_GARFO.CAMS_DISCARD_SQUIDSHORT_FIN_2019
 	
-	MAPS.CAMS_DISCARD_MACKEREL_19
-	CAMS_GARFO.CAMS_DISCARD_MACKEREL_19
+	MAPS.CAMS_DISCARD_MACKERELATLANTIC_19
+	CAMS_GARFO.CAMS_DISCARD_MACKERELATLANTIC_19
 	
-	MAPS.CAMS_DISCARD_FLUKE_19
-	CAMS_GARFO.CAMS_DISCARD_FLUKE_19
+	MAPS.CAMS_DISCARD_FLUKE_2019
+	CAMS_GARFO.CAMS_DISCARD_FLUKE_2019
 	
-	MAPS.CAMS_DISCARD_SCUP_19
-	CAMS_GARFO.CAMS_DISCARD_SCUP_19
+	MAPS.CAMS_DISCARD_SCUP_2019
+	CAMS_GARFO.CAMS_DISCARD_SCUP_2019
 
 
 ```
@@ -180,42 +180,42 @@ discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) 
       dbname = connectString
     )
 
-db_blackseabass = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLACKSEABASS_19")) %>% 
+db_blackseabass = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLACKSEA_BASS_2019")) %>% 
 	collect
 
 db_blackseabass$SPECIES <- "BLACKSEABASS"
 
-db_bluefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLUEFISH_19")) %>% 
+db_bluefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLUEFISH_2019")) %>% 
 	collect
 
 db_bluefish$SPECIES <- "BLUEFISH"
 
-db_butterfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BUTTERFISH_19")) %>% 
+db_butterfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BUTTERFISH_2019")) %>% 
 	collect
 
 db_butterfish$SPECIES <- "BUTTERFISH"
 
-db_longfinsquid = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_LONGFINSQUID_19")) %>% 
+db_longfinsquid = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SQUIDATLLONG_FIN_2019")) %>% 
 	collect
 
 db_longfinsquid$SPECIES <- "LONGFINSQUID"
 
-db_shortfinsquid = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SHORTFINSQUID_19")) %>% 
+db_shortfinsquid = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SQUIDSHORT_FIN_2019")) %>% 
 	collect
 
 db_shortfinsquid$SPECIES <- "SHORTFINSQUID"
 
-db_mackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MACKEREL_19")) %>%
+db_mackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MACKERELATLANTIC_2019")) %>%
 	collect
 
 db_mackerel$SPECIES <- "MACKEREL"
 
-db_fluke = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_FLUKE_19")) %>%
+db_fluke = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_FLUKE_2019")) %>%
 	collect
 
 db_fluke$SPECIES <- "FLUKE"
 
-db_scup = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SCUP_19")) %>%
+db_scup = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SCUP_2019")) %>%
 	collect
 
 db_scup$SPECIES <- "SCUP"

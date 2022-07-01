@@ -93,23 +93,23 @@ Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to
 Output tables are produced for each species. These can easily be recombined. Preliminary species tables have been shared on `MAPS` and `CAMS_GARFO`.  
 
 ```sql
-	MAPS.CAMS_DISCARD_BARNDOORSKATE_19
-	CAMS_GARFO.CAMS_DISCARD_BARNDOORSKATE_19
+	MAPS.CAMS_DISCARD_BARNDOORSKATE_2019
+	CAMS_GARFO.CAMS_DISCARD_BARNDOORSKATE_2019
 	
-	MAPS.CAMS_DISCARD_CLEARNOSESKATE_19
-	CAMS_GARFO.CAMS_DISCARD_CLEARNOSESKATE_19
+	MAPS.CAMS_DISCARD_SKATECLEARNOSE_2019
+	CAMS_GARFO.CAMS_DISCARD_SKATECLEARNOSE_2019
 	
-	MAPS.CAMS_DISCARD_LITTLESKATE_19
-	CAMS_GARFO.CAMS_DISCARD_LITTLESKATE_19
+	MAPS.CAMS_DISCARD_SKATELITTLE_2019
+	CAMS_GARFO.CAMS_DISCARD_SKATELITTLE_2019
 	
-	MAPS.CAMS_DISCARD_ROSETTESKATE_19
-	CAMS_GARFO.CAMS_DISCARD_ROSETTESKATE_19
+	MAPS.CAMS_DISCARD_SKATEROSETTE_2019
+	CAMS_GARFO.CAMS_DISCARD_SKATEROSETTE_2019
 	
-	MAPS.CAMS_DISCARD_SMOOTHSKATE_19
-	CAMS_GARFO.CAMS_DISCARD_SMOOTHSKATE_19
+	MAPS.CAMS_DISCARD_SKATESMOOTH_2019
+	CAMS_GARFO.CAMS_DISCARD_SKATESMOOTH_2019
 	
-	MAPS.CAMS_DISCARD_WINTERSKATE_19
-	CAMS_GARFO.CAMS_DISCARD_WINTERSKATE_19
+	MAPS.CAMS_DISCARD_SKATEWINTER_2019
+	CAMS_GARFO.CAMS_DISCARD_SKATEWINTER_2019
 
 
 ```
@@ -177,32 +177,32 @@ discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) 
       dbname = connectString
     )
 
-db_barndoorskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BARNDOORSKATE_19")) %>% 
+db_barndoorskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SKATEBARNDOOR_2019")) %>% 
 	collect
 
 db_barndoorskate$SPECIES <- "BARNDOORSKATE"
 
-db_clearnoseskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_CLEARNOSESKATE_19")) %>% 
+db_clearnoseskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SKATECLEARNOSE_2019")) %>% 
 	collect
 
 db_clearnoseskate$SPECIES <- "CLEARNOSESKATE"
 
-db_littleskate= tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_LITTLESKATE_19")) %>% 
+db_littleskate= tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SKATELITTLE_2019")) %>% 
 	collect
 
 db_littleskate$SPECIES <- "LITTLESKATE"
 
-db_rosetteskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_ROSETTESKATE_19")) %>% 
+db_rosetteskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SKATEROSETTE_2019")) %>% 
 	collect
 
 db_rosetteskate$SPECIES <- "ROSETTESKATE"
 
-db_smoothskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SMOOTHSKATE_19")) %>%
+db_smoothskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SKATESMOOTH_2019")) %>%
 	collect
 
 db_smoothskate$SPECIES <- "SMOOTHSKATE"
 
-db_winterskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_WINTERSKATE_19")) %>%
+db_winterskate = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SKATEWINTER_2019")) %>%
 	collect
 
 db_winterskate$SPECIES <- "WINTERSKATE"
