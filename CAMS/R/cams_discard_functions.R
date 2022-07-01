@@ -475,6 +475,7 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 					, ACTIVITY_CODE
 					, VTRSERNO
 					, CAMSID
+					, DOCID
 					, CAMS_SUBTRIP
 					, FED_OR_STATE
 					, GF
