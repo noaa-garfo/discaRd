@@ -498,12 +498,12 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 for (FY in 2018:2021){
 	
-# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
   
-# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
 # 
 # }
-# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
 # 
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 # 
