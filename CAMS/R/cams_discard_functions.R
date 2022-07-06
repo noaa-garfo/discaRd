@@ -449,57 +449,72 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 				# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 				dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 											, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
+											, 'CAMS_DISCARD' = 'DISCARD'
 											# , 'COMMON_NAME' = 'COMNAME_EVAL'
 											, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
 											, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
 											, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
+											, 'CV_I_T' ='CV_f' 
+											, 'CV_S_GM' ='CV_f_a' 
+											, 'CV_G' ='CV_b'
+											, 'DISCARD_RATE_S_GM' = 'trans_rate_a'
+											, 'DISCARD_RATE_G' = 'BROAD_STOCK_RATE'
+											, 'CAMS_CV' = 'CV'
 				) %>% 
 				mutate(DATE_RUN = as.character(Sys.Date())
 							 , FY = as.integer(FY)) %>%
 				dplyr::select(
-					DATE_RUN,
-					FY,
-					DATE_TRIP,
-					YEAR,
-					MONTH,
-					SPECIES_ITIS,
-					COMMON_NAME,
-					FY_TYPE,
-					ACTIVITY_CODE,
-					VTRSERNO,
-					CAMSID,
-					CAMS_SUBTRIP,
-					FED_OR_STATE,
-					GF,
-					AREA,
-					LINK1,
-					N_OBS_TRIPS_F,
-					STRATA_USED,
-					STRATA_FULL,
-					STRATA_ASSUMED,
-					DISCARD_SOURCE,
-					OBS_DISCARD,
-					OBS_KALL,
-					SUBTRIP_KALL,
-					BROAD_STOCK_RATE,
-					CAMS_DISCARD_RATE,
-					DISC_MORT_RATIO,
-					DISCARD,
-					CV,
-					SPECIES_STOCK,
-					GEARCODE,
-					NEGEAR,
-					GEARTYPE,
-					CAMS_GEAR_GROUP,
-					MESHGROUP,
-					SECTID,
-					EM,
-					REDFISH_EXEMPTION,
-					SNE_SMALLMESH_EXEMPTION,
-					XLRG_GILLNET_EXEMPTION,
-					TRIPCATEGORY,
-					ACCESSAREA,
-					SCALLOP_AREA
+					DATE_RUN
+					, FY
+					, DATE_TRIP
+					, YEAR
+					, MONTH
+					, SPECIES_ITIS
+					, COMMON_NAME
+					, FY_TYPE
+					, ACTIVITY_CODE
+					, VTRSERNO
+					, CAMSID
+					, DOCID
+					, CAMS_SUBTRIP
+					, FED_OR_STATE
+					, GF
+					, AREA
+					, LINK1
+					, N_OBS_TRIPS_F
+					, STRATA_USED
+					, STRATA_FULL
+					, STRATA_ASSUMED
+					, DISCARD_SOURCE
+					, OBS_DISCARD
+					, OBS_KALL
+					, SUBTRIP_KALL
+					, SPECIES_ITIS 
+					, ACTIVITY_CODE 
+					, N_OBS_TRIPS_F 
+					, CAMS_DISCARD_RATE
+					, DISCARD_RATE_S_GM 
+					, DISCARD_RATE_G
+					, CAMS_CV
+					, CV_I_T 
+					, CV_S_GM
+					, CV_G
+					, DISC_MORT_RATIO
+					, CAMS_DISCARD
+					, SPECIES_STOCK
+					, GEARCODE
+					, NEGEAR
+					, GEARTYPE
+					, CAMS_GEAR_GROUP
+					, MESHGROUP
+					, SECTID
+					, EM
+					, REDFISH_EXEMPTION,
+					, SNE_SMALLMESH_EXEMPTION
+					, XLRG_GILLNET_EXEMPTION
+					, TRIPCATEGORY
+					, ACCESSAREA
+					, SCALLOP_AREA
 					# eval(strata_unique)
 				)
 			
@@ -514,25 +529,41 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 		# adjust for DISACRD_SOURCE = N, nan and infinite values	
 		
 		outlist <- outlist %>% 
-			dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
-			dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
+			dplyr::mutate(DISCARD_SOURCE = case_when(is.na(CAMS_DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
+			dplyr::mutate(STRATA_USED = case_when(is.na(CAMS_DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
 		
 		
-		outlist$CV[is.nan(outlist$CV)]<-NA
+		outlist$CAMS_CV[is.nan(outlist$CAMS_CV)]<-NA
 		
-		outlist$CV[is.infinite(outlist$CV)] <- NA    
+		outlist$CAMS_CV[is.infinite(outlist$CAMS_CV)] <- NA    
+		
+		outlist$CV_I_T[is.nan(outlist$CV_I_T)]<-NA
+		
+		outlist$CV_I_T[is.infinite(outlist$CV_I_T)] <- NA    
+		
+		outlist$CV_S_GM[is.nan(outlist$CV_S_GM)]<-NA
+		
+		outlist$CV_S_GM[is.infinite(outlist$CV_S_GM)] <- NA    
+
+		outlist$CV_G[is.nan(outlist$CV_G)]<-NA
+		
+		outlist$CV_G[is.infinite(outlist$CV_G)] <- NA    
 		
 		outlist$CAMS_DISCARD_RATE[is.nan(outlist$CAMS_DISCARD_RATE)]<-NA
 		
 		outlist$CAMS_DISCARD_RATE[is.infinite(outlist$CAMS_DISCARD_RATE)] <- NA 
 		
-		outlist$BROAD_STOCK_RATE[is.nan(outlist$BROAD_STOCK_RATE)]<-NA
+		outlist$DISCARD_RATE_G[is.nan(outlist$DISCARD_RATE_G)]<-NA
 		
-		outlist$BROAD_STOCK_RATE[is.infinite(outlist$BROAD_STOCK_RATE)] <- NA 
+		outlist$DISCARD_RATE_G[is.infinite(outlist$DISCARD_RATE_G)] <- NA 
 		
-		outlist$DISCARD[is.nan(outlist$DISCARD)]<-NA
+		outlist$DISCARD_RATE_S_GM[is.nan(outlist$DISCARD_RATE_S_GM)]<-NA
 		
-		outlist$DISCARD[is.infinite(outlist$DISCARD)] <- NA 
+		outlist$DISCARD_RATE_S_GM[is.infinite(outlist$DISCARD_RATE_S_GM)] <- NA 
+		
+		outlist$CAMS_DISCARD[is.nan(outlist$CAMS_DISCARD)]<-NA
+		
+		outlist$CAMS_DISCARD[is.infinite(outlist$CAMS_DISCARD)] <- NA 
 		
 		t2 = Sys.time()
 		

@@ -431,6 +431,9 @@ gc()
 
 ```{r run november year species RMD as a script, eval = F}
 
+
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/")
+
 # this section may be repeated for other modules with other lists of species
 
 #--------------------------------------------------------------------------#
@@ -442,7 +445,7 @@ itis <-  c('168546',
  itis_num <- as.numeric(itis)
  
 
- species = tbl(bcon, sql("select *
+ species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
@@ -457,14 +460,14 @@ itis <-  c('168546',
 knitr::purl('november_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
-for(jj in 2020:2021>){
+for(jj in 2018:2021){
 	FY <- jj
 	FY_TYPE = 'NOVEMBER START'
   source('november_loop_062122.R')
 }
 
 # clean the workspace; restart likely not necessary anymore 
-rm(list = ls())
+# rm(list = ls())
 gc()
 # .rs.restartR()
 
@@ -495,14 +498,14 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 for (FY in 2018:2021){
 	
-# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
   
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
 # 
 # }
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
 # 
-# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 # 
 }
 
@@ -569,12 +572,12 @@ and object_name not like '%DISCARD_MORTALITY%'
 
 
 # make a script version of the list of tables to  add
-  make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list$OBJECT_NAME," AS SELECT * FROM MAPS.", tab_list$OBJECT_NAME)
+  make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list_cm$OBJECT_NAME," AS SELECT * FROM MAPS.", tab_list_cm$OBJECT_NAME)
   
 # make the tables from MAPS
-  for(i in 1:nrow(tab_list)){
-  	if(DBI::dbExistsTable(con_cams, tab_list$OBJECT_NAME[i])) next
-  	print(paste0("MAKING TABLE ",  tab_list$OBJECT_NAME[i], " ON CAMS_GARFO"))
+  for(i in 1:nrow(tab_list_cm)){
+  	if(DBI::dbExistsTable(con_cams, tab_list_cm$OBJECT_NAME[i])) next
+  	print(paste0("MAKING TABLE ",  tab_list_cm$OBJECT_NAME[i], " ON CAMS_GARFO"))
   	ROracle::dbSendQuery(con_cams, make_tab_sq[i])
   }
 
@@ -639,7 +642,7 @@ ROracle::dbSendQuery(con_maps, sq)
 
 
 ROracle::dbGetQuery(con_maps, "
-	select round(sum(discard)) as total_discard
+	select round(sum(cams_discard)) as total_discard
 	, species_stock
 	, COMMON_NAME
 	, species_itis
@@ -698,7 +701,7 @@ ROracle::dbSendQuery(con_cams, "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_ALL_YEAR
 
 
 ROracle::dbGetQuery(con_cams, "
-	select round(sum(discard)) as total_discard
+	select round(sum(cams_discard)) as total_discard
 	, species_stock
 	, COMMON_NAME
 	, species_itis
