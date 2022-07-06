@@ -27,7 +27,7 @@ RUN FROM MAPS SCHEMA
 
 */
 
-DEF year = 2021
+DEF year = 2022
 /
 DROP TABLE obdbs_cams_&year
 /

@@ -107,7 +107,7 @@ groundfish estimates from non-groundfish trips are as follows:
 
 ```{r echo = T, eval = F}
 	mutate(coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+	mutate(CAMS_DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
 			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
@@ -227,7 +227,7 @@ db_example = tbl(con_maps, sql("
 db_example %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
 	group_by(SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK) %>% 
-	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
@@ -243,7 +243,7 @@ db_example %>%
 					 , SPECIES_STOCK) %>% 
 	dplyr::summarise(nvtr = n_distinct(VTRSERNO)
 									 , KALL = sum(SUBTRIP_KALL, na.rm = T)
-									 , DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
+									 , DISCARD = round(sum(CAMS_DISCARD, na.rm = T))) %>% 
 	DT::datatable(caption = 'Discard Estimate by Stock, Species, Discard Source (using CAMS Stock ID)') %>% 
 	DT::formatRound(c('nvtr','KALL','DISCARD'), digits = 0, interval = 3)
 	# 
@@ -361,7 +361,7 @@ for(j in species$SPECIES_ITIS){
 	comp_list[[ii]] = comp_list[[ii]] %>% 
 		left_join(sid, by = c('AREA')) %>% 
 		group_by(COMMON_NAME, CAMS_STOCK_AREA, DMIS_STOCK_ID) %>% 
-		dplyr::summarise(CAMS_DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
+		dplyr::summarise(CAMS_DISCARD = round(sum(CAMS_DISCARD, na.rm = T))) %>% 
 		filter(!is.na(COMMON_NAME))
 	
 	ii = ii+1
@@ -608,7 +608,7 @@ non_gf = tbl(con_maps, sql("
     COMMON_NAME, 
     DISCARD_SOURCE,
     SPECIES_STOCK
-    , sum(DISCARD) as DSUM
+    , sum(CAMS_DISCARD) as CAMS_DISCARD
     from MAPS.CAMS_DISCARD_ALL_YEARS
      where GF = 0
      AND FED_OR_STATE = 'FED'
@@ -634,7 +634,7 @@ non_gf = tbl(con_maps, sql("
 	collect()
 
 	ggplot(non_gf)+
-	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	geom_bar(aes(x = SPECIES_STOCK, y = CAMS_DISCARD, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
 	facet_wrap(~COMMON_NAME, scales = 'free')+
 	theme_light()
 
@@ -646,7 +646,7 @@ non_gf = tbl(con_maps, sql("
 	non_gf = tbl(con_maps, sql("
 
     select COMMON_NAME, SPECIES_STOCK, FED_OR_STATE
-    , sum(DISCARD) as DISCARD
+    , sum(CAMS_DISCARD) as CAMS_DISCARD
     , sum(subtrip_kall) as KALL
     , count(distinct(VTRSERNO)) as N_VTR
     from MAPS.CAMS_DISCARD_ALL_YEARS
@@ -675,7 +675,7 @@ non_gf = tbl(con_maps, sql("
 	
 	non_gf %>% 
 	DT::datatable(caption = 'Non-groundfish trips: Discard Estimate by Stock, Species, Discard Source (using CAMS Stock ID)') %>% 
-	DT::formatRound(c('N_VTR','KALL','DISCARD'), digits = 0, interval = 3)
+	DT::formatRound(c('N_VTR','KALL','CAMS_DISCARD'), digits = 0, interval = 3)
 
 ```
 

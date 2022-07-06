@@ -529,25 +529,41 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 		# adjust for DISACRD_SOURCE = N, nan and infinite values	
 		
 		outlist <- outlist %>% 
-			dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
-			dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
+			dplyr::mutate(DISCARD_SOURCE = case_when(is.na(CAMS_DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% 
+			dplyr::mutate(STRATA_USED = case_when(is.na(CAMS_DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
 		
 		
-		outlist$CV[is.nan(outlist$CV)]<-NA
+		outlist$CAMS_CV[is.nan(outlist$CAMS_CV)]<-NA
 		
-		outlist$CV[is.infinite(outlist$CV)] <- NA    
+		outlist$CAMS_CV[is.infinite(outlist$CAMS_CV)] <- NA    
+		
+		outlist$CV_I_T[is.nan(outlist$CV_I_T)]<-NA
+		
+		outlist$CV_I_T[is.infinite(outlist$CV_I_T)] <- NA    
+		
+		outlist$CV_S_GM[is.nan(outlist$CV_S_GM)]<-NA
+		
+		outlist$CV_S_GM[is.infinite(outlist$CV_S_GM)] <- NA    
+
+		outlist$CV_G[is.nan(outlist$CV_G)]<-NA
+		
+		outlist$CV_G[is.infinite(outlist$CV_G)] <- NA    
 		
 		outlist$CAMS_DISCARD_RATE[is.nan(outlist$CAMS_DISCARD_RATE)]<-NA
 		
 		outlist$CAMS_DISCARD_RATE[is.infinite(outlist$CAMS_DISCARD_RATE)] <- NA 
 		
-		outlist$BROAD_STOCK_RATE[is.nan(outlist$BROAD_STOCK_RATE)]<-NA
+		outlist$DISCARD_RATE_G[is.nan(outlist$DISCARD_RATE_G)]<-NA
 		
-		outlist$BROAD_STOCK_RATE[is.infinite(outlist$BROAD_STOCK_RATE)] <- NA 
+		outlist$DISCARD_RATE_G[is.infinite(outlist$DISCARD_RATE_G)] <- NA 
 		
-		outlist$DISCARD[is.nan(outlist$DISCARD)]<-NA
+		outlist$DISCARD_RATE_S_GM[is.nan(outlist$DISCARD_RATE_S_GM)]<-NA
 		
-		outlist$DISCARD[is.infinite(outlist$DISCARD)] <- NA 
+		outlist$DISCARD_RATE_S_GM[is.infinite(outlist$DISCARD_RATE_S_GM)] <- NA 
+		
+		outlist$CAMS_DISCARD[is.nan(outlist$CAMS_DISCARD)]<-NA
+		
+		outlist$CAMS_DISCARD[is.infinite(outlist$CAMS_DISCARD)] <- NA 
 		
 		t2 = Sys.time()
 		
