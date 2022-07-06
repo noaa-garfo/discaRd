@@ -230,7 +230,7 @@ strat_blackseabass <- db_blackseabass %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -249,7 +249,7 @@ strat_bluefish <- db_bluefish %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -268,7 +268,7 @@ strat_butterfish <- db_butterfish %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -288,7 +288,7 @@ strat_longfinsquid <- db_longfinsquid %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -309,7 +309,7 @@ strat_shortfinsquid <- db_shortfinsquid %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -329,7 +329,7 @@ strat_mackerel <- db_mackerel %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -348,7 +348,7 @@ strat_fluke <- db_fluke %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -367,7 +367,7 @@ strat_scup <- db_scup %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -415,7 +415,7 @@ db_final %>%
 	# filter(DISCARD_SOURCE != 'O')&
   filter(FED_OR_STATE=='FED') %>% 
 	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
-	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
@@ -430,7 +430,7 @@ db_final %>%
 	# filter(DISCARD_SOURCE != 'O')&
   filter(FED_OR_STATE=='STATE') %>% 
 	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
-	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
@@ -447,7 +447,7 @@ db_blackseabass %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -472,7 +472,7 @@ db_blackseabass %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -497,7 +497,7 @@ db_bluefish %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -520,7 +520,7 @@ db_bluefish %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -543,7 +543,7 @@ db_butterfish %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -566,7 +566,7 @@ db_butterfish %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -589,7 +589,7 @@ db_longfinsquid %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -612,7 +612,7 @@ db_longfinsquid %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -635,7 +635,7 @@ db_shortfinsquid %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -658,7 +658,7 @@ db_shortfinsquid %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -681,7 +681,7 @@ db_mackerel %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -704,7 +704,7 @@ db_mackerel %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -727,7 +727,7 @@ db_fluke %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -750,7 +750,7 @@ db_fluke %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -774,7 +774,7 @@ db_scup %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -797,7 +797,7 @@ db_scup %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -812,82 +812,82 @@ db_scup %>%
 ```
 
 ```{r blackseabass gear fed discard table }
-db_blackseabass %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_blackseabass %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Blackseabass')
 ```
 
 ```{r blackseabass gear state discard table }
-db_blackseabass %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_blackseabass %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Blackseabass')
 ```
 
 ```{r bluefish gear fed discard table }
-db_bluefish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_bluefish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Bluefish')
 ```
 
 ```{r bluefish gear state discard table }
-db_bluefish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_bluefish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Bluefish')
 ```
 
 ```{r butterfish gear fed discard table }
-db_butterfish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_butterfish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Butterfish')
 ```
 
 ```{r butterfish gear state discard table }
-db_butterfish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_butterfish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Butterfish')
 ```
 
 ```{r longfinsquid gear fed discard table }
-db_longfinsquid %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_longfinsquid %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Longfinsquid')
 ```
 
 ```{r longfinsquid gear state discard table }
-db_longfinsquid %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_longfinsquid %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Longfinsquid')
 ```
 
 ```{r shortfinsquid gear fed discard table }
-db_shortfinsquid %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_shortfinsquid %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Shortfinsquid')
 ```
 
 ```{r shortfinsquid gear state discard table }
-db_shortfinsquid%>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_shortfinsquid%>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Shortfinsquid')
 ```
 
 ```{r mackerel gear fed discard table }
-db_mackerel %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_mackerel %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Mackerel')
 ```
 
 ```{r mackerel gear state discard table }
-db_mackerel %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_mackerel %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Mackerel')
 ```
 
 ```{r fluke gear fed discard table }
-db_fluke %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_fluke %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Fluke')
 ```
 
 ```{r fluke gear state discard table }
-db_fluke %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_fluke %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Fluke')
 ```
 
 ```{r scup gear fed discard table }
-db_scup %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_scup %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Scup')
 ```
 
 ```{r scup gear state discard table }
-db_scup %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
+db_scup %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Scup')
 ```
 ### Appendix
