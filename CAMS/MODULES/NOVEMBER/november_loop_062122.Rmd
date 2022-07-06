@@ -22,7 +22,7 @@ urlcolor: cyan
 ---
 
 
-```{r global_options, include=FALSE}
+```{r global_options, include=FALSE, purl = F}
 knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
 											message = FALSE, cache = FALSE,
 											progress = TRUE, verbose = FALSE, comment = F
@@ -54,7 +54,7 @@ options(scipen = 999)
  
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
 # 
- # bcon <- dbConnect(odbc::odbc(), 
+ # con_maps <- dbConnect(odbc::odbc(), 
  # 									DSN = dw_maps$dsn, 
  # 									UID = dw_maps$uid, 
  # 									PWD = dw_maps$pwd)
@@ -68,7 +68,7 @@ options(scipen = 999)
   )
 
 # Connect to oracle each loop in case of timeouts
-    bcon <- ROracle::dbConnect(
+    con_maps <- ROracle::dbConnect(
       drv = ROracle::Oracle(),
       username = dw_maps$uid,
       password = dw_maps$pwd,
@@ -100,7 +100,7 @@ FY_TYPE = 'NOV START'
  itis_num <- as.numeric(itis)
  
 
- species = tbl(bcon, sql("select *
+ species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
@@ -224,7 +224,7 @@ import_query = " with obs_cams as (
         
 "
 
-c_o_dat2 <- ROracle::dbGetQuery(bcon, import_query)
+c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
 		
 c_o_dat2 = c_o_dat2 %>% 
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
@@ -322,7 +322,7 @@ rm(fed_trips, state_trips)
 ```
 
 
-```{r subset tables join and run, eval = T  }
+```{r subset tables join and run, eval = T, purl = T  }
 
 # Stratification variables
 
@@ -336,9 +336,11 @@ stratvars = c('SPECIES_STOCK'
 # Begin loop
 
 
-for(i in 1:length(species$ITIS)){
+for(i in 1:length(species$SPECIES_ITIS)){
 
-print(paste0('Running ', species$COMMON_NAME[i]))	
+t1 = Sys.time()	
+	
+print(paste0('Running ', species$COMMON_NAME[i], ' For Fishing Year ', FY))	
 	
 # species_nespp3 = species$NESPP3[i]  
 #species_itis = species$ITIS_TSN[i] 
@@ -349,7 +351,7 @@ species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -358,7 +360,7 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -370,7 +372,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   #dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP) %>%
@@ -383,12 +385,12 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
 
 #--------------------------------------------------------------------------------#
 # make tables
-ddat_focal <- c_o_dat2 %>% 
+ddat_focal <- all_dat %>% 
   filter(GF_YEAR == FY) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
-         ,SEADAYS = 0
-	  		 , NESPP3 = NESPP3_FINAL) %>% 
+         ,SEADAYS = 0) %>% 
+	  		 # , NESPP3 = NESPP3_FINAL
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
@@ -400,12 +402,12 @@ ddat_focal <- c_o_dat2 %>%
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
-ddat_prev <- c_o_dat2 %>% 
+ddat_prev <- all_dat %>% 
   filter(GF_YEAR == FY-1) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
-         ,SEADAYS = 0
-	  		 , NESPP3 = NESPP3_FINAL) %>% 
+         ,SEADAYS = 0) %>%
+	  		 # , NESPP3 = NESPP3_FINAL 
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
@@ -801,9 +803,11 @@ t2 = Sys.time()
 	
 print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 }
+
+
 ```
 
-```{r subset tables join and run, eval = F, purl=F}
+```{r subset tables join and run old, eval = F, purl = F}
 joined_table %>% 
 	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
@@ -907,9 +911,9 @@ joined_table %>%
  cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA    
  
  species$COMMON_NAME[i]
-#db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
+#db_drop_table(con = con_maps, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_GOLDENTILEFISH_20', value = cy_discard_example, overwrite = T)
+dbWriteTable(con_maps, name = 'CAMS_DISCARD_GOLDENTILEFISH_20', value = cy_discard_example, overwrite = T)
 
 cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
@@ -929,6 +933,6 @@ cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE
  
 ```
 
-rm(list = ls())
+<!-- rm(list = ls()) -->
 
-.rs.restartR()
+<!-- .rs.restartR() -->
