@@ -93,7 +93,8 @@ FY_TYPE = 'JAN START'
 # SMB, river herring, bluefish, summer flounder, 
 # black seabass and scup.
 #Not sure what else is needed for herring and shad catch cap.
- itis <-  c('167687',
+ itis <-  c('172413',
+            '167687',
         '168559',
         '172567',
         '082372',
@@ -104,7 +105,9 @@ FY_TYPE = 'JAN START'
          '164499',
         '160617',
         '168546',
-        '161722')  # 
+        '161722',
+        '80944',
+        '81343')  # 
  
  #itis <- itis
  itis_num <- as.numeric(itis)
