@@ -1,5 +1,5 @@
 ---
-title: "March loop for discards"
+title: "April loop for discards"
 output:
   pdf_document: 
     highlight: zenburn
@@ -86,14 +86,14 @@ source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 FY <- 2019
 
-FY_TYPE = 'MARCH START'
+FY_TYPE = 'APRIL START'
 
 #--------------------------------------------------------------------------#
 # group of species ITIS codes.. 
 # SMB, river herring, bluefish, summer flounder, 
 # black seabass and scup.
 #Not sure what else is needed for herring and shad catch cap.
- itis <-  c('620992')
+ itis <-  c('79718')
  
  #itis <- itis
  itis_num <- as.numeric(itis)
