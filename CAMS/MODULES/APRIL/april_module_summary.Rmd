@@ -1,5 +1,5 @@
 ---
-title: "November Year Module Summary"
+title: "April Year Module Summary"
 #author: "Ben Galuardi modified by K.Winiarski"
 date: "`r Sys.Date()`"
 output:
@@ -22,10 +22,9 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 options(knitr.kable.NA = '')
 ```
 
-
 ### Background 
 
-Exploration of discard estimates from november year module 
+Exploration of discard estimates from march year module 
 
 ### Steps 
 
@@ -93,52 +92,12 @@ Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to
 Output tables are produced for each species. These can easily be recombined. Preliminary species tables have been shared on `MAPS` and `CAMS_GARFO`.  
 
 ```sql
-	MAPS.CAMS_DISCARD_GOLDENTILEFISH_19
-	CAMS_GARFO.CAMS_DISCARD_GOLDENTILEFISH_19
-	
-	MAPS.CAMS_DISCARD_BLUELINETILEFISH_19
-	CAMS_GARFO.CAMS_DISCARD_BLUELINETILEFISH_19
+	MAPS.CAMS_DISCARD_SEASCALLOP_2019
+	CAMS_GARFO.CAMS_DISCARD_SEASCALLOP_2019
 	
 ```
 
 ### Diagnostic Plots/Tables
-
-```{r make diagnostic plot, eval = T, echo = F, fig.cap = "2019 Federal Discard Totals by Source", fig.height = 8, fig.width = 12}
-
-# library(odbc)
-# library(dplyr, warn.conflicts = FALSE)
-# library(dbplyr)
-library(ggplot2)
-# # library(config)
-# library(stringr)
-# library(discaRd)
-# library(knitr)
-# library(kableExtra)
-devtools::load_all()
-options(scipen = 999)
-
-discard <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_comparisons.csv")
-
-'%ni%' <- Negate("%in%")
-
-discard %>% filter(Source == 'Federal') %>%  pivot_wider(id_cols = !Source, names_from = Method,values_from =  c(Discards, kall)) %>% mutate(diff = Discards_CAMS-Discards_QM, perc_diff = 100 * (Discards_QM - Discards_CAMS)/(Discards_CAMS)) %>% dplyr::select(Species, 
-Discards_CAMS, Discards_QM, diff, perc_diff) %>%dplyr::mutate(across(where(is.numeric), round, 2))%>% 
-		DT::datatable(caption = 'Comparison of total federal discards in FY 2019 by species and source')
-
-```
-
- 
-
-```{r make diagnostic plot discards, eval = T, echo = F, fig.cap = "2019 CAMS State Discard Totals", fig.height = 8, fig.width = 12}
-
-discard <- read.csv("~/discaRd/CAMS/MODULES/NOVEMBER/November_comparisons.csv")
-
-'%ni%' <- Negate("%in%")
-
-discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) %>%
-	DT::datatable(caption = 'Total discards by species for state trips')
-
-```
 
 
 ```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
@@ -161,19 +120,15 @@ discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) 
       dbname = connectString
     )
 
-db_goldentilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_TILEFISHGOLDEN_2019")) %>% 
+db_scallop = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SEASCALLOP_2019")) %>% 
 	collect
 
-db_goldentilefish$SPECIES <- "GOLDENTILEFISH"
+db_scallop$SPECIES <- "SEA SCALLOP"
 
-db_bluelinetilefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_TILEFISHBLUELINE_2019")) %>% 
-	collect
 
-db_bluelinetilefish$SPECIES <- "BLUELINETILEFISH"
+db_final <- db_scallop
 
-db_final <- rbind(db_goldentilefish, db_bluelinetilefish)
-
-strat_goldentilefish <- db_goldentilefish %>% 	
+strat_scallop <- db_scallop %>% 	
    dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
@@ -192,27 +147,7 @@ strat_goldentilefish <- db_goldentilefish %>%
               ,DISCARD_SOURCE
               ,FED_OR_STATE)
 
-strat_bluelinetilefish <- db_bluelinetilefish %>% 	
-    dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
-  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                      # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
-                   dplyr::select(
-                              SPECIES
-                              ,STRATA_FULL
-                             # STRATA 
-             # ,N_OBS_TRIPS_F
-              ,CAMS_DISCARD_RATE
-              ,SUBTRIP_KALL
-              ,DISC_MORT_RATIO
-              ,DISCARD
-              ,DISCARD_SOURCE
-              ,FED_OR_STATE)
-
-
-strat_final <- rbind(strat_goldentilefish, strat_bluelinetilefish)
+strat_final <- strat_scallop
   
   
   strat_final %>% 
@@ -267,9 +202,9 @@ db_final %>%
 	theme_light()
 ```
 
-```{r goldentilefish federal discard table }
+```{r scallop federal discard table }
 
-db_goldentilefish %>% 	
+db_scallop %>% 	
   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
   group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
@@ -287,14 +222,14 @@ db_goldentilefish %>%
               ,DISCARD) %>%
              # ,CV) 
              dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
-		DT::datatable(caption = 'Discard rates for federal trips by strata for Goldentilefish')
+		DT::datatable(caption = 'Discard rates for federal trips by strata for Sea Scallop')
 
 ```
 
 
-```{r goldentilefish state discard table }
+```{r scallop state discard table }
 
-db_goldentilefish %>% 	
+db_scallop %>% 	
   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>%
   group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
@@ -312,75 +247,20 @@ db_goldentilefish %>%
               ,DISCARD) %>%
              # ,CV) 
              dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
-		DT::datatable(caption = 'Discard rates for state trips by strata for goldentilefish')
+		DT::datatable(caption = 'Discard rates for state trips by strata for Sea Scallop')
 
 ```
 
 
-```{r bluelinetilefish fed discard table }
 
-db_bluelinetilefish %>% 	
-   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
-  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
-  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                      # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
-                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-   ungroup() %>% dplyr::select(STRATA_FULL,
-                                                                                                                                          DISCARD_SOURCE 
-             # ,N_OBS_TRIPS_F
-              ,CAMS_DISCARD_RATE
-              ,SUBTRIP_KALL
-              ,DISC_MORT_RATIO
-              ,DISCARD) %>%
-             # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
-		DT::datatable(caption = 'Discard rates by Strata for Bluelinetilefish')
+```{r scallop gear fed discard table }
+db_scallop %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Sea Scallop')
 ```
 
-```{r bluelinetilefish state discard table }
-
-db_bluelinetilefish %>% 	
-   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>%
-  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
-  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                      # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
-                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-   ungroup() %>% dplyr::select(STRATA_FULL,
-                                                                                                                                          DISCARD_SOURCE 
-             # ,N_OBS_TRIPS_F
-              ,CAMS_DISCARD_RATE
-              ,SUBTRIP_KALL
-              ,DISC_MORT_RATIO
-              ,DISCARD) %>%
-             # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
-		DT::datatable(caption = 'Discard rates by Strata for Bluelinetilefish')
-```
-
-```{r goldentilefish gear fed discard table }
-db_goldentilefish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
-		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Goldentilefish')
-```
-
-```{r goldentilefish gear state discard table }
-db_goldentilefish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
-		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Goldentilefish')
-```
-
-```{r bluelinetilefish gear fed discard table }
-db_bluelinetilefish %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
-		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Bluelinetilefish')
-```
-
-```{r bluelinetilefish gear state discard table }
-db_bluelinetilefish %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4 ))%>% mutate(across(ends_with("D"), round, 0))%>%
-		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Bluelinetilefish')
+```{r scallop gear state discard table }
+db_scallop %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Sea Scallop')
 ```
 
 

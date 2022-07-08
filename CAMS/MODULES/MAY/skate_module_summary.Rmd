@@ -217,7 +217,7 @@ strat_barndoorskate <- db_barndoorskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -236,7 +236,7 @@ strat_clearnoseskate <- db_clearnoseskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -256,7 +256,7 @@ strat_littleskate <- db_littleskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -277,7 +277,7 @@ strat_rosetteskate <- db_rosetteskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -297,7 +297,7 @@ strat_smoothskate <- db_smoothskate%>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -316,7 +316,7 @@ strat_winterskate <- db_winterskate%>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                    dplyr::select(
                               SPECIES
                               ,STRATA_FULL
@@ -363,7 +363,7 @@ db_final %>%
 	# filter(DISCARD_SOURCE != 'O')&
   filter(FED_OR_STATE=='FED') %>% 
 	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
-	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
@@ -378,7 +378,7 @@ db_final %>%
 	# filter(DISCARD_SOURCE != 'O')&
   filter(FED_OR_STATE=='STATE') %>% 
 	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
-	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
+	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
 	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
@@ -395,7 +395,7 @@ db_barndoorskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -420,7 +420,7 @@ db_barndoorskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -445,7 +445,7 @@ db_clearnoseskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -468,7 +468,7 @@ db_clearnoseskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -491,7 +491,7 @@ db_littleskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -514,7 +514,7 @@ db_littleskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -537,7 +537,7 @@ db_rosetteskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -560,7 +560,7 @@ db_rosetteskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -583,7 +583,7 @@ db_smoothskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -606,7 +606,7 @@ db_smoothskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -629,7 +629,7 @@ db_winterskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -652,7 +652,7 @@ db_winterskate %>%
                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
                       # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(DISCARD))) %>%
+                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
    ungroup() %>% dplyr::select(STRATA_FULL,
                                                                                                                                           DISCARD_SOURCE 
@@ -667,62 +667,62 @@ db_winterskate %>%
 ```
 
 ```{r barndoorskate gear fed discard table }
-db_barndoorskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_barndoorskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Barndoorskate')
 ```
 
 ```{r barndoorskate gear state discard table }
-db_barndoorskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_barndoorskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Barndoorskate')
 ```
 
 ```{r clearnoseskate gear fed discard table }
-db_clearnoseskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_clearnoseskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Clearnoseskate')
 ```
 
 ```{r clearnoseskate gear state discard table }
-db_clearnoseskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_clearnoseskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Clearnoseskate')
 ```
 
 ```{r littleskate gear fed discard table }
-db_littleskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_littleskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Littleskate')
 ```
 
 ```{r littleskate gear state discard table }
-db_littleskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_littleskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Littleskate')
 ```
 
 ```{r rosetteskate gear fed discard table }
-db_rosetteskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_rosetteskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Rosetteskate')
 ```
 
 ```{r rosetteskate gear state discard table }
-db_rosetteskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_rosetteskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Rosetteskate')
 ```
 
 ```{r smoothskate gear fed discard table }
-db_smoothskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_smoothskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Smoothskate')
 ```
 
 ```{r smoothskate gear state discard table }
-db_smoothskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_smoothskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Smoothskate')
 ```
 
 ```{r winterskate gear fed discard table }
-db_winterskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_winterskate %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for federal trips by stock, gear and discard source for Winterskate')
 ```
 
 ```{r winterskate gear state discard table }
-db_winterskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
+db_winterskate %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>% mutate(across(ends_with("D"), round, 0))%>%
 		DT::datatable(caption = 'Discard totals for state trips by stock, gear and discard source for Winterskate')
 ```
 ### Appendix
