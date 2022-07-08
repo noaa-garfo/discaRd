@@ -336,7 +336,12 @@ itis <-  c(
   '172414',
   '082521',
   '172735',
-  '169182'
+  '169182',
+  '80944',
+  '81343',
+  '161706',
+  '161702',
+  '172413'
 )  
  
 
@@ -395,7 +400,7 @@ itis <-  c(
   '164793',
   '164730',
   '164791'
-)  
+ )  
  
  itis_num <- as.numeric(itis)
  
@@ -474,6 +479,94 @@ gc()
 
 ```
 
+```{r run march year species RMD as a script, eval = F}
+
+
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/MARCH/")
+
+# this section may be repeated for other modules with other lists of species
+
+#--------------------------------------------------------------------------#
+# group of species
+itis <-  c('620992')
+ 
+ #itis <- itis
+ itis_num <- as.numeric(itis)
+ 
+
+ species = tbl(con_maps, sql("select *
+												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+   
+	collect() %>% 
+  
+	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+  slice(1)
+ 
+ species$ITIS_TSN <- stringr::str_sort(itis)
+ 
+
+# make a script from RMD.. 
+knitr::purl('march_loop_062122.Rmd', documentation = 0)
+
+# Define year to run
+for(jj in 2018:2021){
+	FY <- jj
+	FY_TYPE = 'MARCH START'
+  source('march_loop_062122.R')
+}
+
+# clean the workspace; restart likely not necessary anymore 
+# rm(list = ls())
+gc()
+# .rs.restartR()
+
+
+```
+
+```{r run april year species RMD as a script, eval = F}
+
+
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/APRIL/")
+
+# this section may be repeated for other modules with other lists of species
+
+#--------------------------------------------------------------------------#
+# group of species
+itis <-  c('79718')
+ 
+ #itis <- itis
+ itis_num <- as.numeric(itis)
+ 
+
+ species = tbl(con_maps, sql("select *
+												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+   
+	collect() %>% 
+  
+	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+  slice(1)
+ 
+ species$ITIS_TSN <- stringr::str_sort(itis)
+ 
+
+# make a script from RMD.. 
+knitr::purl('april_loop_062122.Rmd', documentation = 0)
+
+# Define year to run
+for(jj in 2018:2021){
+	FY <- jj
+	FY_TYPE = 'APRIL START'
+  source('april_loop_062122.R')
+}
+
+# clean the workspace; restart likely not necessary anymore 
+# rm(list = ls())
+gc()
+# .rs.restartR()
+
+
+```
+
 ```{r parse and upload, eval = T, purl = F}
 #build one big table for a FY for each species in a folder of results
 
@@ -506,6 +599,10 @@ parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALEN
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
 # 
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
+#
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
+# 
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY)
 # 
 }
 
