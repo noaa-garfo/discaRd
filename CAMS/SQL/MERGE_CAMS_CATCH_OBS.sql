@@ -69,6 +69,8 @@ select a.*
                 select * from maps.cams_obdbs_2020
                 union all
                 select * from maps.cams_obdbs_2021
+                union all
+                select * from maps.cams_obdbs_2022
             )
             o
           group by  o.link3
