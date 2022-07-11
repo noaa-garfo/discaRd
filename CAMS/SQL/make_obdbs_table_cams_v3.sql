@@ -32,13 +32,13 @@ RUN FROM MAPS SCHEMA
 
 */
 
-DEF YEAR = 2021
+--DEF YEAR = 2021
 
-/
+--/
 
-DROP TABLE MAPS.CAMS_OBDBS_&year
+--DROP TABLE MAPS.CAMS_OBDBS_&year
 
-/
+--/
 CREATE TABLE MAPS.CAMS_OBDBS_&year AS 
 
 --OBPRELIM DATA
@@ -359,6 +359,6 @@ from(
         ON a.link3 = b.link3 
     ) a
   ) b
-/
+--/
 
-ALTER TABLE MAPS.CAMS_OBDBS_&year DROP (meshgroup_pre, tripcategory1, accessarea1)
+--ALTER TABLE MAPS.CAMS_OBDBS_&year DROP (meshgroup_pre, tripcategory1, accessarea1)
