@@ -614,7 +614,7 @@ gc()
 
 
 
-```{r grant all discard tables from MAPS to CAMS_GARFO}
+```{r grant all discard tables from MAPS to CAMS_GARFO, eval = F}
 
 tab_list = ROracle::dbGetQuery(con_maps, " 
 SELECT object_name, object_type
@@ -634,20 +634,46 @@ and object_name not like '%DISCARD_MORTALITY%'
   }
 ```
 
-```{r  create tables on cams_garfo}
+```{r  create tables on cams_garfo via upload}
  # now make the tables on CAMS_GARFO
 
 con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'bgaluardi_cams_garfo')
 
-# condat <- config::get(value = "bgaluardi_cams_garfo", file = "~/config.yml")
+ Sys.setenv(TZ = "America/New_York")
+ Sys.setenv(ORA_SDTZ = "America/New_York")
+
+# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 # 
-# con_cams = ROracle::dbConnect(
+# con_maps <- ROracle::dbConnect(
 #     drv = ROracle::Oracle(),
-#     username = condat$uid,
-#     password = condat$pwd,  
+#     username = dw_apsd$uid,
+#     password = dw_apsd$pwd,  
 #     dbname = "NERO.world"
 # )
 
+for (FY in 2018:2021){
+	
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
+  
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
+# 
+# }
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
+# 
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
+#
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
+# 
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY)
+# 
+}
+
+gc()
+
+
+```
+
+```{add tables to cams garfo (via sharing), eval = F}
 # make a list of tables to  add
 tab_list_cm = ROracle::dbGetQuery(con_cams, " 
 SELECT object_name, object_type
