@@ -581,7 +581,7 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 		
 		# upload_table = paste0('CAMS_DISCARD_EXAMPLE_GF',i)
 		
-		if (ROracle::dbExistsTable(con, upload_table, "MAPS")){
+		if (ROracle::dbExistsTable(con, upload_table)){
 			ROracle::dbRemoveTable(con, upload_table)
 		}
 		
