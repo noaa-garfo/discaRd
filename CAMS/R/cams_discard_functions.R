@@ -575,6 +575,9 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 		species_name = stringr::str_replace(species_name, pattern = '-', replacement = '_')
 		species_name = stringr::str_replace(species_name, pattern = ' ', replacement = '_')
 		
+		species_name = stringr::str_replace(species_name, pattern = "[(]", replacement = '')
+		species_name = stringr::str_replace(species_name, pattern = "[)]", replacement = '')
+		
 		upload_table = paste0('CAMS_DISCARD_', species_name, '_', outlist$FY[1])
 		
 		print(paste('UPLOADING TABLE: ', upload_table))
