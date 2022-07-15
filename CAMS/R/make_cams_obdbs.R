@@ -1,0 +1,102 @@
+
+# library(odbc)
+library(ROracle)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+# library(config)
+library(stringr)
+library(discaRd)
+library(fst)
+library(glue)
+options(scipen = 999)
+
+
+# connect to maps again
+keyring::keyring_unlock("apsd_ma")
+
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+Sys.setenv(TZ = "America/New_York")
+Sys.setenv(ORA_SDTZ = "America/New_York")
+
+# build a year of OBS data for CAMS on MAPS
+
+# define year
+y = 2021
+
+# drop table
+
+tab_drop = paste0("DROP TABLE MAPS.CAMS_OBDBS_", y)
+
+ROracle::dbSendQuery(con_maps, tab_drop)
+
+# build table
+
+tab_build = readr::read_lines("~/PROJECTS/discaRd/CAMS/SQL/make_obdbs_table_cams_v3.sql") %>% 
+	glue_collapse(sep = "\n") %>% 
+	glue_sql(.con = con) %>% 
+	gsub(x = ., pattern = '&YEAR', replacement = y) %>% 
+	gsub(x = ., pattern = '&year', replacement = y)
+
+
+ROracle::dbSendQuery(con_maps, tab_build)
+
+# modify table
+
+tab_alter = paste0("ALTER TABLE MAPS.CAMS_OBDBS_", y, " DROP (meshgroup_pre, tripcategory1, accessarea1)")
+
+# test
+ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", y)) %>% head()
+
+
+# make it a function! 
+
+#' Make CAMS OBDBS
+#' builds table for one calendar year of observer data. 
+#' @param con ROracle connection 
+#' @param year Year to build
+#'
+#' @return builds a table on Oracle schema specified (e.g. MAPS)
+#' @export
+#'
+#' @examples
+make_cams_obdbs <- function(con, year = 2022){
+
+	t1 = Sys.time()
+	print(paste0('Building CAMS Observer table for: ', year))
+	# define year	
+	
+	y = year
+
+	# drop table
+	
+	tab_drop = paste0("DROP TABLE MAPS.CAMS_OBDBS_", y)
+	
+	ROracle::dbSendQuery(con_maps, tab_drop)
+	
+	# build table
+	
+	tab_build = readr::read_lines("~/PROJECTS/discaRd/CAMS/SQL/make_obdbs_table_cams_v3.sql") %>% 
+		glue_collapse(sep = "\n") %>% 
+		glue_sql(.con = con) %>% 
+		gsub(x = ., pattern = '&YEAR', replacement = y) %>% 
+		gsub(x = ., pattern = '&year', replacement = y)
+	
+	
+	ROracle::dbSendQuery(con_maps, tab_build)
+	
+	# modify table
+	
+	tab_alter = paste0("ALTER TABLE MAPS.CAMS_OBDBS_", y, " DROP (meshgroup_pre, tripcategory1, accessarea1)")
+	
+	# test
+	# ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", y)) %>% head()
+	t2 = Sys.time()
+	print(paste0("Runtime: ", round(difftime(time1 = t2, time2 = t1, units = 'mins'), 2), " minutes"))
+	
+}
+
+make_cams_obdbs(con_maps, 2022)
+# test
+ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", 2021)) %>% head()
