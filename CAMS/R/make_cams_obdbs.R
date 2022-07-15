@@ -70,10 +70,12 @@ make_cams_obdbs <- function(con, year = 2022){
 	y = year
 
 	# drop table
+	if(ROracle::dbExistsTable(conn = con, paste0("CAMS_OBDBS_", y)) == T) {
+		tab_drop = paste0("DROP TABLE CAMS_OBDBS_", y)
+		print(tab_drop)
+		ROracle::dbSendQuery(con_maps, tab_drop)
+		}
 	
-	tab_drop = paste0("DROP TABLE MAPS.CAMS_OBDBS_", y)
-	
-	ROracle::dbSendQuery(con_maps, tab_drop)
 	
 	# build table
 	
@@ -83,12 +85,15 @@ make_cams_obdbs <- function(con, year = 2022){
 		gsub(x = ., pattern = '&YEAR', replacement = y) %>% 
 		gsub(x = ., pattern = '&year', replacement = y)
 	
-	
+	print(paste0('Building table CAMS_OBDBS_',y))
 	ROracle::dbSendQuery(con_maps, tab_build)
 	
 	# modify table
 	
-	tab_alter = paste0("ALTER TABLE MAPS.CAMS_OBDBS_", y, " DROP (meshgroup_pre, tripcategory1, accessarea1)")
+	tab_alter = paste0("ALTER TABLE CAMS_OBDBS_", y, " DROP (meshgroup_pre, tripcategory1, accessarea1)")
+	print(tab_alter)
+	
+	ROracle::dbSendQuery(con_maps, tab_alter)
 	
 	# test
 	# ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", y)) %>% head()
@@ -97,6 +102,9 @@ make_cams_obdbs <- function(con, year = 2022){
 	
 }
 
-make_cams_obdbs(con_maps, 2022)
+
+for(i in 2017:2022){
+	make_cams_obdbs(con_maps, i)
+}
 # test
 ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", 2021)) %>% head()
