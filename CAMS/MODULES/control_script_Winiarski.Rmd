@@ -337,8 +337,8 @@ itis <-  c(
  # '082521',
  # '172735',
  # '169182',
-  '80944',
-  '81343',
+  '080944',
+  '081343',
   '161706',
   '172413'
 )  
@@ -531,7 +531,7 @@ setwd("~/PROJECTS/discaRd/CAMS/MODULES/APRIL/")
 
 #--------------------------------------------------------------------------#
 # group of species
-itis <-  c('79718')
+itis <-  c('079718')
  
  #itis <- itis
  itis_num <- as.numeric(itis)
@@ -590,19 +590,20 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 for (FY in 2018:2021){
 	
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)
-  
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
-# 
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
+#
 # }
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
-# 
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
+#
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 #
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
-# 
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY)
-# 
+#
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
+
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP', FY = FY) # Scallop only
+
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last ensures that yellowtail and windowpane are correct
 }
 
 gc()
@@ -657,15 +658,18 @@ for (FY in 2018:2021){
 parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
 #
 # }
-parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
+# parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
 #
-parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
+# parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 #
 parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
 #
-parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
+# parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
 
-parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last ensures that yellowtail and windowpane are correct
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP', FY = FY) # Scallop only
+
+
+# parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last ensures that yellowtail and windowpane are correct
 #
 }
 
