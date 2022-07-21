@@ -46,7 +46,7 @@ stratvars = c('SPECIES_STOCK'
 	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
-	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
+
 
 3. Run `discaRd`
 	- there are sub-passes for year t and year t-1
@@ -69,12 +69,12 @@ stratvars = c('SPECIES_STOCK'
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
+ - (GM) Gear/mesh This is the rate when there were <5 trips in season and <5 in previous season.
  - (G) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (A) and (G). 
+9. CV calculations are available for (I), (T), (GM) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -83,7 +83,7 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (G) rates 	 
+			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (T), (GM) and (G) rates 	 
 ```
 
 By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
@@ -175,7 +175,7 @@ discard %>% filter(Source %in% c("State")) %>% dplyr::select(Species, Discards) 
 ```
 
 
-```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
+```{bring in species tables}
 
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
  
@@ -225,7 +225,7 @@ db_mackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MACKERELATLANTIC_20
 
 db_mackerel$SPECIES <- "MACKEREL"
 
-db_chubmackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MACKERELCHUB_2019")) %>%
+db_chubmackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_CHUBMACKEREL_2019")) %>%
 	collect
 
 db_chubmackerel$SPECIES <- "CHUB MACKEREL"
@@ -240,12 +240,12 @@ db_scup = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SCUP_2019")) %>%
 
 db_scup$SPECIES <- "SCUP"
 
-db_surfclam = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SURFCLAM_2019")) %>%
+db_surfclam = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_CLAMSURF_2019")) %>%
 	collect
 
 db_surfclam$SPECIES <- "SURFCLAM"
 
-db_oceanquahog = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_OCEANQUAHOG_2019")) %>%
+db_oceanquahog = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_QUAHOGOCEANBLACK_CLAM_2019")) %>%
 	collect
 
 db_oceanquahog$SPECIES <- "OCEANQUAHOG"
@@ -255,15 +255,108 @@ db_alewife = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_ALEWIFE_2019")) %>%
 
 db_alewife$SPECIES <- "ALEWIFE"
 
-db_amshad = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_AMSHAD_2019")) %>%
+
+db_final <- rbind(db_blackseabass, db_bluefish, db_butterfish, db_longfinsquid, 
+            db_shortfinsquid, db_mackerel, db_chubmackerel, db_fluke, db_scup,
+            db_surfclam, db_oceanquahog, db_alewife)
+
+
+db_final %>% 	
+  filter(DISCARD_SOURCE != 'O') %>%
+  dplyr::group_by(FED_OR_STATE) %>%
+  dplyr::summarise(DISCARD_Total = round(sum(CAMS_DISCARD, na.rm=TRUE))) %>%
+                      
+             dplyr::arrange(desc(DISCARD_Total)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard Totals QM and non QM')
+
+```
+
+```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
+
+
+ dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+ 
+# Connect to database - move this to config file in the future - quick addition for server
+  connectString <- paste(
+    "(DESCRIPTION=",
+    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+    sep = ""
+  )
+
+# Connect to oracle each loop in case of timeouts
+    bcon <- ROracle::dbConnect(
+      drv = ROracle::Oracle(),
+      username = dw_maps$uid,
+      password = dw_maps$pwd,
+      dbname = connectString
+    )
+
+db_blackseabass = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLACKSEA_BASS_2019")) %>% 
 	collect
 
-db_amshad$SPECIES <- "AMSHAD"
+db_blackseabass$SPECIES <- "BLACKSEABASS"
+
+db_bluefish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BLUEFISH_2019")) %>% 
+	collect
+
+db_bluefish$SPECIES <- "BLUEFISH"
+
+db_butterfish = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_BUTTERFISH_2019")) %>% 
+	collect
+
+db_butterfish$SPECIES <- "BUTTERFISH"
+
+db_longfinsquid = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SQUIDATLLONG_FIN_2019")) %>% 
+	collect
+
+db_longfinsquid$SPECIES <- "LONGFINSQUID"
+
+db_shortfinsquid = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SQUIDSHORT_FIN_2019")) %>% 
+	collect
+
+db_shortfinsquid$SPECIES <- "SHORTFINSQUID"
+
+db_mackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MACKERELATLANTIC_2019")) %>%
+	collect
+
+db_mackerel$SPECIES <- "MACKEREL"
+
+db_chubmackerel = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_CHUBMACKEREL_2019")) %>%
+	collect
+
+db_chubmackerel$SPECIES <- "CHUB MACKEREL"
+
+db_fluke = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_FLUKE_2019")) %>%
+	collect
+
+db_fluke$SPECIES <- "FLUKE"
+
+db_scup = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_SCUP_2019")) %>%
+	collect
+
+db_scup$SPECIES <- "SCUP"
+
+db_surfclam = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_CLAMSURF_2019")) %>%
+	collect
+
+db_surfclam$SPECIES <- "SURFCLAM"
+
+db_oceanquahog = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_QUAHOGOCEANBLACK_CLAM_2019")) %>%
+	collect
+
+db_oceanquahog$SPECIES <- "OCEANQUAHOG"
+
+db_alewife = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_ALEWIFE_2019")) %>%
+	collect
+
+db_alewife$SPECIES <- "ALEWIFE"
 
 
 db_final <- rbind(db_blackseabass, db_bluefish, db_butterfish, db_longfinsquid, 
             db_shortfinsquid, db_mackerel, db_chubmackerel, db_fluke, db_scup,
-            db_surfclam, db_oceanquahog, db_alewife, db_amshad)
+            db_surfclam, db_oceanquahog, db_alewife)
+
 
 strat_blackseabass <- db_blackseabass %>% 	
    dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
@@ -497,32 +590,11 @@ strat_alewife <- db_alewife %>%
               ,DISCARD_SOURCE
               ,FED_OR_STATE)
 
-strat_amshad <- db_amshad %>%
-  dplyr::group_by(SPECIES, STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
-  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                      # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
-                   dplyr::select(
-                              SPECIES
-                              ,STRATA_FULL
-                             # STRATA 
-             # ,N_OBS_TRIPS_F
-              ,CAMS_DISCARD_RATE
-              ,SUBTRIP_KALL
-              ,DISC_MORT_RATIO
-              ,DISCARD
-              ,DISCARD_SOURCE
-              ,FED_OR_STATE)
-
-
 strat_final <- rbind(strat_blackseabass, strat_bluefish, strat_butterfish,
                      strat_longfinsquid, strat_shortfinsquid, strat_mackerel,
                      strat_chubmackerel, strat_fluke, strat_scup,
-                     strat_surfclam, strat_oceanquahog, strat_alewife,
-                     strat_amshad)
-  
+                     strat_surfclam, strat_oceanquahog, strat_alewife)
+                     
   
   strat_final %>% 
 	filter(FED_OR_STATE=='FED') %>% 
@@ -1133,51 +1205,51 @@ db_alewife %>%
 		DT::datatable(caption = 'Discard rates for state trips by Strata for Alewife')
 ```
 
-```{r amshad federal discard table }
+<!-- ```{r amshad federal discard table } -->
 
-db_amshad %>% 	
-  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>%
-  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
-  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                      # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
-                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-   ungroup() %>% dplyr::select(STRATA_FULL,
-                                                                                                                                          DISCARD_SOURCE 
-             # ,N_OBS_TRIPS_F
-              ,CAMS_DISCARD_RATE
-              ,SUBTRIP_KALL
-              ,DISC_MORT_RATIO
-              ,DISCARD) %>%
-             # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
-		DT::datatable(caption = 'Discard rates for federal trips by strata for American Shad')
-```
+<!-- db_amshad %>% 	 -->
+<!--   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="FED") %>% -->
+<!--   group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>% -->
+<!--   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL) -->
+<!--                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5) -->
+<!--                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO) -->
+<!--                       # , CV = mean(CV, na.rm=TRUE) -->
+<!--                        , DISCARD = round(sum(CAMS_DISCARD))) %>% -->
+<!--                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%  -->
+<!--    ungroup() %>% dplyr::select(STRATA_FULL, -->
+<!--                                                                                                                                           DISCARD_SOURCE  -->
+<!--              # ,N_OBS_TRIPS_F -->
+<!--               ,CAMS_DISCARD_RATE -->
+<!--               ,SUBTRIP_KALL -->
+<!--               ,DISC_MORT_RATIO -->
+<!--               ,DISCARD) %>% -->
+<!--              # ,CV)  -->
+<!--              dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>% -->
+<!-- 		DT::datatable(caption = 'Discard rates for federal trips by strata for American Shad') -->
+<!-- ``` -->
 
-```{r americanshad state discard table }
+<!-- ```{r americanshad state discard table } -->
 
-db_amshad %>% 	
-  filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>%
-  group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>%
-  dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL)
-                       , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5)
-                       , DISC_MORT_RATIO = mean(DISC_MORT_RATIO)
-                      # , CV = mean(CV, na.rm=TRUE)
-                       , DISCARD = round(sum(CAMS_DISCARD))) %>%
-                      # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>% 
-   ungroup() %>% dplyr::select(STRATA_FULL,
-                                                                                                                                          DISCARD_SOURCE 
-             # ,N_OBS_TRIPS_F
-              ,CAMS_DISCARD_RATE
-              ,SUBTRIP_KALL
-              ,DISC_MORT_RATIO
-              ,DISCARD) %>%
-             # ,CV) 
-             dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>%
-		DT::datatable(caption = 'Discard rates for state trips by Strata for American Shad')
-```
+<!-- db_amshad %>% 	 -->
+<!--   filter(DISCARD_SOURCE != 'O' & FED_OR_STATE=="STATE") %>% -->
+<!--   group_by(STRATA_FULL, DISCARD_SOURCE, FED_OR_STATE) %>% -->
+<!--   dplyr::summarise(SUBTRIP_KALL = sum(SUBTRIP_KALL) -->
+<!--                        , CAMS_DISCARD_RATE = round(mean(CAMS_DISCARD_RATE), digits=5) -->
+<!--                        , DISC_MORT_RATIO = mean(DISC_MORT_RATIO) -->
+<!--                       # , CV = mean(CV, na.rm=TRUE) -->
+<!--                        , DISCARD = round(sum(CAMS_DISCARD))) %>% -->
+<!--                       # , N_OBS_TRIPS_F = mean(N_OBS_TRIPS_F)) %>%  -->
+<!--    ungroup() %>% dplyr::select(STRATA_FULL, -->
+<!--                                                                                                                                           DISCARD_SOURCE  -->
+<!--              # ,N_OBS_TRIPS_F -->
+<!--               ,CAMS_DISCARD_RATE -->
+<!--               ,SUBTRIP_KALL -->
+<!--               ,DISC_MORT_RATIO -->
+<!--               ,DISCARD) %>% -->
+<!--              # ,CV)  -->
+<!--              dplyr::arrange(desc(DISCARD)) %>%# top_n(10) %>% -->
+<!-- 		DT::datatable(caption = 'Discard rates for state trips by Strata for American Shad') -->
+<!-- ``` -->
 
 ```{r blackseabass gear fed discard table }
 db_blackseabass %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(CAMS_DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4)) %>% mutate(across(ends_with("D"), round, 0))%>%
