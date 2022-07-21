@@ -45,7 +45,7 @@ stratvars = c('SPECIES_STOCK'
 	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
-	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
+
 
 3. Run `discaRd`
 	- there are sub-passes for year t and year t-1
@@ -68,12 +68,12 @@ stratvars = c('SPECIES_STOCK'
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
+ - (GM) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
  - (G) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (A) and (G). 
+9. CV calculations are available for (I), (T), (GM) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
@@ -82,7 +82,7 @@ stratvars = c('SPECIES_STOCK'
 	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 
-			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (G) rates 	 
+			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (T), (GM) and (G) rates 	 
 ```
 
 By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
@@ -101,7 +101,17 @@ Output tables are produced for each species. These can easily be recombined. Pre
 
 
 ```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
-
+# library(odbc)
+# library(dplyr, warn.conflicts = FALSE)
+# library(dbplyr)
+library(ggplot2)
+# # library(config)
+# library(stringr)
+# library(discaRd)
+# library(knitr)
+# library(kableExtra)
+devtools::load_all()
+options(scipen = 999)
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
  
 # Connect to database - move this to config file in the future - quick addition for server
@@ -158,6 +168,18 @@ strat_final <- strat_redcrab
 	geom_histogram(aes(x = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), bins=60, position = "dodge") +
 	facet_wrap(~SPECIES)+
 	theme_light()
+
+```
+
+```{r redcrab totals table }
+
+db_redcrab %>% 	
+  filter(DISCARD_SOURCE != 'O') %>%
+  dplyr::group_by(FED_OR_STATE) %>%
+  dplyr::summarise(DISCARD_Total = round(sum(CAMS_DISCARD, na.rm=TRUE))) %>%
+                      
+             dplyr::arrange(desc(DISCARD_Total)) %>%# top_n(10) %>%
+		DT::datatable(caption = 'Discard Totals redcrab')
 
 ```
 
