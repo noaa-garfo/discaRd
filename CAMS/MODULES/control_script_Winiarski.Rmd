@@ -597,7 +597,7 @@ for (FY in 2018:2021){
 #
 # parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 #
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
+# parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
 #
 # parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
 
@@ -655,18 +655,18 @@ for (FY in 2018:2021){
 	
 
   
-parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
+# parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/', FY = FY)
 #
 # }
 # parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MAY/OUTPUT/', FY = FY)
 #
 # parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/OUTPUT/', FY = FY)
 #
-parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
+# parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/', FY = FY)
 #
 # parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
 
-parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP', FY = FY) # Scallop only
+parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP/', FY = FY) # Scallop only
 
 
 # parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last ensures that yellowtail and windowpane are correct
@@ -708,30 +708,6 @@ and object_name not like '%DISCARD_MORTALITY%'
   	print(paste0("MAKING TABLE ",  tab_list_cm$OBJECT_NAME[i], " ON CAMS_GARFO"))
   	ROracle::dbSendQuery(con_cams, make_tab_sq[i])
   }
-
-```
-
-```{r add comments to tables on MAPS and CAMS_GARFO}
-#===============================================
-# comments
-
-print(paste("Updating Oracle comments"))
-
-definitions <-
-	googlesheets4::read_sheet(
-		"https://docs.google.com/spreadsheets/d/1YorwnjozdPwVFJPabC7Ikta6wNzlhzkUtO1TPRbR9-s/edit?usp=sharing"
-	)
-
-# save(definitions, file = "data/definitions.rda")
-devtools::load_all('~/PROJECTS/MAPS/')
-
-# con_maps <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
-
-add_comments(con = con_maps, schema = "MAPS", definitions = definitions) # 3-10 minutes
-
-add_comments(con = con_cams, schema = "CAMS_GARFO", definitions = definitions) # 3-10 minutes
-
-# dbDisconnect(con_maps)
 
 ```
 
@@ -841,6 +817,55 @@ ROracle::dbGetQuery(con_cams, "
 	"
 )
 
+
+```
+
+```{r add comments to tables on MAPS and CAMS_GARFO}
+#===============================================
+# comments
+
+print(paste("Updating Oracle comments"))
+
+definitions <-
+	googlesheets4::read_sheet(
+		"https://docs.google.com/spreadsheets/d/1YorwnjozdPwVFJPabC7Ikta6wNzlhzkUtO1TPRbR9-s/edit?usp=sharing"
+	)
+
+# save(definitions, file = "data/definitions.rda")
+devtools::load_all('~/PROJECTS/MAPS/')
+
+# con_maps <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+
+add_comments(con = con_maps, schema = "MAPS", definitions = definitions) # 3-10 minutes
+
+add_comments(con = con_cams, schema = "CAMS_GARFO", definitions = definitions) # 3-10 minutes
+
+# dbDisconnect(con_maps)
+
+```
+
+```{r remove table logging for performance}
+
+sq_m = "begin
+for r in ( select table_name from all_tables where owner='MAPS' and table_name like 'CAMS_DISCARD%' and logging='YES')
+loop
+execute immediate 'alter table MAPS.'|| r.table_name ||' NOLOGGING';
+end loop;
+end;
+"
+
+ROracle::dbSendQuery(con_maps, sq_m)
+
+
+sq_c = "begin
+for r in ( select table_name from all_tables where owner='CAMS_GARFO' and table_name like 'CAMS_DISCARD%' and logging='YES')
+loop
+execute immediate 'alter table CAMS_GARFO.'|| r.table_name ||' NOLOGGING';
+end loop;
+end;"
+
+
+ROracle::dbSendQuery(con_cams, sq_c)
 
 ```
 

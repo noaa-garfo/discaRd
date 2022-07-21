@@ -788,7 +788,7 @@ emjoin = joined_table %>%
 	left_join(., em_tab, by = c('VTRSERNO', 'SPECIES_ITIS_EVAL')) %>% 
 	mutate(DISCARD = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD
 														 , DISCARD_SOURCE == 'O' ~ DISCARD
-														 , !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD)
+														 , !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD*DISC_MORT_RATIO)
 	) %>% 
 		mutate(DISCARD_SOURCE = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD_SOURCE
 														 , DISCARD_SOURCE == 'O' ~ DISCARD_SOURCE
@@ -1841,8 +1841,9 @@ start_time = Sys.time()
 		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
 				assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 		
-		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR)) %>% 
-			dplyr::select(-DATE_TRIP.1)
+		t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR)) 
+		# %>% 
+		# 	dplyr::select(-DATE_TRIP.1)
 		t2 = get(paste0('outlist_df_scal'))	%>% 
 			filter(GF_YEAR == GF_YEAR)
 		
