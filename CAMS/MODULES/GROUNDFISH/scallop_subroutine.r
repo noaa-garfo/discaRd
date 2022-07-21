@@ -498,8 +498,8 @@ for(yy in FY:(FY+1)){
 																 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 			)
 		
-		joined_table = joined_table %>% 
-			dplyr::select(-DATE_TRIP.1)
+		# joined_table = joined_table %>% 
+		# 	dplyr::select(-DATE_TRIP.1)
 		
 		
 		fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
