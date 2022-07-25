@@ -314,6 +314,10 @@ for(jj in 2020:2021){
   source('groundfish_loop_050422.R')
 }
 
+# commit DB
+
+ROracle::dbCommit(con_maps)
+
 # clean the workspace; restart likely not necessary anymore 
 rm(list = ls())
 gc()
@@ -370,6 +374,11 @@ for(jj in 2018:2021){
   source('january_loop_062122.R')  # this is the script created via purl just above
 }
 
+# commit DB
+
+ROracle::dbCommit(con_maps)
+
+
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
 gc()
@@ -425,6 +434,10 @@ for(jj in 2018:2021){
   source('may_loop_062122.R')
 }
 
+# commit DB
+
+ROracle::dbCommit(con_maps)
+
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
 gc()
@@ -470,6 +483,9 @@ for(jj in 2018:2021){
   source('november_loop_062122.R')
 }
 
+# Commit DB
+ROracle::dbDisconnect(con_maps)
+
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
 gc()
@@ -514,6 +530,9 @@ for(jj in 2018:2021){
   source('march_loop_062122.R')
 }
 
+# Commit DB
+ROracle::dbDisconnect(con_maps)
+
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
 gc()
@@ -557,6 +576,9 @@ for(jj in 2018:2021){
 	FY_TYPE = 'APRIL START'
   source('april_loop_062122.R')
 }
+
+# Commit DB
+ROracle::dbDisconnect(con_maps)
 
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
@@ -624,11 +646,16 @@ for(jj in 2018:2021){
   source('sbrm_loop_062122.R')  # this is the script created via purl just above
 }
 
+# Commit DB
+ROracle::dbDisconnect(con_maps)
+
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
 gc()
 # .rs.restartR()
 
+# Disconnect DB
+ROracle::dbDisconnect(con_maps)
 
 ```
 
@@ -675,6 +702,9 @@ parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/SBRM/
 }
 
 gc()
+
+# Commit DB
+ROracle::dbCommit(con_maps)
 
 ### Add lines for uploading from multiple folders of discard .fst results
 
@@ -742,6 +772,9 @@ parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/SBRM/
 #
 }
 
+# Commit DB
+ROracle::dbCommit(con_cams) 
+ 
 gc()
 
 
@@ -811,6 +844,10 @@ sq = stringr::str_c(st, stringr::str_flatten(tab_line))
 # pass the script to make a view
 ROracle::dbSendQuery(con_maps, sq)
 
+
+# Commit DB
+ROracle::dbCommit(con_maps)
+
 # test it!
 
 
@@ -869,6 +906,9 @@ ROracle::dbSendQuery(con_cams, sq)
 # Grant to CAMS_GARFO_FOR_NEFSC
 
 ROracle::dbSendQuery(con_cams, "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO_FOR_NEFSC")
+
+# Commit DB
+ROracle::dbCommit(con_cams)
 
 # test it!
 
@@ -935,6 +975,14 @@ end;"
 
 
 ROracle::dbSendQuery(con_cams, sq_c)
+
+# Commit DB
+ROracle::dbCommit(con_maps)
+ROracle::dbCommit(con_cams)
+
+# Disconnect DB
+ROracle::dbDisconnect(con_maps)
+ROracle::dbDisconnect(con_cams)
 
 ```
 
