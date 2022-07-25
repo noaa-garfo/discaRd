@@ -105,6 +105,54 @@ make_cams_obdbs <- function(con, year = 2022){
 
 for(i in 2017:2022){
 	make_cams_obdbs(con_maps, i)
+	
+	idx1 = paste0("CREATE INDEX i_CAMS_obdbs", i, "_year_link_spp", " ON ", paste0('CAMS_OBDBS_',i) ,"(YEAR, LINK1, LINK3, NESPP3, NESPP4)")
+	# idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
+	ROracle::dbSendQuery(con_maps, idx1)
+	
 }
 # test
 ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", 2021)) %>% head()
+
+# create a view of all obdbs tables on CAMS_GARFO
+
+tab_list = ROracle::dbGetQuery(con_maps, " 
+SELECT object_name, object_type
+    FROM all_objects
+    WHERE object_type = 'TABLE'
+    and owner = 'MAPS'
+and object_name like 'CAMS_OBDBS%'
+															 ")
+
+st = "CREATE OR REPLACE VIEW CAMS_OBDBS_ALL_YEARS AS "
+
+tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only.. 
+
+# bidx = grep('*MORTALITY*', tab_line)
+# 
+# tab_line = tab_line[-bidx]
+
+tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = tab_line[length(tab_line)])
+
+
+# create a script to pass to SQL
+
+sq = stringr::str_c(st, stringr::str_flatten(tab_line))
+
+# pass the script to make a view
+ROracle::dbSendQuery(con_maps, sq)
+
+# grant all to cams_garfo
+
+ROracle::dbSendQuery(con_maps, "GRANT ALL ON CAMS_OBDBS_ALL_YEARS TO CAMS_GARFO WITH GRANT OPTION")
+
+# GRANT TO CAMS_GARFO_FOR_NEFSC FROM CAMS_GARFO
+
+con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'bgaluardi_cams_garfo')
+
+Sys.setenv(TZ = "America/New_York")
+Sys.setenv(ORA_SDTZ = "America/New_York")
+
+ROracle::dbSendQuery(con_cams, "CREATE OR REPLACE VIEW CAMS_GARFO.CAMS_OBDBS_ALL_YEARS AS SELECT * FROM MAPS.CAMS_OBDBS_ALL_YEARS")
+
+ROracle::dbSendQuery(con_cams, "GRANT SELECT ON CAMS_GARFO.CAMS_OBDBS_ALL_YEARS TO CAMS_GARFO_FOR_NEFSC")
