@@ -1,0 +1,87 @@
+---
+title: "Investigate dropped OBS datain CAMS_OBS_CATCH matching"
+output:
+  pdf_document: 
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+  bookdown::pdf_book:
+    includes:
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    keep_tex: yes
+  html_document:
+    df_print: paged
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+urlcolor: cyan
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE
+											, warning = FALSE
+											, message = FALSE
+											, cache = FALSE
+											, progress = TRUE
+											, verbose = FALSE
+											, comment = F
+											, error = FALSE
+											, dev = 'png'
+											, dpi = 200
+											, prompt = F
+											, results='hide')
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r setup, eval = T}
+
+# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
+
+# library(odbc)
+library(ROracle)
+library(keyring)
+library(apsdFuns)
+library(dplyr, warn.conflicts = FALSE)
+library(dbplyr)
+library(ggplot2)
+# library(config)
+library(stringr)
+library(discaRd)
+library(fst)
+options(scipen = 999)
+
+# unlock keyring
+keyring::keyring_unlock("apsd_ma")
+
+# local run
+# dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+# if on server..
+# dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+
+
+# connect to MAPS
+
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+# 
+# con_maps <- ROracle::dbConnect(
+#     drv = ROracle::Oracle(),
+#     username = dw_apsd$uid,
+#     password = dw_apsd$pwd,
+#     dbname = "NERO.world"
+# )
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+source('~/PROJECTS/discaRd/CAMS/R/cams_discard_functions.R')
+
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
+
+```
