@@ -566,6 +566,72 @@ gc()
 
 ```
 
+```{r run sbrm calendar year species RMD as a script, eval = T}
+
+# this section may be repeated for other modules with other lists of species
+
+#--------------------------------------------------------------------------#
+# group of species
+itis_sbrm <-   c('164740'
+           ,'097314'
+           ,'098678'
+           ,'160230'
+           ,'159753'
+ 
+)
+ 
+common_name <- c('CUSK'
+                 ,'LOBSTER, AMERICAN'
+                 ,'CRAB, JONAH'
+                 ,'DOGFISH, SMOOTH'
+                 ,'HAGFISH')
+ 
+ itis <- c('161706')# 
+ 
+ #itis <- itis
+ itis_num <- as.numeric(itis)
+ 
+
+ species = tbl(con_maps, sql("select *
+												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+   
+	collect() %>% 
+  
+	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+  slice(1)
+ 
+ species$ITIS_TSN <- stringr::str_sort(itis)
+ 
+ species <- species %>% slice(rep(row_number(), length(itis_sbrm)))
+ 
+ species$COMMON_NAME <- common_name
+ 
+ species$SPECIES_ITIS <- itis_sbrm
+ 
+ species$ITIS_TSN <- itis_sbrm
+ 
+ 
+# make sure the folder is correct 
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/SBRM/') 
+
+# make a script from RMD.. 
+knitr::purl('sbrm_loop_062122.Rmd', documentation = 0)
+
+# Define year to run
+for(jj in 2018:2021){
+	FY <- jj
+	FY_TYPE = 'JANUARY START'
+  source('sbrm_loop_062122.R')  # this is the script created via purl just above
+}
+
+# clean the workspace; restart likely not necessary anymore 
+# rm(list = ls())
+gc()
+# .rs.restartR()
+
+
+```
+
 ```{r parse and upload to MAPS, eval = T, purl = F}
 #build one big table for a FY for each species in a folder of results
 
@@ -602,6 +668,8 @@ for (FY in 2018:2021){
 # parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
 
 parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP', FY = FY) # Scallop only
+
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/SBRM/OUTPUT', FY = FY) 
 
 # parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last ensures that yellowtail and windowpane are correct
 }
@@ -668,6 +736,7 @@ for (FY in 2018:2021){
 
 parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP/', FY = FY) # Scallop only
 
+parse_upload_discard(con_maps, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/SBRM/OUTPUT', FY = FY) 
 
 # parse_upload_discard(con_cams, filepath = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last ensures that yellowtail and windowpane are correct
 #
