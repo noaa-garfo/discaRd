@@ -28,6 +28,17 @@ grant select on maps.cams_obdbs_2022 to cams_garfo;
 
 /
 
+-- see how many link1 match between obdbs table build, STG_obs_linktrp and MTACH_OBS
+
+select distinct(c.link1) as obdbs_link1, b.obs_link1 as stg_link1 , m.obs_link1 as match_link1
+from cams_obdbs_all_years c
+full join (select obs_link1 from stg_obs_linktrp where extract(year from obs_land) between 2017 and 2022) b 
+on c.link1 = b.obs_link1
+full join (select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022) m
+on c.link1 = m.obs_link1
+where c.year >= 2017
+and c.year < 2022
+
 /*  Example of dropped hauls where there was no link1 match  */
 
 -- from schema cams_garfo: 
@@ -51,17 +62,19 @@ select a.*
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
         
             from (
-			    select * from maps.cams_obdbs_2017
-                union all
-                select * from maps.cams_obdbs_2018
-                union all
-                select * from maps.cams_obdbs_2019
-				union all
-                select * from maps.cams_obdbs_2020
-                union all
-                select * from maps.cams_obdbs_2021
-                union all
-                select * from maps.cams_obdbs_2022
+            
+            cams_obdbs_all_years
+--			    select * from maps.cams_obdbs_2017
+--                union all
+--                select * from maps.cams_obdbs_2018
+--                union all
+--                select * from maps.cams_obdbs_2019
+--				union all
+--                select * from maps.cams_obdbs_2020
+--                union all
+--                select * from maps.cams_obdbs_2021
+--                union all
+--                select * from maps.cams_obdbs_2022
             )
             o
             
@@ -194,12 +207,12 @@ group by link3
             , obs_haul_kept
 )
 , cams as (
-    select distinct(camsid), subtrip, negear, vtr_mesh, mesh_cat, area, area_source, gear_source, activity_code_1, secgear_mapped--, year
+    select distinct(camsid), subtrip, vtrserno, negear, vtr_mesh, mesh_cat, area, area_source, gear_source, activity_code_1, secgear_mapped--, year
     from cams_garfo.cams_landings c
      left join (
       select distinct(NEGEAR) as VTR_NEGEAR
        , SECGEAR_MAPPED
-      from MAPS.STG_OBS_VTR_GEARMAP
+      from MAPS.STG_OBS_VTR_GEARMAP 
       where NEGEAR is not null
      ) g on c.NEGEAR = g.VTR_NEGEAR
 )
@@ -223,5 +236,5 @@ from (
     left join cams_garfo.match_obs m on o.link1 = m.obs_link1
     left join cams c on c.camsid = m.camsid 
     where o.link1 in (select distinct link1 from cams_obs_catch where link1 is not null) -- and year = 2020)
-    AND o.link3 not in (select distinct link3 from cams_obs_catch where link3 is not null) -- and year = 2020)
+    AND o.link3 not in (select distinct link3 from cams_obs_catch where link3 is not null) -- and year   = 2020)
 ) a
