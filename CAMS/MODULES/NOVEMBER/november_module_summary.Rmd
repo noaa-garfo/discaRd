@@ -69,12 +69,12 @@ stratvars = c('SPECIES_STOCK'
 8. Rates and `DISCARD_SOURCE` (in parentheses) are assigned for each trip according to:
  - (I) in season rate; >= 5 trips in Full Stratification
  - (T) Transition in season rate; < 5 trips in Full Stratification, year t, AND >= 5 trips in year t-1
- - (A) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
+ - (GM) Assumed rate. This is the rate when there were <5 trips in season and <5 in previous season.
  - (G) Broad stock/gear rate <5 trips in season and <5 trips in previous season 
  - (N) No coverage in focal season and previous season; discard rate is not possible to estimate.
  - (O) Observed values used from observed rate trips; discard rate is NOT USED. 
 
-9. CV calculations are available for (I), (T), (A) and (G). 
+9. CV calculations are available for (I), (T), (GM) and (G). 
 
 10. Discard pounds per trip are calculated according to
 
