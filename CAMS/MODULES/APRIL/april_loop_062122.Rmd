@@ -561,7 +561,7 @@ trans_rate_df = trans_rate_df %>%
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
+ 				 # , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
@@ -707,7 +707,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
  				 , COMNAME_EVAL = species$COMNAME[i]
- 				 , FISHING_YEAR = FY
+ 				 # , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
 #
@@ -796,7 +796,7 @@ joined_table = joined_table %>%
 				 )
 
 
- fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
+ fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/SCALLOP/discard_est_', species_itis, '_trips', FY,'.fst'))
  
 t2 = Sys.time()
 	

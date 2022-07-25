@@ -536,7 +536,7 @@ emjoin = joined_table %>%
 	left_join(., em_tab, by = c('VTRSERNO', 'SPECIES_ITIS_EVAL')) %>% 
 	mutate(DISCARD = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD
 														 , DISCARD_SOURCE == 'O' ~ DISCARD
-														 , !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD)
+														 , !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD*DISC_MORT_RATIO)
 	) %>% 
 		mutate(DISCARD_SOURCE = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD_SOURCE
 														 , DISCARD_SOURCE == 'O' ~ DISCARD_SOURCE
