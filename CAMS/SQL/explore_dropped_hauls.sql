@@ -1,6 +1,9 @@
 /*
 
 Check the extent of dropped hauls/trips
+7/20/22
+
+Ben Galuardi
 
 check mismatches for 
 
@@ -9,9 +12,34 @@ gear
 mesh 
 
 
-7/20/22
+8/1/2022
 
-Ben Galuardi
+at least, that's how it was intended... turns out there were other issues. 
+
+When building CAMS_OBS_CATCH, the order of joins between cams_landings and OBDBS information was as follows (simplified):
+
+cams_landings 
+left join match_obs  (to get camsid)
+left join cams_obdbs_all_years  
+
+the match_obs table has more link1  than cams_obdbs due to filtering trip_ext within that table build. 
+This then leads to more link1 records than intended and throws off comparisons between obdbs and cams_obs_catch
+Any comparisons made using the match_obs table will show link1 numebrs to be higher than they are in cams_obs_catch
+
+A better approach may be to alter the order of the joins
+
+cams_obdbs_all_years
+left join match_obs (to get camsid)
+right join cams_landings
+
+This has the effect of maintaining only the link1 records from the obdbs table build
+
+The script to build the new version is
+
+merge_cams_catch_obs_test.sql
+
+The original version is merge_cams_catch_obs
+
 
 
 */
@@ -29,15 +57,173 @@ grant select on maps.cams_obdbs_2022 to cams_garfo;
 /
 
 -- see how many link1 match between obdbs table build, STG_obs_linktrp and MTACH_OBS
+select year
+, count(*)
+from(
+    select distinct(c.link1) as obdbs_link1
+    , c.year
+    --, b.obs_link1 as stg_link1 
+    , m.obs_link1 as match_link1
+    from cams_obdbs_all_years c
+    --full join (select obs_link1 from stg_obs_linktrp where extract(year from obs_land) between 2017 and 2022) b 
+    --on c.link1 = b.obs_link1
+    full join (select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022) m
+    on c.link1 = m.obs_link1
+    where c.year >= 2017
+    and c.year < 2022
+)
+where match_link1 is null
+group by year
+order by year desc
+/
 
-select distinct(c.link1) as obdbs_link1, b.obs_link1 as stg_link1 , m.obs_link1 as match_link1
-from cams_obdbs_all_years c
-full join (select obs_link1 from stg_obs_linktrp where extract(year from obs_land) between 2017 and 2022) b 
-on c.link1 = b.obs_link1
-full join (select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022) m
-on c.link1 = m.obs_link1
-where c.year >= 2017
-and c.year < 2022
+--look for link1 in obdbs that are not in matching table
+
+ select distinct(c.link1) as obdbs_link1
+    , c.year
+    , c.link1
+    from cams_obdbs_all_years c
+  where c.link1 not in (
+   select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022
+  )
+  and c.year >= 2017
+    and c.year < 2022
+
+/
+-- compare staging and matching tables for dropped link1
+
+select year
+, count(*)
+from(
+    select  extract(year from obs_land) as year
+    , b.obs_link1 as stg_link1 
+    , m.obs_link1 as match_link1
+    from  stg_obs_linktrp b 
+    full join (select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022) m
+    on b.obs_link1 = m.obs_link1
+    where extract(year from obs_land) between 2017 and 2022 
+    and obs_tripext in ('C','X')
+)
+where match_link1 is null
+group by year
+order by year desc
+
+
+/
+
+ select distinct(c.link1) as obdbs_link1
+    , c.year
+    , c.link1
+    from cams_obdbs_all_years c
+  where c.link1 not in (
+   select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022
+  )
+  and c.year >= 2017
+    and c.year < 2022
+
+
+
+/
+
+
+/*------------------------------------------------------------------------------ 
+
+This section compares cams_obdbs_all_years, cams_obs_catch, cams_obs_catch_test
+
+------------------------------------------------------------------------------*/
+
+/
+-- now test link1 drops in cams_obs_catch_test... zero!!
+select count(distinct(link1))
+from cams_obdbs_all_years
+where link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+
+/
+
+-- test link3 drops in cams_obs_catch_test... zero drops! DOES NOT MAKE SENSE.... 
+select count(distinct(link3))
+from cams_obdbs_all_years
+where link3 not in (select distinct(link3) from cams_obs_catch_test where year < 2022)
+
+/
+
+-- test link1 in cams_obs_catch_test from match_obs... zero missing! ALSO DOES NOT MAKE SENSE...
+select count(distinct(obs_link1))
+from match_obs
+where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+and extract(year from obs_land) between 2017 and 2021
+
+/
+
+-- test link1 from stg_obs_linktrp.. zero missing!
+select count(distinct(obs_link1))
+from stg_obs_linktrp
+where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+and extract(year from obs_land) between 2017 and 2021
+/
+
+-- now look at counts of link1 and link3 vs original cams_obs_catch and cams_obs_catch_test and obdbs 
+
+select count(distinct(a.link1)) as link1_test
+, count(distinct(a.obs_link1)) as obs_link1_test
+, count(distinct(a.link3)) as link3_test
+, b.link1_cams
+, b.link3_cams
+, c.link1_obdbs
+, c.link3_obdbs
+, a.year
+--, 'test' as source
+from maps.cams_obs_catch_test a
+
+left join ( 
+    select count(distinct(link1)) as link1_cams
+    , count(distinct(link3)) as link3_cams
+    , year
+    from maps.cams_obs_catch
+    group by year
+) b
+on a.year = b.year
+
+left join ( 
+    select count(distinct(link1)) as link1_obdbs
+    , count(distinct(link3)) as link3_obdbs
+    , year
+    from maps.cams_obdbs_all_years
+    group by year
+) c
+on a.year = c.year
+
+group by a.year, b.link1_cams, b.link3_cams, c.link1_obdbs, c.link3_obdbs
+order by year
+/
+
+-- look at which link1 are not in new version.. 
+-- ther seem to be 
+select * from (
+select a.link1 as link1_test
+, b.link1 as link1_cams
+from cams_obs_catch_test a
+--full join cams_obs_catch b
+full join cams_obdbs_all_years b
+on a.link1 = b.link1
+where a.year < 2022
+and b.year < 2022
+and a.link1 is not null
+and b.link1 is not null
+)
+--where LINK1_TEST is null  -- zero records
+where LINK1_CAMS is null  -- zero records?!?!
+/
+/* 
+
+
+This section was used to discover that the order of joins mattered.. 
+The join logic here was emulated in the cams_obs_catch_test table
+
+this section does not need to be looked at directly. 
+
+*/
+
 
 /*  Example of dropped hauls where there was no link1 match  */
 
