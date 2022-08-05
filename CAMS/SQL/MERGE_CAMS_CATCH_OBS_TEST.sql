@@ -1,5 +1,36 @@
+/*
+
+New version of CAMS_OBS_CATCH that has a differnt join order than the original
+
+When building CAMS_OBS_CATCH, the order of joins between cams_landings and OBDBS information was as follows (simplified):
+
+cams_landings 
+left join match_obs  (to get camsid)
+left join cams_obdbs_all_years  
+
+the match_obs table has more link1  than cams_obdbs due to filtering trip_ext within that table build. 
+This then leads to more link1 records than intended and throws off comparisons between obdbs and cams_obs_catch
+Any comparisons made using the match_obs table will show link1 numebrs to be higher than they are in cams_obs_catch
+
+A better approach may be to alter the order of the joins
+
+cams_obdbs_all_years
+left join match_obs (to get camsid)
+right join cams_landings
+
+This has the effect of maintaining only the link1 records from the obdbs table build
+
+
+B Galuardi
+8/5/22
+
+*/
+
+
+
 drop table cams_obs_catch_test
 /
+
 create table cams_obs_catch_test as 
 
 with obs1 as (
@@ -11,6 +42,7 @@ with obs1 as (
             , o.source
 --            , o.month
             , o.obsrflag
+            , o.fishdisp
             , o.area as obs_area
             , o.negear as obs_gear
             , o.geartype
@@ -29,6 +61,7 @@ with obs1 as (
 --            , vtrserno
 --            , o.month
             , o.obsrflag
+            , o.fishdisp
             , o.area 
             , o.geartype
             , o.negear 
@@ -337,25 +370,42 @@ trips with no link1 (unobserved)
 
   select t.*
 --    , o.vtrserno as obsvtr
-    , o.link1 as obs_link1
-    , o.link3
-    , o.source
-    , o.obsrflag
-    , o.obs_area as obs_area
-    , o.nespp3
-    , o.ITIS_TSN
+--    , o.link1 as obs_link1
+--    , o.link3
+--    , o.source
+--    , o.obsrflag
+--    , o.obs_area as obs_area
+--    , o.nespp3
+--    , o.ITIS_TSN
+----    , o.ITIS_GROUP1
+----    , o.discard_prorate as discard
+--    , o.discard
+--    , o.obs_haul_kept
+----    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_gear as obs_gear
+--    , o.obs_mesh as obs_mesh
+--    , NVL(o.meshgroup, 'none') as obs_meshgroup
+
+    , null as obs_link1
+    , null as link3
+    , null as source
+    , null as obsrflag
+    , null as fishdisp
+    , null as obs_area
+    , null as nespp3
+    , null as ITIS_TSN
 --    , o.ITIS_GROUP1
 --    , o.discard_prorate as discard
-    , o.discard
-    , o.obs_haul_kept
+    , null as discard
+    , null as obs_haul_kept
 --    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
-    , o.obs_gear as obs_gear
-    , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    , null as  obs_gear
+    , null as obs_mesh
+    , 'none' as obs_meshgroup
 
      from trips t
-     left join (select * from obs ) o
-     on (t.link1 = o.link1)
+--     left join (select * from obs ) o
+--     on (t.link1 = o.link1)
 
     where (t.LINK1 is null)  
 )  
@@ -369,6 +419,7 @@ trips with no link1 (unobserved)
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
@@ -400,6 +451,7 @@ trips with no link1 (unobserved)
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
@@ -434,6 +486,7 @@ trips with no link1 (unobserved)
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
@@ -463,6 +516,7 @@ trips with no link1 (unobserved)
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp    
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
@@ -539,6 +593,7 @@ select ACCESSAREA
 ,NESPP3
 ,NVTR_LINK1
 ,OBSRFLAG
+,FISHDISP
 --,OBSVTR
 ,OBS_AREA
 ,OBS_GEAR
