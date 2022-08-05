@@ -407,6 +407,7 @@ ddat_focal_gf = ddat_focal_gf %>%
 
 bdat_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -437,6 +438,7 @@ ddat_prev_gf = ddat_prev_gf %>%
 # previous year observer data needed.. 
 bdat_prev_gf = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -940,6 +942,7 @@ ddat_focal_non_gf = ddat_focal_non_gf %>%
 
 bdat_non_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -970,6 +973,7 @@ ddat_prev_non_gf = ddat_prev_non_gf %>%
 # previous year observer data needed.. 
 bdat_prev_non_gf = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
