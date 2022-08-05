@@ -27,6 +27,9 @@ we also keep all hauls, not just observed hauls, so prorating can be done
  added removal of fishdisp
  added OBPRELIM! 
  
+ 
+08-05-22 
+put fishdisp 090 back in. 
 
 RUN FROM MAPS SCHEMA
 
@@ -273,10 +276,9 @@ WHERE a.YEAR = &YEAR
     LEFT OUTER JOIN mesh1 b
     ON o.link3 = b.link3 
     
-    WHERE o.fishdisp <> '039'
-    AND o.program <> '127'
+    WHERE o.program <> '127'
     AND o.tripext IN ('C', 'X')
-    AND o.FISHDISP <> '090'
+--    AND o.FISHDISP <> '090' -- keep this in.. deal with it in R
 )
 
 select b.*
