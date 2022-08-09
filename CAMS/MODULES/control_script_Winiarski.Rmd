@@ -95,14 +95,15 @@ import_query = "  with obs_cams as (
 	, month
 	, date_trip
   , PERMIT
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
-	       end as halfofyear
+--	, case when month in (5,6,7,8,9,10) then 1
+	--       when month in (11,12,1,2,3,4) then 2
+	  --     end as halfofyear
   , AREA
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1
 	, link3
+	, fishdisp
 	, docid
 	, CAMSID
 	, nespp3
@@ -130,7 +131,7 @@ import_query = "  with obs_cams as (
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from MAPS.CAMS_OBS_CATCH
+	from MAPS.CAMS_OBS_CATCH_TEST
 	group by year
 
   , AREA
@@ -139,6 +140,7 @@ import_query = "  with obs_cams as (
 	, CAMS_SUBTRIP
 	, link1
 	, link3
+	, fishdisp
 	, docid
 	, nespp3	
   , itis_tsn
@@ -156,7 +158,7 @@ import_query = "  with obs_cams as (
   , CAMSID
   , month
   , date_trip
-	, halfofyear
+	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1

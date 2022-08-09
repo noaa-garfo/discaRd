@@ -163,6 +163,7 @@ for(yy in FY:(FY+1)){
 		
 		bdat_scal = ddat_focal %>% 
 			filter(!is.na(LINK1)) %>% 
+			filter(FISHDISP != '090') %>%
 			mutate(OBS_AREA = AREA
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)
@@ -192,6 +193,7 @@ for(yy in FY:(FY+1)){
 		# previous year observer data needed.. 
 		bdat_prev_scal = ddat_prev %>% 
 			filter(!is.na(LINK1)) %>% 
+			filter(FISHDISP != '090') %>%
 			mutate( OBS_AREA = AREA
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)

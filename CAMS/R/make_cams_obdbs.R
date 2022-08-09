@@ -104,6 +104,7 @@ make_cams_obdbs <- function(con, year = 2022){
 
 
 for(i in 2017:2022){
+	require(glue)
 	make_cams_obdbs(con_maps, i)
 	
 	idx1 = paste0("CREATE INDEX i_CAMS_obdbs", i, "_year_link_spp", " ON ", paste0('CAMS_OBDBS_',i) ,"(YEAR, LINK1, LINK3, NESPP3, NESPP4)")
