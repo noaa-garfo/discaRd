@@ -1,5 +1,6 @@
 drop table cams_obs_catch_test
 /
+
 create table cams_obs_catch_test as 
 
 with obs1 as (
@@ -337,25 +338,41 @@ trips with no link1 (unobserved)
 
   select t.*
 --    , o.vtrserno as obsvtr
-    , o.link1 as obs_link1
-    , o.link3
-    , o.source
-    , o.obsrflag
-    , o.obs_area as obs_area
-    , o.nespp3
-    , o.ITIS_TSN
+--    , o.link1 as obs_link1
+--    , o.link3
+--    , o.source
+--    , o.obsrflag
+--    , o.obs_area as obs_area
+--    , o.nespp3
+--    , o.ITIS_TSN
+----    , o.ITIS_GROUP1
+----    , o.discard_prorate as discard
+--    , o.discard
+--    , o.obs_haul_kept
+----    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
+--    , o.obs_gear as obs_gear
+--    , o.obs_mesh as obs_mesh
+--    , NVL(o.meshgroup, 'none') as obs_meshgroup
+
+    , null as obs_link1
+    , null as link3
+    , null as source
+    , null as obsrflag
+    , null as obs_area
+    , null as nespp3
+    , null as ITIS_TSN
 --    , o.ITIS_GROUP1
 --    , o.discard_prorate as discard
-    , o.discard
-    , o.obs_haul_kept
+    , null as discard
+    , null as obs_haul_kept
 --    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
-    , o.obs_gear as obs_gear
-    , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    , null as  obs_gear
+    , null as obs_mesh
+    , 'none' as obs_meshgroup
 
      from trips t
-     left join (select * from obs ) o
-     on (t.link1 = o.link1)
+--     left join (select * from obs ) o
+--     on (t.link1 = o.link1)
 
     where (t.LINK1 is null)  
 )  
