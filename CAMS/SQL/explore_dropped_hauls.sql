@@ -133,33 +133,48 @@ This section compares cams_obdbs_all_years, cams_obs_catch, cams_obs_catch_test
 ------------------------------------------------------------------------------*/
 
 /
--- now test link1 drops in cams_obs_catch_test... zero!!
-select count(distinct(link1))
+-- now test link1 drops in cams_obs_catch_test
+select count(distinct link1)
 from cams_obdbs_all_years
-where link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+where link1 not in (select distinct link1 from cams_obs_catch_test where link1 is not null and year < 2022)
+
+/
+-- trips with info
+select *
+from cams_obdbs_all_years
+where link1 not in (select distinct link1 from cams_obs_catch_test where link1 is not null and year < 2022)
 
 /
 
--- test link3 drops in cams_obs_catch_test... zero drops! DOES NOT MAKE SENSE.... 
+-- test link3 drops in cams_obs_catch_test
 select count(distinct(link3))
 from cams_obdbs_all_years
-where link3 not in (select distinct(link3) from cams_obs_catch_test where year < 2022)
+where link3 not in (select distinct(link3) from cams_obs_catch_test where link3 is not null and year < 2022)
 
 /
 
--- test link1 in cams_obs_catch_test from match_obs... zero missing! ALSO DOES NOT MAKE SENSE...
+-- test link1 in cams_obs_catch_test from match_obs
 select count(distinct(obs_link1))
 from match_obs
-where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where link1 is not null and year < 2022)
 and extract(year from obs_land) between 2017 and 2021
 
 /
 
--- test link1 from stg_obs_linktrp.. zero missing!
+-- test link1 from stg_obs_linktrp
 select count(distinct(obs_link1))
 from stg_obs_linktrp
-where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where link1 is not null and year < 2022)
 and extract(year from obs_land) between 2017 and 2021
+/
+
+
+-- test link1 from all years
+select count(distinct(link1))
+from cams_obdbs_all_years
+where link1 not in (select distinct(link1) from cams_obs_catch_test where link1 is not null and year < 2022 and year >= 2017)
+and year < 2022 and year >= 2017
+
 /
 
 -- now look at counts of link1 and link3 vs original cams_obs_catch and cams_obs_catch_test and obdbs 
