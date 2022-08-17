@@ -101,7 +101,7 @@ import_query = "  with obs_cams as (
   , AREA
 	, vtrserno
 	, CAMS_SUBTRIP
-	, link1
+	, obs_link1 as link1
 	, link3
 	, fishdisp
 	, docid
@@ -138,7 +138,7 @@ import_query = "  with obs_cams as (
   , PERMIT
 	, vtrserno
 	, CAMS_SUBTRIP
-	, link1
+	, obs_link1
 	, link3
 	, fishdisp
 	, docid
@@ -209,11 +209,14 @@ c_o_dat2 = c_o_dat2 %>%
 # 4/13/22
 # need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future 
 
+# 8/17/22 this may not be needed anymore.. 
+
 link3_na = c_o_dat2 %>% 
 	filter(!is.na(LINK1) & is.na(LINK3))
 
 
 # make these values 0 or NA or 'none' depending on the default for that field
+
 link3_na = link3_na %>% 
 	mutate(LINK1 = NA
 				 , DISCARD = NA
@@ -230,10 +233,17 @@ link3_na = link3_na %>%
 				 , OBS_MESHGROUP = 'none'
 				 , PRORATE = NA)
 
+# this was dropping full trips... 
+# tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
 
-tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
 
-c_o_dat2 = c_o_dat2[tidx == F,]
+# 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
+
+tidx = which(!is.na(c_o_dat2$LINK1) & is.na(c_o_dat2$LINK3))
+
+c_o_dat2 = c_o_dat2[-tidx,] 
+
+# c_o_dat2 = c_o_dat2[tidx == F,]
 
 c_o_dat2 = c_o_dat2 %>% 
 	bind_rows(link3_na)
