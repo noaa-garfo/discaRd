@@ -77,14 +77,16 @@ group by year
 order by year desc
 /
 
---look for link1 in obdbs that are not in matching table
+--look for link1 in obdbs that are not in matching table, zero. good!
 
  select distinct(c.link1) as obdbs_link1
     , c.year
     , c.link1
     from cams_obdbs_all_years c
   where c.link1 not in (
-   select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022
+   select obs_link1 from match_obs 
+   where extract(year from obs_land) between 2017 and 2022
+   and obs_link1 is not null
   )
   and c.year >= 2017
     and c.year < 2022
@@ -116,7 +118,8 @@ order by year desc
     , c.link1
     from cams_obdbs_all_years c
   where c.link1 not in (
-   select obs_link1 from match_obs where extract(year from obs_land) between 2017 and 2022
+   select obs_link1 from match_obs 
+   where extract(year from obs_land) between 2017 and 2022
   )
   and c.year >= 2017
     and c.year < 2022
@@ -132,40 +135,103 @@ This section compares cams_obdbs_all_years, cams_obs_catch, cams_obs_catch_test
 
 ------------------------------------------------------------------------------*/
 
-/
--- now test link1 drops in cams_obs_catch_test... zero!!
+-- now test link1 drops in cams_obs_catch... 581
+
 select count(distinct(link1))
 from cams_obdbs_all_years
-where link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+where link1 not in (
+    select distinct(link1) 
+    from cams_obs_catch
+    where year < 2022
+    and link1 is not null
+)
+and year < 2022
 
 /
 
--- test link3 drops in cams_obs_catch_test... zero drops! DOES NOT MAKE SENSE.... 
+
+-- now test link1 drops in cams_obs_catch_test... 542
+select count(distinct(link1))
+from cams_obdbs_all_years
+where link1 not in (
+    select distinct(obs_link1) 
+    from cams_obs_catch_test 
+    where year < 2022
+    and obs_link1 is not null
+)
+and year < 2022
+
+/
+/*
+
+-- It appears there are camsid records in MATCH_OBS that are not in cams_landings
+
+*/
+
+with obs as (
+select *
+from cams_obdbs_all_years
+where link1 not in (
+    select distinct(obs_link1) 
+    from cams_obs_catch_test 
+    where year < 2022
+    and obs_link1 is not null
+)
+and year < 2022
+)
+
+, cmatch as (
+ select *
+ from match_obs
+ where obs_link1 in (select distinct link1 from obs where link1 is not null)
+)
+
+select *
+from cams_landings
+where camsid in (select distinct camsid from cmatch where camsid is not null)
+
+
+/
+
+-- test link3 drops in cams_obs_catch_test... 12758 
 select count(distinct(link3))
 from cams_obdbs_all_years
-where link3 not in (select distinct(link3) from cams_obs_catch_test where year < 2022)
+where link3 not in (
+    select distinct(link3) from cams_obs_catch_test 
+    where year < 2022
+    and link3 is not null 
+)
+and year < 2022
 
 /
 
--- test link1 in cams_obs_catch_test from match_obs... zero missing! ALSO DOES NOT MAKE SENSE...
+-- test link1 in cams_obs_catch_test from match_obs... 2926
 select count(distinct(obs_link1))
 from match_obs
-where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+where obs_link1 not in (
+select distinct(obs_link1) from cams_obs_catch_test 
+where year < 2022
+and obs_link1 is not null
+)
 and extract(year from obs_land) between 2017 and 2021
 
 /
 
--- test link1 from stg_obs_linktrp.. zero missing!
+-- test link1 from stg_obs_linktrp.. 2926 
 select count(distinct(obs_link1))
 from stg_obs_linktrp
-where obs_link1 not in (select distinct(link1) from cams_obs_catch_test where year < 2022)
+where obs_link1 not in (
+select distinct(obs_link1) from cams_obs_catch_test 
+where year < 2022
+and obs_link1 is not null
+)
 and extract(year from obs_land) between 2017 and 2021
 /
 
 -- now look at counts of link1 and link3 vs original cams_obs_catch and cams_obs_catch_test and obdbs 
 
-select count(distinct(a.link1)) as link1_test
-, count(distinct(a.obs_link1)) as obs_link1_test
+select count(distinct(a.obs_link1)) as obs_link1_test
+--, count(distinct(a.obs_link1)) as obs_link1_test
 , count(distinct(a.link3)) as link3_test
 , b.link1_cams
 , b.link3_cams
@@ -199,17 +265,19 @@ order by year
 
 -- look at which link1 are not in new version.. 
 -- ther seem to be 
-select * from (
-select a.link1 as link1_test
-, b.link1 as link1_cams
-from cams_obs_catch_test a
---full join cams_obs_catch b
-full join cams_obdbs_all_years b
-on a.link1 = b.link1
-where a.year < 2022
-and b.year < 2022
-and a.link1 is not null
-and b.link1 is not null
+select distinct(link1_test)
+, link1_cams
+from (
+    select a.obs_link1 as link1_test
+    , b.link1 as link1_cams
+    from cams_obs_catch_test a
+    --full join cams_obs_catch b
+    full join cams_obdbs_all_years b
+    on a.obs_link1 = b.link1
+    where a.year < 2022
+    and b.year < 2022
+    and a.obs_link1 is not null
+    and b.link1 is not null
 )
 --where LINK1_TEST is null  -- zero records
 where LINK1_CAMS is null  -- zero records?!?!
@@ -319,11 +387,15 @@ from (
      ) g on o.OBS_GEAR = g.VTR_NEGEAR
      
     
-    left join cams_garfo.match_obs m on o.link1 = m.obs_link1
+    left join match_obs m on o.link1 = m.obs_link1
     left join cams c on c.camsid = m.camsid 
-    where o.link1 not in (select distinct link1 from cams_obs_catch where link1 is not null) -- and year = 2020)
+    where o.link1 not in (select distinct link1 from cams_obs_catch where link1 is not null and year < 2022) -- and year = 2020)
+--    AND o.link3 not in (select distinct link3 from cams_obs_catch where link3 is not null) -- and year   = 2020)
+   and o.year < 2022
 
 ) a
+
+order by gear_match, mesh_match, area_match
 
 ;
 
@@ -419,8 +491,41 @@ from (
      ) g on o.OBS_GEAR = g.VTR_NEGEAR
      
     
-    left join cams_garfo.match_obs m on o.link1 = m.obs_link1
+    left join match_obs m on o.link1 = m.obs_link1
     left join cams c on c.camsid = m.camsid 
     where o.link1 in (select distinct link1 from cams_obs_catch where link1 is not null) -- and year = 2020)
     AND o.link3 not in (select distinct link3 from cams_obs_catch where link3 is not null) -- and year   = 2020)
 ) a
+/
+
+/* 
+
+cams_obs_catch_test
+
+look at obdbs records that didn't match link1 for some reason
+
+*/
+select count(distinct(link1)) nlink1
+, count(distinct(link3)) nlink3 
+, meshgroup
+, meshsize
+, geartype
+, negear
+, year
+from cams_obdbs_all_years o
+ where o.link1 not in (
+  select distinct obs_link1 
+  from cams_obs_catch_test 
+  where obs_link1 is not null
+  and year < 2022
+  ) 
+  and year < 2022
+  group by meshgroup
+, meshsize
+, geartype
+, negear
+, year
+order by nlink1 desc, geartype, meshsize
+ 
+ /
+ 

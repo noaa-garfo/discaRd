@@ -66,10 +66,10 @@ B Galuardi
 
 
 
-drop table cams_obs_catch_test
+drop table cams_obs_catch
 /
 
-create table cams_obs_catch_test as 
+create table cams_obs_catch as 
 
 with obs1 as (
 
@@ -485,11 +485,13 @@ from obs_catch_2
 
 -- shorten the character length to allow an index to be built
 
-alter table cams_obs_catch_test
+alter table cams_obs_catch
   modify obs_link1 varchar2(100 char)
 /
 
-CREATE INDEX yearidx_test ON CAMS_OBS_CATCH_TEST(YEAR, ITIS_TSN, OBS_LINK1, LINK3)
+DROP INDEX yearidx
+/
+CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, OBS_LINK1, LINK3)
 
 
 
