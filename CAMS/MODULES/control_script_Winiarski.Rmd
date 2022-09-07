@@ -52,12 +52,16 @@ library(dbplyr)
 library(ggplot2)
 # library(config)
 library(stringr)
-library(discaRd)
+# library(discaRd)
 library(fst)
 options(scipen = 999)
 
+
+# load discard functions
+devtools::load_all()
+
 # unlock keyring
-#keyring::keyring_unlock("apsd_ma")
+keyring::keyring_unlock("apsd_ma")
 
 # local run
 # dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
@@ -68,7 +72,7 @@ options(scipen = 999)
 
 # connect to MAPS
 
-#con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = #'maps')
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 # 
 # con_maps <- ROracle::dbConnect(
@@ -78,24 +82,24 @@ options(scipen = 999)
 #     dbname = "NERO.world"
 # )
 
- dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+ # dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
 
 
 # Connect to database - move this to config file in the future - quick addition for server
-  connectString <- paste(
-    "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
-    sep = ""
-  )
+  # connectString <- paste(
+  #   "(DESCRIPTION=",
+  #   "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+  #   "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+  #   sep = ""
+  # )
 
 # Connect to oracle each loop in case of timeouts
-    bcon <- ROracle::dbConnect(
-      drv = ROracle::Oracle(),
-      username = dw_maps$uid,
-      password = dw_maps$pwd,
-      dbname = connectString
-    )
+    # bcon <- ROracle::dbConnect(
+    #   drv = ROracle::Oracle(),
+    #   username = dw_maps$uid,
+    #   password = dw_maps$pwd,
+    #   dbname = connectString
+    # )
 
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -121,7 +125,7 @@ import_query = "  with obs_cams as (
   , AREA
 	, vtrserno
 	, CAMS_SUBTRIP
-	, obs_link1 as link1
+	, link1 as link1
 	, link3
 	, fishdisp
 	, docid
@@ -158,7 +162,7 @@ import_query = "  with obs_cams as (
   , PERMIT
 	, vtrserno
 	, CAMS_SUBTRIP
-	, obs_link1
+	, link1
 	, link3
 	, fishdisp
 	, docid
@@ -337,10 +341,10 @@ and b.species_itis is not null
 	collect()
 
 # make a script from RMD.. 
-#knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
+knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2018:2021){
+for(jj in 2022){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('groundfish_loop_050422.R')
@@ -629,33 +633,33 @@ gc()
 source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 # # connect to maps again
-# keyring::keyring_unlock("apsd_ma")
+keyring::keyring_unlock("apsd_ma")
 # 
-# con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 # 
 #  Sys.setenv(TZ = "America/New_York")
 #  Sys.setenv(ORA_SDTZ = "America/New_York")
  
-  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+  # dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
 
 
 # Connect to database - move this to config file in the future - quick addition for server
-  connectString <- paste(
-    "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
-    sep = ""
-  )
+  # connectString <- paste(
+  #   "(DESCRIPTION=",
+  #   "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+  #   "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+  #   sep = ""
+  # )
 
 # Connect to oracle each loop in case of timeouts
-    bcon <- ROracle::dbConnect(
-      drv = ROracle::Oracle(),
-      username = dw_maps$uid,
-      password = dw_maps$pwd,
-      dbname = connectString
-    )
-
-    con_maps <- bcon
+    # bcon <- ROracle::dbConnect(
+    #   drv = ROracle::Oracle(),
+    #   username = dw_maps$uid,
+    #   password = dw_maps$pwd,
+    #   dbname = connectString
+    # )
+    # 
+    # con_maps <- bcon
 
 # dw_apsd <- config::get(value = "maps", file = "~/config.yml")
 # 
@@ -718,7 +722,7 @@ and object_name not like '%DISCARD_MORTALITY%'
 ```{r  create tables on cams_garfo via upload}
  # now make the tables on CAMS_GARFO
 
-con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'bgaluardi_cams_garfo')
+con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
 
  Sys.setenv(TZ = "America/New_York")
  Sys.setenv(ORA_SDTZ = "America/New_York")
