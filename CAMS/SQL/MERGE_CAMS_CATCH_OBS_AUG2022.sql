@@ -62,6 +62,9 @@ This has the effect of maintaining only the link1 records from the obdbs table b
 B Galuardi
 8/5/22
 
+
+9/7/22 made meshgroup where is no mesh consistently named between trips and obs
+
 */
 
 
@@ -139,7 +142,7 @@ select d.permit
         , d.geartype
         , d.negear
 --        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-        , NVL(d.mesh_cat, 'na') as meshgroup
+        , NVL(d.mesh_cat, 'none') as meshgroup
         , d.area
         , round(sum(d.LIVLB)) as subtrip_kall
         , d.sectid
@@ -186,7 +189,7 @@ group by d.permit
         , d.geartype
         , d.negear
 --        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-        , NVL(d.mesh_cat, 'na') 
+        , NVL(d.mesh_cat, 'none') 
         , d.area
         , d.sectid
         , d.GF
@@ -394,17 +397,31 @@ trips with no link1 (unobserved)
 
 )
 
+-- change the 'none' back to nulls for meshgroups
+
 , obs_catch as 
 ( 
-    select * from trips_null
+    select a.* 
+    , nullif(a.meshgroup, 'none') meshgroup_pre
+    , nullif(a.obs_meshgroup, 'none') obs_meshgroup_pre
+    from trips_null a
     union all
 --    select * from trips_0 -- not needed now that subtrip is the unit and not vtr
 --    union all
-    select * from trips_1
+    select b.* 
+    , nullif(b.meshgroup, 'none') meshgroup_pre
+    , nullif(b.obs_meshgroup, 'none') obs_meshgroup_pre
+    from trips_1 b
     union all
-    select * from trips_2_area_1
+    select c.* 
+    , nullif(c.meshgroup, 'none') meshgroup_pre
+    , nullif(c.obs_meshgroup, 'none') obs_meshgroup_pre 
+    from trips_2_area_1 c
     union all
-    select * from trips_2_area_2
+    select d.* 
+    , nullif(d.meshgroup, 'none') meshgroup_pre
+    , nullif(d.obs_meshgroup, 'none') obs_meshgroup_pre
+    from trips_2_area_2 d
 )    
 , obs_catch_2 as 
 ( 
@@ -444,7 +461,7 @@ select ACCESSAREA
 --,LINK1
 ,OBS_LINK1
 ,LINK3
-,MESHGROUP
+,MESHGROUP_PRE as MESHGROUP
 ,MONTH
 ,NEGEAR
 ,NESPP3
@@ -460,7 +477,7 @@ select ACCESSAREA
 , case when n_subtrips_link3 > 1 THEN OBS_NOHAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_NOHAUL_KALL_TRIP end as OBS_NOHAUL_KALL_TRIP  
 , case when n_subtrips_link3 > 1 THEN OBS_KALL/n_subtrips_link3 ELSE OBS_KALL end as OBS_KALL  
 ,OBS_MESH
-,OBS_MESHGROUP
+,OBS_MESHGROUP_PRE as OBS_MESHGROUP
 , SOURCE
 ,PERMIT
 ,PRORATE
