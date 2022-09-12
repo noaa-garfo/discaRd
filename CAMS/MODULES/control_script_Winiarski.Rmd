@@ -104,9 +104,9 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('~/discaRd/CAMS/R/cams_discard_functions.R')
+# source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
-setwd('~/discaRd/CAMS/MODULES/GROUNDFISH/')
+# setwd('~/discaRd/CAMS/MODULES/GROUNDFISH/')
 
 ```
 
@@ -127,6 +127,7 @@ import_query = "  with obs_cams as (
 	, CAMS_SUBTRIP
 	, link1 as link1
 	, link3
+	, link3_obs
 	, fishdisp
 	, docid
 	, CAMSID
@@ -164,6 +165,7 @@ import_query = "  with obs_cams as (
 	, CAMS_SUBTRIP
 	, link1
 	, link3
+	, link3_obs
 	, fishdisp
 	, docid
 	, nespp3	
@@ -209,7 +211,7 @@ import_query = "  with obs_cams as (
    
         
 "
-con_maps <- bcon
+# con_maps <- bcon
 c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
 		
 c_o_dat2 = c_o_dat2 %>% 

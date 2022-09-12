@@ -379,6 +379,7 @@ ddat_prev <- gf_dat %>%
 
 # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row.. 
 # need to select only discards for species evaluated. All OBS trips where nothing of that species was disacrded Must be zero!
+# Observed trips with NO obs hauls can be treated the same here. The assignment of DISCARD source happens at the end and contains the correct filtration criteria. 
 
 ddat_focal_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
@@ -408,6 +409,7 @@ ddat_focal_gf = ddat_focal_gf %>%
 bdat_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
 	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -439,6 +441,7 @@ ddat_prev_gf = ddat_prev_gf %>%
 bdat_prev_gf = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
 	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -689,7 +692,8 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 # <5, <5,  and <5 gets broad stock rate
 
 joined_table = joined_table %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
+    																	, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
     																	, is.na(LINK1) & 
     																		n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
@@ -737,7 +741,8 @@ strata_a = paste(stratvars_assumed, collapse = ';')
 strata_b = stratvars[1]
 
 joined_table = joined_table %>% 
-	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
+	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
+												, DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
 												, DISCARD_SOURCE == 'I' ~ strata_f
 												, DISCARD_SOURCE == 'T' ~ strata_f
 												, DISCARD_SOURCE == 'A' ~ strata_a
@@ -754,7 +759,8 @@ joined_table = joined_table %>%
 
 joined_table = joined_table %>% 
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+	mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+														 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
 
@@ -943,6 +949,7 @@ ddat_focal_non_gf = ddat_focal_non_gf %>%
 bdat_non_gf = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
 	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -974,6 +981,7 @@ ddat_prev_non_gf = ddat_prev_non_gf %>%
 bdat_prev_non_gf = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
 	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -1217,7 +1225,8 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 # <5, <5,  and <5 gets broad stock rate
 
 joined_table = joined_table %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
+    																	, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
     																	, is.na(LINK1) & 
     																		n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
@@ -1267,7 +1276,8 @@ strata_a = paste(stratvars_assumed, collapse = ';')
 strata_b = paste(stratvars_gear, collapse = ';')
 
 joined_table = joined_table %>% 
-	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
+	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
+												, DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
 												, DISCARD_SOURCE == 'I' ~ strata_f
 												, DISCARD_SOURCE == 'T' ~ strata_f
 												, DISCARD_SOURCE == 'GM' ~ strata_a
@@ -1285,10 +1295,11 @@ joined_table = joined_table %>%
 
 joined_table = joined_table %>% 
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+	mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+														 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
- 
+
  # saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
 
 fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
@@ -1704,7 +1715,8 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 # <5, <5,  and <5 gets broad stock rate
 
 joined_table = joined_table %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
+    																	, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
     																	, is.na(LINK1) & 
     																		n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
@@ -1772,7 +1784,8 @@ joined_table = joined_table %>%
 
 joined_table = joined_table %>% 
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+	mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+														 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
  
