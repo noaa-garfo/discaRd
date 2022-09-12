@@ -13,7 +13,7 @@ select count(distinct(cams_subtrip)) as subtrip_count
 , listagg(distinct(negear), ';') u_gears
 , listagg(distinct(meshgroup), ';') u_mesh
 , listagg(distinct(area), ';') u_areas
-from cams_obs_catch_test
+from cams_obs_catch
 where link3 is not null
 group by link3
 having count(distinct(cams_subtrip)) > 1
@@ -21,7 +21,7 @@ order by  subtrip_count desc
 ;
 
 select *
- from cams_obs_catch_test
+ from cams_obs_catch
  where link3 = '000201901Q530030015'
 -- where camsid = '320857_20180403133000_5067883'
  ;

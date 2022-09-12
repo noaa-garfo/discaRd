@@ -64,6 +64,7 @@ B Galuardi
 
 
 9/7/22 made meshgroup where is no mesh consistently named between trips and obs
+9/8/22 added a column (LINK3_OBS) indicating whether the observed trip has at least one observed haul or not (1,0)
 
 */
 
@@ -119,7 +120,7 @@ with obs1 as (
     , FIRST_VALUE(obs_link1)
          OVER (partition by camsid) AS min_link1
     , count(distinct(obs_link1)) over(partition by camsid) as N_link1_camsid
-    , obs_link1
+    , obs_link1 as link1
     , camsid
    from MATCH_OBS a
     where extract(year from a.obs_land) > 2016  
@@ -157,12 +158,12 @@ select d.permit
         , d.tripcategory
         , d.accessarea
 --    , o.link1
-    , v.obs_link1
+    , v.link1
     , v.min_link1
     , v.N_link1_camsid
 --    , count(distinct(d.vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
-     , count(distinct(d.cams_subtrip)) over(partition by obs_link1) as nsubtrip_link1 -- count how many cams_subtrips for each link1
-    , count(distinct(d.area)) over(partition by obs_link1) as narea_link1
+     , count(distinct(d.cams_subtrip)) over(partition by link1) as nsubtrip_link1 -- count how many cams_subtrips for each link1
+    , count(distinct(d.area)) over(partition by link1) as narea_link1
 from (
         select a.*
         , a.camsid || '_' || a.subtrip as cams_subtrip -- add cams_subtrip here..
@@ -176,7 +177,7 @@ from (
        
  on  v.camsid = d.camsid 
 -- left join cams_obdbs_all_years o 
--- on o.link1 = v.obs_link1
+-- on o.link1 = v.link1
  
 group by d.permit
         , d.camsid
@@ -204,7 +205,7 @@ group by d.permit
         , d.accessarea
 --    , o.link1
     , v.min_link1 
-    , v.obs_link1
+    , v.link1
     , v.N_link1_camsid
  
 )
@@ -269,7 +270,7 @@ trips with no link1 (unobserved)
 --     on (t.link1 = o.link1)
 
 --    where (t.LINK1 is null)  
-    where (t.OBS_LINK1 is null) --maintaining this field as primary field from matching table
+    where (t.link1 is null) --maintaining this field as primary field from matching table
 )  
 
 
@@ -279,7 +280,7 @@ trips with no link1 (unobserved)
 
   select t.*
 --    , o.vtrserno as obsvtr
---    , o.link1 as obs_link1
+--    , o.link1 as link1
     , o.link3
     , o.source
     , o.obsrflag
@@ -299,11 +300,11 @@ trips with no link1 (unobserved)
      from trips t
      left join (select * from obs ) o
 --     on (t.link1 = o.link1)
-     on (t.obs_link1 = o.link1)  --maintaining obs_link1 from matching table
+     on (t.link1 = o.link1)  --maintaining link1 from matching table
 
       where nsubtrip_link1 = 1
 --      and t.link1 is not null
-      and t.obs_link1 is not null
+      and t.link1 is not null
 
 )
 
@@ -332,11 +333,11 @@ trips with no link1 (unobserved)
 
    ) t
       left join (select * from obs ) o
-     on (t.obs_link1 = o.link1)  --maintaining obs_link1 from matching table
+     on (t.link1 = o.link1)  --maintaining link1 from matching table
 
       where nsubtrip_link1 = 1
 --      and t.link1 is not null
-      and t.obs_link1 is not null
+      and t.link1 is not null
 
 )
 
@@ -361,10 +362,10 @@ trips with no link1 (unobserved)
      from trips t 
    ) t
       left join (select * from obs ) o
-  on (o.link1 = t.obs_link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup)  -- don't use area when narea = 1
+  on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup)  -- don't use area when narea = 1
   where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 = 1
-  and t.obs_link1 is not null  --maintin naming from matching table
+  and t.link1 is not null  --maintin naming from matching table
   and t.cams_subtrip is not null
 
 )
@@ -389,10 +390,10 @@ trips with no link1 (unobserved)
      from trips t 
    ) t
       left join (select * from obs ) o
-        on (o.link1 = t.obs_link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA) -- use area when narea >1
+        on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA) -- use area when narea >1
   where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 > 1
-  and t.obs_link1 is not null --maintain naming from matching table
+  and t.link1 is not null --maintain naming from matching table
   and t.cams_subtrip is not null
 
 )
@@ -459,7 +460,7 @@ select ACCESSAREA
 --,HALFOFYEAR
 ,ITIS_TSN
 --,LINK1
-,OBS_LINK1
+,link1
 ,LINK3
 ,MESHGROUP_PRE as MESHGROUP
 ,MONTH
@@ -468,6 +469,7 @@ select ACCESSAREA
 ,nsubtrip_link1
 ,n_subtrips_link3
 ,OBSRFLAG
+, case when sum(obsrflag) OVER(PARTITION by LINK1) > 0 then 1 else 0 end as LINK3_OBS -- added 9/8/22 
 ,FISHDISP
 --,OBSVTR
 ,OBS_AREA
@@ -503,12 +505,12 @@ from obs_catch_2
 -- shorten the character length to allow an index to be built
 
 alter table cams_obs_catch
-  modify obs_link1 varchar2(100 char)
+  modify link1 varchar2(100 char)
 /
 
 DROP INDEX yearidx
 /
-CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, OBS_LINK1, LINK3)
+CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, link1, LINK3)
 
 
 
