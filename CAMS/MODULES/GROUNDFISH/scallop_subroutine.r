@@ -47,8 +47,10 @@ stratvars_scalgf = c('SPECIES_STOCK'
 
 FY_TYPE = 'APRIL START'
 
+# Can't run discard for a future year.. this prevents that
+end_fy = ifelse(year(Sys.Date()) == FY, 0, 1)
 
-for(yy in FY:(FY+1)){
+for(yy in FY:(FY+end_fy)){
 	
 	if (yy == year(Sys.Date())){
 		scal_end_date = as_date(paste(year(Sys.Date()), month(Sys.Date()), 1, sep = '-'))
@@ -164,6 +166,7 @@ for(yy in FY:(FY+1)){
 		bdat_scal = ddat_focal %>% 
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
+			filter(LINK3_OBS == 1) %>%
 			mutate(OBS_AREA = AREA
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)
@@ -194,6 +197,7 @@ for(yy in FY:(FY+1)){
 		bdat_prev_scal = ddat_prev %>% 
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
+			filter(LINK3_OBS == 1) %>%
 			mutate( OBS_AREA = AREA
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)
@@ -428,7 +432,8 @@ for(yy in FY:(FY+1)){
 		# <5, <5,  and <5 gets broad stock rate
 		
 		joined_table = joined_table %>% 
-			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
+																				, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
 																				, is.na(LINK1) & 
 																					n_obs_trips_f >= 5 ~ 'I'
 																				# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
@@ -496,7 +501,8 @@ for(yy in FY:(FY+1)){
 		
 		joined_table = joined_table %>% 
 			mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-			mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+			mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+																 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
 																 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 			)
 		
