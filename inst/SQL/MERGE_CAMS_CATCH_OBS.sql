@@ -1,6 +1,6 @@
-/*-----------------------------------------------------------------------------------------------------
+/*
 
-MERGE CAMS CATCH WITH OBDBS_PRORATE
+MERGE CAMS CATCH WITH CAMS_OBDBS_ALL_YEARS
 
 match on gear (NEGEAR), mesh, link1 and AREA
 
@@ -32,27 +32,59 @@ now has the correct OBS_KALL and pro-rated discard by species.
          
 RUN FROM MAPS SCHEMA
 
-------------------------------------------------------------------------------------------------------*/  
+--------------------------------------------------------------------------------
+
+-- August 2022
+
+--------------------------------------------------------------------------------
+
+New version of CAMS_OBS_CATCH that has a differnt join order than the original
+
+When building CAMS_OBS_CATCH, the order of joins between cams_landings and OBDBS information was as follows (simplified):
+
+cams_landings 
+left join match_obs  (to get camsid)
+left join cams_obdbs_all_years  
+
+the match_obs table has more link1  than cams_obdbs due to filtering trip_ext within that table build. 
+This then leads to more link1 records than intended and throws off comparisons between obdbs and cams_obs_catch
+Any comparisons made using the match_obs table will show link1 numebrs to be higher than they are in cams_obs_catch
+
+A better approach may be to alter the order of the joins
+
+cams_obdbs_all_years
+left join match_obs (to get camsid)
+right join cams_landings
+
+This has the effect of maintaining only the link1 records from the obdbs table build
+
+
+B Galuardi
+8/5/22
+
+
+9/7/22 made meshgroup where is no mesh consistently named between trips and obs
+9/8/22 added a column (LINK3_OBS) indicating whether the observed trip has at least one observed haul or not (1,0)
+
+*/
+
+
+
+drop table cams_obs_catch
 /
 
-drop table maps.cams_obs_catch
-
-/
-
-
-
-create table maps.cams_obs_catch as 
+create table cams_obs_catch as 
 
 with obs1 as (
-select a.*
-    from (
+
  select o.link3
             , link1
 --            , vtrserno
             , extract(year from dateland) as year
-            , source
+            , o.source
 --            , o.month
             , o.obsrflag
+            , o.fishdisp
             , o.area as obs_area
             , o.negear as obs_gear
             , o.geartype
@@ -63,17 +95,7 @@ select a.*
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
         
             from (
-			    select * from maps.cams_obdbs_2017
-                union all
-                select * from maps.cams_obdbs_2018
-                union all
-                select * from maps.cams_obdbs_2019
-				union all
-                select * from maps.cams_obdbs_2020
-                union all
-                select * from maps.cams_obdbs_2021
-                union all
-                select * from maps.cams_obdbs_2022
+                select * from cams_obdbs_all_years
             )
             o
           group by  o.link3
@@ -81,6 +103,7 @@ select a.*
 --            , vtrserno
 --            , o.month
             , o.obsrflag
+            , o.fishdisp
             , o.area 
             , o.geartype
             , o.negear 
@@ -88,108 +111,45 @@ select a.*
             , o.meshgroup
             , substr(nespp4, 1, 3)
             , extract(year from dateland)
-            , source
-) a
+            , o.source
 
-group by link3
-            , link1
---            , vtrserno
-            , year
-            , source
---            , month
-            , obsrflag
-            , obs_area
-            , obs_gear
-            , geartype
-            , obs_mesh
-            , meshgroup
-            , NESPP3
-            , discard
-            , obs_haul_kept
 )
 
 , ulink as (
-    select count(distinct(obs_link1)) nlink1
-    , obs_vtr
-    from maps.match_obs
-    where obs_link1 is not null
-    AND obs_link1 in (
-                 select distinct(link1) link1
-                 from
-                 obdbs.obhau@NOVA
-                 where link3 is not null
-                 union all
-                 select distinct(link1) link1
-                 from
-                 obdbs.asmhau@NOVA
-                 where link3 is not null
-             )    
-    
-    group by obs_vtr
-    order by nlink1 desc
-)
-, obstrp_ext as (
- select distinct(link1) link1 
- from obdbs.obtrp@NOVA
- where tripext in ('C','X')
- 
-  union all
- 
- select distinct(link1) link1 
- from obdbs.asmtrp@NOVA
- where tripext in ('C','X')
- 
--- and year >= 2018
-)
- 
-, vtr_link as (
-     select obs_vtr
-    , permit
-    , min(obs_link1) as link1  -- this is the minimum link1 for the vtr
+       select  permit
+    , FIRST_VALUE(obs_link1)
+         OVER (partition by camsid) AS min_link1
+    , count(distinct(obs_link1)) over(partition by camsid) as N_link1_camsid
+    , obs_link1 as link1
     , camsid
-    from (
-        select a.*
-        from MAPS.MATCH_OBS a, ulink l, obstrp_ext o
-        where a.obs_vtr in (l.obs_vtr)
-        and l.obs_vtr is not null        
-        AND OBS_LINK1 in o.link1       
-    )
-    group by obs_vtr, permit, camsid
-    order by permit, obs_vtr
-)
-,trips as (  
-       select d.permit
+   from MATCH_OBS a
+    where extract(year from a.obs_land) > 2016  
+    and obs_link1 in (select distinct link1 from obs1 where link1 is not null)
+    group by permit, camsid, obs_link1
+    order by permit
+
+ )
+
+-- adds a link1 to cams landings for obs trips
+,join_1 as ( 
+select d.permit
         , d.camsid
         , d.year
         , d.month
         , d.date_trip
---        , case when d.carea < 600 then 'N'
---               else 'S' end as region
-        , case when d.month in (1,2,3,4,5,6) then 1
-             when d.month in (7,8,9,10,11,12) then 2
-             end as halfofyear
         , d.docid
---        , substr(d.vtrserno, 1, 13) vtrserno
         , d.vtrserno
-        , d.camsid || '_' || d.subtrip as cams_subtrip
---        , d.gearcode
+        , d.cams_subtrip
         , d.geartype
         , d.negear
-        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
---        , d.meshsize
-        , NVL(d.mesh_cat, 'na') as meshgroup
+--        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+        , NVL(d.mesh_cat, 'none') as meshgroup
         , d.area
---        , d.carea
         , round(sum(d.LIVLB)) as subtrip_kall
         , d.sectid
         , d.GF
         , d.activity_code_1
         , d.activity_code_2
---        , d.activity_code_3
---        , d.permit_EFP_1
---        , d.permit_EFP_2
---        , d.permit_EFP_3
---        , d.permit_EFP_4
         , d.EM
         , redfish_exemption
         , closed_area_exemption
@@ -197,70 +157,72 @@ group by link3
         , xlrg_gillnet_exemption
         , d.tripcategory
         , d.accessarea
-    , o.link1
-    , count(distinct(vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
-    , count(distinct(area)) over(partition by link1) as narea_link1 -- count how many VTR areas for each link1
-    from MAPS.CAMS_LANDINGS d
+--    , o.link1
+    , v.link1
+    , v.min_link1
+    , v.N_link1_camsid
+--    , count(distinct(d.vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
+     , count(distinct(d.cams_subtrip)) over(partition by link1) as nsubtrip_link1 -- count how many cams_subtrips for each link1
+    , count(distinct(d.area)) over(partition by link1) as narea_link1
+from (
+        select a.*
+        , a.camsid || '_' || a.subtrip as cams_subtrip -- add cams_subtrip here..
+        from MAPS.CAMS_LANDINGS a
+        where year >= 2017  
+ ) d
     left join (  --adds observer link field
          select * 
-         from vtr_link
-        ) o
+         from ulink
+        ) v
        
-    on  o.camsid = d.camsid 
-    
-    left join (
+ on  v.camsid = d.camsid 
+-- left join cams_obdbs_all_years o 
+-- on o.link1 = v.link1
+ 
+group by d.permit
+        , d.camsid
+        , d.year
+        , d.month
+        , d.date_trip
+        , d.docid
+        , d.vtrserno
+        , d.cams_subtrip 
+        , d.geartype
+        , d.negear
+--        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+        , NVL(d.mesh_cat, 'none') 
+        , d.area
+        , d.sectid
+        , d.GF
+        , d.activity_code_1
+        , d.activity_code_2
+        , d.EM
+        , redfish_exemption
+        , closed_area_exemption
+        , sne_smallmesh_exemption
+        , xlrg_gillnet_exemption
+        , d.tripcategory
+        , d.accessarea
+--    , o.link1
+    , v.min_link1 
+    , v.link1
+    , v.N_link1_camsid
+ 
+)
+
+-- adds mapped gear for gear matching to trips that have a link1 from above
+
+, trips as (select j.*
+, NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+from join_1 j
+left join (
       select distinct(NEGEAR) as VTR_NEGEAR
        , SECGEAR_MAPPED
       from MAPS.STG_OBS_VTR_GEARMAP
       where NEGEAR is not null
      ) g
-     on d.NEGEAR = g.VTR_NEGEAR
-    
-    WHERE d.year >= 2017 -- reduces the table size.. we aren't going back in time too far for discards
-    
-    group by 
-        d.permit
-        , d.year
-        , d.month
-        , d.date_trip
---        , case when d.carea < 600 then 'N'
---               else 'S' end 
-        , case when d.month in (1,2,3,4,5,6) then 1
-             when d.month in (7,8,9,10,11,12) then 2
-             end 
-        , d.camsid
-        , d.docid
-        , d.vtrserno
-        , d.camsid || '_' || d.subtrip
---        , d.gearcode
-        , d.geartype
-        , d.negear
-        , NVL(g.SECGEAR_MAPPED, 'OTH')
---        , d.meshsize
-        , NVL(d.mesh_cat, 'na')
-        , d.area
---        , d.carea
-        , d.sectid
-        , d.GF
-        , d.activity_code_1
-        , d.activity_code_2
---        , d.activity_code_3
-        , d.EM
---        , d.permit_EFP_1
---        , d.permit_EFP_2
---        , d.permit_EFP_3
---        , d.permit_EFP_4
-        , d.redfish_exemption
-        , d.closed_area_exemption
-        , d.sne_smallmesh_exemption
-        , d.xlrg_gillnet_exemption
-        , d.tripcategory
-        , d.accessarea
-        , o.link1
+ on j.NEGEAR = g.VTR_NEGEAR
 )
-
--- get observer data
--- join to gearmapping for match
 
 , obs as (
       select a.*
@@ -287,20 +249,48 @@ staged matching
 
 trips with no link1 (unobserved)
 */
+, trips_null as (
+
+  select t.*
+    , null as link3
+    , null as source
+    , null as obsrflag
+    , null as fishdisp
+    , null as obs_area
+    , null as nespp3
+    , null as ITIS_TSN
+    , null as discard
+    , null as obs_haul_kept
+    , null as  obs_gear
+    , null as obs_mesh
+    , 'none' as obs_meshgroup
+
+     from trips t
+--     left join (select * from obs ) o -- no joins here! 
+--     on (t.link1 = o.link1)
+
+--    where (t.LINK1 is null)  
+    where (t.link1 is null) --maintaining this field as primary field from matching table
+)  
+
+
+/*  not needed now that subtrip is the unit and not VTR
+-- trips with no VTR but still observed i.e. clam trips.. 
 , trips_0 as (
 
   select t.*
 --    , o.vtrserno as obsvtr
-    , o.link1 as obs_link1
+--    , o.link1 as link1
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
 --    , o.ITIS_GROUP1
 --    , o.discard_prorate as discard
-, o.discard
+    , o.discard
     , o.obs_haul_kept
 --    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
@@ -309,29 +299,31 @@ trips with no link1 (unobserved)
 
      from trips t
      left join (select * from obs ) o
-     on (t.link1 = o.link1)
- 
-    where (t.LINK1 is null or t.nvtr_link1 = 0)   
+--     on (t.link1 = o.link1)
+     on (t.link1 = o.link1)  --maintaining link1 from matching table
+
+      where nsubtrip_link1 = 1
+--      and t.link1 is not null
+      and t.link1 is not null
 
 )
 
--- trips with single link1 (one subtrip)
+*/
+
+-- obs trips with exactly one VTR
+
 , trips_1 
  as (  
   select t.*
---  , o.vtrserno as obsvtr
-    , o.link1 as obs_link1
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
---    , o.ITIS_GROUP1
---    , o.discard_prorate as discard
 , o.discard
     , o.obs_haul_kept
---    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
@@ -341,23 +333,22 @@ trips with no link1 (unobserved)
 
    ) t
       left join (select * from obs ) o
-        on (t.link1 = o.link1)
-  where nvtr_link1 = 1
-  and t.link1 is not null
-  and t.vtrserno is not null
---  and t.year = 2019
+     on (t.link1 = o.link1)  --maintaining link1 from matching table
+
+      where nsubtrip_link1 = 1
+--      and t.link1 is not null
+      and t.link1 is not null
 
 )
 
--- trips with >1 link1
+-- multiple subtrips but only one area
 , trips_2_area_1 as ( 
 
    select t.*
---  , o.vtrserno as obsvtr
-    , o.link1 as obs_link1
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
@@ -372,20 +363,20 @@ trips with no link1 (unobserved)
    ) t
       left join (select * from obs ) o
   on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup)  -- don't use area when narea = 1
-  where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 = 1
-  and t.link1 is not null
+  and t.link1 is not null  --maintin naming from matching table
   and t.cams_subtrip is not null
 
 )
+-- trips with >1 subtrip and multiple areas on link1s
 , trips_2_area_2 as ( 
 
    select t.*
---  , o.vtrserno as obsvtr
-    , o.link1 as obs_link1
     , o.link3
     , o.source
     , o.obsrflag
+    , o.fishdisp    
     , o.obs_area as obs_area
     , o.nespp3
     , o.ITIS_TSN
@@ -400,24 +391,39 @@ trips with no link1 (unobserved)
    ) t
       left join (select * from obs ) o
         on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA) -- use area when narea >1
-  where (nvtr_link1 > 1 AND nvtr_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 > 1
-  and t.link1 is not null
+  and t.link1 is not null --maintain naming from matching table
   and t.cams_subtrip is not null
 
 )
 
+-- change the 'none' back to nulls for meshgroups
+
 , obs_catch as 
 ( 
-    select * from trips_0
+    select a.* 
+    , nullif(a.meshgroup, 'none') meshgroup_pre
+    , nullif(a.obs_meshgroup, 'none') obs_meshgroup_pre
+    from trips_null a
     union all
-    select * from trips_1
+--    select * from trips_0 -- not needed now that subtrip is the unit and not vtr
+--    union all
+    select b.* 
+    , nullif(b.meshgroup, 'none') meshgroup_pre
+    , nullif(b.obs_meshgroup, 'none') obs_meshgroup_pre
+    from trips_1 b
     union all
-    select * from trips_2_area_1
+    select c.* 
+    , nullif(c.meshgroup, 'none') meshgroup_pre
+    , nullif(c.obs_meshgroup, 'none') obs_meshgroup_pre 
+    from trips_2_area_1 c
     union all
-    select * from trips_2_area_2
-)
-
+    select d.* 
+    , nullif(d.meshgroup, 'none') meshgroup_pre
+    , nullif(d.obs_meshgroup, 'none') obs_meshgroup_pre
+    from trips_2_area_2 d
+)    
 , obs_catch_2 as 
 ( 
 
@@ -451,16 +457,20 @@ select ACCESSAREA
 ,EM
 ,GEARTYPE
 ,GF
-,HALFOFYEAR
+--,HALFOFYEAR
 ,ITIS_TSN
-,LINK1
+--,LINK1
+,link1
 ,LINK3
-,MESHGROUP
+,MESHGROUP_PRE as MESHGROUP
 ,MONTH
 ,NEGEAR
 ,NESPP3
-,NVTR_LINK1
+,nsubtrip_link1
+,n_subtrips_link3
 ,OBSRFLAG
+, case when sum(obsrflag) OVER(PARTITION by LINK1) > 0 then 1 else 0 end as LINK3_OBS -- added 9/8/22 
+,FISHDISP
 --,OBSVTR
 ,OBS_AREA
 ,OBS_GEAR
@@ -468,9 +478,8 @@ select ACCESSAREA
 , case when n_subtrips_link3 > 1 THEN OBS_HAUL_KEPT/n_subtrips_link3 ELSE OBS_HAUL_KEPT end as OBS_HAUL_KEPT 
 , case when n_subtrips_link3 > 1 THEN OBS_NOHAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_NOHAUL_KALL_TRIP end as OBS_NOHAUL_KALL_TRIP  
 , case when n_subtrips_link3 > 1 THEN OBS_KALL/n_subtrips_link3 ELSE OBS_KALL end as OBS_KALL  
-,OBS_LINK1
 ,OBS_MESH
-,OBS_MESHGROUP
+,OBS_MESHGROUP_PRE as OBS_MESHGROUP
 , SOURCE
 ,PERMIT
 ,PRORATE
@@ -488,53 +497,21 @@ from obs_catch_2
 
 /
 
-CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, LINK1, LINK3)
+--select max ( length ( link3 ) ) mx_char_length,
+--       max ( lengthb ( link3 ) ) mx_byte_length
+--from   cams_obs_catch_test
 /
---CREATE INDEX itisidx ON CAMS_OBS_CATCH(ITIS_TSN)
---/
 
---
---/
---UPDATE CAMS_OBS_CATCH
---  set DISCARD = DISCARD/n_subtrips_link3
---    where n_subtrips_link3 > 1
---/
---UPDATE CAMS_OBS_CATCH
---  set DISCARD_PRORATE = DISCARD_PRORATE/n_subtrips_link3
---    where n_subtrips_link3 > 1
---/
---UPDATE CAMS_OBS_CATCH
---  set OBS_HAUL_KEPT = OBS_HAUL_KEPT/n_subtrips_link3
---    where n_subtrips_link3 > 1
---/
---UPDATE CAMS_OBS_CATCH
---  set OBS_HAUL_KALL_TRIP = OBS_HAUL_KALL_TRIP/n_subtrips_link3
---    where n_subtrips_link3 > 1
---/
---UPDATE CAMS_OBS_CATCH
---  set OBS_NOHAUL_KALL_TRIP = OBS_NOHAUL_KALL_TRIP/n_subtrips_link3
---    where n_subtrips_link3 > 1
---/
---UPDATE CAMS_OBS_CATCH
---  set OBS_KALL = OBS_KALL/n_subtrips_link3
---    where n_subtrips_link3 > 1
---/
+-- shorten the character length to allow an index to be built
 
---
---PARTITION BY LIST (year) AUTOMATIC
---(
---  PARTITION year2017 VALUES (2017),
---  PARTITION year2018 VALUES (2018),
---  PARTITION year2019 VALUES (2019),
---  PARTITION year2020 VALUES (2020)
-----  PARTITION year2021 VALUES ('2021')
---)
-;
-
-
---where a.link1 is not null
---and a.link1 = '000201908R35027'
-
-grant select on maps.cams_obs_catch to apsd, cams_garfo
+alter table cams_obs_catch
+  modify link1 varchar2(100 char)
 /
+
+DROP INDEX yearidx
+/
+CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, link1, LINK3)
+
+
+
 
