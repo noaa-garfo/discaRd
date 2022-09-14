@@ -1,203 +1,206 @@
 /*
 
-Script used in SMB and mid-atlantic QM discard estimation.
-this script build the observer table information for stratification etc.
+Create table of discarded species for a calendar year 
+this follows the steps used in Mid-Atlantic discard estaimtion for year end reports
 
-incorporates NEFOP, ASM
-accounts for mesh size & liner use
-adds factors for trip type, access area (scallops), GenCat/LA (scallop), meshgroup (sm, M, LG, XLG)
-aggregated atth species/haul level
+The eventual goal is to replace the CASE code for gear, mesh and area with tale based joins. 
 
-originally written by Jay Hermsen
+Created by: Ben Galuardi, modified from Jay Hermsen's code
 
-Ben Galuardi
+12-23-20
 
-12/18/20
+modified 
+3-18-21
+12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
+12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
+01-04-22 update mesh categories (meshgroup): 0-3.99 = sm, >=4 = L, FOR GILLNETS, >=8 = XL
+02-03-22 update filter for tripext to include Limited sampling trips (see obdbs.tripext@nova)
+04-12-22 changed the date filter in table 3 to match only on year rather than dateland.. this was dropping trips for timestamp reasons
 
-this process could run on a cron job and have one table/calendar year
-stock area, region, half of year may all be dropped or modified in subsequent steps
+The year variable can be defined, and then the entire script run (F5 in sqldev)
+
+This version ues left joins in the first set of tables which preserves more information than previous versions which used hard matches
+
+we also keep all hauls, not just observed hauls, so prorating can be done
+
+07-11-22 modified script to build everything based on WITH statements. 
+ added removal of fishdisp
+ added OBPRELIM! 
+ 
+ 
+08-05-22 
+put fishdisp 090 back in. 
+
+RUN FROM MAPS SCHEMA
 
 */
 
-DEF year = 2020
+--DEF YEAR = 2021
 
-DROP TABLE bg_obdbs_cams_mock&year
-/
-DROP TABLE bg_obtables_join_1_&year
-/
+--/
 
-CREATE TABLE bg_obtables_join_1_&year AS
-SELECT a.FLEET_TYPE, 
-a.DATELAND, 
-a.DATESAIL, 
-a.DEALNUM, 
+--DROP TABLE MAPS.CAMS_OBDBS_&year
+
+--/
+CREATE TABLE CAMS_OBDBS_&year AS 
+
+--OBPRELIM DATA
+
+with OP as ( 
+   SELECT 
+    t.link1
+    , h.link3
+    , G.OBGEARCAT as GEARCAT
+    , t.tripext
+    , t.program
+    , t.year
+    , t.permit1
+    , t.hullnum1
+    , t.fleet_type
+    , t.datesail
+    , t.dateland
+    , h.obsrflag
+    , h.area
+    , SUBSTR(s.nespp4,1,3) nespp3
+    , s.nespp4
+    , h.negear
+    , s.fishdisp
+    , h.CATEXIST as catdisp
+    , s.round as drflag
+    , s.hailwt
+    , 'OBPRELIM' as source
+
+    from
+    obprelim.optrp@NOVA t 
+    LEFT OUTER JOIN
+    obprelim.ophau@NOVA h ON t.link1 = h.link1
+    LEFT OUTER JOIN
+    obprelim.opcatch@NOVA s ON h.link3 = s.link3
+    LEFT OUTER JOIN
+    obdbs.obgear@NOVA g ON g.negear = h.negear
+    
+    WHERE
+    t.year in (&YEAR)
+    and h.year in (&YEAR)
+
+
+)
+
+--OBDBS data
+
+, OB as ( 
+   SELECT
+    t.link1
+    , h.link3
+    , t.GEARCAT
+    , t.tripext
+    , t.program
+    , t.year
+    , t.permit1
+    , t.hullnum1
+    , t.fleet_type
+    , t.datesail
+    , t.dateland
+    , s.obsrflag
+    , s.area
+    , SUBSTR(s.nespp4,1,3) nespp3
+    , s.nespp4
+    , s.negear
+    , s.fishdisp
+    , s.catdisp
+    , s.drflag
+    , s.hailwt
+    , 'OBDBS' as source
+    
+    from
+    obdbs.obtrp@nova t 
+    LEFT OUTER JOIN
+    obdbs.obhau@nova h ON t.link1 = h.link1
+    LEFT OUTER JOIN
+    obdbs.obspp@nova s ON h.link3 = s.link3
+
+   
+    WHERE
+    t.year in (&YEAR)
+    and h.year in (&YEAR)
+
+)
+
+-- ASM data
+
+, ASM as (
+SELECT 
+--a.DEALNUM, 
+a.LINK1,
+b.link3,
 a.GEARCAT, 
-a.HULLNUM1, 
-a.LINK1, 
-a.MONTH, 
-a.PERMIT1, 
-a.PORT, 
-a.STATE, 
-a.VMSCODE, 
-a.VTRSERNO, 
-a.YEAR, 
-a.YEARLAND, 
 a.TRIPEXT,
-b.LINK3, 
-b.NEGEAR, 
-b.NEMAREA, 
-b.AREA, 
-b.OBSRFLAG, 
-b.ONEFFORT, 
-b.QDSQ, 
-b.QTR, 
-b.TENMSQ, 
-b.TRIPID,
-b.LATHBEG,
-b.LATSBEG,
-b.LATHEND,
-b.LATSEND, 
-e.FISHDISPDESC, 
-s.catdisp, 
-s.drflag, 
-s.estmeth, 
-s.fishdisp, 
-s.hailwt, 
-s.nespp4,  
-s.program, 
-s.wgttype
-FROM obdbs.obtrp@nova a, obdbs.obhau@nova b, obdbs.obspp@nova s, obdbs.obfishdisp@nova e--, obdbs.obspec@nova i
-WHERE a.LINK1 = b.LINK1
---AND b.LINK3 = s.LINK3
-AND s.FISHDISP = e.FISHDISP
---AND i.nespp4 = s.nespp4
-AND a.YEAR = '&year'
-AND b.YEAR = '&year'
-AND s.fishdisp <> '039'
---AND b.OBSRFLAG = '1'
-AND s.program <> '127'
-AND a.tripext IN ('C', 'X')
---AND i.inc IS NULL --exclude incidental takes
-/
-DROP TABLE bg_obtables_join_1a_&year
-/
-CREATE TABLE bg_obtables_join_1a_&year AS
-SELECT s.*, s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb livewt
-FROM bg_obtables_join_1_&year s LEFT OUTER JOIN obdbs.obspecconv@nova c
-ON s.nespp4 = c.nespp4_obs
-AND s.catdisp = c.catdisp_code
-AND s.drflag = c.drflag_code
-/
----Pull data from the ASM tables in the OBDBS tables on NOVA  
-DROP TABLE bg_asmtables_join_1_&year 
-/
-CREATE TABLE bg_asmtables_join_1_&year AS
-SELECT a.FLEET_TYPE, 
-a.DATELAND, 
+a.PROGRAM, 
+a.YEAR, 
+a.PERMIT1, 
+a.HULLNUM1, 
+a.FLEET_TYPE, 
 a.DATESAIL, 
-a.DEALNUM, 
-a.GEARCAT, 
-a.HULLNUM1, 
-a.LINK1, 
-a.MONTH, 
-a.PERMIT1, 
-a.PORT, 
-a.STATE, 
-a.VMSCODE, 
-a.VTRSERNO, 
-a.YEAR, 
-a.YEARLAND, 
-a.TRIPEXT,
-b.LINK3, 
-b.NEGEAR, 
-b.NEMAREA, 
-b.AREA, 
+a.DATELAND,
 b.OBSRFLAG, 
-b.ONEFFORT, 
-b.QDSQ, 
-b.QTR, 
-b.TENMSQ, 
-b.TRIPID,
-b.LATHBEG,
-b.LATSBEG,
-b.LATHEND,
-b.LATSEND, 
-e.FISHDISPDESC, 
-s.catdisp, 
-s.drflag, 
-s.estmeth, 
-s.fishdisp, 
-s.hailwt, 
-s.nespp4,  
-s.program, 
-s.wgttype
-FROM obdbs.asmtrp@nova a, obdbs.asmhau@nova b, obdbs.asmspp@nova s, obdbs.obfishdisp@nova e--, obdbs.obspec@nova i
-WHERE a.LINK1 = b.LINK1
---AND b.LINK3 = s.LINK3
-AND s.FISHDISP = e.FISHDISP
---AND i.nespp4 = s.nespp4
-AND a.YEAR = '&year'
-AND b.YEAR = '&year'
-AND s.fishdisp <> '039'
---AND b.OBSRFLAG = '1'
-AND s.program <> '127'
-AND a.tripext IN ('C', 'X')
---AND i.inc IS NULL --exclude incidental takes
-/
-DROP TABLE bg_asmtables_join_1a_&year
-/
-CREATE TABLE bg_asmtables_join_1a_&year AS
-SELECT s.*, s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb livewt
-FROM bg_asmtables_join_1_&year s LEFT OUTER JOIN obdbs.obspecconv@nova c
-ON s.nespp4 = c.nespp4_obs
-AND s.catdisp = c.catdisp_code
-AND s.drflag = c.drflag_code
-/
----UNION THE TWO TABLES CREATED ABOVE  
-DROP TABLE bg_obdbs_tables_1_&year;
-/
-CREATE TABLE bg_obdbs_tables_1_&year 
-as
-select *
-from
-(select * from bg_obtables_join_1a_&year)
-union all
-(select * from bg_asmtables_join_1a_&year)
-/
---- GENERATE A TABLE OF KEPT ALL SPECIES BY TRIP (trip is defined by link1, not tripid or vtrserno 
----in the observer database)  
-DROP TABLE bg_obdbs_keptall_&year
-/
-CREATE TABLE bg_obdbs_keptall_&year AS
-SELECT link1, sum(livewt) keptall
-FROM bg_obdbs_tables_1_&year 
-GROUP BY link1
-/
----AND UNION THAT TABLE TO THE OBSERVER TABLE CREATED ABOVE 
-/
-DROP TABLE bg_obdbs_tables_3_&year
-/
-CREATE TABLE bg_obdbs_tables_3_&year
-AS SELECT a.AREA, a.CATDISP, a.FLEET_TYPE, 
-a.DATELAND, a.DATESAIL, a.DEALNUM, a.DRFLAG, 
-a.ESTMETH, a.FISHDISP, a.FISHDISPDESC, 
-a.GEARCAT, a.HAILWT, a.HULLNUM1, a.LATHBEG, 
-a.LATHEND, a.LATSBEG, a.LATSEND, a.LINK1, 
-a.LINK3, a.LIVEWT, a.MONTH, a.NEGEAR, 
-a.NEMAREA, a.NESPP4, a.OBSRFLAG, a.ONEFFORT, 
-a.PERMIT1, a.PORT, a.PROGRAM, a.QDSQ, a.QTR, 
-a.STATE, a.TENMSQ, a.TRIPEXT, a.TRIPID, 
-a.VMSCODE, a.VTRSERNO, a.WGTTYPE, a.YEAR, 
-a.YEARLAND, b.keptall
-FROM bg_obdbs_tables_1_&year a LEFT OUTER JOIN bg_obdbs_keptall_&year b
-ON a.link1 = b.link1 
-WHERE a.DATELAND BETWEEN '01-jan-&year' AND '31-DEC-&year'
-/
---CREATE A MESHSIZE TABLE AND ADD IT TO THE TABLE CREATED ABOVE  
----the first table pulls mesh sixe for otter trawl gear  
-DROP TABLE bg_obdbs_meshsize1_&year
-/
-CREATE TABLE bg_obdbs_meshsize1_&year AS
+b.AREA, 
+SUBSTR(s.nespp4,1,3) nespp3
+, s.nespp4
+, b.negear
+, s.fishdisp
+, s.catdisp
+, s.drflag
+, s.hailwt
+, 'ASM' as source
+
+FROM obdbs.asmtrp@nova a
+left join (select * from obdbs.asmhau@nova) b
+on a.LINK1 = b.LINK1
+left join (select * from obdbs.asmspp@nova) s
+on b.LINK3 = s.LINK3
+left join (select * from obdbs.obfishdisp@nova) e
+on s.FISHDISP = e.FISHDISP
+where a.year in (&YEAR)
+and b.year in (&YEAR)
+)
+
+-- put all obs sources together and add livewt calculation
+
+, all_obs as (
+select s.*
+, s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb livewt
+--, sum(s.hailwt*c.cf_rptqty_lndlb*c.cf_lndlb_livlb) OVER(PARTITION BY LINK1) as keptall
+    from (
+        select *
+         from ob
+         
+         union all 
+         
+         select *
+         from op
+         
+          union all 
+         
+         select *
+         from asm
+     ) s
+LEFT OUTER JOIN obdbs.obspecconv@nova c
+ON (s.nespp4 = c.nespp4_obs AND s.catdisp = c.catdisp_code AND s.drflag = c.drflag_code)
+
+)
+
+-- add kept all for LINK1
+
+, kall as (
+    SELECT link1
+    , sum(livewt) keptall
+    FROM all_obs
+    GROUP BY link1
+)
+
+-- mesh info from trawls
+
+, mesh1 as (
 SELECT DISTINCT(a.LINK1), 
 a.LINK3, 
 a.LINK4, 
@@ -210,7 +213,7 @@ a.PROGRAM,
 a.TRIPID, 
 a.YEAR 
 FROM obdbs.obotgh@nova a
-WHERE a.YEAR = '&year'
+WHERE a.YEAR = &YEAR
 UNION ALL
 SELECT DISTINCT(a.LINK1), 
 a.LINK3, 
@@ -224,12 +227,13 @@ a.PROGRAM,
 a.TRIPID, 
 a.YEAR 
 FROM obdbs.asmotgh@nova a
-WHERE a.YEAR = '&year'
-/
----the second table pulls mesh size info for gillnet gear 
-DROP TABLE bg_obdbs_meshsize2_&year
-/
-CREATE TABLE bg_obdbs_meshsize2_&year AS
+WHERE a.YEAR = &YEAR
+)
+
+-- mesh info from gillnets
+
+,mesh2 as (
+
 SELECT DISTINCT(a.HAULNUM), 
 a.LINK1, 
 a.LINK3, 
@@ -241,7 +245,7 @@ a.NEGEAR,
 a.TRIPID, 
 a.YEAR
 FROM obdbs.obgggh@nova a
-WHERE a.YEAR = '&year'
+WHERE a.YEAR = &YEAR
 UNION ALL
 SELECT DISTINCT(a.HAULNUM), 
 a.LINK1, 
@@ -254,56 +258,55 @@ a.NEGEAR,
 a.TRIPID, 
 a.YEAR
 FROM obdbs.asmgggh@nova a
-WHERE a.YEAR = '&year'
-/
---Add info on mesh liner. If a mesh liner was used, the mesh size supplants
----the mesh size used from the actual net. If no liner is used
----the mesh size defaults to the net, i.e. the smaller of the two mesh sizes is used if a liner is present.
-DROP TABLE bg_obdbs_tables_4_&year
-/
-CREATE TABLE bg_obdbs_tables_4_&year
-AS SELECT a.*, 
-b.CODLINERUSD, 
-b.CODMSIZE, 
-b.LINERMSIZE
-FROM bg_obdbs_tables_3_&year a LEFT OUTER JOIN bg_obdbs_meshsize1_&year b
-ON a.link3 = b.link3 
-/
-DROP TABLE bg_obdbs_tables_5_&year
-/
+WHERE a.YEAR = &YEAR
 
--- get rid of all the update steps... put them in CASE statements for WAY faster processing
+)
 
-CREATE TABLE bg_obdbs_tables_5_&year AS 
-select c.*
-,  CASE when  (geartype in ('Otter Trawl') AND meshgroup2 = 'xlg' ) then 'lg'
-       when meshgroup2 IS NULL then 'na'
-      else meshgroup2 end as meshgroup
-      from (
-Select b.*
-, CASE when b.geartype in ('Otter Trawl, Haddock Separator', 'Otter Trawl, Ruhle', 'Otter Trawl, Twin') then 'lg'
-       else meshgroup1 end as meshgroup2
-    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
-    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory
-from (
+-- add trawl mesh info and kall to table
+, tab1 as (
+    select o.*
+    , k.keptall
+    , b.CODLINERUSD
+    , b.CODMSIZE
+    , b.LINERMSIZE
+    from all_obs o
+    left join (select * from kall) k 
+    on o.link1 = k.link1
+    
+    LEFT OUTER JOIN mesh1 b
+    ON o.link3 = b.link3 
+    
+    WHERE o.program <> '127'
+    AND o.tripext IN ('C', 'X')
+--    AND o.FISHDISP <> '090' -- keep this in.. deal with it in R
+)
+
+select b.*
+        , CASE WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
+             else meshgroup_pre
+             END as meshgroup
+from(
     SELECT a.*
-    , (CASE WHEN meshsize < 5.5 AND negear IN ('050','054','057','100','105','116','117') THEN 'sm'
-          WHEN meshsize BETWEEN 5.5 AND 7.99 AND negear IN ('050','054','057','100','105','116','117') THEN 'lg'
-          WHEN meshsize >= 8 AND negear IN ('050','054','057','100','105','116','117') THEN 'xlg'
-          END) as  meshgroup1
---    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea end as accessarea
---    , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory end as tripcategory
+        , CASE WHEN (meshsize < 4) then 'SM' --
+             WHEN (meshsize >= 4) then 'LM'
+             else null
+             END as meshgroup_pre
+             
+        
+        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
+        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory                     
+        
     from  (
         SELECT a.*, b.MSWGTAVG
-        ,  (CASE WHEN (a.month<=06) then 1 
-                WHEN (a.month>06) then 2 
-                END) as halfofyear
-        ,
-          (CASE WHEN (a.month<=03) then 1 
-                  WHEN (a.month between 04 and 06) then 2 
-                  WHEN (a.month between 07 and 09) then 3 
-                  WHEN (a.month>09) then 4 
-                END) as calendarqtr
+--        ,  (CASE WHEN (a.month<=06) then 1 
+--                WHEN (a.month>06) then 2 
+--                END) as halfofyear
+--        ,
+--          (CASE WHEN (a.month<=03) then 1 
+--                  WHEN (a.month between 04 and 06) then 2 
+--                  WHEN (a.month between 07 and 09) then 3 
+--                  WHEN (a.month>09) then 4 
+--                END) as calendarqtr
         , 
         (CASE WHEN a.linermsize IS NULL AND b.mswgtavg IS NULL THEN codmsize*0.03937--converting millimeters to inches  
               WHEN a.codmsize IS NULL AND b.mswgtavg IS NULL THEN linermsize*0.03937
@@ -330,7 +333,7 @@ from (
         
         ,	(CASE WHEN a.program IN ('000', '010', '041', '042', '044','045','101', 
                         '102', '103','130','140', '141', '146', '147', '171','230', '231','233', '234','240') THEN 'OPEN'
-                        WHEN a.program IN ('201', '202', '203', '204', '205', '206', '207','208','209','210','211','219') THEN 'AA'
+                        WHEN a.program IN ('201', '202', '203', '204', '205', '206', '207','208','209','210','211', '212','213','219') THEN 'AA'
                         ELSE 'all'
                         END) as accessarea1
         , (CASE WHEN a.negear IN ('070') THEN 'Beach Seine'
@@ -354,53 +357,10 @@ from (
                         WHEN a.negear IS NULL THEN 'Unknown'
                         END) as geartype
               
-        FROM bg_obdbs_tables_4_&year a LEFT OUTER JOIN bg_obdbs_meshsize2_&year b
+        FROM tab1 a LEFT OUTER JOIN mesh2 b
         ON a.link3 = b.link3 
     ) a
   ) b
- ) c 
-/
+--/
 
--- drop temp columns
-ALTER TABLE bg_obdbs_tables_5_&year DROP (tripcategory1, meshgroup1, meshgroup2, accessarea1)
-/
-
-CREATE TABLE bg_obdbs_cams_mock&year as select * from bg_obdbs_tables_5_&year
-/
-drop table bg_obdbs_tables_5_&year
-/
-drop table bg_obdbs_tables_1_&year
-/
-drop table bg_obdbs_tables_1a_&year
-/
-drop table bg_obdbs_tables_2_&year
-/
-drop table bg_obdbs_tables_3_&year
-/
-drop table bg_obdbs_tables_4_&year
-;
-
-select count(*) 
-from bg_obdbs_cams_mock&year
-
-;
-
---select area
---, nemarea
---, fleet_type, gearcat
---, hailwt
---, link1
---, link3
---, negear
---, linermsize
---, meshsize
---, geartype
---, meshgroup
---, accessarea
---, tripcategory
---, program
---, nespp4
---, substr(nespp4, 1, 3) as nespp3
---, keptall
---from bg_obdbs_cams_mock
-
+--ALTER TABLE MAPS.CAMS_OBDBS_&year DROP (meshgroup_pre, tripcategory1, accessarea1)
