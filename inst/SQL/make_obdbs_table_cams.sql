@@ -101,8 +101,8 @@ with OP as (
     , t.fleet_type
     , t.datesail
     , t.dateland
-    , s.obsrflag
-    , s.area
+    , h.obsrflag
+    , h.area
     , SUBSTR(s.nespp4,1,3) nespp3
     , s.nespp4
     , s.negear
