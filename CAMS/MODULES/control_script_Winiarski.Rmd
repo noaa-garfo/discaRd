@@ -111,6 +111,27 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 ```
 
+```{r refresh and rebuild obdbs and cams_obs_catch}
+
+for(i in 2017:2022){
+	require(glue)
+	make_cams_obdbs(con_maps, i, sql_file = "~/PROJECTS/discaRd/inst/SQL/make_obdbs_table_cams.sql")
+	
+	idx1 = paste0("CREATE INDEX i_CAMS_obdbs", i, "_year_link_spp", " ON ", paste0('CAMS_OBDBS_',i) ,"(YEAR, LINK1, LINK3, NESPP3, NESPP4)")
+	# idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
+	ROracle::dbSendQuery(con_maps, idx1)
+	
+}
+
+# CAMS_OBS_CATCH
+make_cams_obs_catch(con_maps, sql_file = '~/PROJECTS/discaRd/inst/SQL/MERGE_CAMS_CATCH_OBS.sql')
+
+
+
+```
+
+
+
 ```{r get obs and catch data from oracle, eval = T}
 
 # get catch and matched obs data together

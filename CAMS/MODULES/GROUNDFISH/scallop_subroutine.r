@@ -99,6 +99,12 @@ for(yy in FY:(FY+end_fy)){
 			filter(SPECIES_ITIS == species_itis) %>%
 			dplyr::select(-SPECIES_ITIS) 
 		
+		# Observer codes to be removed
+		OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
+			collect() %>% 
+			filter(SPECIES_ITIS == species_itis) %>% 
+			distinct(OBS_CODES) 
+		
 		# make tables
 		ddat_focal <- scal_trips %>% 
 			# filter(SCAL_YEAR == yy) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
@@ -167,6 +173,7 @@ for(yy in FY:(FY+end_fy)){
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
+			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
 			mutate(OBS_AREA = AREA
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)
@@ -198,6 +205,7 @@ for(yy in FY:(FY+end_fy)){
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
+			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
 			mutate( OBS_AREA = AREA
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)
