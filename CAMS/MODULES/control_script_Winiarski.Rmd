@@ -45,6 +45,7 @@ options(dplyr.summarise.inform = FALSE)
 
 # library(odbc)
 library(ROracle)
+library(MAPS)
 #library(keyring)
 library(apsdFuns)
 library(dplyr, warn.conflicts = FALSE)
