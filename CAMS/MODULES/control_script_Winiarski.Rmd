@@ -425,10 +425,10 @@ gc()
  species$ITIS_TSN <- stringr::str_sort(itis)
 
 # make sure the folder is correct 
-setwd('~/discaRd/CAMS/MODULES/CALENDAR/') 
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/')
 
 # make a script from RMD.. 
-#knitr::purl('january_loop_062122.Rmd', documentation = 0)
+knitr::purl('january_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
 for(jj in 2018:2021){
