@@ -61,7 +61,7 @@ ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", y)) %>% h
 #' @export
 #'
 #' @examples
-make_cams_obdbs <- function(con, year = 2022, sql_file = "~/PROJECTS/discaRd/CAMS/SQL/make_obdbs_table_cams_v3.sql"){
+make_cams_obdbs <- function(con, year = 2022, sql_file = "~/PROJECTS/discaRd/inst/SQL/make_obdbs_table_cams.sql"){
 
 	t1 = Sys.time()
 	print(paste0('Building CAMS Observer table for: ', year))
@@ -105,7 +105,7 @@ make_cams_obdbs <- function(con, year = 2022, sql_file = "~/PROJECTS/discaRd/CAM
 
 for(i in 2017:2022){
 	require(glue)
-	make_cams_obdbs(con_maps, i)
+	make_cams_obdbs(con_maps, i, sql_file = "~/PROJECTS/discaRd/inst/SQL/make_obdbs_table_cams.sql")
 	
 	idx1 = paste0("CREATE INDEX i_CAMS_obdbs", i, "_year_link_spp", " ON ", paste0('CAMS_OBDBS_',i) ,"(YEAR, LINK1, LINK3, NESPP3, NESPP4)")
 	# idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
@@ -149,7 +149,7 @@ ROracle::dbSendQuery(con_maps, "GRANT ALL ON CAMS_OBDBS_ALL_YEARS TO CAMS_GARFO 
 
 # GRANT TO CAMS_GARFO_FOR_NEFSC FROM CAMS_GARFO
 
-con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'bgaluardi_cams_garfo')
+con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
 
 Sys.setenv(TZ = "America/New_York")
 Sys.setenv(ORA_SDTZ = "America/New_York")

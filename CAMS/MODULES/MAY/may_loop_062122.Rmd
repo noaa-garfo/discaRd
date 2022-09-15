@@ -388,6 +388,12 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCAR
  # dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
  # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
+# Observer codes to be removed
+OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
+	collect() %>% 
+	filter(SPECIES_ITIS == species_itis) %>% 
+	distinct(OBS_CODES) 
+
 #--------------------------------------------------------------------------------#
 # make tables
 ddat_focal <- all_dat %>% 
@@ -456,6 +462,7 @@ bdat_cy = ddat_focal %>%
   filter(!is.na(LINK1)) %>% 
 		filter(FISHDISP != '090') %>%
 	filter(LINK3_OBS == 1) %>%
+	filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -487,6 +494,7 @@ bdat_prev_cy = ddat_prev %>%
   filter(!is.na(LINK1)) %>% 
 		filter(FISHDISP != '090') %>%
 	filter(LINK3_OBS == 1) %>%
+	filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL

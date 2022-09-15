@@ -70,8 +70,8 @@ B Galuardi
 
 
 
-drop table cams_obs_catch
-/
+--drop table cams_obs_catch
+--/
 
 create table cams_obs_catch as 
 
@@ -495,22 +495,22 @@ select ACCESSAREA
 
 from obs_catch_2
 
-/
+--/
 
 --select max ( length ( link3 ) ) mx_char_length,
 --       max ( lengthb ( link3 ) ) mx_byte_length
 --from   cams_obs_catch_test
-/
+--/
 
 -- shorten the character length to allow an index to be built
 
-alter table cams_obs_catch
-  modify link1 varchar2(100 char)
-/
+--alter table cams_obs_catch
+--  modify link1 varchar2(100 char)
+--/
 
-DROP INDEX yearidx
-/
-CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, link1, LINK3)
+--DROP INDEX yearidx
+--/
+--CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, link1, LINK3)
 
 
 

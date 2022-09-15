@@ -55,7 +55,7 @@ make_cams_obs_catch <- function(con, sql_file = "~/PROJECTS/discaRd/CAMS/SQL/mak
 	
 	# modify table
 	
-	tab_alter = paste0("ALTER TABLE CAMS_OBS_CATCH", " modify OBS_LINK1 varchar2(100 char)")
+	tab_alter = paste0("ALTER TABLE CAMS_OBS_CATCH", " modify LINK1 varchar2(100 char)")
 	print(tab_alter)
 	
 	ROracle::dbSendQuery(con_maps, tab_alter)
