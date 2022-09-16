@@ -452,7 +452,7 @@ gc()
 
 ```{r run may year species RMD as a script, eval = F}
 
-setwd("~/discaRd/CAMS/MODULES/MAY")
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/MAY")
 
 # this section may be repeated for other modules with other lists of species
 
@@ -488,10 +488,10 @@ itis <-  c(
  
  
 # make a script from RMD.. 
-#knitr::purl('may_loop_062122.Rmd', documentation = 0)
+knitr::purl('may_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
-for(jj in 2020:2021){
+for(jj in 2018:2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('may_loop_062122.R')
@@ -512,7 +512,7 @@ gc()
 ```{r run november year species RMD as a script, eval = F}
 
 
-setwd("~/discaRd/CAMS/MODULES/NOVEMBER/")
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/")
 
 # this section may be repeated for other modules with other lists of species
 
@@ -537,7 +537,7 @@ itis <-  c('168546',
  
 
 # make a script from RMD.. 
-#knitr::purl('november_loop_062122.Rmd', documentation = 0)
+knitr::purl('november_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
 for(jj in 2018:2021){
@@ -584,7 +584,7 @@ itis <-  c('620992')
  
 
 # make a script from RMD.. 
-#knitr::purl('march_loop_062122.Rmd', documentation = 0)
+knitr::purl('march_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
 for(jj in 2018:2021){
@@ -631,7 +631,7 @@ itis <-  c('079718')
  
 
 # make a script from RMD.. 
-#knitr::purl('april_loop_062122.Rmd', documentation = 0)
+knitr::purl('april_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
 for(jj in 2018:2021){
