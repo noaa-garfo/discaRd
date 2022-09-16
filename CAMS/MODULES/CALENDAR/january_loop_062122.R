@@ -69,6 +69,12 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCAR
  # dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
  # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
+# Observer codes to be removed
+OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
+  collect() %>% 
+	filter(SPECIES_ITIS == species_itis) %>% 
+	distinct(OBS_CODES) 
+
 #--------------------------------------------------------------------------------#
 # make tables
 ddat_focal <- all_dat %>% 
@@ -135,6 +141,9 @@ ddat_focal_cy = ddat_focal_cy %>%
 
 bdat_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
+	filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -164,6 +173,9 @@ ddat_prev_cy = ddat_prev_cy %>%
 # previous year observer data needed.. 
 bdat_prev_cy = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
+	filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -410,7 +422,8 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 # <5, <5,  and <5 gets broad stock rate
 
 joined_table = joined_table %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+        mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
+    																	, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
     																	, is.na(LINK1) & 
     																		n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
@@ -461,7 +474,8 @@ strata_a = paste(stratvars_assumed, collapse = ';')
 strata_b = paste(stratvars_gear, collapse = ';')
 
 joined_table = joined_table %>% 
-	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
+	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
+												, DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ 'I'
 												, DISCARD_SOURCE == 'I' ~ strata_f
 												, DISCARD_SOURCE == 'T' ~ strata_f
 												, DISCARD_SOURCE == 'GM' ~ strata_a
@@ -480,17 +494,18 @@ joined_table = joined_table %>%
 
 joined_table = joined_table %>% 
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+	mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+														 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
 
-joined_table %>% 
-	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
-	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
-	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
-	dplyr::select(-1) %>% 
-	colSums(na.rm = T) %>% 
-	round()
+# joined_table %>% 
+# 	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
+# 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
+# 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
+# 	dplyr::select(-1) %>% 
+# 	colSums(na.rm = T) %>% 
+# 	round()
 
 # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
 # 				
@@ -504,10 +519,10 @@ joined_table %>%
 # 
 # 	       
 
- joined_table %>% 
-  dplyr::group_by(FED_OR_STATE) %>%
-  dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
-            Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
+ # joined_table %>% 
+ #  dplyr::group_by(FED_OR_STATE) %>%
+ #  dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
+ #            Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
  
  fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
  
