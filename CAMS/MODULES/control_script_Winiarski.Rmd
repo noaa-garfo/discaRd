@@ -350,6 +350,8 @@ gc()
 
 # this section may be repeated for other modules with other lists of species
 
+setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
+
 #--------------------------------------------------------------------------#
 # get groundfish species list
 species = tbl(con_maps, sql("
@@ -365,10 +367,10 @@ and b.species_itis is not null
 	collect()
 
 # make a script from RMD.. 
-knitr::purl('groundfish_loop_050422.Rmd', documentation = 0)
+knitr::purl('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/groundfish_loop_050422.Rmd', documentation = 0)
 
 # run two years worth of GF
-for(jj in 2022){
+for(jj in 2018:2021){
 	FY <- jj
 	FY_TYPE = 'MAY START'
   source('groundfish_loop_050422.R')
@@ -379,9 +381,9 @@ for(jj in 2022){
 ROracle::dbCommit(con_maps)
 
 # clean the workspace; restart likely not necessary anymore 
-rm(list = ls())
+# rm(list = ls())
 gc()
-.rs.restartR()
+# .rs.restartR()
 
 ```
 
@@ -560,7 +562,7 @@ gc()
 ```{r run march year species RMD as a script, eval = F}
 
 
-setwd("~/discaRd/CAMS/MODULES/MARCH/")
+setwd("~/PROJECTS/discaRd/CAMS/MODULES/MARCH/")
 
 # this section may be repeated for other modules with other lists of species
 
@@ -594,7 +596,7 @@ for(jj in 2018:2021){
 }
 
 # Commit DB
-ROracle::dbDisconnect(con_maps)
+# ROracle::dbDisconnect(con_maps)
 
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
@@ -641,7 +643,7 @@ for(jj in 2018:2021){
 }
 
 # Commit DB
-ROracle::dbDisconnect(con_maps)
+# ROracle::dbDisconnect(con_maps)
 
 # clean the workspace; restart likely not necessary anymore 
 # rm(list = ls())
