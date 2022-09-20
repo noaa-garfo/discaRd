@@ -797,8 +797,8 @@ em_tab = ROracle::dbGetQuery(conn = con_maps, statement = "
 			 , DELTA_DISCARD
 			 , NMFS_DISCARD
 			 , NMFS_DISCARD_SOURCE
-			 , SERIAL_NUM as VTRSERNO
-			 from GF_EM_DELTA_VTR_DISCARD
+			 , VTRSERNO
+			 from CAMS_GF_EM_DELTA_VTR_DISCARD_20_22
 			 ") %>% 
 	      as_tibble()
 
@@ -1826,8 +1826,13 @@ scal_gf_species = species %>%
 for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
   species_itis = scal_gf_species$SPECIES_ITIS[i]
 	
-  source('scallop_subroutine.r')
+  # source('scallop_subroutine.r')
 
+  scallop_subroutine(FY = FY
+  									 , scal_gf_species = scal_gf_species[i]
+  									 , non_gf_dat = non_gf_dat
+  									 , scal_trip_dir = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/')
+  
 	}
 
 
