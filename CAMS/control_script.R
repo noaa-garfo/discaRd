@@ -106,7 +106,7 @@ import_query = "  with obs_cams as (
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from MAPS.CAMS_OBS_CATCH
+	from CAMS_OBS_CATCH
 	group by year
 
   , AREA
@@ -155,7 +155,7 @@ import_query = "  with obs_cams as (
  --     select
  --     distinct(camsid)
  --     , date_trip
- --     from maps.cams_landings
+ --     from cams_landings
  -- ) c
  -- on o.camsid = c.camsid
 
