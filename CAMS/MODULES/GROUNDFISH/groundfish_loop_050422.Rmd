@@ -66,9 +66,9 @@ con_maps <- dbConnect(odbc::odbc(),
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('~/PROJECTS/discaRd/CAMS/R/cams_discard_functions.R')
+# source(here::here('R/cams_discard_functions.R'))
 
-setwd('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/')
+# setwd(here::here('CAMS/MODULES/GROUNDFISH/'))
 
 ```
 
@@ -823,7 +823,7 @@ emjoin = joined_table %>%
 
 # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
 				
-fst::write_fst(x = emjoin, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
+fst::write_fst(x = emjoin, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
  t2 = Sys.time()
 	
@@ -1312,9 +1312,9 @@ joined_table = joined_table %>%
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
 
- # saveRDS(joined_table, file = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
+ # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
 
-fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
+fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst')))
  
 t2 = Sys.time()
 	
@@ -1802,7 +1802,7 @@ joined_table = joined_table %>%
 				 )
  
 
-fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
+fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst')))
  
 t2 = Sys.time()
 	
@@ -1849,13 +1849,13 @@ start_time = Sys.time()
 		sp_itis = scal_gf_species$SPECIES_ITIS[i]
 		
 		# get only the non-gf trips for each species and fishing year	
-		gf_file_dir = '~/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/'
+		gf_file_dir = here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/')
 		gf_files = list.files(gf_file_dir, pattern = paste0('discard_est_', sp_itis), full.names = T)
 		gf_files = gf_files[grep(GF_YEAR, gf_files)]
 		gf_files = gf_files[grep('non_gf', gf_files)]
 		
 		# get list all scallop trips bridging fishing years												
-		scal_file_dir = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/'
+		scal_file_dir = here::here('CAMS/MODULES/APRIL/OUTPUT/')
 		scal_files = list.files(scal_file_dir, pattern = paste0('discard_est_', sp_itis), full.names = T)
 		
 		# read in files 
@@ -1899,7 +1899,7 @@ start_time = Sys.time()
 		# 	filter(YEAR == 2020 & MONTH < 4)) %>% 
 		# 	group_by(SPECIES_STOCK, ACCESSAREA, FED_OR_STATE) %>% 
 		# 	dplyr::summarise(round(sum(DISCARD, na.rm = T))) %>% 
-		#   write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
+		#   write.csv(paste0(here::here('CAMS/MODULES/APRIL/OUTPUT/'), sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
 		write_fst(x = t1, path = gf_files)
 		
@@ -1915,7 +1915,7 @@ start_time = Sys.time()
 		# 	filter(substr(ACTIVITY_CODE, 1,3) == 'SES') %>% 
 		# 	group_by(SPECIES_STOCK, ACCESSAREA, SPECIES_ITIS, FED_OR_STATE) %>% 
 		# 	dplyr::summarise(round(sum(DISCARD, na.rm = T)))
-			# write.csv(paste0('~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/', sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
+			# write.csv(paste0(here::here('CAMS/MODULES/APRIL/OUTPUT/'), sp_itis,'_for_SCAL_YEAR_2019.csv'), row.names = F)
 		
 	
 	}
