@@ -1,5 +1,15 @@
-
-discardGroundfish.R <- function(con, species = species, FY = fy) {
+#' discard_groundfish: Calculate groundfish discards
+#'
+#' @param con ROracle connection to Oracle (e.g. MAPS)
+#' @param species dataframe with species info
+#' @param FY Fishing Year
+#'
+#' @return nothing currently, writes out to fst files (add oracle?)
+#' @export
+#'
+#' @examples
+#'
+discard_groundfish <- function(con, species = species, FY = fy) {
 
   FY_TYPE = 'MAY START'
 
@@ -1069,15 +1079,15 @@ discardGroundfish.R <- function(con, species = species, FY = fy) {
   # for(species_itis %in% c('172909', '172746')){
 
   for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
-    species_itis = scal_gf_species$SPECIES_ITIS[i]
 
-    source(here::here('CAMS', 'MODULES', 'GROUNDFISH', 'scallop_subroutine.r')) # TODO: move to R/, could also just return the object to union with gf results if move orcale delete and fill to modules? fst just as backup?
+    scallop_subroutine(FY = FY
+                       , scal_gf_species = scal_gf_species[i, ]
+                       , non_gf_dat = non_gf_dat
+                       , scal_trip_dir = getOption("maps.discardsPath")
+    )
 
-  	}
+  }
 
-
-
-  #'
   ## ----substitute scallop trips into non-gf trips, purl = T, eval = T---------------------------------------------------------------
   # if(species_itis %in% c('172909', '172746')){
 
@@ -1101,7 +1111,7 @@ discardGroundfish.R <- function(con, species = species, FY = fy) {
 
   		# get list all scallop trips bridging fishing years
   		# scal_file_dir = here::here('CAMS/MODULES/APRIL/OUTPUT/')
-  		scal_files = list.files(getOption("maps.discardsPath"), pattern = paste0('discard_est_', sp_itis), '_scal_trips_SCAL', full.names = T)
+  		scal_files = list.files(getOption("maps.discardsPath"), pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
 
   		# read in files
   		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))

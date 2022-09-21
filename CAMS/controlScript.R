@@ -286,7 +286,7 @@ select distinct(b.species_itis)
     , COMNAME
     , a.nespp3
 from fso.v_obSpeciesStockArea a
-left join (select *  from MAPS.CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+left join (select *  from CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
 where stock_id not like 'OTHER'
 and b.species_itis is not null
 ")) %>%
@@ -300,7 +300,7 @@ for(fy in 2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
-	discardGroundfish(con = con_maps, species = species, FY = fy)
+	discard_groundfish(con = con_maps, species = species, FY = fy)
 }
 
 # commit DB
@@ -344,7 +344,7 @@ gc()
  itis_num <- as.character(itis)
 
  species = tbl(con_maps, sql("select *
-												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>%
+												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
 
 	collect() %>%
 
