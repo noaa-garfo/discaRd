@@ -22,14 +22,14 @@ urlcolor: cyan
 ---
 
 
-```{r global_options, include=FALSE}
+```{r global_options, include=FALSE, eval = F, purl = F}
 knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
 											message = FALSE, cache = FALSE,
 											progress = TRUE, verbose = FALSE, comment = F
 											, error = FALSE, dev = 'png', dpi = 200)
 ```
 
-```{r setup, eval = F}
+```{r setup, eval = F, purl = F}
 
 t1 = Sys.time()
 
@@ -54,7 +54,7 @@ options(scipen = 999)
  
  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
 # 
- # bcon <- dbConnect(odbc::odbc(), 
+ # con_maps <- dbConnect(odbc::odbc(), 
  # 									DSN = dw_maps$dsn, 
  # 									UID = dw_maps$uid, 
  # 									PWD = dw_maps$pwd)
@@ -81,7 +81,10 @@ options(scipen = 999)
 #source('~/discaRd/CAMS//R/cams_discard_functions.R') # ask GB about this change
 ```
 
-```{r define fishing year and species, eval = T}
+```{r define fishing year and species, eval = F, purl = F}
+
+# TODO
+# This section should move to the control script
 
 FY <- 2019
 
@@ -95,7 +98,7 @@ FY_TYPE = 'JAN START'
  itis_num <- as.numeric(itis)
  
 
- species = tbl(bcon, sql("select *
+ species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
@@ -116,7 +119,11 @@ FY_TYPE = 'JAN START'
 
 ```
 
-```{r get obs and catch data from oracle, eval = T}
+```{r get obs and catch data from oracle, eval = T, purl = T}
+
+# TODO
+# This should probably be it's own function since it's so specific to herring fields
+
   import_query = " with obs_cams as (
    select year
 	, month
@@ -247,7 +254,7 @@ FY_TYPE = 'JAN START'
 #6674095 after lat/lon fix
 
 
-c_o_dat2 <- ROracle::dbGetQuery(bcon, import_query)
+c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
 		
 c_o_dat2 = c_o_dat2 %>% 
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
@@ -354,7 +361,7 @@ rm(fed_trips, state_trips)
 ```
 
 
-```{r subset tables join and run }
+```{r subset tables join and run, eval = T, purl = T }
 
 # Stratification variables
 
@@ -383,7 +390,7 @@ species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -396,7 +403,7 @@ mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -409,7 +416,7 @@ STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
 # AWA change to HMA?
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP) %>%
@@ -419,6 +426,12 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MO
 	filter(SPECIES_ITIS == species_itis_srce)
  # dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
  # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
+
+# Observer codes to be removed
+OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
+	collect() %>% 
+	filter(SPECIES_ITIS == species_itis) %>% 
+	distinct(OBS_CODES)
 
 #--------------------------------------------------------------------------------#
 # make tables
@@ -484,6 +497,9 @@ ddat_focal_cy = ddat_focal_cy %>%
 
 bdat_cy = ddat_focal %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
+	filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -513,6 +529,9 @@ ddat_prev_cy = ddat_prev_cy %>%
 # previous year observer data needed.. 
 bdat_prev_cy = ddat_prev %>% 
   filter(!is.na(LINK1)) %>% 
+	filter(FISHDISP != '090') %>%
+	filter(LINK3_OBS == 1) %>%
+	filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
   mutate(DISCARD_PRORATE = DISCARD
          , OBS_AREA = AREA
          , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -759,7 +778,8 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 # <5, <5,  and <5 gets broad stock rate
 
 joined_table = joined_table %>% 
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) ~ 'O'
+    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
+    																	, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
     																	, is.na(LINK1) & 
     																		n_obs_trips_f >= 5 ~ 'I'
     																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
@@ -810,7 +830,8 @@ strata_a = paste(stratvars_assumed, collapse = ';')
 strata_b = paste(stratvars_gear, collapse = ';')
 
 joined_table = joined_table %>% 
-	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
+	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
+												, DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
 												, DISCARD_SOURCE == 'I' ~ strata_f
 												, DISCARD_SOURCE == 'T' ~ strata_f
 												, DISCARD_SOURCE == 'A' ~ strata_a
@@ -829,7 +850,8 @@ joined_table = joined_table %>%
 
 joined_table = joined_table %>% 
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) ~ DISC_MORT_RATIO*OBS_DISCARD
+	mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+														 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
 														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
 				 )
 
@@ -939,9 +961,9 @@ joined_table %>%
  cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA     
  
  species$COMMON_NAME[i]
-#db_drop_table(con = bcon, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
+#db_drop_table(con = con_maps, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
-dbWriteTable(bcon, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_discard_example, overwrite = T)
+dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_discard_example, overwrite = T)
 
 #cy_discard_example %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 #		DT::datatable(caption = 'Discard rates by Strata for Atlantic Herring')
