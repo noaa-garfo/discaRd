@@ -3,13 +3,22 @@
 #' @param con ROracle connection to Oracle (e.g. MAPS)
 #' @param species dataframe with species info
 #' @param FY Fishing Year
+#' @param gf_dat Data frame of groundfish trips built from CAMS_OBS_CATCH and control script routine
+#' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
+#' @param save_dir Directory to save (and load saved) results
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
 #'
 #' @examples
 #'
-discard_groundfish <- function(con, species = species, FY = fy) {
+discard_groundfish <- function(con
+															 , species = species
+															 , FY = fy
+															 , gf_dat = gf_dat
+															 , non_gf_dat = non_gf_dat
+															 , save_dir = getOption("maps.discardsPath")
+															 ) {
 
   FY_TYPE = 'MAY START'
 
@@ -570,7 +579,7 @@ discard_groundfish <- function(con, species = species, FY = fy) {
 
   # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
 
-  fst::write_fst(x = emjoin, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
+  fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
    t2 = Sys.time()
 
@@ -1061,7 +1070,7 @@ discard_groundfish <- function(con, species = species, FY = fy) {
 
    # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
 
-  fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst')))
+  fst::write_fst(x = joined_table, path = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst')))
 
   t2 = Sys.time()
 
@@ -1083,7 +1092,7 @@ discard_groundfish <- function(con, species = species, FY = fy) {
     scallop_subroutine(FY = FY
                        , scal_gf_species = scal_gf_species[i, ]
                        , non_gf_dat = non_gf_dat
-                       , scal_trip_dir = getOption("maps.discardsPath")
+                       , scal_trip_dir = save_dir
     )
 
   }
@@ -1105,13 +1114,13 @@ discard_groundfish <- function(con, species = species, FY = fy) {
 
   		# get only the non-gf trips for each species and fishing year
   		# gf_file_dif = here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/')
-  		gf_files = list.files(getOption("maps.discardsPath"), pattern = paste0('discard_est_', sp_itis), full.names = T)
+  		gf_files = list.files(save_dir, pattern = paste0('discard_est_', sp_itis), full.names = T)
   		gf_files = gf_files[grep(GF_YEAR, gf_files)]
   		gf_files = gf_files[grep('non_gf', gf_files)]
 
   		# get list all scallop trips bridging fishing years
   		# scal_file_dir = here::here('CAMS/MODULES/APRIL/OUTPUT/')
-  		scal_files = list.files(getOption("maps.discardsPath"), pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
+  		scal_files = list.files(save_dir, pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
 
   		# read in files
   		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))
