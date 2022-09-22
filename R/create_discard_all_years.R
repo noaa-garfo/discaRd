@@ -1,4 +1,4 @@
-#' createDiscardAllYears
+#' create_discard_all_years
 #'
 #' @param con Oracle connection (ROracle preferred)
 #' @param path Path to discard fst files
@@ -15,7 +15,7 @@
 #' con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 #' createDiscardAllYears(con = con_maps)
 #' }
-createDiscardAllYears <- function(con, drop = FALSE) {
+create_discard_all_years <- function(con, drop = FALSE) {
 
   if(drop) {
     if(ROracle::dbExistsTable(con, paste0('CAMS_DISCARD_ALL_YEARS'))) {
