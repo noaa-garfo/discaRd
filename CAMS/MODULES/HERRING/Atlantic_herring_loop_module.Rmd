@@ -68,7 +68,7 @@ options(scipen = 999)
   )
 
 # Connect to oracle each loop in case of timeouts
-    bcon <- ROracle::dbConnect(
+    con_maps <- ROracle::dbConnect(
       drv = ROracle::Oracle(),
       username = dw_maps$uid,
       password = dw_maps$pwd,
@@ -137,6 +137,7 @@ FY_TYPE = 'JAN START'
   , CAMS_SUBTRIP
 	, LINK1
 	, link3
+	, link3_obs
 	, docid
 	, CAMSID
 	, nespp3
@@ -146,6 +147,7 @@ FY_TYPE = 'JAN START'
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
+	,FISHDISP 
 	, SECTID
   , GF
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -172,8 +174,8 @@ FY_TYPE = 'JAN START'
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
  
- WHERE YEAR >= 2017 
-  and YEAR <= 2021
+ WHERE YEAR >= 2018
+  and YEAR <= 2019
 
 	group by year
   -- , carea
@@ -183,6 +185,7 @@ FY_TYPE = 'JAN START'
   , CAMS_SUBTRIP
 	, LINK1
 	, link3
+	, link3_obs
 	, docid
 	, nespp3	
   , itis_tsn
@@ -192,6 +195,7 @@ FY_TYPE = 'JAN START'
 	, GEARTYPE
 	, MESHGROUP
 	, SECTID
+	,FISHDISP
   , GF
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
@@ -227,19 +231,20 @@ FY_TYPE = 'JAN START'
   
   , cams_herr as(
   select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
-    , 'HERR_TRIP' herr_targ
+  ,case when itis_tsn = '161722' then 'HERR_TRIP' else NULL end herr_targ
   ,cl.lat_dd
   ,cl.lon_dd
-  ,(select hs.hma from apsd.hma_stat hs where cl.area = hs.area) stat_area_hma
+  ,(select hs.area_herr from cams_garfo.cfg_fed_area hs where cl.area = hs.area) stat_area_hma
   from maps.cams_landings cl
-    where itis_tsn = '161722')
+  WHERE YEAR >= 2018
+  and YEAR <= 2019)
   
   select 
    cos.*
   ,ch.cams_subtrip landings_subt
   ,ch.herr_targ
-  , case when ch.herr_targ = 'HERR_TRIP' or cos.species_itis = '161722' then 'HERR'
-    else 'NON_HERR' end HERR_FLAG
+  , case when ch.herr_targ = 'HERR_TRIP' --or cos.species_itis = '161722' 
+  then 'HERR' else 'NON_HERR' end HERR_FLAG
   , ch.lat_dd
   , ch.lon_dd
   ,nvl((select hma.area from apsd.gis_herring_mgmt_areas hma where sdo_contains(hma.ora_geometry,sdo_geometry(2001,8307,sdo_point_type(NVL(ch.lon_dd,0),NVL(ch.lat_dd,0),NULL),NULL,NULL)) = 'TRUE'),stat_area_hma) herr_area
@@ -248,10 +253,6 @@ FY_TYPE = 'JAN START'
   on cos.cams_subtrip = ch.cams_subtrip
       
 "
-#6672587
-#6672710
-
-#6674095 after lat/lon fix
 
 
 c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
@@ -981,16 +982,15 @@ dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_d
 # print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 
 ### AWA test code
-summary <- cy_discard_example %>% 
-  group_by(HERR_AREA, HERR_FLAG) %>%
-  summarize(TOTAL_DISC = sum(DISCARD), AVG_RT = mean(CAMS_DISCARD_RATE))
-
 PS_1A <- cy_discard_example %>%
   filter(STRATA_FULL == 'HERR_1A_120' & DISCARD_SOURCE == 'O')
 
 MW_2 <- cy_discard_example %>%
   filter(STRATA_FULL == 'HERR_2_170' & DISCARD_SOURCE == 'O')
- 
+
+totals <- cy_discard_example %>%
+    group_by(STRATA_FULL) %>%
+  summarise(TOTAL = sum(DISCARD))
 } 
  
 ```
