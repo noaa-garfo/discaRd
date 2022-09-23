@@ -1,4 +1,4 @@
-#--- ├ Groundfish ----
+# 1. Groundfish ----
 gf_species = tbl(con_maps, sql("
 select distinct(b.species_itis)
     , COMNAME
@@ -12,7 +12,8 @@ and b.species_itis is not null
 	collect() %>% 
 	dplyr::rename(COMMON_NAME = COMNAME) %>% 
  mutate('RUN_ID' = 'GROUNDFISH')
-#--- ├calendar year --- 
+
+# 2. calendar year ----
 	
 	itis <-  c(
 		'167687',
@@ -41,12 +42,13 @@ and b.species_itis is not null
 		
 		collect() %>% 
 		
-		filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+		filter(SPECIES_ITIS %in% itis_num) %>% 
+		group_by(SPECIES_ITIS) %>%
 		slice(1) %>% 
 		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'CALENDAR')
 	
-# --- ├ May year ----
+# 3. May year ----
 	
 	#--------------------------------------------------------------------------#
 	# group of species
@@ -73,12 +75,13 @@ and b.species_itis is not null
 		
 		collect() %>% 
 		
-		filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+		filter(SPECIES_ITIS %in% itis_num) %>% 
+		group_by(SPECIES_ITIS) %>%
 		slice(1)	%>% 
 		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'MAY')
 	
-#--- ├ November ----
+# 4. November ----
 	
 	
 	#--------------------------------------------------------------------------#
@@ -93,12 +96,13 @@ and b.species_itis is not null
 	nov_species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
 		collect() %>% 
-		filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+		filter(SPECIES_ITIS %in% itis_num) %>% 
+		group_by(SPECIES_ITIS) %>%
 		slice(1)%>% 
 		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'NOVEMBER')
 	
-#--- ├ March ----
+# 5. March ----
 	
 	#--------------------------------------------------------------------------#
 	# group of species
@@ -110,30 +114,65 @@ and b.species_itis is not null
 	march_species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
 		collect() %>% 
-		filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+		filter(SPECIES_ITIS %in% itis_num) %>% 
+		group_by(SPECIES_ITIS) %>%
 		slice(1) %>% 
 		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'MARCH')
 
-#--- ├ April ----
+# 6. April ----
 
 #--------------------------------------------------------------------------#
 # group of species
 	itis <-  c('079718')
 
 #itis <- itis
-itis_num <- as.numeric(itis)
+# itis_num <- as.numeric(itis)
 
 april_species = tbl(con_maps, sql("select *
 											from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
 	collect() %>% 
-	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+	filter(SPECIES_ITIS %in% itis) %>% 
+	group_by(SPECIES_ITIS) %>%
 	slice(1) %>% 
 	dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
 	mutate('RUN_ID' = 'APRIL')
 
-#  ├ Combine ----
+# 7. Combine ----
 	
-runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, april_species)
+runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, april_species) %>% 
+	dplyr::rename(ITIS_TSN = SPECIES_ITIS)
 
-runid_tab %>% View()
+#	*	7.1 Replace common name with CAMS standard ----
+
+cfg_itis = tbl(con_maps, sql('select * from maps.cfg_itis')) %>% 
+	collect()
+
+runid_tab = runid_tab %>% 
+	dplyr::select(-COMMON_NAME) %>% 
+	left_join(., cfg_itis, by = 'ITIS_TSN') %>% 
+	dplyr::select(ITIS_TSN, NESPP3, ITIS_NAME, RUN_ID)
+
+# * 7.2 replace ascii characters in common names ----
+
+# not needed if not writing to Oracle based on common name
+
+# runid_tab$ITIS_NAME = stringr::str_replace(runid_tab$ITIS_NAME, pattern = '-', replacement = '_')
+# runid_tab$ITIS_NAME = stringr::str_replace(runid_tab$ITIS_NAME, pattern = ' ', replacement = '_')
+# runid_tab$ITIS_NAME = stringr::str_replace(runid_tab$ITIS_NAME, pattern = ',', replacement = '_')
+# 
+# runid_tab$ITIS_NAME = stringr::str_replace(runid_tab$ITIS_NAME, pattern = "[(]", replacement = '')
+# runid_tab$ITIS_NAME = stringr::str_replace(runid_tab$ITIS_NAME, pattern = "[)]", replacement = '')
+
+
+# runid_tab %>% View()
+
+# 8. write to csv ----
+
+write.csv(runid_tab, paste0(here::here('inst/SUPPORT_TABLES/'),'species_runid.csv'), row.names = F)
+
+write.csv(runid_tab, paste0(here::here('../MAPS/data-raw/'),'species_runid.csv'), row.names = F)
+
+# 9. upload to Oracle ----
+
+dbWriteTable(conn = con_maps, name = 'CFG_DISCARD_RUNID', value = runid_tab, overwrite = T)
