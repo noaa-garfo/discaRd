@@ -1092,9 +1092,8 @@ discard_groundfish <- function(con
     scallop_subroutine(FY = FY
                        , scal_gf_species = scal_gf_species[i, ]
                        , non_gf_dat = non_gf_dat
-                       , scal_trip_dir = save_dir
+                       , scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")
     )
-
   }
 
   ## ----substitute scallop trips into non-gf trips, purl = T, eval = T---------------------------------------------------------------
@@ -1120,7 +1119,7 @@ discard_groundfish <- function(con
 
   		# get list all scallop trips bridging fishing years
   		# scal_file_dir = here::here('CAMS/MODULES/APRIL/OUTPUT/')
-  		scal_files = list.files(save_dir, pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
+  		scal_files = list.files(file.path(getOption("maps.discardsPath"), "scallop_groundfish"), pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
 
   		# read in files
   		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))
