@@ -15,8 +15,12 @@
 scallop_subroutine <- function(FY = 2019
 															 , scal_gf_species
 															 , non_gf_dat = non_gf_dat
-															 , scal_trip_dir = '~/PROJECTS/discaRd/CAMS/MODULES/APRIL/OUTPUT/'
+															 , scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")
 															 ){
+
+  if(!dir.exists(scal_trip_dir)) {
+    dir.create(scal_trip_dir, recursive = TRUE)
+  }
 
   species_itis <- scal_gf_species$SPECIES_ITIS
 
