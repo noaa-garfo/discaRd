@@ -1,24 +1,4 @@
 
-## ----global_options, include=FALSE------------------------------------------------------------------------------------------------
-knitr::opts_chunk$set(echo=FALSE
-											, warning = FALSE
-											, message = FALSE
-											, cache = FALSE
-											, progress = TRUE
-											, verbose = FALSE
-											, comment = F
-											, error = FALSE
-											, dev = 'png'
-											, dpi = 200
-											, prompt = F
-											, results='hide')
-
-options(dplyr.summarise.inform = FALSE)
-
-#'
-## ----setup, eval = T--------------------------------------------------------------------------------------------------------------
-
-# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
 
 # library(odbc)
 library(ROracle)
@@ -307,13 +287,6 @@ for(fy in 2022){ # TODO: move years to configDefaultRun.toml
 
 ROracle::dbCommit(con_maps)
 
-# clean the workspace; restart likely not necessary anymore
-rm(list = ls())
-gc()
-.rs.restartR()
-
-
-#'
 #'
 ## ----run calendar year species RMD as a script, eval = T--------------------------------------------------------------------------
 
@@ -354,13 +327,13 @@ gc()
  species$ITIS_TSN <- stringr::str_sort(itis)
 
 # make sure the folder is correct
-setwd('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/')
+# setwd('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/')
 
 # make a script from RMD..
-knitr::purl('january_loop_062122.Rmd', documentation = 0)
+knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
 
 # Define year to run
-for(jj in 2018:2021){
+for(jj in 2022:2022){
 	FY <- jj
 	FY_TYPE = 'JANUARY START'
   source('january_loop_062122.R')  # this is the script created via purl just above
@@ -378,232 +351,232 @@ gc()
 
 
 
-#'
-## ----run may year species RMD as a script, eval = F-------------------------------------------------------------------------------
-FALSE
-FALSE setwd("~/PROJECTS/discaRd/CAMS/MODULES/MAY")
-FALSE
-FALSE # this section may be repeated for other modules with other lists of species
-FALSE
-FALSE #--------------------------------------------------------------------------#
-FALSE # group of species
-FALSE itis <-  c(
-FALSE   '164499',
-FALSE   '160617',
-FALSE   '564139',
-FALSE   '160855',
-FALSE   '564136',
-FALSE   '564130',
-FALSE   '564151',
-FALSE   '564149',
-FALSE   '564145',
-FALSE   '164793',
-FALSE   '164730',
-FALSE   '164791'
-FALSE  )
-FALSE
-FALSE  itis_num <- as.numeric(itis)
-FALSE
-FALSE
-FALSE  species = tbl(con_maps, sql("select *
-FALSE 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>%
-FALSE
-FALSE 	collect() %>%
-FALSE
-FALSE 	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-FALSE   slice(1)
-FALSE
-FALSE  species$ITIS_TSN <- stringr::str_sort(itis)
-FALSE
-FALSE
-FALSE # make a script from RMD..
-FALSE knitr::purl('may_loop_062122.Rmd', documentation = 0)
-FALSE
-FALSE # Define year to run
-FALSE for(jj in 2018:2021){
-FALSE 	FY <- jj
-FALSE 	FY_TYPE = 'MAY START'
-FALSE   source('may_loop_062122.R')
-FALSE }
-FALSE
-FALSE # commit DB
-FALSE
-FALSE ROracle::dbCommit(con_maps)
-FALSE
-FALSE # clean the workspace; restart likely not necessary anymore
-FALSE # rm(list = ls())
-FALSE gc()
-FALSE # .rs.restartR()
-FALSE
-FALSE
 
-#'
-## ----run november year species RMD as a script, eval = F--------------------------------------------------------------------------
-FALSE
-FALSE
-FALSE setwd("~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/")
-FALSE
-FALSE # this section may be repeated for other modules with other lists of species
-FALSE
-FALSE #--------------------------------------------------------------------------#
-FALSE # group of species
-FALSE itis <-  c('168546',
-FALSE             '168543')
-FALSE
-FALSE  #itis <- itis
-FALSE  itis_num <- as.numeric(itis)
-FALSE
-FALSE
-FALSE  species = tbl(con_maps, sql("select *
-FALSE 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>%
-FALSE
-FALSE 	collect() %>%
-FALSE
-FALSE 	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-FALSE   slice(1)
-FALSE
-FALSE  species$ITIS_TSN <- stringr::str_sort(itis)
-FALSE
-FALSE
-FALSE # make a script from RMD..
-FALSE knitr::purl('november_loop_062122.Rmd', documentation = 0)
-FALSE
-FALSE # Define year to run
-FALSE for(jj in 2018:2021){
-FALSE 	FY <- jj
-FALSE 	FY_TYPE = 'NOVEMBER START'
-FALSE   source('november_loop_062122.R')
-FALSE }
-FALSE
-FALSE # Commit DB
-FALSE ROracle::dbDisconnect(con_maps)
-FALSE
-FALSE # clean the workspace; restart likely not necessary anymore
-FALSE # rm(list = ls())
-FALSE gc()
-FALSE # .rs.restartR()
-FALSE
-FALSE
+ ## ----run may year species RMD as a script, eval = F-------------------------------------------------------------------------------
 
-#'
-## ----run march year species RMD as a script, eval = F-----------------------------------------------------------------------------
-FALSE
-FALSE
-FALSE setwd("~/discaRd/CAMS/MODULES/MARCH/")
-FALSE
-FALSE # this section may be repeated for other modules with other lists of species
-FALSE
-FALSE #--------------------------------------------------------------------------#
-FALSE # group of species
-FALSE itis <-  c('620992')
-FALSE
-FALSE  #itis <- itis
-FALSE  itis_num <- as.numeric(itis)
-FALSE
-FALSE
-FALSE  species = tbl(con_maps, sql("select *
-FALSE 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>%
-FALSE
-FALSE 	collect() %>%
-FALSE
-FALSE 	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-FALSE   slice(1)
-FALSE
-FALSE  species$ITIS_TSN <- stringr::str_sort(itis)
-FALSE
-FALSE
-FALSE # make a script from RMD..
-FALSE knitr::purl('march_loop_062122.Rmd', documentation = 0)
-FALSE
-FALSE # Define year to run
-FALSE for(jj in 2018:2021){
-FALSE 	FY <- jj
-FALSE 	FY_TYPE = 'MARCH START'
-FALSE   source('march_loop_062122.R')
-FALSE }
-FALSE
-FALSE # Commit DB
-FALSE ROracle::dbDisconnect(con_maps)
-FALSE
-FALSE # clean the workspace; restart likely not necessary anymore
-FALSE # rm(list = ls())
-FALSE gc()
-FALSE # .rs.restartR()
-FALSE
-FALSE
+  # setwd("~/PROJECTS/discaRd/CAMS/MODULES/MAY")
 
-#'
-## ----run april year species RMD as a script, eval = F-----------------------------------------------------------------------------
-FALSE
-FALSE
-FALSE setwd("~/discaRd/CAMS/MODULES/APRIL/")
-FALSE
-FALSE # this section may be repeated for other modules with other lists of species
-FALSE
-FALSE #--------------------------------------------------------------------------#
-FALSE # group of species
-FALSE itis <-  c('079718')
-FALSE
-FALSE  #itis <- itis
-FALSE  itis_num <- as.character(itis)
-FALSE
-FALSE
-FALSE  species = tbl(con_maps, sql("select *
-FALSE 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>%
-FALSE
-FALSE 	collect() %>%
-FALSE
-FALSE 	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-FALSE   slice(1)
-FALSE
-FALSE  species$ITIS_TSN <- stringr::str_sort(itis)
-FALSE
-FALSE
-FALSE # make a script from RMD..
-FALSE knitr::purl('april_loop_062122.Rmd', documentation = 0)
-FALSE
-FALSE # Define year to run
-FALSE for(jj in 2018:2021){
-FALSE 	FY <- jj
-FALSE 	FY_TYPE = 'APRIL START'
-FALSE   source('april_loop_062122.R')
-FALSE }
-FALSE
-FALSE # Commit DB
-FALSE ROracle::dbDisconnect(con_maps)
-FALSE
-FALSE # clean the workspace; restart likely not necessary anymore
-FALSE # rm(list = ls())
-FALSE gc()
-FALSE # .rs.restartR()
-FALSE
-FALSE
+  # this section may be repeated for other modules with other lists of species
 
-#'
+  #--------------------------------------------------------------------------#
+  # group of species
+  itis <-  c(
+    '164499',
+    '160617',
+    '564139',
+    '160855',
+    '564136',
+    '564130',
+    '564151',
+    '564149',
+    '564145',
+    '164793',
+    '164730',
+    '164791'
+   )
 
-#'
-#'
-#'
-## ----grant all discard tables from MAPS to CAMS_GARFO, eval = F-------------------------------------------------------------------
-FALSE
-FALSE tab_list = ROracle::dbGetQuery(con_maps, "
-FALSE SELECT object_name, object_type
-FALSE     FROM all_objects
-FALSE     WHERE object_type = 'TABLE'
-FALSE     and owner = 'MAPS'
-FALSE and object_name like 'CAMS_DISCARD%'
-FALSE and object_name not like '%DISCARD_MORTALITY%'
-FALSE 															 ")
-FALSE
-FALSE   sq = paste0("GRANT SELECT ON MAPS.", tab_list$OBJECT_NAME," TO CAMS_GARFO")
-FALSE
-FALSE   # sq = stringr::str_flatten(sq)
-FALSE
-FALSE   for(i in 1:nrow(tab_list)){
-FALSE   	ROracle::dbSendQuery(con_maps, sq[i])
-FALSE   }
+   itis_num <- as.numeric(itis)
 
-#'
+
+   species = tbl(con_maps, sql("select *
+  												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
+
+  	collect() %>%
+
+  	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+    slice(1)
+
+   species$ITIS_TSN <- stringr::str_sort(itis)
+
+
+  # make a script from RMD..
+  knitr::purl('CAMS/MODULES/MAY/may_loop_062122.Rmd', documentation = 0)
+
+  # Define year to run
+  for(jj in 2022:2022){
+  	FY <- jj
+  	FY_TYPE = 'MAY START'
+    source('may_loop_062122.R')
+  }
+
+  # commit DB
+
+  ROracle::dbCommit(con_maps)
+
+  # clean the workspace; restart likely not necessary anymore
+  # rm(list = ls())
+  gc()
+  # .rs.restartR()
+
+
+
+
+ ## ----run november year species RMD as a script, eval = F--------------------------------------------------------------------------
+
+
+  # setwd("~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/")
+
+  # this section may be repeated for other modules with other lists of species
+
+  #--------------------------------------------------------------------------#
+  # group of species
+  itis <-  c('168546',
+              '168543')
+
+   #itis <- itis
+   itis_num <- as.numeric(itis)
+
+
+   species = tbl(con_maps, sql("select *
+  												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
+
+  	collect() %>%
+
+  	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+    slice(1)
+
+   species$ITIS_TSN <- stringr::str_sort(itis)
+
+
+  # make a script from RMD..
+  knitr::purl('CAMS/MODULES/NOVEMBER/november_loop_062122.Rmd', documentation = 0)
+
+  # Define year to run
+  for(jj in 2022:2022){
+  	FY <- jj
+  	FY_TYPE = 'NOVEMBER START'
+    source('november_loop_062122.R')
+  }
+
+  # Commit DB
+  ROracle::dbDisconnect(con_maps)
+
+  # clean the workspace; restart likely not necessary anymore
+  # rm(list = ls())
+  gc()
+  # .rs.restartR()
+
+
+
+
+ ## ----run march year species RMD as a script, eval = F-----------------------------------------------------------------------------
+
+
+  # setwd("~/discaRd/CAMS/MODULES/MARCH/")
+
+  # this section may be repeated for other modules with other lists of species
+
+  #--------------------------------------------------------------------------#
+  # group of species
+  itis <-  c('620992')
+
+   #itis <- itis
+   itis_num <- as.numeric(itis)
+
+
+   species = tbl(con_maps, sql("select *
+  												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
+
+  	collect() %>%
+
+  	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+    slice(1)
+
+   species$ITIS_TSN <- stringr::str_sort(itis)
+
+
+  # make a script from RMD..
+  knitr::purl('CAMS/MODULES/MARCH/march_loop_062122.Rmd', documentation = 0)
+
+  # Define year to run
+  for(jj in 2022:2022){
+  	FY <- jj
+  	FY_TYPE = 'MARCH START'
+    source('march_loop_062122.R')
+  }
+
+  # Commit DB
+  ROracle::dbDisconnect(con_maps)
+
+  # clean the workspace; restart likely not necessary anymore
+  # rm(list = ls())
+  gc()
+  # .rs.restartR()
+
+
+
+
+ ## ----run april year species RMD as a script, eval = F-----------------------------------------------------------------------------
+
+
+  # setwd("~/discaRd/CAMS/MODULES/APRIL/")
+
+  # this section may be repeated for other modules with other lists of species
+
+  #--------------------------------------------------------------------------#
+  # group of species
+  itis <-  c('079718')
+
+   #itis <- itis
+   itis_num <- as.character(itis)
+
+
+   species = tbl(con_maps, sql("select *
+  												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
+
+  	collect() %>%
+
+  	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
+    slice(1)
+
+   species$ITIS_TSN <- stringr::str_sort(itis)
+
+
+  # make a script from RMD..
+  knitr::purl('CAMS/MODULES/APRIL/april_loop_062122.Rmd', documentation = 0)
+
+  # Define year to run
+  for(jj in 2022:2022){
+  	FY <- jj
+  	FY_TYPE = 'APRIL START'
+    source('april_loop_062122.R')
+  }
+
+  # Commit DB
+  ROracle::dbDisconnect(con_maps)
+
+  # clean the workspace; restart likely not necessary anymore
+  # rm(list = ls())
+  gc()
+  # .rs.restartR()
+
+
+
+
+
+
+
+
+ ## ----grant all discard tables from MAPS to CAMS_GARFO, eval = F-------------------------------------------------------------------
+
+  tab_list = ROracle::dbGetQuery(con_maps, "
+  SELECT object_name, object_type
+      FROM all_objects
+      WHERE object_type = 'TABLE'
+      and owner = 'MAPS'
+  and object_name like 'CAMS_DISCARD%'
+  and object_name not like '%DISCARD_MORTALITY%'
+  															 ")
+
+    sq = paste0("GRANT SELECT ON ", tab_list$OBJECT_NAME," TO CAMS_GARFO")
+
+    # sq = stringr::str_flatten(sq)
+
+    for(i in 1:nrow(tab_list)){
+    	ROracle::dbSendQuery(con_maps, sq[i])
+    }
+
+
 ## ----create tables on cams_garfo via upload---------------------------------------------------------------------------------------
  # now make the tables on CAMS_GARFO
 
@@ -681,7 +654,7 @@ gc()
 
 ## # make a script version of the list of tables to  add
 
-##   make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list_cm$OBJECT_NAME," AS SELECT * FROM MAPS.", tab_list_cm$OBJECT_NAME)
+##   make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list_cm$OBJECT_NAME," AS SELECT * FROM ", tab_list_cm$OBJECT_NAME)
 
 ##
 
@@ -713,9 +686,9 @@ and object_name not like '%DISCARD_MORTALITY%'
 and object_name not like '%CY%'  -- gets rid of experimental tables
 															 ")
 
-st = "CREATE OR REPLACE VIEW MAPS.CAMS_DISCARD_ALL_YEARS AS "
+st = "CREATE OR REPLACE VIEW CAMS_DISCARD_ALL_YEARS AS "
 
-tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only..
+tab_line = paste0("select * from ", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only..
 
 # bidx = grep('*MORTALITY*', tab_line)
 #
@@ -745,7 +718,7 @@ ROracle::dbGetQuery(con_maps, "
 	, species_itis
 	, FY
 	, GF
-	from MAPS.CAMS_DISCARD_ALL_YEARS
+	from CAMS_DISCARD_ALL_YEARS
 	group by species_itis, fy, species_stock, GF, COMMON_NAME
 	order by COMMON_NAME
 	"
@@ -788,7 +761,7 @@ ROracle::dbSendQuery(con_cams, sq)
 
 # Grant to CAMS_GARFO @NOVA
 
-# ROracle::dbSendQuery(con_maps, "GRANT SELECT ON MAPS.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
+# ROracle::dbSendQuery(con_maps, "GRANT SELECT ON CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
 
 # Grant to CAMS_GARFO_FOR_NEFSC
 
@@ -845,7 +818,7 @@ add_comments(con = con_cams, schema = "CAMS_GARFO", definitions = definitions) #
 sq_m = "begin
 for r in ( select table_name from all_tables where owner='MAPS' and table_name like 'CAMS_DISCARD%' and logging='YES')
 loop
-execute immediate 'alter table MAPS.'|| r.table_name ||' NOLOGGING';
+execute immediate 'alter table '|| r.table_name ||' NOLOGGING';
 end loop;
 end;
 "

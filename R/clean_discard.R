@@ -7,12 +7,12 @@
 #' @param filepath path to .fst discard results
 #' @param FY Fishing Year to upload, should correspond to those results in filepath
 #'
-#' @return nothing; cleans, deletes, and appends the Oracle table
+#' @return nothing; uploads a table to the MAPS schema
 #' @export
 #'
 #' @examples
 #'
-parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018){
+clean_discard_fy <- function(filepath = getOption("maps.discardsPath"), FY = 2018){
 
 	# require(ROracle)
 
@@ -113,7 +113,6 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, SCALLOP_AREA
 					# eval(strata_unique)
 				)
-		  # add left join run_id
 
 		} ) # end lapply
 
@@ -177,7 +176,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 
 		upload_table = paste0('CAMS_DISCARD_', species_name, '_', outlist$FY[1])
 
-		print(paste('UPLOADING RUN GROUP: ', upload_table))
+		print(paste('UPLOADING TABLE: ', upload_table))
 
 		# upload_table = paste0('CAMS_DISCARD_EXAMPLE_GF',i)
 
@@ -185,11 +184,11 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 			ROracle::dbRemoveTable(con, upload_table)
 		}
 
-		# ROracle::dbWriteTable(conn = con, name = upload_table, value =  outlist, row.names = FALSE, overwrite = FALSE)
+		ROracle::dbWriteTable(conn = con, name = upload_table, value =  outlist, row.names = FALSE, overwrite = FALSE)
 
-		# idx1 = paste0("CREATE INDEX year", outlist$FY[1], "idx", outlist$SPECIES_ITIS[1], " ON ", upload_table ,"(YEAR, MONTH, SPECIES_ITIS)")
+		idx1 = paste0("CREATE INDEX year", outlist$FY[1], "idx", outlist$SPECIES_ITIS[1], " ON ", upload_table ,"(YEAR, MONTH, SPECIES_ITIS)")
 		# idx2 = paste0("CREATE INDEX itisidx_gf", i, " ON ", paste0('CAMS_DISCARD_EXAMPLE_GF', i) ,"(SPECIES_ITIS)")
-		# ROracle::dbSendQuery(con, idx1)
+		ROracle::dbSendQuery(con, idx1)
 		# ROracle::dbSendQuery(con, idx2)
 
 		t3 = Sys.time()
