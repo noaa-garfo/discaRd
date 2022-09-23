@@ -13,7 +13,7 @@
 #'
 #' keyring::keyring_unlock("apsd_ma")
 #' con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
-#' createDiscardAllYears(con = con_maps)
+#' create_discard_all_years(con = con_maps)
 #' }
 create_discard_all_years <- function(con, drop = FALSE) {
 
