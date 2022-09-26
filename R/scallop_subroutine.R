@@ -20,6 +20,7 @@ scallop_subroutine <- function(FY = 2019
 
   if(!dir.exists(scal_trip_dir)) {
     dir.create(scal_trip_dir, recursive = TRUE)
+    system(paste("chmod g+w -R", scal_trip_dir))
   }
 
   species_itis <- scal_gf_species$SPECIES_ITIS

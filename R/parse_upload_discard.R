@@ -11,7 +11,9 @@
 #' @export
 #'
 #' @examples
-#'
+#' \dontrun{
+#'parse_upload_discard(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018)
+#'}
 parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018){
 
 	# require(ROracle)
@@ -35,14 +37,17 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 		outlist <- lapply(res, function(x) {
 			# x = fst::read_fst(jj)
 			x %>%
-				mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>%
+				mutate(
+				  GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK),
+				  SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
+				  ) %>%
 				dplyr::select(-SPECIES_ITIS) %>%
 				# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 				dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 											, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
 											, 'CAMS_DISCARD' = 'DISCARD'
 											# , 'COMMON_NAME' = 'COMNAME_EVAL'
-											, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
+											, 'ITIS_TSN' = 'SPECIES_ITIS_EVAL'
 											, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
 											, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
 											, 'CV_I_T' ='CV_f'
@@ -52,7 +57,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 											, 'DISCARD_RATE_G' = 'BROAD_STOCK_RATE'
 											, 'CAMS_CV' = 'CV'
 				) %>%
-				mutate(DATE_RUN = as.character(Sys.Date())
+				mutate(DATE_RUN = Sys.Date()
 							 , FY = as.integer(FY)
 							 , DOCID = dplyr::case_when(
 							   nchar(DOCID, keepNA = TRUE) > 15 ~ NA_character_,
@@ -65,7 +70,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, DATE_TRIP
 					, YEAR
 					, MONTH
-					, SPECIES_ITIS
+					, ITIS_TSN
 					, COMMON_NAME
 					, FY_TYPE
 					, ACTIVITY_CODE
@@ -73,6 +78,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, CAMSID
 					, DOCID
 					, CAMS_SUBTRIP
+					, SUBTRIP
 					, FED_OR_STATE
 					, GF
 					, AREA
@@ -85,7 +91,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, OBS_DISCARD
 					, OBS_KALL
 					, SUBTRIP_KALL
-					, SPECIES_ITIS
+					# , SPECIES_ITIS
 					, ACTIVITY_CODE
 					, N_OBS_TRIPS_F
 					, CAMS_DISCARD_RATE
@@ -166,24 +172,24 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 
 		# print(paste('TABLE ', paste0('outlist_df_',FY), ' BUILT IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
-		species_name = stringr::str_remove(outlist$COMMON_NAME[1], pattern = ', ')
-		species_name = stringr::str_remove(species_name, pattern = ' ')
+		# species_name = stringr::str_remove(outlist$COMMON_NAME[1], pattern = ', ')
+		# species_name = stringr::str_remove(species_name, pattern = ' ')
+		#
+		# species_name = stringr::str_replace(species_name, pattern = '-', replacement = '_')
+		# species_name = stringr::str_replace(species_name, pattern = ' ', replacement = '_')
+		#
+		# species_name = stringr::str_replace(species_name, pattern = "[(]", replacement = '')
+		# species_name = stringr::str_replace(species_name, pattern = "[)]", replacement = '')
 
-		species_name = stringr::str_replace(species_name, pattern = '-', replacement = '_')
-		species_name = stringr::str_replace(species_name, pattern = ' ', replacement = '_')
+		# upload_table = paste0('CAMS_DISCARD_', species_name, '_', outlist$FY[1])
 
-		species_name = stringr::str_replace(species_name, pattern = "[(]", replacement = '')
-		species_name = stringr::str_replace(species_name, pattern = "[)]", replacement = '')
-
-		upload_table = paste0('CAMS_DISCARD_', species_name, '_', outlist$FY[1])
-
-		print(paste('UPLOADING RUN GROUP: ', upload_table))
+		# print(paste('UPLOADING RUN GROUP: ', upload_table))
 
 		# upload_table = paste0('CAMS_DISCARD_EXAMPLE_GF',i)
 
-		if (ROracle::dbExistsTable(con, upload_table)){
-			ROracle::dbRemoveTable(con, upload_table)
-		}
+		# if (ROracle::dbExistsTable(con, upload_table)){
+		# 	ROracle::dbRemoveTable(con, upload_table)
+		# }
 
 		# ROracle::dbWriteTable(conn = con, name = upload_table, value =  outlist, row.names = FALSE, overwrite = FALSE)
 
@@ -192,8 +198,10 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 		# ROracle::dbSendQuery(con, idx1)
 		# ROracle::dbSendQuery(con, idx2)
 
+		append_discard_all_years(con = con, data = outlist, drop = FALSE)
+
 		t3 = Sys.time()
-		print(paste('TABLE ', upload_table, ' UPLOADED IN ', round(difftime(t3, t2, units = "mins"),2), ' MINUTES',  sep = ''))
+		print(paste('TABLE UPDATED IN ', round(difftime(t3, t2, units = "mins"),2), ' MINUTES',  sep = ''))
 
 	} # end species loop
 

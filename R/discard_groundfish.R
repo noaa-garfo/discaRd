@@ -17,8 +17,13 @@ discard_groundfish <- function(con
 															 , FY = fy
 															 , gf_dat = gf_dat
 															 , non_gf_dat = non_gf_dat
-															 , save_dir = getOption("maps.discardsPath")
+															 , save_dir = file.path(getOption("maps.discardsPath"), "groundfish")
 															 ) {
+
+  if(!dir.exists(save_dir)) {
+    dir.create(save_dir, recursive = TRUE)
+    system(paste("chmod 770 -R", save_dir))
+  }
 
   FY_TYPE = 'MAY START'
 
@@ -544,8 +549,8 @@ discard_groundfish <- function(con
   # TODO: Convert these print() statements to logr file write outs
   print(paste0('Adding EM values for ', species$COMNAME[i], ' Groundfish Trips ', FY))
 
-  em_tab = ROracle::dbGetQuery(conn = con, statement = "
-  			 select  SPECIES_ITIS as SPECIES_ITIS_EVAL
+  em_tab = ROracle::dbGetQuery(conn = con, statement = paste("
+                                                             select  ITIS_TSN as SPECIES_ITIS_EVAL
   			 , EM_COMPARISON
   			 , VTR_DISCARD
   			 , EM_DISCARD
@@ -554,8 +559,9 @@ discard_groundfish <- function(con
   			 , NMFS_DISCARD_SOURCE
   			 , VTRSERNO
   			 from
-  			 CAMS_GF_EM_DELTA_VTR_DISCARD_20_22
-  			 ") %>%
+  			 -- CAMS_GF_EM_DELTA_VTR_DISCARD_20_22
+  			 CAMS_GF_EM_DELTA_VTR_DISCARD
+  			 ")) %>%
   	      as_tibble()
 
   emjoin = joined_table %>%
@@ -1162,7 +1168,9 @@ discard_groundfish <- function(con
   		print(paste('Scallop subsitution took: ', round(difftime(end_time, start_time, units = "mins"),2), ' MINUTES',  sep = ''))
 
 
-  	}
+  }
+
+  system(paste("chmod 770 -R", save_dir))
 
 }
 
