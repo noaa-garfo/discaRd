@@ -591,6 +591,8 @@ discard_groundfish <- function(con
 
   fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
+  system(paste("chmod 770 -R", save_dir))
+  
    t2 = Sys.time()
 
   print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
@@ -1084,6 +1086,8 @@ discard_groundfish <- function(con
 
   fst::write_fst(x = joined_table, path = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst')))
 
+  system(paste("chmod 770 -R", save_dir))
+  
   t2 = Sys.time()
 
   print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
@@ -1169,6 +1173,8 @@ discard_groundfish <- function(con
 # Overwrite the original non-gf with the new version including scallop replacement
   		write_fst(x = t1, path = gf_files)
 
+  		system(paste("chmod 770 -R", save_dir))
+  		
   		end_time = Sys.time()
 
   		print(paste('Scallop subsitution took: ', round(difftime(end_time, start_time, units = "mins"),2), ' MINUTES',  sep = ''))

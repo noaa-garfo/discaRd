@@ -535,9 +535,12 @@ for(yy in FY:(FY+end_fy)){
 		)
 
 
-	Sys.umask('775')
+	# Sys.umask('775')
+	
 	fst::write_fst(x = joined_table, path = paste0(scal_trip_dir, '/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
 
+	system(paste("chmod 770 -R", scal_trip_dir))
+	
 	t2 = Sys.time()
 
 	print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))

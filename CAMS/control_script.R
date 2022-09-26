@@ -263,16 +263,28 @@ gc()
 # get groundfish species list
 
 # TODO: replace fso.v_obSpeciesStockArea with CAMS object
+# species <- tbl(con_maps, sql("
+# select distinct(b.species_itis)
+#     , COMNAME
+#     , a.nespp3
+# from fso.v_obSpeciesStockArea a
+# left join (select *  from CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
+# where stock_id not like 'OTHER'
+# and b.species_itis is not null
+# ")) %>%
+# 	collect()
+# 
+
 species <- tbl(con_maps, sql("
-select distinct(b.species_itis)
-    , COMNAME
-    , a.nespp3
-from fso.v_obSpeciesStockArea a
-left join (select *  from CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
-where stock_id not like 'OTHER'
-and b.species_itis is not null
-")) %>%
-	collect()
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>% 
+	filter(RUN_ID == 'GROUNDFISH') %>% 
+	collect() %>% 
+	group_by(ITIS_TSN) %>% 
+	slice(1) %>% 
+	ungroup()
+
 
 # make a script from RMD..
 # knitr::purl(here::here('CAMS', 'MODULES', 'GROUNDFISH', 'groundfish_loop_050422.Rmd'), documentation = 2) # convert permanently and skip this step
@@ -282,8 +294,13 @@ for(fy in 2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
-	discard_groundfish(con = con_maps, species = species, gf_dat = gf_dat
-	                   , non_gf_dat = non_gf_dat, FY = fy)
+	discard_groundfish(con = con_maps
+										 , species = species
+										 , gf_dat = gf_dat
+	                   , non_gf_dat = non_gf_dat
+										 , save_dir = '/home/maps/prod/output/discards/groundfish'
+										 , FY = fy)
+	
   parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "groundfish"), FY = fy)
 }
 
