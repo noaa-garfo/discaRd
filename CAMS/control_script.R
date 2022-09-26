@@ -26,6 +26,8 @@ con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
+Sys.setenv(TZ = "America/New_York")
+Sys.setenv(ORA_SDTZ = "America/New_York")
 
 ## ----refresh and rebuild obdbs and cams_obs_catch---------------------------------------------------------------------------------
 
@@ -280,7 +282,9 @@ for(fy in 2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
-	discard_groundfish(con = con_maps, species = species, FY = fy)
+	discard_groundfish(con = con_maps, species = species, gf_dat = gf_dat
+	                   , non_gf_dat = non_gf_dat, FY = fy)
+  parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "groundfish"), FY = fy)
 }
 
 # commit DB
@@ -845,4 +849,6 @@ ROracle::dbDisconnect(con_maps)
 ROracle::dbDisconnect(con_cams)
 
 
-#'
+# add group write permissions
+# system(paste("chmod g+w -R", file.path(getOption("maps.discardsPath"))))
+system(paste("chmod 770 -R", file.path(getOption("maps.discardsPath"))))
