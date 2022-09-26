@@ -23,7 +23,7 @@ scallop_subroutine <- function(FY = 2019
     system(paste("chmod g+w -R", scal_trip_dir))
   }
 
-  species_itis <- scal_gf_species$SPECIES_ITIS
+  species_itis <- scal_gf_species$ITIS_TSN
 
 # {r estimate discards on scallop trips for each subACL stock, purl = T, eval = T}
 scal_trips = non_gf_dat %>%
@@ -85,7 +85,7 @@ for(yy in FY:(FY+end_fy)){
 	#
 	t1 = Sys.time()
 
-	print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", scal_gf_species$COMNAME))
+	print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", scal_gf_species$ITIS_NAME))
 
 	# species_itis = scal_gf_species$SPECIES_ITIS
 	#---#
@@ -308,7 +308,7 @@ for(yy in FY:(FY+end_fy)){
 		right_join(., y = d_focal$res, by = 'STRATA') %>%
 		as_tibble() %>%
 		mutate(SPECIES_ITIS_EVAL = species_itis
-					 , COMNAME_EVAL = scal_gf_species$COMNAME
+					 , COMNAME_EVAL = scal_gf_species$ITIS_NAME
 					 , FISHING_YEAR = yy
 					 , FY_TYPE = FY_TYPE) %>%
 		dplyr::rename(FULL_STRATA = STRATA)
@@ -445,7 +445,7 @@ for(yy in FY:(FY+end_fy)){
 		) %>%
 		mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 		mutate(SPECIES_ITIS_EVAL = species_itis
-					 , COMNAME_EVAL = scal_gf_species$COMNAME
+					 , COMNAME_EVAL = scal_gf_species$ITIS_NAME
 					 , FISHING_YEAR = FY
 					 , FY_TYPE = FY_TYPE)
 
@@ -535,6 +535,7 @@ for(yy in FY:(FY+end_fy)){
 		)
 
 
+	Sys.umask('775')
 	fst::write_fst(x = joined_table, path = paste0(scal_trip_dir, '/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
 
 	t2 = Sys.time()

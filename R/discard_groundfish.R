@@ -46,14 +46,14 @@ discard_groundfish <- function(con
 
 
 
-  for(i in 1:length(species$SPECIES_ITIS)){
+  for(i in 1:length(species$ITIS_TSN)){
 
   t1 = Sys.time()
 
-  print(paste0('Running ', species$COMNAME[i], ' for Fishing Year ', FY))
+  print(paste0('Running ', species$ITIS_NAME[i], ' for Fishing Year ', FY))
 
   # species_nespp3 = species$NESPP3[i]
-  species_itis = species$SPECIES_ITIS[i]
+  species_itis = species$ITIS_TSN[i]
   #---#
   # Support table import by species
 
@@ -295,7 +295,7 @@ discard_groundfish <- function(con
      right_join(., y = d_focal$res, by = 'STRATA') %>%
      as_tibble() %>%
    	 	mutate(SPECIES_ITIS_EVAL = species_itis
-   				 , COMNAME_EVAL = species$COMNAME[i]
+   				 , COMNAME_EVAL = species$ITIS_NAME[i]
    				 , FISHING_YEAR = FY
    				 , FY_TYPE = FY_TYPE) %>%
    	   dplyr::rename(FULL_STRATA = STRATA)
@@ -444,7 +444,7 @@ discard_groundfish <- function(con
   	) %>%
   	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
   	mutate(SPECIES_ITIS_EVAL = species_itis
-   				 , COMNAME_EVAL = species$COMNAME[i]
+   				 , COMNAME_EVAL = species$ITIS_NAME[i]
    				 , FISHING_YEAR = FY
    				 , FY_TYPE = FY_TYPE)
 
@@ -547,10 +547,11 @@ discard_groundfish <- function(con
   #-------------------------------#
 
   # TODO: Convert these print() statements to logr file write outs
-  print(paste0('Adding EM values for ', species$COMNAME[i], ' Groundfish Trips ', FY))
+  print(paste0('Adding EM values for ', species$ITIS_NAME[i], ' Groundfish Trips ', FY))
 
-  em_tab = ROracle::dbGetQuery(conn = con, statement = paste("
-                                                             select  ITIS_TSN as SPECIES_ITIS_EVAL
+
+  em_tab = ROracle::dbGetQuery(conn = con, statement = "
+  			 select  ITIS_TSN as SPECIES_ITIS_EVAL
   			 , EM_COMPARISON
   			 , VTR_DISCARD
   			 , EM_DISCARD
@@ -561,7 +562,7 @@ discard_groundfish <- function(con
   			 from
   			 -- CAMS_GF_EM_DELTA_VTR_DISCARD_20_22
   			 CAMS_GF_EM_DELTA_VTR_DISCARD
-  			 ")) %>%
+  			 ") %>%
   	      as_tibble()
 
   emjoin = joined_table %>%
@@ -584,6 +585,9 @@ discard_groundfish <- function(con
   #-------------------------------#
 
   # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
+  # Sys.umask('660')
+
+  # Sys.umask('775')
 
   fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
@@ -603,14 +607,14 @@ discard_groundfish <- function(con
   						  , 'ACCESSAREA')
 
 
-  for(i in 1:length(species$SPECIES_ITIS)){
+  for(i in 1:length(species$ITIS_TSN)){
 
   t1 = Sys.time()
 
-  print(paste0('Running non-groundfish trips for ', species$COMNAME[i], ' Fishing Year ', FY))
+  print(paste0('Running non-groundfish trips for ', species$ITIS_NAME[i], ' Fishing Year ', FY))
 
   # species_nespp3 = species$NESPP3[i]
-  species_itis = species$SPECIES_ITIS[i]
+  species_itis = species$ITIS_TSN[i]
   #---#
   # Support table import by species
 
@@ -839,7 +843,7 @@ discard_groundfish <- function(con
      right_join(., y = d_focal$res, by = 'STRATA') %>%
      as_tibble() %>%
    	 	mutate(SPECIES_ITIS_EVAL = species_itis
-   				 , COMNAME_EVAL = species$COMNAME[i]
+   				 , COMNAME_EVAL = species$ITIS_NAME[i]
    				 , FISHING_YEAR = FY
    				 , FY_TYPE = FY_TYPE) %>%
    	   dplyr::rename(FULL_STRATA = STRATA)
@@ -984,7 +988,7 @@ discard_groundfish <- function(con
   	) %>%
   	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
   	mutate(SPECIES_ITIS_EVAL = species_itis
-   				 , COMNAME_EVAL = species$COMNAME[i]
+   				 , COMNAME_EVAL = species$ITIS_NAME[i]
    				 , FISHING_YEAR = FY
    				 , FY_TYPE = FY_TYPE)
 
@@ -1075,6 +1079,8 @@ discard_groundfish <- function(con
   				 )
 
    # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
+  # Sys.umask('660')
+  # Sys.umask('775')
 
   fst::write_fst(x = joined_table, path = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst')))
 
@@ -1089,33 +1095,33 @@ discard_groundfish <- function(con
   # do only the yellowtail and windowpane for scallop trips
 
   scal_gf_species = species %>%
-  	dplyr::filter(SPECIES_ITIS %in% c('172909', '172746'))
+  	dplyr::filter(ITIS_TSN %in% c('172909', '172746'))
 
   # for(species_itis %in% c('172909', '172746')){
 
-  for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
+  for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
     scallop_subroutine(FY = FY
                        , scal_gf_species = scal_gf_species[i, ]
                        , non_gf_dat = non_gf_dat
-                       , scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")
+                       , scal_trip_dir = file.path(save_dir, "scallop_groundfish")
     )
   }
 
   ## ----substitute scallop trips into non-gf trips, purl = T, eval = T---------------------------------------------------------------
   # if(species_itis %in% c('172909', '172746')){
 
-  for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
+  for(i in 1:length(scal_gf_species$ITIS_TSN)){
   # for(j in 2018:2019){
   start_time = Sys.time()
 
   	GF_YEAR = FY
 
-  	# for(i in 1:length(scal_gf_species$SPECIES_ITIS)){
+  	# for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
-  		print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$COMNAME[i], ' for Groundfish Year ', GF_YEAR))
+  		print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$ITIS_NAME[i], ' for Groundfish Year ', GF_YEAR))
 
-  		sp_itis = scal_gf_species$SPECIES_ITIS[i]
+  		sp_itis = scal_gf_species$ITIS_TSN[i]
 
   		# get only the non-gf trips for each species and fishing year
   		# gf_file_dif = here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/')
@@ -1125,7 +1131,7 @@ discard_groundfish <- function(con
 
   		# get list all scallop trips bridging fishing years
   		# scal_file_dir = here::here('CAMS/MODULES/APRIL/OUTPUT/')
-  		scal_files = list.files(file.path(getOption("maps.discardsPath"), "scallop_groundfish"), pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
+  		scal_files = list.files(file.path(save_dir, "scallop_groundfish"), pattern = paste0('discard_est_', sp_itis, '_scal_trips_SCAL'), full.names = T)
 
   		# read in files
   		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))
