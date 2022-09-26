@@ -78,7 +78,7 @@ options(scipen = 999)
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-#source('~/discaRd/CAMS//R/cams_discard_functions.R') # ask GB about this change
+#source('~/discaRd/CAMS//R/cams_discard_functions.R') 
 ```
 
 ```{r define fishing year and species, eval = F, purl = F}
@@ -712,7 +712,7 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
  trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
  
- # get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
+ # get a table of broad stock rates using discaRd functions. Previously we used sector rollupresults (ARATE in pass2)
 
 
 bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
@@ -729,15 +729,16 @@ mnk = run_discard( bdat = bdat_2yrs
 # rate table
 mnk$allest$C
 
-SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
+#SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
+HERR_FLAG <- mnk$allest$C$STRATA
 
-CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
+#CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
 
 BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
 
 CV_b <- round(mnk$allest$C$RE_rse, 2)
 
-BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(HERR_FLAG, BROAD_STOCK_RATE, CV_b))
 
 BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
@@ -754,12 +755,12 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>% 
-	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
+	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('HERR_FLAG')) %>% 
+	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate (target,gear, HMA)
 															 , n_obs_trips_f < 5 & 
-															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
+															 	n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
 															 , n_obs_trips_f < 5 & 
-															 	n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
+															 	n_obs_trips_p < 5 & n_obs_trips_p_a > 5 ~ trans_rate_a  #in season gear, HMA transition
 		                           )
 	) %>% 
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
@@ -773,8 +774,9 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 #
 
 
+#AWA check this
 # >5 trips in season gets in season rate
-# < 5 i nseason but >=5 past year gets transition
+# < 5 inseason but >=5 past year gets transition
 # < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
 # <5, <5,  and <5 gets broad stock rate
 
@@ -824,7 +826,7 @@ joined_table = joined_table %>%
 # Make note of the stratification variables used according to discard source
 
 stratvars_gear = c(#"SPECIES_STOCK", #AWA 
-                    "CAMS_GEAR_GROUP")
+                    "HERR_FLAG")
 
 strata_f = paste(stratvars, collapse = ';')
 strata_a = paste(stratvars_assumed, collapse = ';')
@@ -982,15 +984,23 @@ dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_d
 # print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 
 ### AWA test code
-PS_1A <- cy_discard_example %>%
-  filter(STRATA_FULL == 'HERR_1A_120' & DISCARD_SOURCE == 'O')
+other_1A <- cy_discard_example %>%
+  filter(STRATA_FULL == 'HERR_1A_other')
+
+test <- cy_discard_example %>%
+  filter(STRATA_FULL == 'HERR_1A_other')
 
 MW_2 <- cy_discard_example %>%
   filter(STRATA_FULL == 'HERR_2_170' & DISCARD_SOURCE == 'O')
 
-totals <- cy_discard_example %>%
-    group_by(STRATA_FULL) %>%
-  summarise(TOTAL = sum(DISCARD))
+non_herr_120 <- cy_discard_example %>%
+  filter(STRATA_FULL == 'NON_HERR_1A_120')
+  
+disc <- cy_discard_example %>%
+  filter( HERR_FLAG == 'HERR') %>%
+  summarise(DISC = sum(DISCARD))
+
+
 } 
  
 ```
