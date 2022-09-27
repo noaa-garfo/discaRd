@@ -118,7 +118,8 @@ and b.species_itis is not null
 		group_by(SPECIES_ITIS) %>%
 		slice(1) %>% 
 		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
-		mutate('RUN_ID' = 'MARCH')
+		mutate('RUN_ID' = 'MARCH') %>% 
+		ungroup()
 
 # 6. April ----
 
@@ -140,7 +141,7 @@ april_species = tbl(con_maps, sql("select *
 
 # 7. Combine ----
 	
-runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, april_species) %>% 
+runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, march_species, april_species) %>% 
 	dplyr::rename(ITIS_TSN = SPECIES_ITIS)
 
 #	*	7.1 Replace common name with CAMS standard ----
@@ -151,7 +152,11 @@ cfg_itis = tbl(con_maps, sql('select * from maps.cfg_itis')) %>%
 runid_tab = runid_tab %>% 
 	dplyr::select(-COMMON_NAME) %>% 
 	left_join(., cfg_itis, by = 'ITIS_TSN') %>% 
-	dplyr::select(ITIS_TSN, NESPP3, ITIS_NAME, RUN_ID)
+	dplyr::select(ITIS_TSN, NESPP3, ITIS_NAME, RUN_ID) %>% 
+	group_by(ITIS_TSN) %>% 
+	slice(1) %>% 
+	ungroup()
+
 
 # * 7.2 replace ascii characters in common names ----
 

@@ -17,8 +17,16 @@ discard_may<- function(con
 														 , non_gf_dat = non_gf_dat
 														 , save_dir = file.path(getOption("maps.discardsPath"), "may")
 ) {
-# Stratification variables
 
+	if(!dir.exists(save_dir)) {
+		dir.create(save_dir, recursive = TRUE)
+		system(paste("chmod 770 -R", save_dir))
+	}
+	
+	FY_TYPE = species$RUN_ID	
+	
+	# Stratification variables
+	
 stratvars = c('SPECIES_STOCK'
 							,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
@@ -33,7 +41,7 @@ for(i in 1:length(species$ITIS_TSN)){
 	
 	t1 = Sys.time()	
 	
-	print(paste0('Running ', species$COMMON_NAME[i],' Fishing Year ', FY))	
+	print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))	
 	
 	species_itis <- as.character(species$ITIS_TSN[i])
 	species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))

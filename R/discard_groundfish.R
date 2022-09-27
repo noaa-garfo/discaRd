@@ -25,7 +25,7 @@ discard_groundfish <- function(con
     system(paste("chmod 770 -R", save_dir))
   }
 
-  FY_TYPE = 'MAY START'
+  FY_TYPE = species$RUN_ID
 
   ## ----loop through the sector trips for each stock, eval = T-----------------------------------------------------------------------
 

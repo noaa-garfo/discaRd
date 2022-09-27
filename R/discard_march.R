@@ -1,4 +1,4 @@
-#' discard_november: Calculate discards for November fishing year species
+#' discard_march: Calculate discards for March fishing year species
 #'
 #' @param con ROracle connection to Oracle (e.g. MAPS)
 #' @param species dataframe with species info
@@ -11,19 +11,20 @@
 #'
 #' @examples
 #'
-discard_november <- function(con
+discard_march <- function(con
 														 , species = species
 														 , FY = fy
 														 , non_gf_dat = non_gf_dat
-														 , save_dir = file.path(getOption("maps.discardsPath"), "november")
+														 , save_dir = file.path(getOption("maps.discardsPath"), "march")
 ) {
-
+	
+	
 	if(!dir.exists(save_dir)) {
 		dir.create(save_dir, recursive = TRUE)
 		system(paste("chmod 770 -R", save_dir))
 	}
 	
-	FY_TYPE = species$RUN_ID	
+	FY_TYPE = species$RUN_ID
 	
 # Stratification variables
 
@@ -37,10 +38,10 @@ stratvars = c('SPECIES_STOCK'
 # Begin loop
 
 
-for(i in 1:length(species$ITIS_TSN)){
+for(i in 1:length(species$SPECIES_ITIS)){
 
 t1 = Sys.time()	
-
+	
 print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))	
 
 # species_nespp3 = species$NESPP3[i]  
@@ -513,6 +514,9 @@ joined_table = joined_table %>%
 				 )
 
 
+ # fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_trips', FY,'.fst')))
+ 
+
 outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 
 fst::write_fst(x = joined_table, path = outfile)
@@ -523,5 +527,6 @@ t2 = Sys.time()
 	
 print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 }
+
 
 }
