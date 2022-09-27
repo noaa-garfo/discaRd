@@ -290,7 +290,7 @@ species <- tbl(con_maps, sql("
 # knitr::purl(here::here('CAMS', 'MODULES', 'GROUNDFISH', 'groundfish_loop_050422.Rmd'), documentation = 2) # convert permanently and skip this step
 
 # run two years worth of GF
-for(fy in 2022){ # TODO: move years to configDefaultRun.toml
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
@@ -300,13 +300,17 @@ for(fy in 2022){ # TODO: move years to configDefaultRun.toml
 	                   , non_gf_dat = non_gf_dat
 										 , save_dir = '/home/maps/prod/output/discards/groundfish'
 										 , FY = fy)
-	
-  parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "groundfish"), FY = fy)
+
+  parse_upload_discard(con = con_maps, filepath = '/home/maps/prod/output/discards/groundfish', FY = fy)
 }
 
 # commit DB
 
 ROracle::dbCommit(con_maps)
+
+# fix some file permissions that keep geting effed up
+system('chmod 770 -R .git/index')
+system('chmod 770 -R .git/objects')
 
 #'
 ## ----run calendar year species RMD as a script, eval = T--------------------------------------------------------------------------
@@ -316,39 +320,15 @@ ROracle::dbCommit(con_maps)
 #--------------------------------------------------------------------------#
 # group of species
 
- itis <-  c(
-  '167687',
-  '168559',
-  '172567',
-  '082372',
-  '172414',
-  '082521',
-  '172735',
-  '169182',
-  '080944',
-  '081343',
-  '161706',
-  '172413',
-  '164740',
-  '097314',
-  '098678',
-  '160230')
-
-
- itis_num <- as.character(itis)
-
- species = tbl(con_maps, sql("select *
-												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
-
-	collect() %>%
-
-	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-  slice(1)
-
- species$ITIS_TSN <- stringr::str_sort(itis)
-
-# make sure the folder is correct
-# setwd('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/')
+species <- tbl(con_maps, sql("
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>% 
+	filter(RUN_ID == 'CALENDAR') %>% 
+	collect() %>% 
+	group_by(ITIS_TSN) %>% 
+	slice(1) %>% 
+	ungroup()
 
 # make a script from RMD..
 knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
