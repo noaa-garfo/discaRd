@@ -11,13 +11,19 @@
 #'
 #' @examples
 #'
-discard_groundfish <- function(con
+discard_calendar <- function(con
 															 , species = species
 															 , FY = fy
 															 , non_gf_dat = non_gf_dat
 															 , save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 ) {
 
+
+	if(!dir.exists(save_dir)) {
+		dir.create(save_dir, recursive = TRUE)
+		system(paste("chmod 770 -R", save_dir))
+	}
+	
 # Stratification variables
 
 stratvars = c('SPECIES_STOCK'
@@ -26,15 +32,16 @@ stratvars = c('SPECIES_STOCK'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 
+FY_TYPE = 'JAN START'
 
 # Begin loop
 
 
-for(i in 1:length(species$SPECIES_ITIS)){
+for(i in 1:length(species$ITIS_TSN)){
 
 t1 = Sys.time()	
 	
-print(paste0('Running ', species$COMMON_NAME[i], " for Fishing Year ", FY))	
+print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))	
 	
 # species_nespp3 = species$NESPP3[i]  
 #species_itis = species$ITIS_TSN[i] 
@@ -532,7 +539,16 @@ joined_table = joined_table %>%
  #  dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
  #            Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
  
- fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
+ # fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
+ 
+ 
+ outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
+
+ fst::write_fst(x = joined_table, path = outfile)
+ 
+ system(paste("chmod 770", outfile))
+ 
+ # system(paste("chmod 770 -R ", save_dir))
  
 t2 = Sys.time()
 	

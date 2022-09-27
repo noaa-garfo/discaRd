@@ -201,7 +201,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 		append_discard_all_years(con = con, data = outlist, drop = FALSE)
 
 		t3 = Sys.time()
-		print(paste('TABLE UPDATED IN ', round(difftime(t3, t2, units = "mins"),2), ' MINUTES',  sep = ''))
+		print(paste('SPECIES ', kk, ' ' , FY, ' UPDATED IN ', round(difftime(t3, t2, units = "mins"),2), ' MINUTES',  sep = ''))
 
 	} # end species loop
 

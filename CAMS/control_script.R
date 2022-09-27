@@ -331,18 +331,28 @@ species <- tbl(con_maps, sql("
 	ungroup()
 
 # make a script from RMD..
-knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
+# knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
 
-# Define year to run
-for(jj in 2022:2022){
-	FY <- jj
-	FY_TYPE = 'JANUARY START'
-  source('january_loop_062122.R')  # this is the script created via purl just above
-}
+# save_dir = file.path(getOption("maps.discardsPath"), "calendar")
+
+for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+	discard_calendar(con = con_maps
+										 , species = species[1,]
+										 , FY = fy
+										 , non_gf_dat = non_gf_dat
+										 , save_dir = '/home/maps/prod/output/discards/january'
+	)
+		
+		parse_upload_discard(con = con_maps, filepath = '/home/maps/prod/output/discards/january', FY = fy)
+	}
 
 # commit DB
 
 ROracle::dbCommit(con_maps)
+
+# fix some file permissions that keep geting effed up
+system('chmod 770 -R .git/index')
+system('chmod 770 -R .git/objects')
 
 
 # clean the workspace; restart likely not necessary anymore
