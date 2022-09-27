@@ -335,9 +335,9 @@ species <- tbl(con_maps, sql("
 
 # save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
-for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_calendar(con = con_maps
-										 , species = species[1,]
+										 , species = species
 										 , FY = fy
 										 , non_gf_dat = non_gf_dat
 										 , save_dir = '/home/maps/prod/output/discards/january'
@@ -368,61 +368,47 @@ gc()
   # setwd("~/PROJECTS/discaRd/CAMS/MODULES/MAY")
 
   # this section may be repeated for other modules with other lists of species
+species <- tbl(con_maps, sql("
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>% 
+	filter(RUN_ID == 'MAY') %>% 
+	collect() %>% 
+	group_by(ITIS_TSN) %>% 
+	slice(1) %>% 
+	ungroup()
 
-  #--------------------------------------------------------------------------#
-  # group of species
-  itis <-  c(
-    '164499',
-    '160617',
-    '564139',
-    '160855',
-    '564136',
-    '564130',
-    '564151',
-    '564149',
-    '564145',
-    '164793',
-    '164730',
-    '164791'
-   )
+# make a script from RMD..
+# knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
 
-   itis_num <- as.numeric(itis)
+# save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
+	discard_calendar(con = con_maps
+									 , species = species
+									 , FY = fy
+									 , non_gf_dat = non_gf_dat
+									 , save_dir = '/home/maps/prod/output/discards/may'
+	)
+	
+	parse_upload_discard(con = con_maps, filepath = '/home/maps/prod/output/discards/may', FY = fy)
+}
 
-   species = tbl(con_maps, sql("select *
-  												from CAMS_DISCARD_MORTALITY_STOCK")) %>%
+# commit DB
 
-  	collect() %>%
+ROracle::dbCommit(con_maps)
 
-  	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-    slice(1)
-
-   species$ITIS_TSN <- stringr::str_sort(itis)
-
-
-  # make a script from RMD..
-  knitr::purl('CAMS/MODULES/MAY/may_loop_062122.Rmd', documentation = 0)
-
-  # Define year to run
-  for(jj in 2022:2022){
-  	FY <- jj
-  	FY_TYPE = 'MAY START'
-    source('may_loop_062122.R')
-  }
-
-  # commit DB
-
-  ROracle::dbCommit(con_maps)
-
-  # clean the workspace; restart likely not necessary anymore
-  # rm(list = ls())
-  gc()
-  # .rs.restartR()
+# fix some file permissions that keep geting effed up
+system('chmod 770 -R .git/index')
+system('chmod 770 -R .git/objects')
 
 
+# clean the workspace; restart likely not necessary anymore
+# rm(list = ls())
+gc()
+# .rs.restartR()
 
-
- ## ----run november year species RMD as a script, eval = F--------------------------------------------------------------------------
+ ## ----run November year species RMD as a script, eval = F--------------------------------------------------------------------------
 
 
   # setwd("~/PROJECTS/discaRd/CAMS/MODULES/NOVEMBER/")
