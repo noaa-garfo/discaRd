@@ -285,6 +285,8 @@ species <- tbl(con_maps, sql("
 	slice(1) %>% 
 	ungroup()
 
+save_dir = file.path(getOption("maps.discardsPath"), 'groundfish')
+
 
 # make a script from RMD..
 # knitr::purl(here::here('CAMS', 'MODULES', 'GROUNDFISH', 'groundfish_loop_050422.Rmd'), documentation = 2) # convert permanently and skip this step
@@ -298,10 +300,10 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 										 , species = species
 										 , gf_dat = gf_dat
 	                   , non_gf_dat = non_gf_dat
-										 , save_dir = '/home/maps/prod/output/discards/groundfish'
+										 , save_dir = save_dir
 										 , FY = fy)
 
-  parse_upload_discard(con = con_maps, filepath = '/home/maps/prod/output/discards/groundfish', FY = fy)
+  parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
 }
 
 # commit DB
@@ -330,20 +332,17 @@ species <- tbl(con_maps, sql("
 	slice(1) %>% 
 	ungroup()
 
-# make a script from RMD..
-# knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
-
-# save_dir = file.path(getOption("maps.discardsPath"), "calendar")
+save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_calendar(con = con_maps
 										 , species = species
 										 , FY = fy
 										 , non_gf_dat = non_gf_dat
-										 , save_dir = '/home/maps/prod/output/discards/january'
+										 , save_dir = save_dir
 	)
 		
-		parse_upload_discard(con = con_maps, filepath = '/home/maps/prod/output/discards/january', FY = fy)
+		parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
 	}
 
 # commit DB
@@ -378,20 +377,18 @@ species <- tbl(con_maps, sql("
 	slice(1) %>% 
 	ungroup()
 
-# make a script from RMD..
-# knitr::purl('CAMS/MODULES/CALENDAR/january_loop_062122.Rmd', documentation = 0)
+save_dir = file.path(getOption("maps.discardsPath"), "may")
 
-# save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_calendar(con = con_maps
 									 , species = species
 									 , FY = fy
 									 , non_gf_dat = non_gf_dat
-									 , save_dir = '/home/maps/prod/output/discards/may'
+									 , save_dir = save_dir
 	)
 	
-	parse_upload_discard(con = con_maps, filepath = '/home/maps/prod/output/discards/may', FY = fy)
+	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
 }
 
 # commit DB
