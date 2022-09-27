@@ -262,19 +262,6 @@ gc()
 #--------------------------------------------------------------------------#
 # get groundfish species list
 
-# TODO: replace fso.v_obSpeciesStockArea with CAMS object
-# species <- tbl(con_maps, sql("
-# select distinct(b.species_itis)
-#     , COMNAME
-#     , a.nespp3
-# from fso.v_obSpeciesStockArea a
-# left join (select *  from CAMS_GEARCODE_STRATA) b on a.nespp3 = b.nespp3
-# where stock_id not like 'OTHER'
-# and b.species_itis is not null
-# ")) %>%
-# 	collect()
-# 
-
 species <- tbl(con_maps, sql("
   select *
   from CFG_DISCARD_RUNID
@@ -287,11 +274,7 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), 'groundfish')
 
-
-# make a script from RMD..
-# knitr::purl(here::here('CAMS', 'MODULES', 'GROUNDFISH', 'groundfish_loop_050422.Rmd'), documentation = 2) # convert permanently and skip this step
-
-# run two years worth of GF
+# run it
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
@@ -311,13 +294,11 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 ROracle::dbCommit(con_maps)
 
 # fix some file permissions that keep geting effed up
-system('chmod 770 -R .git/index')
-system('chmod 770 -R .git/objects')
+# system('chmod 770 -R .git/index')
+# system('chmod 770 -R .git/objects')
 
 #'
 ## ----run calendar year species RMD as a script, eval = T--------------------------------------------------------------------------
-
-# this section may be repeated for other modules with other lists of species
 
 #--------------------------------------------------------------------------#
 # group of species
@@ -334,7 +315,7 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
-for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_calendar(con = con_maps
 										 , species = species[1,]
 										 , FY = fy
@@ -364,8 +345,6 @@ gc()
 
  ## ----run may year species RMD as a script, eval = F-------------------------------------------------------------------------------
 
-
-  # this section may be repeated for other modules with other lists of species
 species <- tbl(con_maps, sql("
   select *
   from CFG_DISCARD_RUNID
@@ -379,7 +358,7 @@ species <- tbl(con_maps, sql("
 save_dir = file.path(getOption("maps.discardsPath"), "may")
 
 
-for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_may(con = con_maps
 									 , species = species[1,]
 									 , FY = fy
@@ -420,7 +399,7 @@ species <- tbl(con_maps, sql("
 save_dir = file.path(getOption("maps.discardsPath"), "november")
 
 
-for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_november(con = con_maps
 									 , species = species[2,]
 									 , FY = fy
@@ -463,7 +442,7 @@ ROracle::dbCommit(con_maps)
   save_dir = file.path(getOption("maps.discardsPath"), "march")
   
   
-  for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+  for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
   	discard_march(con = con_maps
   									 , species = species
   									 , FY = fy
@@ -502,7 +481,7 @@ ROracle::dbCommit(con_maps)
   save_dir = file.path(getOption("maps.discardsPath"), "april")
   
   
-  for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+  for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
   	discard_april(con = con_maps
   									 , species = species
   									 , FY = fy
