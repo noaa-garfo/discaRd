@@ -537,9 +537,11 @@ for(yy in FY:(FY+end_fy)){
 
 	# Sys.umask('775')
 	
-	fst::write_fst(x = joined_table, path = paste0(scal_trip_dir, '/discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
+	outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_scal_trips_SCAL', FY,'.fst'))
+	
+	fst::write_fst(x = joined_table, path = outfile)
 
-	system(paste("chmod 770 -R", scal_trip_dir))
+	system(paste("chmod 770 ", outfile))
 	
 	t2 = Sys.time()
 

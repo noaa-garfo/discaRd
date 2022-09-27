@@ -588,10 +588,12 @@ discard_groundfish <- function(con
   # Sys.umask('660')
 
   # Sys.umask('775')
+  
+  outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
-  fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
+  # fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
-  system(paste("chmod 770 -R", save_dir))
+  system(paste("chmod 770 ", outfile))
   
    t2 = Sys.time()
 
@@ -1083,10 +1085,12 @@ discard_groundfish <- function(con
    # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
   # Sys.umask('660')
   # Sys.umask('775')
+  
+  outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
 
-  fst::write_fst(x = joined_table, path = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst')))
+  fst::write_fst(x = joined_table, path = outfile)
 
-  system(paste("chmod 770 -R", save_dir))
+  system(paste("chmod 770 ", outfile))
   
   t2 = Sys.time()
 
@@ -1173,7 +1177,7 @@ discard_groundfish <- function(con
 # Overwrite the original non-gf with the new version including scallop replacement
   		write_fst(x = t1, path = gf_files)
 
-  		system(paste("chmod 770 -R", save_dir))
+  		system(paste("chmod 770 ", gf_files))
   		
   		end_time = Sys.time()
 
