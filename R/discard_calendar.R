@@ -24,6 +24,8 @@ discard_calendar <- function(con
 		system(paste("chmod 770 -R", save_dir))
 	}
 	
+	FY_TYPE = species$RUN_ID
+	
 # Stratification variables
 
 stratvars = c('SPECIES_STOCK'
