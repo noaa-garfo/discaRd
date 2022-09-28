@@ -4,8 +4,13 @@
 \alias{get.cochran.ss.by.strat}
 \title{Estimate discard rates (and other attributes) by strata}
 \usage{
-get.cochran.ss.by.strat(bydat, trips, targCV = 0.3, strata_name = "STRATA",
-  strata_complete = c("dredge", "trawl"))
+get.cochran.ss.by.strat(
+  bydat,
+  trips,
+  targCV = 0.3,
+  strata_name = "STRATA",
+  strata_complete = c("dredge", "trawl")
+)
 }
 \arguments{
 \item{bydat}{Observed trips}
@@ -32,4 +37,3 @@ Each data frame input MUST have a stratification column that matches. This may b
 \examples{
 get.cochran.ss.by.strat
 }
-

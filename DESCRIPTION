@@ -27,9 +27,10 @@ Suggests:
 	tree,
 	rpart,
 	gbm,
-	ggplot2
+	ggplot2,
+	MAPS
 NeedsCompilation: no
 ByteCompile: yes
 LazyData: FALSE
-RoxygenNote: 5.0.1
+RoxygenNote: 7.2.0
 VignetteBuilder: knitr
