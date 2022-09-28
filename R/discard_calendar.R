@@ -24,7 +24,7 @@ discard_calendar <- function(con
 		system(paste("chmod 770 -R", save_dir))
 	}
 	
-	FY_TYPE = species$RUN_ID
+	FY_TYPE = species$RUN_ID[1]
 	
 # Stratification variables
 
@@ -278,7 +278,7 @@ trans_rate_df = trans_rate_df %>%
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , COMNAME_EVAL = species$ITIS_NAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
@@ -424,7 +424,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	) %>% 
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , COMNAME_EVAL = species$ITIS_NAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
