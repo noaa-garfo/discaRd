@@ -23,7 +23,7 @@ discard_may<- function(con
 		system(paste("chmod 770 -R", save_dir))
 	}
 	
-	FY_TYPE = species$RUN_ID	
+	FY_TYPE = species$RUN_ID[1]	
 	
 	# Stratification variables
 	
@@ -272,7 +272,7 @@ for(i in 1:length(species$ITIS_TSN)){
 		right_join(., y = d_focal$res, by = 'STRATA') %>% 
 		as_tibble() %>% 
 		mutate(SPECIES_ITIS_EVAL = species_itis
-					 , COMNAME_EVAL = species$COMNAME[i]
+					 , COMNAME_EVAL = species$ITIS_NAME[i]
 					 , FISHING_YEAR = FY
 					 , FY_TYPE = FY_TYPE) %>% 
 		dplyr::rename(FULL_STRATA = STRATA) 
@@ -418,7 +418,7 @@ for(i in 1:length(species$ITIS_TSN)){
 		) %>% 
 		mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 		mutate(SPECIES_ITIS_EVAL = species_itis
-					 , COMNAME_EVAL = species$COMNAME[i]
+					 , COMNAME_EVAL = species$ITIS_NAME[i]
 					 , FISHING_YEAR = FY
 					 , FY_TYPE = FY_TYPE) 
 	

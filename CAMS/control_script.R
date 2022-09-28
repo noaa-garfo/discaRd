@@ -317,7 +317,7 @@ save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_calendar(con = con_maps
-										 , species = species[1,]
+										 , species = species
 										 , FY = fy
 										 , non_gf_dat = non_gf_dat
 										 , save_dir = save_dir
@@ -360,7 +360,7 @@ save_dir = file.path(getOption("maps.discardsPath"), "may")
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_may(con = con_maps
-									 , species = species[1,]
+									 , species = species
 									 , FY = fy
 									 , non_gf_dat = non_gf_dat
 									 , save_dir = save_dir
@@ -401,7 +401,7 @@ save_dir = file.path(getOption("maps.discardsPath"), "november")
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_november(con = con_maps
-									 , species = species[2,]
+									 , species = species
 									 , FY = fy
 									 , non_gf_dat = non_gf_dat
 									 , save_dir = save_dir

@@ -25,7 +25,7 @@ discard_groundfish <- function(con
     system(paste("chmod 770 -R", save_dir))
   }
 
-  FY_TYPE = species$RUN_ID
+  FY_TYPE = species$RUN_ID[1]
 
   ## ----loop through the sector trips for each stock, eval = T-----------------------------------------------------------------------
 
