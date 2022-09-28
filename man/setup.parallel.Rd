@@ -15,4 +15,3 @@ Setup parallel
 \examples{
 setup.parallel
 }
-

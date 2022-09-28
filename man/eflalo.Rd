@@ -4,7 +4,9 @@
 \name{eflalo}
 \alias{eflalo}
 \title{eflalo dataset from VMSTOOLS}
-\format{a dataframe}
+\format{
+a dataframe
+}
 \usage{
 data(eflalo)
 }
@@ -21,4 +23,3 @@ Niels Hintzen, Francois Bastardie and Doug Beare (2014). vmstools: For analysing
 \code{\link{vmstools}}, \code{\link{make.obs.flag.dat}}
 }
 \keyword{datasets}
-

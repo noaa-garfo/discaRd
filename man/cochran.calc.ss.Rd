@@ -27,4 +27,3 @@ Wiley: Sampling Techniques, 3rd Edition - William G. Cochran. (n.d.). Available 
 
 Wigley SE, Rago PJ, Sosebee KA, Palka DL. 2007. The Analytic Component to the Standardized Bycatch Reporting Methodology Omnibus Amendment: Sampling Design, and Estimation of Precision and Accuracy (2nd Edition). US Dep. Commer., Northeast Fish. Sci. Cent. Ref. Doc. 07-09; 156 p
 }
-
