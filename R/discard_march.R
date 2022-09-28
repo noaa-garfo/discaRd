@@ -38,7 +38,7 @@ stratvars = c('SPECIES_STOCK'
 # Begin loop
 
 
-for(i in 1:length(species$SPECIES_ITIS)){
+for(i in 1:length(species$ITIS_TSN)){
 
 t1 = Sys.time()	
 	
