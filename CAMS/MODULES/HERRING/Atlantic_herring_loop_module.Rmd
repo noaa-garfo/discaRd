@@ -367,9 +367,9 @@ rm(fed_trips, state_trips)
 # Stratification variables
 
 stratvars = c(#'SPECIES_STOCK'
-              'HERR_FLAG'
-              ,'HERR_AREA'
-              ,'CAMS_GEAR_GROUP')#AWA
+              'HERR_FLAG' # target vs non target herring
+              ,'HERR_AREA' # herring management area
+              ,'CAMS_GEAR_GROUP')# gear 
 							#, 'MESHGROUP'
 						  #, 'TRIPCATEGORY'
 						  #, 'ACCESSAREA')
@@ -414,7 +414,6 @@ STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
          , SPECIES_STOCK = AREA_NAME) %>% 
   ungroup() #%>% 
   #dplyr::select(SPECIES_STOCK, AREA)
-# AWA change to HMA?
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
@@ -618,13 +617,13 @@ trans_rate_df = trans_rate_df %>%
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , COMNAME_EVAL = species$COMMON_NAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
 #
-# SECTOR ROLLUP
+# Target/non-target and gear stratification
 #
 # print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
  
@@ -713,7 +712,7 @@ trans_rate_df_pass2 = trans_rate_df_pass2 %>%
 
  
  # get a table of broad stock rates using discaRd functions. Previously we used sector rollupresults (ARATE in pass2)
-
+ # herring uses this as target vs non target level rate 
 
 bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
 ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
@@ -723,7 +722,7 @@ mnk = run_discard( bdat = bdat_2yrs
 			, ddat_focal = ddat_cy_2yr
 			, c_o_tab = ddat_2yr
 			, species_itis = species_itis
-			, stratvars = stratvars[1]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP" #AWA just gear_group
+			, stratvars = stratvars[1]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP" #AWA just target vs non target
 			)
 
 # rate table
@@ -765,7 +764,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	) %>% 
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
+ 				 , COMNAME_EVAL = species$COMMON_NAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
@@ -792,16 +791,17 @@ joined_table = joined_table %>%
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
-    																		n_obs_trips_f_a >= 5 ~ 'A'
+    																		n_obs_trips_f_a >= 5 ~ 'A' 
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 &
     																		n_obs_trips_p < 5 &
-    																		n_obs_trips_p_a >= 5 ~ 'G'
+    																		n_obs_trips_f_a <= 5 &
+    																	  n_obs_trips_p_a >= 5 ~ 'G'
     																	, is.na(LINK1) & 
     																		n_obs_trips_f < 5 & 
     																		n_obs_trips_p < 5 & 
     																		n_obs_trips_f_a < 5 & 
-    																		n_obs_trips_p_a < 5 ~ 'G'))
+    																		n_obs_trips_p_a < 5 ~ 'B'))
     															#		, is.na(LINK1) & is.na(final_rate) ~ 'NA'
     															#		, is.na(LINK1) & is.nan(final_rate) ~ 'NA'))
 
@@ -987,6 +987,13 @@ dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_d
 other_1A <- cy_discard_example %>%
   filter(STRATA_FULL == 'HERR_1A_other')
 
+
+PUR_1A <- cy_discard_example %>%
+  filter(STRATA_FULL == 'HERR_1A_120')
+
+PUR_1A_minusone <- ddat_prev_cy %>%
+  filter(CAMS_GEAR_GROUP == '120')#& LINK1 == '000201806P53021')
+
 test <- cy_discard_example %>%
   filter(STRATA_FULL == 'HERR_1A_other')
 
@@ -1000,6 +1007,68 @@ disc <- cy_discard_example %>%
   filter( HERR_FLAG == 'HERR') %>%
   summarise(DISC = sum(DISCARD))
 
+
+# join pass 1 (target, area, gear) with pass 2 (target, gear) and broad stock rate to create bm_herr_discard_rate table for use in QM
+
+# change syntax
+full_strata_rates <- trans_rate_df_full %>%
+  mutate(TARGET = case_when(STRATA %like% 'NON' ~ 'NON_HERR',
+                            TRUE ~ 'HERR')) %>%
+  mutate(GEAR = case_when(STRATA %like% '050' ~ 'BT'
+                          ,STRATA %like% '120' ~ 'PS'
+                          ,STRATA %like% '170' ~ 'MW'
+                          ,TRUE ~ 'OTHER')) %>%
+  unite("TARG_GEAR_CAT", TARGET:GEAR, remove = FALSE)
+
+#change syntax to match
+gear_rates <- trans_rate_df_pass2 %>%
+  mutate(TARGET = case_when(STRATA_a %like% 'NON' ~ 'NON_HERR',
+                            TRUE ~ 'HERR')) %>%
+  mutate(GEAR = case_when(STRATA_a %like% '050' ~ 'BT'
+                          ,STRATA_a %like% '120' ~ 'PS'
+                          ,STRATA_a %like% '170' ~ 'MW'
+                          ,TRUE ~ 'OTHER')) %>%
+  unite("TARG_GEAR_CAT", TARGET:GEAR, remove = FALSE)
+
+# match tables on TARGET and GEAR CAT
+
+rates <- full_strata_rates %>% 
+  left_join(gear_rates, by = "TARG_GEAR_CAT") %>%
+  left_join(BROAD_STOCK_RATE_TABLE, by = c("TARGET.x" = "HERR_FLAG"))
+
+# same logic as above to get discard rates
+disc_rates <- rates %>%
+  mutate(CURRENT_RATE = case_when(n_obs_trips_f >= 5 ~ in_season_rate
+                        ,n_obs_trips_f < 5 & n_obs_trips_p >=5 ~ trans_rate
+                        ,n_obs_trips_f < 5 & n_obs_trips_p < 5 & n_obs_trips_f_a >= 5 ~ in_season_rate_a
+                        ,n_obs_trips_f < 5 & n_obs_trips_p < 5 & n_obs_trips_f_a < 5 & n_obs_trips_p_a >= 5 ~ trans_rate_a
+    										,n_obs_trips_f < 5 & n_obs_trips_p < 5 & n_obs_trips_f_a < 5 & n_obs_trips_p_a < 5 ~ BROAD_STOCK_RATE))
+
+
+
+# get herring discard rates and format
+herr_disc_rts <- disc_rates %>%
+  filter(TARGET.x == 'HERR') %>% 
+  separate(STRATA, c('TARG', 'AREA_GEAR'), sep = 'HERR_') %>%
+  separate(AREA_GEAR, c('AREA', 'GEAR_CODE'), sep = '_') %>%
+  unite(GEAR_CAT_AREA, c("GEAR.x", "AREA")) %>%
+  mutate(INSEASON_GLOBAL_TRIPS = sum(n_obs_trips_f)) %>%
+  select(CURRENT_RATE, GEAR_CAT_AREA, GEAR.y, n_obs_trips_f, n_obs_trips_f_a,INSEASON_GLOBAL_TRIPS, in_season_rate, in_season_rate_a, BROAD_STOCK_RATE, n_obs_trips_p, n_obs_trips_p_a, previous_season_rate, previous_season_rate_a) %>%
+  dplyr::rename(GEAR_CAT = GEAR.y, INSEASON_GEAR_CAT_AREA_TRIPS = n_obs_trips_f, INSEASON_GEAR_CAT_TRIPS = n_obs_trips_f_a, INSEASON_GEAR_CAT_AREA_RATE = in_season_rate, INSEASON_GEAR_CAT_RATE = in_season_rate_a, INSEASON_GLOBAL_RATE = BROAD_STOCK_RATE, ASSUMED_GEAR_CAT_AREA_TRIPS = n_obs_trips_p, ASSUMED_GEAR_CAT_TRIPS = n_obs_trips_p_a, ASSUMED_GEAR_CAT_AREA_RATE = previous_season_rate, ASSUMED_GEAR_CAT_RATE = previous_season_rate_a)
+
+# fill out other strata that had no coverage with broad stock rate
+hma <- c('1A', '1B', '2', '3')
+gears <- c('BT', 'MW', 'PS', 'other')
+hma_gears <- crossing(hma, gears) %>%
+  unite(all_hma_gears, c('gears', 'hma'))
+
+bm_herr_discard_rate <- hma_gears %>%
+  left_join(herr_disc_rts, by = c('all_hma_gears' = 'GEAR_CAT_AREA')) %>%
+  dplyr::rename(GEAR_CAT_AREA = all_hma_gears) %>%
+  mutate(CURRENT_RATE = case_when(is.na(CURRENT_RATE) ~ BROAD_STOCK_RATE_TABLE[BROAD_STOCK_RATE_TABLE$HERR_FLAG == 'HERR',]$BROAD_STOCK_RATE
+                                  ,TRUE ~ CURRENT_RATE))
+
+#dbWriteTable(con_maps, name = 'BM_HERR_DISCARD_RATE', value = bm_herr_discard_rate, overwrite = T)
 
 } 
  
