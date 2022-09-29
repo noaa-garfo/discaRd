@@ -43,6 +43,7 @@ library(ggplot2)
 # library(config)
 library(stringr)
 library(discaRd)
+library(data.table)
 devtools::load_all()
 options(scipen = 999)
 
@@ -718,29 +719,54 @@ bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
 ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
 ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
-mnk = run_discard( bdat = bdat_2yrs
-			, ddat_focal = ddat_cy_2yr
-			, c_o_tab = ddat_2yr
-			, species_itis = species_itis
-			, stratvars = stratvars[1]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP" #AWA just target vs non target
-			)
+#mnk = run_discard( bdat = bdat_2yrs
+#			, ddat_focal = ddat_cy_2yr
+#			, c_o_tab = ddat_2yr
+#			, species_itis = species_itis
+#			, stratvars = stratvars[1]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP" #AWA just target vs non target
+#			)
 
 # rate table
-mnk$allest$C
+#mnk$allest$C
+
+# previous year broad stock rate
+mnk_prev = run_discard(bdat = bdat_prev_cy
+											 , ddat = ddat_prev_cy
+											 , c_o_tab = ddat_prev
+										   , species_itis = species_itis
+											 , stratvars = stratvars[1]
+											 )
+
+
+# Run the discaRd functions on current year broad stock
+mnk_current = run_discard(bdat = bdat_cy
+											 , ddat = ddat_focal_cy
+											 , c_o_tab = ddat_focal
+											 , species_itis = species_itis
+											 , stratvars = stratvars[1]
+											 )
 
 #SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
-HERR_FLAG <- mnk$allest$C$STRATA
+HERR_FLAG <- mnk_prev$allest$C$STRATA
 
 #CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
 
-BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
+BROAD_STOCK_RATE <-  mnk_prev$allest$C$RE_mean
+BROAD_STOCK_RATE_CUR <-  mnk_current$allest$C$RE_mean
 
-CV_b <- round(mnk$allest$C$RE_rse, 2)
+
+CV_b <- round(mnk_prev$allest$C$RE_rse, 2)
+CV_b_cur <- round(mnk_current$allest$C$RE_rse, 2)
+
 
 BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(HERR_FLAG, BROAD_STOCK_RATE, CV_b))
+BROAD_STOCK_RATE_TABLE_CUR <- as.data.frame(cbind(HERR_FLAG, BROAD_STOCK_RATE_CUR, CV_b))
+
 
 BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR)
+BROAD_STOCK_RATE_TABLE_CUR$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$CV_b)
 
 
 names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
@@ -983,30 +1009,10 @@ dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_d
 # 
 # print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 
-### AWA test code
-other_1A <- cy_discard_example %>%
-  filter(STRATA_FULL == 'HERR_1A_other')
-
-
-PUR_1A <- cy_discard_example %>%
-  filter(STRATA_FULL == 'HERR_1A_120')
-
-PUR_1A_minusone <- ddat_prev_cy %>%
-  filter(CAMS_GEAR_GROUP == '120')#& LINK1 == '000201806P53021')
-
-test <- cy_discard_example %>%
-  filter(STRATA_FULL == 'HERR_1A_other')
-
-MW_2 <- cy_discard_example %>%
-  filter(STRATA_FULL == 'HERR_2_170' & DISCARD_SOURCE == 'O')
-
-non_herr_120 <- cy_discard_example %>%
-  filter(STRATA_FULL == 'NON_HERR_1A_120')
-  
-disc <- cy_discard_example %>%
-  filter( HERR_FLAG == 'HERR') %>%
-  summarise(DISC = sum(DISCARD))
-
+# save summary table of observed trips #AWA needs work here
+obs_trips <- bdat_2yrs %>%
+  filter(HERR_FLAG == 'HERR' & LINK3_OBS == 1) %>%
+  select(LINK1, PERMIT, YEAR, GEARCODE, OBSRFLAG, AREA, NESPP3.y, FISHDISP, LIVE_POUNDS, LAT_DD, LON_DD, HERR_AREA)
 
 # join pass 1 (target, area, gear) with pass 2 (target, gear) and broad stock rate to create bm_herr_discard_rate table for use in QM
 
@@ -1034,7 +1040,9 @@ gear_rates <- trans_rate_df_pass2 %>%
 
 rates <- full_strata_rates %>% 
   left_join(gear_rates, by = "TARG_GEAR_CAT") %>%
-  left_join(BROAD_STOCK_RATE_TABLE, by = c("TARGET.x" = "HERR_FLAG"))
+  left_join(BROAD_STOCK_RATE_TABLE, by = c("TARGET.x" = "HERR_FLAG")) %>%
+  left_join(BROAD_STOCK_RATE_TABLE_CUR, by = c("TARGET.x" = "HERR_FLAG"))
+
 
 # same logic as above to get discard rates
 disc_rates <- rates %>%
@@ -1053,8 +1061,9 @@ herr_disc_rts <- disc_rates %>%
   separate(AREA_GEAR, c('AREA', 'GEAR_CODE'), sep = '_') %>%
   unite(GEAR_CAT_AREA, c("GEAR.x", "AREA")) %>%
   mutate(INSEASON_GLOBAL_TRIPS = sum(n_obs_trips_f)) %>%
-  select(CURRENT_RATE, GEAR_CAT_AREA, GEAR.y, n_obs_trips_f, n_obs_trips_f_a,INSEASON_GLOBAL_TRIPS, in_season_rate, in_season_rate_a, BROAD_STOCK_RATE, n_obs_trips_p, n_obs_trips_p_a, previous_season_rate, previous_season_rate_a) %>%
-  dplyr::rename(GEAR_CAT = GEAR.y, INSEASON_GEAR_CAT_AREA_TRIPS = n_obs_trips_f, INSEASON_GEAR_CAT_TRIPS = n_obs_trips_f_a, INSEASON_GEAR_CAT_AREA_RATE = in_season_rate, INSEASON_GEAR_CAT_RATE = in_season_rate_a, INSEASON_GLOBAL_RATE = BROAD_STOCK_RATE, ASSUMED_GEAR_CAT_AREA_TRIPS = n_obs_trips_p, ASSUMED_GEAR_CAT_TRIPS = n_obs_trips_p_a, ASSUMED_GEAR_CAT_AREA_RATE = previous_season_rate, ASSUMED_GEAR_CAT_RATE = previous_season_rate_a)
+  mutate(ASSUMED_GLOBAL_TRIPS = sum(n_obs_trips_p)) %>%
+  select(CURRENT_RATE, GEAR_CAT_AREA, GEAR.y, n_obs_trips_f, n_obs_trips_f_a,INSEASON_GLOBAL_TRIPS, in_season_rate, in_season_rate_a, BROAD_STOCK_RATE_CUR, n_obs_trips_p, n_obs_trips_p_a, ASSUMED_GLOBAL_TRIPS, previous_season_rate, previous_season_rate_a, BROAD_STOCK_RATE) %>%
+  dplyr::rename(GEAR_CAT = GEAR.y, INSEASON_GEAR_CAT_AREA_TRIPS = n_obs_trips_f, INSEASON_GEAR_CAT_TRIPS = n_obs_trips_f_a, INSEASON_GEAR_CAT_AREA_RATE = in_season_rate, INSEASON_GEAR_CAT_RATE = in_season_rate_a, INSEASON_GLOBAL_RATE = BROAD_STOCK_RATE_CUR, ASSUMED_GEAR_CAT_AREA_TRIPS = n_obs_trips_p, ASSUMED_GEAR_CAT_TRIPS = n_obs_trips_p_a, ASSUMED_GEAR_CAT_AREA_RATE = previous_season_rate, ASSUMED_GEAR_CAT_RATE = previous_season_rate_a, ASSUMED_GLOBAL_RATE = BROAD_STOCK_RATE)
 
 # fill out other strata that had no coverage with broad stock rate
 hma <- c('1A', '1B', '2', '3')
@@ -1069,6 +1078,20 @@ bm_herr_discard_rate <- hma_gears %>%
                                   ,TRUE ~ CURRENT_RATE))
 
 #dbWriteTable(con_maps, name = 'BM_HERR_DISCARD_RATE', value = bm_herr_discard_rate, overwrite = T)
+
+### AWA test code
+other_1A <- cy_discard_example %>%
+  filter(STRATA_FULL == 'HERR_1A_other')
+
+PUR_1A_minusone <- ddat_prev_cy %>%
+  filter(CAMS_GEAR_GROUP == '120')#& LINK1 == '000201806P53021')
+
+MW_2 <- cy_discard_example %>%
+  filter(STRATA_FULL == 'HERR_2_170' & DISCARD_SOURCE == 'O')
+
+disc <- cy_discard_example %>%
+  filter( HERR_FLAG == 'HERR') %>%
+  summarise(DISC = sum(DISCARD))
 
 } 
  
