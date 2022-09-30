@@ -9,11 +9,11 @@ library(snowfall)
 species <- tbl(con_maps, sql("
   select *
   from CFG_DISCARD_RUNID
-  ")) %>% 
-	filter(RUN_ID == 'NOVEMBER') %>% 
-	collect() %>% 
-	group_by(ITIS_TSN) %>% 
-	slice(1) %>% 
+  ")) %>%
+	filter(RUN_ID == 'NOVEMBER') %>%
+	collect() %>%
+	group_by(ITIS_TSN) %>%
+	slice(1) %>%
 	ungroup()
 
 save_dir = file.path(getOption("maps.discardsPath"), "november")
@@ -48,7 +48,7 @@ sfLapply(as.list(1:nrow(species)), function(x) {
 	keyring::keyring_unlock("apsd_ma", password = '')
 	con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 	# discaRd::discard_november(con = con_maps
-	# 						, species = species[x,] 
+	# 						, species = species[x,]
 	# 						, FY = fy
 	# 						, non_gf_dat = non_gf_dat
 	# 						, save_dir = save_dir
@@ -66,6 +66,48 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 							, non_gf_dat = non_gf_dat
 							, save_dir = save_dir
 	)
-	
+
 	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
 }
+
+
+
+########################################
+# foreach version
+
+library(doParallel)
+cl <- makePSOCKcluster(detectCores())
+registerDoParallel(cl)
+
+clusterEvalQ(cl, {
+  library(DBI)
+  library(RPostgreSQL)
+  drv <- dbDriver("PostgreSQL")
+  con <- dbConnect(drv, dbname="nsdq")
+  NULL
+})
+
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
+  discard_may(con = con_maps
+              , species = species
+              , FY = fy
+              , non_gf_dat = non_gf_dat
+              , save_dir = save_dir
+  )
+
+  parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+}
+
+tmp_foreach <- foreach(i=1588:3638, .inorder=FALSE,
+                          .noexport="con",
+                          .packages=c("DBI", "RPostgreSQL")) %dopar% {
+                            lst <- eval(expr.01)  #contains the SQL query which depends on 'i'
+                            qry <- dbSendQuery(con, lst)
+                            tmp <- fetch(qry, n=-1)
+                            dt <- dates.qed2[i]
+                            list(date=dt, idreuters=tmp$idreuters)
+                          }
+
+clusterEvalQ(cl, {
+  dbDisconnect(con)
+})
