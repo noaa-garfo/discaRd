@@ -1,14 +1,22 @@
-knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
-											message = FALSE, cache = FALSE,
-											progress = TRUE, verbose = FALSE, comment = F
-											, error = FALSE, dev = 'png', dpi = 200)
-
-
-
-
-
-
-
+#' discard_calendar: Calculate discards for January fishing year species
+#'
+#' @param con ROracle connection to Oracle (e.g. MAPS)
+#' @param species dataframe with species info
+#' @param FY Fishing Year
+#' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
+#' @param save_dir Directory to save (and load saved) results
+#'
+#' @return nothing currently, writes out to fst files (add oracle?)
+#' @export
+#'
+#' @examples
+#'
+discard_groundfish <- function(con
+															 , species = species
+															 , FY = fy
+															 , non_gf_dat = non_gf_dat
+															 , save_dir = file.path(getOption("maps.discardsPath"), "calendar")
+) {
 
 # Stratification variables
 
@@ -532,3 +540,4 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
 
 }
 
+}

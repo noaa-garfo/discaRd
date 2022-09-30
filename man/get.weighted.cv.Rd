@@ -7,11 +7,9 @@
 get.weighted.cv(bydat, dest2)
 }
 \arguments{
-\item{bydat}{bycatch data, formatted for Cochran caluclations}
+\item{bydat}{bycatch data, formatted for Cochran calculations}
 
 \item{dest2}{results from \code{\link{get.cochran.ss.by.strat}}}
-
-\item{bydat}{bycatch data, formatted for Cochran calculations}
 }
 \value{
 a data frame with required samples
@@ -25,4 +23,3 @@ get.weighted.cv
 \seealso{
 \code{\link{get.bydat}}, \code{\link{cochran_calc_ss}}
 }
-

@@ -4,10 +4,20 @@
 \alias{cochran.trans.calc}
 \title{Estimate the in-season cumulative discard with a transition rate}
 \usage{
-cochran.trans.calc(bydat_focal, trips_focal, bydat_prev, trips_prev,
-  strata_name = "STRATA", strata_complete = NULL, time_span = c(1, 365),
-  time_inter = 1, CV_target = 0.3, trans_method = c("ntrips", "ntripsCV",
-  "moving", "none")[1], trans_num = 5, trans_numCV = FALSE)
+cochran.trans.calc(
+  bydat_focal,
+  trips_focal,
+  bydat_prev,
+  trips_prev,
+  strata_name = "STRATA",
+  strata_complete = NULL,
+  time_span = c(1, 365),
+  time_inter = 1,
+  CV_target = 0.3,
+  trans_method = c("ntrips", "ntripsCV", "moving", "none")[1],
+  trans_num = 5,
+  trans_numCV = FALSE
+)
 }
 \arguments{
 \item{bydat_focal}{Observed trips for focal year (t)}
@@ -50,4 +60,3 @@ cochran.trans.calc
 \seealso{
 \code{\link{get.cochran.ss.by.strat}}
 }
-
