@@ -1,328 +1,31 @@
----
-title: "April loop for discards"
-output:
-  pdf_document: 
-    highlight: zenburn
-    toc: yes
-    toc_depth: 3
-    number_sections: true
-  bookdown::pdf_book:
-    includes:
-    highlight: zenburn
-    toc: yes
-    toc_depth: 3
-    number_sections: true
-    keep_tex: yes
-  html_document:
-    df_print: paged
-    toc: yes
-editor_options: 
-  chunk_output_type: console
-urlcolor: cyan
----
-
-
-```{r global_options, include=FALSE, purl = F}
-knitr::opts_chunk$set(echo=FALSE, warning = FALSE, 
-											message = FALSE, cache = FALSE,
-											progress = TRUE, verbose = FALSE, comment = F
-											, error = FALSE, dev = 'png', dpi = 200)
-```
-
-```{r setup, eval = F, purl = FALSE}
-
-t1 = Sys.time()
-
-# setwd("C:/Users/benjamin.galuardi/Documents/GitHub/discaRd/CAMS/")
-library(tidyverse)
-library(odbc)
-library(ROracle)
-library(dplyr, warn.conflicts = FALSE)
-library(dbplyr)
-library(ggplot2)
-# library(config)
-library(stringr)
-library(discaRd)
-devtools::load_all()
-options(scipen = 999)
-
-# local run
-#dw_maps <- config::get(value = "maps", file = "~/config.yml")
-
-# # if on server..
-# dw_maps <- config::get(value = "maps", file = "~/config.yml")
- 
- dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
-# 
- # con_maps <- dbConnect(odbc::odbc(), 
- # 									DSN = dw_maps$dsn, 
- # 									UID = dw_maps$uid, 
- # 									PWD = dw_maps$pwd)
-
-# Connect to database - move this to config file in the future - quick addition for server
-  connectString <- paste(
-    "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
-    sep = ""
-  )
-
-# Connect to oracle each loop in case of timeouts
-    con_maps <- ROracle::dbConnect(
-      drv = ROracle::Oracle(),
-      username = dw_maps$uid,
-      password = dw_maps$pwd,
-      dbname = connectString
-    )
-
-
-'%!in%' <- function(x,y)!('%in%'(x,y))
-
-source('~/discaRd/CAMS/R/cams_discard_functions.R')
-
-```
-
-```{r define fishing year and species, eval = F, purl = F}
-
-FY <- 2019
-
-FY_TYPE = 'APRIL START'
-
-#--------------------------------------------------------------------------#
-# group of species ITIS codes.. 
-# SMB, river herring, bluefish, summer flounder, 
-# black seabass and scup.
-#Not sure what else is needed for herring and shad catch cap.
- itis <-  c('79718')
- 
- #itis <- itis
- itis_num <- as.numeric(itis)
- 
-
- species = tbl(con_maps, sql("select *
-												from CAMS_DISCARD_MORTALITY_STOCK")) %>% 
-   
-	collect() %>% 
-  
-	filter(SPECIES_ITIS %in% itis_num) %>% group_by(SPECIES_ITIS) %>%
-  slice(1)
- 
- species$ITIS_TSN <- stringr::str_sort(itis)
- 
-#species$ITIS_TSN <- as.numeric(species$SPECIES_ITIS)
-# species$ITIS_TSN <- as.character(species$SPECIES_ITIS)
-
-#--------------------------------------------------------------------------#
-# a sumamry table for comaprison
-
-# final_discard_table = data.frame(YEAR = FY, SPECIES_ITIS = species$ITIS_TSN, COMNAME = species$COMMON_NAME, DISCARD = NA)
-#--------------------------------------------------------------------------#
-
-```
-
-```{r get obs and catch data from oracle, eval = T, purl = F}
-import_query = " with obs_cams as (
-   select year
-	, month
-  , PERMIT
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
-	       end as halfofyear
-	-- , carea
-  , AREA
-	, vtrserno
-  , CAMS_SUBTRIP
-	, link1
-	, link3
-	, docid
-	, CAMSID
-	, nespp3
-  , itis_tsn as SPECIES_ITIS
-  -- , itis_group1
-    , SECGEAR_MAPPED as GEARCODE
-	, NEGEAR
-	, GEARTYPE
-	, MESHGROUP
-	, SECTID
-  , GF
-, case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
-       when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
-			 else 'non_GF' end as SECTOR_TYPE
-, case when PERMIT = '000000' then 'STATE'
-       else 'FED' end as FED_OR_STATE
-	, tripcategory
-	, accessarea
-	, activity_code_1
-  --, permit_EFP_1
-  --, permit_EFP_2
-  --, permit_EFP_3
-  --, permit_EFP_4
-  , EM
-  , redfish_exemption
-	, closed_area_exemption
-	, sne_smallmesh_exemption
-	, xlrg_gillnet_exemption
-	, NVL(sum(discard_prorate),0) as discard
-	, NVL(sum(discard_prorate),0) as discard_prorate
-	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
-	, NVL(round(max(obs_kall)),0) as obs_kall
-	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from CAMS_OBS_CATCH
- 
- WHERE YEAR >= 2017 
-  and YEAR <= 2020
-
-	group by year
-  -- , carea
-  , AREA
-  , PERMIT
-	, vtrserno
-  , CAMS_SUBTRIP
-	, link1
-	, link3
-	, docid
-	, nespp3	
-  , itis_tsn
-  -- , itis_group1
-    , SECGEAR_MAPPED
-	, NEGEAR
-	, GEARTYPE
-	, MESHGROUP
-	, SECTID
-  , GF
-  , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
-       when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
-			 else 'non_GF' end
-  , case when PERMIT = '000000' then 'STATE'
-       else 'FED' end
-  , CAMSID
-  , month
-	, halfofyear
-	, tripcategory
-	, accessarea
-	, activity_code_1
-  --  , permit_EFP_1
-  --, permit_EFP_2
-  --, permit_EFP_3
-  --, permit_EFP_4
-  , EM
-  , redfish_exemption
-	, closed_area_exemption
-	, sne_smallmesh_exemption
-	, xlrg_gillnet_exemption
-	order by vtrserno asc
-    ) 
-
-  select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
-  , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
-  , o.*
-  , c.match_nespp3
-  , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
-  from obs_cams o
-  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3         
-        
-"
-
-c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
-		
-c_o_dat2 = c_o_dat2 %>% 
-	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
-  mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN' 
-       , PROGRAM == 'NS' ~ 'NLS'
-       , PROGRAM == 'NN' ~ 'NLSN'
-       , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
-       , PROGRAM == 'NW' ~ 'NLSW'
-       , PROGRAM == '1S' ~ 'CAI'
-       , PROGRAM == '2S' ~ 'CAII'
-       , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
-	   )
-) %>% 
-	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>% 
-	mutate(DOCID = CAMS_SUBTRIP)
-
-# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
-				 
-
-# 4/13/22
-# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future 
-
-link3_na = c_o_dat2 %>% 
-	filter(!is.na(LINK1) & is.na(LINK3))
-
-
-# make these values 0 or NA or 'none' depending on the default for that field
-link3_na = link3_na %>% 
-	mutate(LINK1 = NA
-				 , DISCARD = NA
-				 , DISCARD_PRORATE = NA
-				 , OBSRFLAG = NA
-				 , OBSVTR = NA
-				 , OBS_AREA = NA
-				 , OBS_GEAR = NA
-				 , OBS_HAUL_KALL_TRIP = 0
-				 , OBS_HAUL_KEPT = 0
-				 , OBS_KALL = 0
-				 , OBS_LINK1 = NA
-				 , OBSVTR = NA
-				 , OBS_MESHGROUP = 'none'
-				 , PRORATE = NA)
-
-
-tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
-
-c_o_dat2 = c_o_dat2[tidx == F,]
-
-c_o_dat2 = c_o_dat2 %>% 
-	bind_rows(link3_na)
-
-# continue the data import
-
-
-state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
-fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
-
-fed_trips = fed_trips %>% 
-	mutate(ROWID = 1:nrow(fed_trips)) %>% 
-	relocate(ROWID)
-
-# filter out link1 that are doubled on VTR
-
-multilink = fed_trips %>% 
-	filter(!is.na(LINK1)) %>% 
-	group_by(VTRSERNO) %>% 
-	dplyr::summarise(nlink1 = n_distinct(LINK1)) %>% 
-	arrange(desc(nlink1)) %>% 
-	filter(nlink1>1)
-
-remove_links = fed_trips %>% 
-	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
-	dplyr::select(LINK1) %>% 
-	distinct()
-
-remove_id = fed_trips %>% 
-    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
-	  distinct(ROWID)
-
-fed_trips =
-	fed_trips %>% 
-	filter(ROWID %!in% remove_id$ROWID)
-
-c_o_dat2 = fed_trips %>% 
-#	filter(GF == 0) %>% 
-	bind_rows(., state_trips) %>% 
-	mutate(GF = "0")
-
-# gf_dat = fed_trips%>% 
-# 	filter(GF == 1)
-
-rm(fed_trips, state_trips)
-
-
-```
-
-
-```{r subset tables join and run, eval = T, purl = T  }
-
+#' discard_march: Calculate discards for March fishing year species
+#'
+#' @param con ROracle connection to Oracle (e.g. MAPS)
+#' @param species dataframe with species info
+#' @param FY Fishing Year
+#' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
+#' @param save_dir Directory to save (and load saved) results
+#'
+#' @return nothing currently, writes out to fst files (add oracle?)
+#' @export
+#'
+#' @examples
+#'
+discard_march <- function(con
+														 , species = species
+														 , FY = fy
+														 , non_gf_dat = non_gf_dat
+														 , save_dir = file.path(getOption("maps.discardsPath"), "march")
+) {
+	
+	
+	if(!dir.exists(save_dir)) {
+		dir.create(save_dir, recursive = TRUE)
+		system(paste("chmod 770 -R", save_dir))
+	}
+	
+	FY_TYPE = species$RUN_ID[1]
+	
 # Stratification variables
 
 stratvars = c('SPECIES_STOCK'
@@ -335,12 +38,12 @@ stratvars = c('SPECIES_STOCK'
 # Begin loop
 
 
-for(i in 1:length(species$SPECIES_ITIS)){
+for(i in 1:length(species$ITIS_TSN)){
 
 t1 = Sys.time()	
 	
-print(paste0('Running ', species$COMMON_NAME[i], ' For Fishing Year ', FY))	
-	
+print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))	
+
 # species_nespp3 = species$NESPP3[i]  
 #species_itis = species$ITIS_TSN[i] 
 
@@ -386,7 +89,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CAMS_DISCARD_MOR
 OBS_REMOVE = tbl(con_maps, sql("select * from CAMS_OBSERVER_CODES"))  %>%
 	collect() %>% 
 	filter(SPECIES_ITIS == species_itis) %>% 
-	distinct(OBS_CODES)
+	distinct(OBS_CODES) 
 
 #--------------------------------------------------------------------------------#
 # make tables
@@ -572,8 +275,8 @@ trans_rate_df = trans_rate_df %>%
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
- 				 # , FISHING_YEAR = FY
+ 				 , COMNAME_EVAL = species$ITIS_NAME[i]
+ 				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 
  
@@ -718,8 +421,8 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	) %>% 
 	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMNAME[i]
- 				 # , FISHING_YEAR = FY
+ 				 , COMNAME_EVAL = species$ITIS_NAME[i]
+ 				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) 
 
 #
@@ -811,142 +514,19 @@ joined_table = joined_table %>%
 				 )
 
 
- fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_trips', FY,'.fst')))
+ # fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_trips', FY,'.fst')))
  
+
+outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
+
+fst::write_fst(x = joined_table, path = outfile)
+
+system(paste("chmod 770", outfile))
+
 t2 = Sys.time()
 	
 print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 }
 
 
-```
-
-```{r subset tables join and run old, eval = F, purl = F}
-joined_table %>% 
-	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
-	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
-	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
-	dplyr::select(-1) %>% 
-	colSums(na.rm = T) %>% 
-	round()
-
-# saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
-# 				
-# fst::write_fst(x = joined_table, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
-# 
-#  t2 = Sys.time()
-# 	
-# print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
-#  
-# }
-# 
-# 	       
-
- joined_table %>% 
-  dplyr::group_by(FED_OR_STATE) %>%
-  dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
-            Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
- 
-
- #add subtrip kall after CV
- 
- 	cy_discard_example <- joined_table %>% 
-		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>% 
-		dplyr::select(-SPECIES_ITIS) %>%
-		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
-	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
-								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
-								# , 'COMMON_NAME' = 'COMNAME_EVAL'
-								, 'SPECIES_ITIS' = 'SPECIES_ITIS_EVAL'
-								, 'ACTIVITY_CODE' = 'ACTIVITY_CODE_1'
-								, 'N_OBS_TRIPS_F' = 'n_obs_trips_f'
-								) %>% 
-	mutate(DATE_RUN = as.character(Sys.Date())
-				 , FY = as.integer(FY)) %>%
-	dplyr::select(
-		DATE_RUN,
-		FY,
-		YEAR,
-		MONTH,
-		SPECIES_ITIS,
-		COMMON_NAME,
-		FY_TYPE,
-		ACTIVITY_CODE,
-		VTRSERNO,
-		CAMSID,
-		FED_OR_STATE,
-		GF,
-		AREA,
-		LINK1,
-		N_OBS_TRIPS_F,
-		STRATA_USED,
-		STRATA_FULL,
-		STRATA_ASSUMED,
-		DISCARD_SOURCE,
-		OBS_DISCARD,
-		OBS_KALL,
-		SUBTRIP_KALL,
-		BROAD_STOCK_RATE,
-		CAMS_DISCARD_RATE,
-		DISC_MORT_RATIO,
-		DISCARD,
-		CV,
-		SPECIES_STOCK,
-		CAMS_GEAR_GROUP,
-		MESHGROUP,
-		SECTID,
-		EM,
-		REDFISH_EXEMPTION,
-		SNE_SMALLMESH_EXEMPTION,
-		XLRG_GILLNET_EXEMPTION,
-		TRIPCATEGORY,
-		ACCESSAREA,
-		SCALLOP_AREA
-	  # eval(strata_unique)
-	)
- 
- cy_discard_example <- cy_discard_example %>% dplyr::mutate(DISCARD_SOURCE = case_when(is.na(DISCARD) ~ 'N',TRUE ~ DISCARD_SOURCE)) %>% dplyr::mutate(STRATA_USED = case_when(is.na(DISCARD) ~ 'NA',TRUE ~ STRATA_USED))
- 	
- 	
- cy_discard_example$CV[is.nan(cy_discard_example$CV)]<-NA
- 
- cy_discard_example$CV[is.infinite(cy_discard_example$CV)] <- NA    
- 
- cy_discard_example$CAMS_DISCARD_RATE[is.nan(cy_discard_example$CAMS_DISCARD_RATE)]<-NA
- 
- cy_discard_example$CAMS_DISCARD_RATE[is.infinite(cy_discard_example$CAMS_DISCARD_RATE)] <- NA 
- 
- cy_discard_example$BROAD_STOCK_RATE[is.nan(cy_discard_example$BROAD_STOCK_RATE)]<-NA
- 
- cy_discard_example$BROAD_STOCK_RATE[is.infinite(cy_discard_example$BROAD_STOCK_RATE)] <- NA 
- 
- cy_discard_example$DISCARD[is.nan(cy_discard_example$DISCARD)]<-NA
- 
- cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA    
- 
- species$COMMON_NAME[i]
-#db_drop_table(con = con_maps, table = 'CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
-
-dbWriteTable(con_maps, name = 'CAMS_DISCARD_REDCRAB_20', value = cy_discard_example, overwrite = T)
-
-cy_discard_example %>% filter(FED_OR_STATE == 'FED') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
-		DT::datatable(caption = 'Discard rates by Strata for Monkfish')
-
-
-# save trip by trip info to RDS 
- #saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
- # saveRDS(final_table, file = paste0('discard_est_', species_itis, '.RDS'))
-#---------------------------------------------------------------------#
-# End loop
-#Need to modify this loop so it produces the oracle tables on each loop.
-
-# t2 = Sys.time()
-# 
-# print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
- 
- 
-```
-
-<!-- rm(list = ls()) -->
-
-<!-- .rs.restartR() -->
+}

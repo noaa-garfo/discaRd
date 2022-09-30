@@ -52,33 +52,33 @@ options(scipen = 999)
 # # if on server..
 # dw_maps <- config::get(value = "maps", file = "~/config.yml")
  
- dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+#  dw_maps <- config::get(config = "maps", file = "~/config_group.yml")
+# # 
+#  # con_maps <- dbConnect(odbc::odbc(), 
+#  # 									DSN = dw_maps$dsn, 
+#  # 									UID = dw_maps$uid, 
+#  # 									PWD = dw_maps$pwd)
 # 
- # con_maps <- dbConnect(odbc::odbc(), 
- # 									DSN = dw_maps$dsn, 
- # 									UID = dw_maps$uid, 
- # 									PWD = dw_maps$pwd)
-
-# Connect to database - move this to config file in the future - quick addition for server
-  connectString <- paste(
-    "(DESCRIPTION=",
-    "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
-    "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
-    sep = ""
-  )
-
-# Connect to oracle each loop in case of timeouts
-    con_maps <- ROracle::dbConnect(
-      drv = ROracle::Oracle(),
-      username = dw_maps$uid,
-      password = dw_maps$pwd,
-      dbname = connectString
-    )
+# # Connect to database - move this to config file in the future - quick addition for server
+#   connectString <- paste(
+#     "(DESCRIPTION=",
+#     "(ADDRESS=(PROTOCOL=tcp)(HOST=", dw_maps$host, ")(PORT=", dw_maps$port, "))",
+#     "(CONNECT_DATA=(SERVICE_NAME=",dw_maps$svc, ")))",
+#     sep = ""
+#   )
+# 
+# # Connect to oracle each loop in case of timeouts
+#     con_maps <- ROracle::dbConnect(
+#       drv = ROracle::Oracle(),
+#       username = dw_maps$uid,
+#       password = dw_maps$pwd,
+#       dbname = connectString
+#     )
 
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-source('~/discaRd/CAMS/R/cams_discard_functions.R')
+# source('~/discaRd/CAMS/R/cams_discard_functions.R')
 
 ```
 
@@ -116,7 +116,7 @@ FY_TYPE = 'JAN START'
  
 
  species = tbl(con_maps, sql("select *
-												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+												from CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
   
@@ -183,7 +183,7 @@ import_query = " with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from MAPS.CAMS_OBS_CATCH
+	from CAMS_OBS_CATCH
  
  WHERE YEAR >= 2017 
   and YEAR <= 2021
@@ -365,7 +365,7 @@ species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -374,7 +374,7 @@ CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA'
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -386,7 +386,7 @@ STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   #dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP) %>%
@@ -398,7 +398,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCAR
  # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
 # Observer codes to be removed
-OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
+OBS_REMOVE = tbl(con_maps, sql("select * from CAMS_OBSERVER_CODES"))  %>%
   collect() %>% 
 	filter(SPECIES_ITIS == species_itis) %>% 
 	distinct(OBS_CODES) 
@@ -852,7 +852,7 @@ joined_table = joined_table %>%
  #  dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
  #            Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
  
- fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
+ fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_trips', FY,'.fst')))
  
 t2 = Sys.time()
 	
@@ -942,7 +942,7 @@ print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES', 
  cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA     
  
  species$COMMON_NAME[i]
-#db_drop_table(con = con_maps, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
+#db_drop_table(con = con_maps, table = 'CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
 dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_discard_example, overwrite = T)
 
