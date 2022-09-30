@@ -41,12 +41,42 @@ sfLibrary(dbplyr)
 sfLibrary(fst)
 sfLibrary(apsdFuns)
 sfLibrary(odbc)
+sfLibrary(ROracle)
+sfLibrary(keyring)
+sfLibrary(config)
 
 # sfExport('discaRd')
 
-sfLapply(as.list(1:nrow(species)), function(x) {
-	keyring::keyring_unlock("apsd_ma", password = '')
-	con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+# sfLapply(as.list(1:nrow(species)), function(x) {
+sfLapply(as.list(1), function(x) {
+	
+	dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+	
+	con_maps <- ROracle::dbConnect(
+		drv = ROracle::Oracle(),
+		username = dw_apsd$uid,
+		password = dw_apsd$pwd,  
+		dbname = "NERO.world"
+	)
+	
+	
+	# roracle_login <- function (key_name, key_service) {
+	# 	conn <- ROracle::dbConnect(
+	# 		drv = ROracle::Oracle()
+	# 		, username = as.character(keyring::key_list(key_service, key_name)$username)
+	# 		, password = keyring::key_get(
+	# 					service = key_service,
+	# 					username = as.character(keyring::key_list(key_service, key_name)$username),
+	# 					keyring = key_name
+	# 			 )
+	# 		  , dbname = keyring::key_get(service = "dbname", keyring = key_name)
+	# 		)
+	# 	return(conn)
+	# }
+	# 
+	# 
+	# keyring::keyring_unlock("apsd_ma", password = '')
+	# con_maps = roracle_login(key_name = 'apsd_ma', key_service = 'maps')
 	# discaRd::discard_november(con = con_maps
 	# 						, species = species[x,] 
 	# 						, FY = fy
@@ -58,6 +88,27 @@ sfLapply(as.list(1:nrow(species)), function(x) {
 
 sfStop()
 
+#-- try parallel ----
+library(parallel)
+
+cl = parallel::makeCluster(2)
+
+parallel::clusterEvalQ(cl = cl, 
+	{
+	dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+	
+	con_maps <- odbc::dbConnect(odbc::odbc(),
+							DSN = dw_apsd$dsn, 
+							UID = dw_apsd$uid, 
+							PWD = dw_apsd$pwd)
+	
+	dplyr::tbl(con_maps, dplyr::sql('select * from CAMS_STATAREA_STOCK'))
+	
+	
+})
+
+
+# loop ----
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_may(con = con_maps
