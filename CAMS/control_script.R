@@ -40,20 +40,20 @@ for(i in 2017:2022){
 make_cams_obs_catch(con_maps, sql_file = 'inst/SQL/MERGE_CAMS_CATCH_OBS.sql') # convert to within package
 
 
-## ----get obs and catch data from oracle, eval = T---------------------------------------------------------------------------------
+## ----get obs and catch data from oracle ---------------------------------------------------------------------------------
 
 start_year = 2017
 end_year = 2022
 
 dat = get_catch_obs(con_maps, 2021, 2022)
 gf_dat = dat$gf_dat
-non_gf_dat = dat_non_gf_dat
+non_gf_dat = dat$non_gf_dat
 all_dat = dat$all_dat
 rm(dat)
 gc()
 
 #'
-## ----run groundfish species RMD as a script, eval = T-----------------------------------------------------------------------------
+## ----run groundfish species RMD as a script -----------------------------------------------------------------------------
 
 # this section may be repeated for other modules with other lists of species
 

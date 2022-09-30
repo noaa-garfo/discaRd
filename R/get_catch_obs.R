@@ -15,7 +15,7 @@
 #' # Main example
 #' dat = get_catch_obs(con_maps, 2021, 2022)
 #' gf_dat = dat$gf_dat
-#' non_gf_dat = dat_non_gf_dat
+#' non_gf_dat = dat$non_gf_dat
 #' all_dat = dat$all_dat
 #' rm(dat)
 #' gc()
@@ -116,10 +116,23 @@ import_query = paste0("  with obs_cams as (
 	order by vtrserno asc
     )
 
+select b.*
+, case when b.offwatch_haul3 is null then 0 else 1 end as offwatch_haul
+from (
   select case when o.MONTH in (1,2,3,4) then o.YEAR-1 else o.YEAR end as GF_YEAR
   , case when o.MONTH in (1,2,3) then o.YEAR-1 else o.YEAR end as SCAL_YEAR
   , o.*
+  , coalesce(d.link3, r.link3, c.link3) as offwatch_haul3
   from obs_cams o
+  
+    LEFT OUTER JOIN 
+    obdbs.OBSDO@NOVA d ON o.link3 = d.link3
+    LEFT OUTER JOIN 
+    obdbs.OBSTO@NOVA r ON o.link3 = r.link3
+    LEFT OUTER JOIN 
+    obdbs.OBCDO@NOVA c ON o.link3 = c.link3
+)  b
+ 
 
 "
 )
@@ -291,7 +304,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
+--	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
 	from MAPS.CAMS_OBS_CATCH
  
  WHERE YEAR >= ", start_year, " 
