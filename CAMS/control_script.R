@@ -302,6 +302,16 @@ ROracle::dbCommit(con_maps)
 
   ## ----run Herring RMD as a script ----------------------------------------------------------------------------
   
+  # remove previous data pull
+  
+  rm(alldat, non_gf_dat, gf_dat)
+  
+  # pull herring specific data
+  start_year = 2018
+  end_year = 2019
+  
+  alldat = get_catch_obs_herring(con_maps, start_year, end_year)
+  
   
   species <- tbl(con_maps, sql("
   select *
@@ -316,11 +326,11 @@ ROracle::dbCommit(con_maps)
   save_dir = file.path(getOption("maps.discardsPath"), "herring")
   
   
-  for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
+  for(fy in 2019){ # TODO: move years to configDefaultRun.toml
   	discard_herring(con = con_maps
   								, species = species
   								, FY = fy
-  								, non_gf_dat = non_gf_dat
+  								, all_dat = all_dat
   								, save_dir = save_dir
   	)
   	

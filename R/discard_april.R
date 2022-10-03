@@ -3,7 +3,7 @@
 #' @param con ROracle connection to Oracle (e.g. MAPS)
 #' @param species dataframe with species info
 #' @param FY Fishing Year
-#' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
+#' @param all_dat Data frame of trips built from CAMS_OBS_CATCH and control script routine
 #' @param save_dir Directory to save (and load saved) results
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
@@ -14,7 +14,7 @@
 discard_april <- function(con
 														 , species = species
 														 , FY = fy
-														 , non_gf_dat = non_gf_dat
+														 , all_dat = all_dat
 														 , save_dir = file.path(getOption("maps.discardsPath"), "april")
 ) {
 	
