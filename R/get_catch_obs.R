@@ -153,6 +153,7 @@ c_o_dat2 = c_o_dat2 %>%
 	)
 	) %>%
 	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
+	mutate(DOCID_ORIG = DOCID) %>% 
 	mutate(DOCID = CAMS_SUBTRIP)
 
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..

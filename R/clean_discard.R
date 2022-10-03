@@ -38,7 +38,8 @@ clean_discard_fy <- function(filepath = getOption("maps.discardsPath"), FY = 201
 				mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>%
 				dplyr::select(-SPECIES_ITIS) %>%
 				# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
-				dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
+				dplyr::rename('DOCID' = 'DOCID_ORIG'
+											,	'STRATA_FULL' = 'FULL_STRATA'
 											, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
 											, 'CAMS_DISCARD' = 'DISCARD'
 											# , 'COMMON_NAME' = 'COMNAME_EVAL'

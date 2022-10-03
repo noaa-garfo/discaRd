@@ -134,7 +134,7 @@ ddat_focal_cy = ddat_focal %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
@@ -144,7 +144,7 @@ ddat_focal_cy = ddat_focal %>%
 ddat_focal_cy = ddat_focal_cy %>% 
   union_all(ddat_focal %>% 
               filter(is.na(LINK1)))  
-            #    group_by(VTRSERNO, CAMSID) %>% 
+            #    group_by(CAMS_SUBTRIP, CAMSID) %>% 
             #    slice(1) %>% 
             #    ungroup()
             # )
@@ -170,7 +170,7 @@ ddat_prev_cy = ddat_prev %>%
 	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
 																					)) %>% 
 	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>% 
-  group_by(LINK1, VTRSERNO) %>% 
+  group_by(LINK1, CAMS_SUBTRIP) %>% 
 	arrange(desc(SPECIES_EVAL_DISCARD)) %>% 
 	slice(1) %>% 
   ungroup()
