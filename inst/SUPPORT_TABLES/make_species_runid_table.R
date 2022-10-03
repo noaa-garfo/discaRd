@@ -11,7 +11,8 @@ and b.species_itis is not null
 ) %>% 
 	collect() %>% 
 	dplyr::rename(COMMON_NAME = COMNAME) %>% 
- mutate('RUN_ID' = 'GROUNDFISH')
+ mutate('RUN_ID' = 'GROUNDFISH') %>% 
+	dplyr::rename('ITIS_TSN' = 'SPECIES_ITIS')
 
 # 2. calendar year ----
 	
@@ -42,10 +43,10 @@ and b.species_itis is not null
 		
 		collect() %>% 
 		
-		filter(SPECIES_ITIS %in% itis_num) %>% 
-		group_by(SPECIES_ITIS) %>%
+		filter(ITIS_TSN %in% itis_num) %>% 
+		group_by(ITIS_TSN) %>%
 		slice(1) %>% 
-		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
+		dplyr::select(ITIS_TSN, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'CALENDAR')
 	
 # 3. May year ----
@@ -75,10 +76,10 @@ and b.species_itis is not null
 		
 		collect() %>% 
 		
-		filter(SPECIES_ITIS %in% itis_num) %>% 
-		group_by(SPECIES_ITIS) %>%
+		filter(ITIS_TSN %in% itis_num) %>% 
+		group_by(ITIS_TSN) %>%
 		slice(1)	%>% 
-		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
+		dplyr::select(ITIS_TSN, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'MAY')
 	
 # 4. November ----
@@ -96,10 +97,10 @@ and b.species_itis is not null
 	nov_species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
 		collect() %>% 
-		filter(SPECIES_ITIS %in% itis_num) %>% 
-		group_by(SPECIES_ITIS) %>%
+		filter(ITIS_TSN %in% itis_num) %>% 
+		group_by(ITIS_TSN) %>%
 		slice(1)%>% 
-		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
+		dplyr::select(ITIS_TSN, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'NOVEMBER')
 	
 # 5. March ----
@@ -114,10 +115,10 @@ and b.species_itis is not null
 	march_species = tbl(con_maps, sql("select *
 												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
 		collect() %>% 
-		filter(SPECIES_ITIS %in% itis_num) %>% 
-		group_by(SPECIES_ITIS) %>%
+		filter(ITIS_TSN %in% itis_num) %>% 
+		group_by(ITIS_TSN) %>%
 		slice(1) %>% 
-		dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
+		dplyr::select(ITIS_TSN, COMMON_NAME, NESPP3) %>% 
 		mutate('RUN_ID' = 'MARCH') %>% 
 		ungroup()
 
@@ -133,16 +134,33 @@ and b.species_itis is not null
 april_species = tbl(con_maps, sql("select *
 											from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
 	collect() %>% 
-	filter(SPECIES_ITIS %in% itis) %>% 
-	group_by(SPECIES_ITIS) %>%
+	filter(ITIS_TSN %in% itis) %>% 
+	group_by(ITIS_TSN) %>%
 	slice(1) %>% 
-	dplyr::select(SPECIES_ITIS, COMMON_NAME, NESPP3) %>% 
+	dplyr::select(ITIS_TSN, COMMON_NAME, NESPP3) %>% 
 	mutate('RUN_ID' = 'APRIL')
+
+# 6. Herring ----
+
+#--------------------------------------------------------------------------#
+# group of species
+itis <-  c('161722')
+
+#itis <- itis
+# itis_num <- as.numeric(itis)
+
+herring_species = tbl(con_maps, sql("select *
+											from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+	collect() %>% 
+	filter(ITIS_TSN %in% itis) %>% 
+	group_by(ITIS_TSN) %>%
+	slice(1) %>% 
+	dplyr::select(ITIS_TSN, COMMON_NAME, NESPP3) %>% 
+	mutate('RUN_ID' = 'HERRING')
 
 # 7. Combine ----
 	
-runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, march_species, april_species) %>% 
-	dplyr::rename(ITIS_TSN = SPECIES_ITIS)
+runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, march_species, april_species) 
 
 #	*	7.1 Replace common name with CAMS standard ----
 
