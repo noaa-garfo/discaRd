@@ -379,15 +379,18 @@ stratvars = c(#'SPECIES_STOCK'
 # Begin loop
 
 i <- 1
-for(i in 1:length(species$ITIS)){
+for(i in 1:length(species$ITIS_TSN)){
 
-print(paste0('Running ', species$COMMON_NAME[i]))	
+t1 = Sys.time()	
+	
+print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))	
 	
 # species_nespp3 = species$NESPP3[i]  
 #species_itis = species$ITIS_TSN[i] 
 
 species_itis <- as.character(species$ITIS_TSN[i])
 species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
+
 #--------------------------------------------------------------------------#
 # Support table import by species
 
@@ -424,7 +427,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCAR
   select(-AREA_NAME) %>%
    mutate(CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
-	filter(SPECIES_ITIS == species_itis_srce)
+	filter(ITIS_TSN == species_itis_srce)
  # dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
  # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
@@ -436,7 +439,7 @@ OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
 
 #--------------------------------------------------------------------------------#
 # make tables
-ddat_focal <- c_o_dat2 %>% 
+ddat_focal <- alldat %>% 
   filter(YEAR == FY) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
@@ -447,13 +450,13 @@ ddat_focal <- c_o_dat2 %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>% 
-	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-		dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS.x', NESPP3 = 'NESPP3.x',
+	dplyr::select(-GEARCODE.y) %>% 
+		dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 	              GEARCODE = 'GEARCODE.x') %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
-ddat_prev <- c_o_dat2 %>% 
+ddat_prev <- alldat %>% 
   filter(YEAR == FY-1) %>%   ## time element is here!!
   filter(AREA %in% STOCK_AREAS$AREA) %>% 
   mutate(LIVE_POUNDS = SUBTRIP_KALL
@@ -464,8 +467,8 @@ ddat_prev <- c_o_dat2 %>%
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
             , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
             ) %>% 
-	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
-	dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS.x', NESPP3 = 'NESPP3.x',
+	dplyr::select( -GEARCODE.y) %>% 
+	dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 	              GEARCODE = 'GEARCODE.x') %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
@@ -618,7 +621,7 @@ trans_rate_df = trans_rate_df %>%
    right_join(., y = d_focal$res, by = 'STRATA') %>% 
    as_tibble() %>% 
  	 	mutate(SPECIES_ITIS_EVAL = species_itis
- 				 , COMNAME_EVAL = species$COMMON_NAME[i]
+ 				 , COMNAME_EVAL = species$ITIS_NAME[i]
  				 , FISHING_YEAR = FY
  				 , FY_TYPE = FY_TYPE) %>% 
  	   dplyr::rename(FULL_STRATA = STRATA) 

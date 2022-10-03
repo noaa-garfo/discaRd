@@ -160,7 +160,7 @@ herring_species = tbl(con_maps, sql("select *
 
 # 7. Combine ----
 	
-runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, march_species, april_species) 
+runid_tab = bind_rows(gf_species, cal_species, may_species, nov_species, march_species, april_species, herring_species) 
 
 #	*	7.1 Replace common name with CAMS standard ----
 

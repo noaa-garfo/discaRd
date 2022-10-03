@@ -263,7 +263,7 @@ ROracle::dbCommit(con_maps)
 
 
 
- ## ----run april year species RMD as a script, eval = F-----------------------------------------------------------------------------
+ ## ----run april year species RMD as a script -----------------------------------------------------------------------------
 
   
   species <- tbl(con_maps, sql("
@@ -300,7 +300,42 @@ ROracle::dbCommit(con_maps)
   # .rs.restartR()
 
 
-
+  ## ----run Herring RMD as a script ----------------------------------------------------------------------------
+  
+  
+  species <- tbl(con_maps, sql("
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>% 
+  	filter(RUN_ID == 'HERRING') %>% 
+  	collect() %>% 
+  	group_by(ITIS_TSN) %>% 
+  	slice(1) %>% 
+  	ungroup()
+  
+  save_dir = file.path(getOption("maps.discardsPath"), "herring")
+  
+  
+  for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
+  	discard_herring(con = con_maps
+  								, species = species
+  								, FY = fy
+  								, non_gf_dat = non_gf_dat
+  								, save_dir = save_dir
+  	)
+  	
+  	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+  }
+  
+  # commit DB
+  
+  ROracle::dbCommit(con_maps)
+  
+  # clean the workspace; restart likely not necessary anymore
+  # rm(list = ls())
+  gc()
+  # .rs.restartR()
+  
 
 
 
