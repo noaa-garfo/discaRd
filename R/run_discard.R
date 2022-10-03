@@ -113,12 +113,14 @@ run_discard <- function(bdat
 	# merge observed discards with estimated discards
 	# Use the observer tables created, NOT the merged trips/obs table.. 
 	# match on VTRSERNO? 
+	# now matching on CAMS_SUBTRIP.. 
 	
 	out_tab = obs_discard %>%
 		ungroup() %>%
 		mutate(OBS_DISCARD = DISCARD) %>%
-		dplyr::select(VTRSERNO, CAMSID, OBS_DISCARD) %>%
-		right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
+		dplyr::select(VTRSERNO, CAMSID, CAMS_SUBTRIP, OBS_DISCARD) %>%
+		# right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
+		right_join(x = ., y = ddat_rate, by = c('CAMS_SUBTRIP')) %>%   # changed 10/3/22 BG
 		mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>%
 		mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>%
 		mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
