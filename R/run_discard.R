@@ -118,7 +118,7 @@ run_discard <- function(bdat
 	out_tab = obs_discard %>%
 		ungroup() %>%
 		mutate(OBS_DISCARD = DISCARD) %>%
-		dplyr::select(VTRSERNO, CAMSID, CAMS_SUBTRIP, OBS_DISCARD) %>%
+		dplyr::select(CAMS_SUBTRIP, OBS_DISCARD) %>% # dont need these VTRSERNO, CAMSID, 10/03/22 BG
 		# right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
 		right_join(x = ., y = ddat_rate, by = c('CAMS_SUBTRIP')) %>%   # changed 10/3/22 BG
 		mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>%

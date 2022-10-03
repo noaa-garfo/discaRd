@@ -376,7 +376,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   then 'HERR' else 'NON_HERR' end HERR_FLAG
   , ch.lat_dd
   , ch.lon_dd
-  ,nvl((select hma.area from apsd.gis_herring_mgmt_areas hma where sdo_contains(hma.ora_geometry,sdo_geometry(2001,8307,sdo_point_type(NVL(ch.lon_dd,0),NVL(ch.lat_dd,0),NULL),NULL,NULL)) = 'TRUE'),stat_area_hma) herr_area
+  ,nvl((select hma.area from gis_herring_mgmt_areas hma where sdo_contains(hma.ora_geometry,sdo_geometry(2001,8307,sdo_point_type(NVL(ch.lon_dd,0),NVL(ch.lat_dd,0),NULL),NULL,NULL)) = 'TRUE'),stat_area_hma) herr_area
   from cams_obs_spp cos
   left join cams_herr ch
   on cos.cams_subtrip = ch.cams_subtrip
