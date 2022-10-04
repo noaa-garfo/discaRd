@@ -116,23 +116,10 @@ import_query = paste0("  with obs_cams as (
 	order by vtrserno asc
     )
 
-select b.*
-, case when b.offwatch_haul3 is null then 0 else 1 end as offwatch_haul
-from (
   select case when o.MONTH in (1,2,3,4) then o.YEAR-1 else o.YEAR end as GF_YEAR
   , case when o.MONTH in (1,2,3) then o.YEAR-1 else o.YEAR end as SCAL_YEAR
   , o.*
-  , coalesce(d.link3, r.link3, c.link3) as offwatch_haul3
   from obs_cams o
-  
-    LEFT OUTER JOIN 
-    obdbs.OBSDO@NOVA d ON o.link3 = d.link3
-    LEFT OUTER JOIN 
-    obdbs.OBSTO@NOVA r ON o.link3 = r.link3
-    LEFT OUTER JOIN 
-    obdbs.OBCDO@NOVA c ON o.link3 = c.link3
-)  b
- 
 
 "
 )

@@ -45,7 +45,7 @@ make_cams_obs_catch(con_maps, sql_file = 'inst/SQL/MERGE_CAMS_CATCH_OBS.sql') # 
 start_year = 2017
 end_year = 2022
 
-dat = get_catch_obs(con_maps, 2021, 2022)
+dat = get_catch_obs(con_maps, start_year, end_year)
 gf_dat = dat$gf_dat
 non_gf_dat = dat$non_gf_dat
 all_dat = dat$all_dat
