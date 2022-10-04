@@ -143,7 +143,7 @@ select d.permit
         , d.geartype
         , d.negear
 --        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-        , NVL(d.mesh_cat, 'none') as meshgroup
+        , NVL(d.mesh_cat, 'xxx') as meshgroup
         , d.area
         , round(sum(d.LIVLB)) as subtrip_kall
         , d.sectid
@@ -190,7 +190,7 @@ group by d.permit
         , d.geartype
         , d.negear
 --        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-        , NVL(d.mesh_cat, 'none') 
+        , NVL(d.mesh_cat, 'xxx') 
         , d.area
         , d.sectid
         , d.GF
@@ -263,7 +263,7 @@ trips with no link1 (unobserved)
     , null as obs_haul_kept
     , null as  obs_gear
     , null as obs_mesh
-    , 'none' as obs_meshgroup
+    , 'xxx' as obs_meshgroup
 
      from trips t
 --     left join (select * from obs ) o -- no joins here! 
@@ -295,7 +295,7 @@ trips with no link1 (unobserved)
 --    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    , NVL(o.meshgroup, 'xxx') as obs_meshgroup
 
      from trips t
      left join (select * from obs ) o
@@ -326,7 +326,7 @@ trips with no link1 (unobserved)
     , o.obs_haul_kept
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    , NVL(o.meshgroup, 'xxx') as obs_meshgroup
     from ( 
      select t.*
      from trips t 
@@ -356,13 +356,13 @@ trips with no link1 (unobserved)
     , o.obs_haul_kept
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    , NVL(o.meshgroup, 'xxx') as obs_meshgroup
     from ( 
      select t.*
      from trips t 
    ) t
       left join (select * from obs ) o
-  on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup)  -- don't use area when narea = 1
+  on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND NVL(o.meshgroup, 'xxx') = NVL(t.meshgroup, 'xxx'))  -- don't use area when narea = 1
   where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 = 1
   and t.link1 is not null  --maintin naming from matching table
@@ -384,13 +384,13 @@ trips with no link1 (unobserved)
     , o.obs_haul_kept
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'none') as obs_meshgroup
+    , NVL(o.meshgroup, 'xxx') as obs_meshgroup
     from ( 
      select t.*
      from trips t 
    ) t
       left join (select * from obs ) o
-        on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA) -- use area when narea >1
+        on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND NVL(o.meshgroup, 'xxx') = NVL(t.meshgroup, 'xxx') AND o.OBS_AREA = t.AREA) -- use area when narea >1
   where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 > 1
   and t.link1 is not null --maintain naming from matching table
@@ -398,30 +398,30 @@ trips with no link1 (unobserved)
 
 )
 
--- change the 'none' back to nulls for meshgroups
+-- change the 'xxx' back to nulls for meshgroups
 
 , obs_catch as 
 ( 
     select a.* 
-    , nullif(a.meshgroup, 'none') meshgroup_pre
-    , nullif(a.obs_meshgroup, 'none') obs_meshgroup_pre
+    , nullif(a.meshgroup, 'xxx') meshgroup_pre
+    , nullif(a.obs_meshgroup, 'xxx') obs_meshgroup_pre
     from trips_null a
     union all
 --    select * from trips_0 -- not needed now that subtrip is the unit and not vtr
 --    union all
     select b.* 
-    , nullif(b.meshgroup, 'none') meshgroup_pre
-    , nullif(b.obs_meshgroup, 'none') obs_meshgroup_pre
+    , nullif(b.meshgroup, 'xxx') meshgroup_pre
+    , nullif(b.obs_meshgroup, 'xxx') obs_meshgroup_pre
     from trips_1 b
     union all
     select c.* 
-    , nullif(c.meshgroup, 'none') meshgroup_pre
-    , nullif(c.obs_meshgroup, 'none') obs_meshgroup_pre 
+    , nullif(c.meshgroup, 'xxx') meshgroup_pre
+    , nullif(c.obs_meshgroup, 'xxx') obs_meshgroup_pre 
     from trips_2_area_1 c
     union all
     select d.* 
-    , nullif(d.meshgroup, 'none') meshgroup_pre
-    , nullif(d.obs_meshgroup, 'none') obs_meshgroup_pre
+    , nullif(d.meshgroup, 'xxx') meshgroup_pre
+    , nullif(d.obs_meshgroup, 'xxx') obs_meshgroup_pre
     from trips_2_area_2 d
 )    
 , obs_catch_2 as 
@@ -444,6 +444,7 @@ trips with no link1 (unobserved)
 
 /* now deal with link3 dupes  */
 
+, obs_catch3 as (
 select ACCESSAREA
 ,ACTIVITY_CODE_1
 ,AREA
@@ -492,25 +493,25 @@ select ACCESSAREA
 ,VTRSERNO
 ,XLRG_GILLNET_EXEMPTION
 ,YEAR
-
 from obs_catch_2
+)
 
---/
+/* join to offwatch hauls*/
 
---select max ( length ( link3 ) ) mx_char_length,
---       max ( lengthb ( link3 ) ) mx_byte_length
---from   cams_obs_catch_test
---/
-
--- shorten the character length to allow an index to be built
-
---alter table cams_obs_catch
---  modify link1 varchar2(100 char)
---/
-
---DROP INDEX yearidx
---/
---CREATE INDEX yearidx ON CAMS_OBS_CATCH(YEAR, ITIS_TSN, link1, LINK3)
+select b.*
+, case when b.offwatch_haul3 is null then 0 else 1 end as offwatch_haul
+from (
+  select o.*
+  , coalesce(d.link3, r.link3, c.link3) as offwatch_haul3
+  from obs_catch3 o
+  
+    LEFT OUTER JOIN 
+    obdbs.OBSDO@NOVA d ON o.link3 = d.link3
+    LEFT OUTER JOIN 
+    obdbs.OBSTO@NOVA r ON o.link3 = r.link3
+    LEFT OUTER JOIN 
+    obdbs.OBCDO@NOVA c ON o.link3 = c.link3
+)  b
 
 
 
