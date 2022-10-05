@@ -45,6 +45,7 @@ import_query = paste0("  with obs_cams as (
 	, link1 as link1
 	, link3
 	, link3_obs
+	, offwatch_haul
 	, fishdisp
 	, docid
 	, CAMSID
@@ -86,6 +87,7 @@ import_query = paste0("  with obs_cams as (
 	, link1
 	, link3
 	, link3_obs
+	, offwatch_haul
 	, fishdisp
 	, docid
 	, nespp3
