@@ -23,7 +23,7 @@
 #' # Herring example 
 #' dat = get_catch_obs_herring(con_maps, 2021, 2022)
 #' gf_dat = dat$gf_dat
-#' non_gf_dat = dat_non_gf_dat
+#' non_gf_dat = dat$non_gf_dat
 #' all_dat = dat$all_dat
 #' rm(dat)
 #' gc()
@@ -127,7 +127,7 @@ import_query = paste0("  with obs_cams as (
 )
 
 
-c_o_dat2 <- ROracle::dbGetQuery(con_maps, import_query)
+c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
 
 c_o_dat2 = c_o_dat2 %>%
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
