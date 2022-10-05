@@ -100,7 +100,7 @@ FY_TYPE = 'MARCH START'
  
 
  species = tbl(con_maps, sql("select *
-												from MAPS.CAMS_DISCARD_MORTALITY_STOCK")) %>% 
+												from CAMS_DISCARD_MORTALITY_STOCK")) %>% 
    
 	collect() %>% 
   
@@ -167,7 +167,7 @@ import_query = " with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from MAPS.CAMS_OBS_CATCH
+	from CAMS_OBS_CATCH
  
  WHERE YEAR >= 2017 
   and YEAR <= 2020
@@ -350,7 +350,7 @@ species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CAMS_GEARCODE_STRATA')) %>% 
     collect() %>% 
   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
@@ -359,7 +359,7 @@ CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA'
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con_maps, sql('select * from CAMS_STATAREA_STOCK')) %>%
   # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
@@ -371,7 +371,7 @@ STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
   #dplyr::select(SPECIES_STOCK, AREA)
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
   mutate(SPECIES_STOCK = AREA_NAME
          , GEARCODE = CAMS_GEAR_GROUP) %>%
@@ -383,7 +383,7 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCAR
  # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
 # Observer codes to be removed
-OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
+OBS_REMOVE = tbl(con_maps, sql("select * from CAMS_OBSERVER_CODES"))  %>%
 	collect() %>% 
 	filter(SPECIES_ITIS == species_itis) %>% 
 	distinct(OBS_CODES) 
@@ -811,7 +811,7 @@ joined_table = joined_table %>%
 				 )
 
 
- fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/MARCH/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
+ fst::write_fst(x = joined_table, path = file.path(getOption("maps.discardsPath"), paste0('discard_est_', species_itis, '_trips', FY,'.fst')))
  
 t2 = Sys.time()
 	
@@ -925,7 +925,7 @@ joined_table %>%
  cy_discard_example$DISCARD[is.infinite(cy_discard_example$DISCARD)] <- NA    
  
  species$COMMON_NAME[i]
-#db_drop_table(con = con_maps, table = 'MAPS.CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
+#db_drop_table(con = con_maps, table = 'CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', force = F)
 
 dbWriteTable(con_maps, name = 'CAMS_DISCARD_REDCRAB_20', value = cy_discard_example, overwrite = T)
 

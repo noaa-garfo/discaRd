@@ -34,7 +34,7 @@
 make_cams_obs_catch <- function(con, sql_file = "~/PROJECTS/discaRd/CAMS/SQL/make_cams_obs_catch_Aug2022.sql"){
 	
 	t1 = Sys.time()
-	print('Building CAMS_OBS_CATCH')
+	# print('Building CAMS_OBS_CATCH')
 	
 	# drop table
 	if(ROracle::dbExistsTable(conn = con, paste0("CAMS_OBS_CATCH")) == T) {
@@ -60,6 +60,11 @@ make_cams_obs_catch <- function(con, sql_file = "~/PROJECTS/discaRd/CAMS/SQL/mak
 	
 	ROracle::dbSendQuery(con_maps, tab_alter)
 	
+	# tab_alter = paste0("ALTER TABLE CAMS_OBS_CATCH", " DROP COLUMN offwatch_haul3")
+	# print(tab_alter)
+	# 
+	# ROracle::dbSendQuery(con_maps, tab_alter)
+	# 
 	# test
 	# ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", y)) %>% head()
 	t2 = Sys.time()

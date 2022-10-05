@@ -26,4 +26,3 @@ dm = make.obs.flag.dat(eflalo, obs_level = .1)
 \references{
 Niels Hintzen, Francois Bastardie and Doug Beare (2014). vmstools: For analysing fisheries VMS (Vessel Monitoring System) data. R package version 0.72. http://CRAN.R-project.org/package=vmstools
 }
-
