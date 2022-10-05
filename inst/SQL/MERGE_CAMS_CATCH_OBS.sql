@@ -67,7 +67,6 @@ B Galuardi
 9/8/22 added a column (LINK3_OBS) indicating whether the observed trip has at least one observed haul or not (1,0)
 10/2/22 fixed meshgroup null matching issue
         added offwatch hauls column    
-
 */
 
 
@@ -77,9 +76,10 @@ B Galuardi
 
 create table cams_obs_catch as 
 
-with obs1 as (
 
+with obs1 as (
  select o.link3
+            , case when offwatch_haul3 is null then 0 else 1 end as offwatch_haul
             , link1
 --            , vtrserno
             , extract(year from dateland) as year
@@ -97,10 +97,20 @@ with obs1 as (
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
         
             from (
-                select * from cams_obdbs_all_years
-            )
-            o
+							  select o.*
+							  , coalesce(d.link3, r.link3, c.link3) as offwatch_haul3
+							  from cams_obdbs_all_years o
+							  
+							    LEFT OUTER JOIN 
+							    obdbs.OBSDO@NOVA d ON o.link3 = d.link3
+							    LEFT OUTER JOIN 
+							    obdbs.OBSTO@NOVA r ON o.link3 = r.link3
+							    LEFT OUTER JOIN 
+							    obdbs.OBCDO@NOVA c ON o.link3 = c.link3
+                
+            ) o
           group by  o.link3
+            , case when offwatch_haul3 is null then 0 else 1 end
             , link1
 --            , vtrserno
 --            , o.month
@@ -144,7 +154,6 @@ select d.permit
         , d.cams_subtrip
         , d.geartype
         , d.negear
---        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
         , NVL(d.mesh_cat, 'xxx') as meshgroup
         , d.area
         , round(sum(d.LIVLB)) as subtrip_kall
@@ -163,7 +172,6 @@ select d.permit
     , v.link1
     , v.min_link1
     , v.N_link1_camsid
---    , count(distinct(d.vtrserno)) over(partition by link1) as nvtr_link1 -- count how many vtrs for each link1
      , count(distinct(d.cams_subtrip)) over(partition by link1) as nsubtrip_link1 -- count how many cams_subtrips for each link1
     , count(distinct(d.area)) over(partition by link1) as narea_link1
 from (
@@ -178,8 +186,7 @@ from (
         ) v
        
  on  v.camsid = d.camsid 
--- left join cams_obdbs_all_years o 
--- on o.link1 = v.link1
+
  
 group by d.permit
         , d.camsid
@@ -255,6 +262,7 @@ trips with no link1 (unobserved)
 
   select t.*
     , null as link3
+    , null as offwatch_haul
     , null as source
     , null as obsrflag
     , null as fishdisp
@@ -318,6 +326,7 @@ trips with no link1 (unobserved)
  as (  
   select t.*
     , o.link3
+        , o.offwatch_haul
     , o.source
     , o.obsrflag
     , o.fishdisp
@@ -348,6 +357,7 @@ trips with no link1 (unobserved)
 
    select t.*
     , o.link3
+        , o.offwatch_haul
     , o.source
     , o.obsrflag
     , o.fishdisp
@@ -376,6 +386,7 @@ trips with no link1 (unobserved)
 
    select t.*
     , o.link3
+    , o.offwatch_haul
     , o.source
     , o.obsrflag
     , o.fishdisp    
@@ -465,6 +476,7 @@ select ACCESSAREA
 --,LINK1
 ,link1
 ,LINK3
+, offwatch_haul
 ,MESHGROUP_PRE as MESHGROUP
 ,MONTH
 ,NEGEAR

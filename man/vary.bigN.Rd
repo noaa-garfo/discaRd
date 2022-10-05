@@ -22,4 +22,3 @@ Function to run Cochran estimator with a variable big N (total number of trips).
 \examples{
 vary.bigN
 }
-

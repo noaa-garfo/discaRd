@@ -36,4 +36,3 @@ for(i in 1:100){
 nq = apply(nmat, 1, quantile, probs = c(.025, .5, .975), na.rm = T)
 matplot((1:nrow(bdat))/nrow(bdat)*100, t(nq), typ='l', lty = c(2,1,2), col = c(2,1,2), xlab = '\% Observed trips', ylab = 'CV')
 }
-
