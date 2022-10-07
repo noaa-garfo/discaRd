@@ -196,7 +196,7 @@ db_example = tbl(con_maps, sql("
      where GF = 1
     AND FED_OR_STATE = 'FED'
     AND FY = 2019
-    AND SPECIES_ITIS in ('172877' ,
+    AND ITIS_TSN in ('172877' ,
     '164712' ,
     '164732' ,
     '166774',
@@ -226,7 +226,7 @@ db_example = tbl(con_maps, sql("
 ```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
 db_example %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	group_by(ITIS_TSN, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK) %>% 
 	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
@@ -261,7 +261,7 @@ match_stockid <- function(con_maps, species_itis){
     select stock_id
     , comname
     , area
-    , max(species_itis) as species_itis
+    , max(species_itis) as ITIS_TSN
     from fso.v_obSpeciesStockArea 
     where stock_id not like 'OTHER'
     and species_itis is not null
@@ -269,22 +269,22 @@ match_stockid <- function(con_maps, species_itis){
 ")
 ) %>%
 	collect() %>% 
-		mutate(SPECIES_ITIS = ifelse(COMNAME == 'OCEAN POUT', "630979", SPECIES_ITIS)) %>% 
-		filter(SPECIES_ITIS == species_itis)
+		mutate(ITIS_TSN = ifelse(COMNAME == 'OCEAN POUT', "630979", ITIS_TSN)) %>% 
+		filter(ITIS_TSN == species_itis)
 	
 	 
- t2 = 	tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
- filter(SPECIES_ITIS == species_itis) %>% 
+ t2 = 	tbl(con_maps, sql('select * from MAPS.CFG_STATAREA_STOCK')) %>%
+ filter(ITIS_TSN == species_itis) %>% 
  	collect() %>%
- 	mutate('AREA' = as.character(STAT_AREA))
+ 	mutate('AREA' = as.character(AREA))
  
  
  t2 %>% 
  	left_join(., stock_dmis, by = 'AREA') %>% 
  	mutate(CAMS_STOCK_AREA = paste(COMMON_NAME, AREA_NAME, sep = '_')) %>% 
  	dplyr::rename('DMIS_STOCK_ID' = STOCK_ID
- 								, 'SPECIES_ITIS' = 'SPECIES_ITIS.x') %>% 
- 	dplyr::select(-SPECIES_ITIS.y)
+ 								, 'ITIS_TSN' = 'ITIS_TSN.x') %>% 
+ 	dplyr::select(-ITIS_TSN.y)
 	
 	
 }
@@ -353,7 +353,7 @@ ii = 1
 for(j in species$SPECIES_ITIS){
 	
 	comp_list[[ii]] <- db_example %>% 
-		filter(SPECIES_ITIS == j)
+		filter(ITIS_TSN == j)
 	
 	sid = match_stockid(con_maps, j) %>% 
 		dplyr::select(DMIS_STOCK_ID, AREA, CAMS_STOCK_AREA)
@@ -604,7 +604,7 @@ stratvars = c('SPECIES_STOCK'
 
 non_gf = tbl(con_maps, sql("
 
-    select SPECIES_ITIS,
+    select ITIS_TSN,
     COMMON_NAME, 
     DISCARD_SOURCE,
     SPECIES_STOCK
@@ -613,7 +613,7 @@ non_gf = tbl(con_maps, sql("
      where GF = 0
      AND FED_OR_STATE = 'FED'
     AND FY = 2019
-    AND SPECIES_ITIS in ('172877' ,
+    AND ITIS_TSN in ('172877' ,
     '164712' ,
     '164732' ,
     '166774',
@@ -627,7 +627,7 @@ non_gf = tbl(con_maps, sql("
     '164744', 
     '630979'
     )
-     group by SPECIES_ITIS, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
+     group by ITIS_TSN, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
      
 
 ")) %>% 
@@ -653,7 +653,7 @@ non_gf = tbl(con_maps, sql("
      where GF = 0
      AND FED_OR_STATE = 'FED'
     AND FY = 2019
-    AND SPECIES_ITIS in ('172877' ,
+    AND ITIS_TSN in ('172877' ,
     '164712' ,
     '164732' ,
     '166774',
@@ -678,6 +678,48 @@ non_gf = tbl(con_maps, sql("
 	DT::formatRound(c('N_VTR','KALL','CAMS_DISCARD'), digits = 0, interval = 3)
 
 ```
+
+```{r scallop trips table, eval = T}
+	
+	scal_trips = tbl(con_maps, sql("
+
+    select COMMON_NAME, SPECIES_STOCK, SCALLOP_AREA, FY
+    , sum(CAMS_DISCARD) as CAMS_DISCARD
+    , sum(subtrip_kall) as KALL
+    , count(distinct(CAMS_SUBTRIP)) as N_SUBTRIPS
+    from MAPS.CAMS_DISCARD_ALL_YEARS
+     where GF = 0
+     AND FED_OR_STATE = 'FED'
+    AND FY = 2019
+    AND FY_TYPE = 'APRIL START'
+    AND SCALLOP_AREA is not null
+    AND ITIS_TSN in ('172877' ,
+    '164712' ,
+    '164732' ,
+    '166774',
+    '171341',
+    '172873',
+    '172909',
+    '164727',
+    '172933',
+    '172746',
+    '172905',
+    '164744', 
+    '630979'
+    )
+     group by COMMON_NAME,SPECIES_STOCK, SCALLOP_AREA, FY
+
+")) %>% 
+		collect()	
+
+	
+	scal_trips %>% 
+	DT::datatable(caption = 'Scallop trips: Discard Estimate by Stock, Species, Scallop Area, Discard Source (using CAMS Stock ID)') %>% 
+	DT::formatRound(c('N_SUBTRIPS','KALL','CAMS_DISCARD'), digits = 0, interval = 3)
+
+```
+
+
 
 
 <!-- ### To-do  -->
