@@ -67,6 +67,7 @@ B Galuardi
 9/8/22 added a column (LINK3_OBS) indicating whether the observed trip has at least one observed haul or not (1,0)
 10/2/22 fixed meshgroup null matching issue
         added offwatch hauls column    
+10/7/22 changed where offwatch hauls are added. added an addional column to make trips with offwatch hauls        
 */
 
 
@@ -75,7 +76,6 @@ B Galuardi
 --/
 
 create table cams_obs_catch as 
-
 
 with obs1 as (
  select o.link3
@@ -88,29 +88,35 @@ with obs1 as (
             , o.obsrflag
             , o.fishdisp
             , o.area as obs_area
-            , o.negear as obs_gear
+            , coalesce(o.negear, o.negear_offwatch) as obs_gear
             , o.geartype
             , round(o.meshsize, 0) as obs_mesh
             , o.meshgroup
             , substr(nespp4, 1, 3) as NESPP3
             , SUM(case when catdisp = 0 then o.livewt else 0 end) as discard
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
-        
+            
             from (
 							  select o.*
 							  , coalesce(d.link3, r.link3, c.link3) as offwatch_haul3
+                             , coalesce( case when  d.link3 is not null then '132' else null end  -- scallop dredge
+                                , case when r.link3 is not null then '052' else null end -- scallop trawl
+                                , case when c.link3 is not null then '382' else null end -- clam dredge
+                                , o.negear
+                                 ) as negear_offwatch
 							  from cams_obdbs_all_years o
-							  
 							    LEFT OUTER JOIN 
 							    obdbs.OBSDO@NOVA d ON o.link3 = d.link3
 							    LEFT OUTER JOIN 
 							    obdbs.OBSTO@NOVA r ON o.link3 = r.link3
 							    LEFT OUTER JOIN 
 							    obdbs.OBCDO@NOVA c ON o.link3 = c.link3
-                
+                                
+                             
             ) o
           group by  o.link3
             , case when offwatch_haul3 is null then 0 else 1 end
+            , coalesce(o.negear, o.negear_offwatch)
             , link1
 --            , vtrserno
 --            , o.month
@@ -127,15 +133,26 @@ with obs1 as (
 
 )
 
+, owh as (
+    select p.*
+    , case when offwatch_haul_sum >1 then 1 else 0 end as offwatch_link1
+    from (
+    select o.*
+    , (sum(offwatch_haul) over(partition by link1)) offwatch_haul_sum
+    from obs1 o
+    ) p
+)
+
+
 , ulink as (
-       select  permit
+       select  permit   
     , FIRST_VALUE(obs_link1)
          OVER (partition by camsid) AS min_link1
     , count(distinct(obs_link1)) over(partition by camsid) as N_link1_camsid
     , obs_link1 as link1
     , camsid
    from MATCH_OBS a
-    where extract(year from a.obs_land) > 2016  
+    where extract(year from a.obs_land) >= 2017
     and obs_link1 in (select distinct link1 from obs1 where link1 is not null)
     group by permit, camsid, obs_link1
     order by permit
@@ -178,7 +195,7 @@ from (
         select a.*
         , a.camsid || '_' || a.subtrip as cams_subtrip -- add cams_subtrip here..
         from MAPS.CAMS_LANDINGS a
-        where year >= 2017  
+        where year >= 2017
  ) d
     left join (  --adds observer link field
          select * 
@@ -220,17 +237,18 @@ group by d.permit
 )
 
 -- adds mapped gear for gear matching to trips that have a link1 from above
-
-, trips as (select j.*
-, NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-from join_1 j
-left join (
-      select distinct(NEGEAR) as VTR_NEGEAR
-       , SECGEAR_MAPPED
-      from MAPS.STG_OBS_VTR_GEARMAP
-      where NEGEAR is not null
-     ) g
- on j.NEGEAR = g.VTR_NEGEAR
+    
+, trips as (
+    select j.*
+    , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+    from join_1 j
+    left join (
+          select distinct(NEGEAR) as VTR_NEGEAR
+           , SECGEAR_MAPPED
+          from MAPS.STG_OBS_VTR_GEARMAP
+          where NEGEAR is not null
+         ) g
+     on j.NEGEAR = g.VTR_NEGEAR
 )
 
 , obs as (
@@ -238,7 +256,7 @@ left join (
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
             , i.ITIS_TSN
 --            , i.ITIS_GROUP1
-        from OBS1 a
+        from owh a
           left join (
             select distinct(NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED
@@ -251,6 +269,12 @@ left join (
          on a.NESPP3 = i.DLR_NESPP3
       )
 
+--select count(distinct(link1)) as n_link1
+--, count(distinct(link3)) as n_link3
+----, offwatch_link1
+--, obs_area
+--from obs
+--group by obs_area
 
 -- 
 /* 
@@ -263,6 +287,7 @@ trips with no link1 (unobserved)
   select t.*
     , null as link3
     , null as offwatch_haul
+    , null as offwatch_link1
     , null as source
     , null as obsrflag
     , null as fishdisp
@@ -283,50 +308,14 @@ trips with no link1 (unobserved)
     where (t.link1 is null) --maintaining this field as primary field from matching table
 )  
 
+-- trips with 000 area offwatch hauls; other hauls have areas.. gear/mesh may be an issue
 
-/*  not needed now that subtrip is the unit and not VTR
--- trips with no VTR but still observed i.e. clam trips.. 
-, trips_0 as (
+, trips_owh as (
 
-  select t.*
---    , o.vtrserno as obsvtr
---    , o.link1 as link1
-    , o.link3
-    , o.source
-    , o.obsrflag
-    , o.fishdisp
-    , o.obs_area as obs_area
-    , o.nespp3
-    , o.ITIS_TSN
---    , o.ITIS_GROUP1
---    , o.discard_prorate as discard
-    , o.discard
-    , o.obs_haul_kept
---    , o.obs_haul_kall_trip+o.obs_nohaul_kall_trip as obs_kall
-    , o.obs_gear as obs_gear
-    , o.obs_mesh as obs_mesh
-    , NVL(o.meshgroup, 'xxx') as obs_meshgroup
-
-     from trips t
-     left join (select * from obs ) o
---     on (t.link1 = o.link1)
-     on (t.link1 = o.link1)  --maintaining link1 from matching table
-
-      where nsubtrip_link1 = 1
---      and t.link1 is not null
-      and t.link1 is not null
-
-)
-
-*/
-
--- obs trips with exactly one VTR
-
-, trips_1 
- as (  
-  select t.*
+select t.*
     , o.link3
         , o.offwatch_haul
+        , o.offwatch_link1
     , o.source
     , o.obsrflag
     , o.fishdisp
@@ -349,6 +338,40 @@ trips with no link1 (unobserved)
       where nsubtrip_link1 = 1
 --      and t.link1 is not null
       and t.link1 is not null
+      and obs_area = '000'
+
+)
+-- obs trips with exactly one VTR
+
+, trips_1 
+ as (  
+  select t.*
+    , o.link3
+        , o.offwatch_haul
+        , o.offwatch_link1
+    , o.source
+    , o.obsrflag
+    , o.fishdisp
+    , o.obs_area as obs_area
+    , o.nespp3
+    , o.ITIS_TSN
+, o.discard
+    , o.obs_haul_kept
+    , o.obs_gear as obs_gear
+    , o.obs_mesh as obs_mesh
+    , NVL(o.meshgroup, 'xxx') as obs_meshgroup
+    from ( 
+     select t.*
+     from trips t 
+
+   ) t
+      left join (select * from obs ) o
+     on (t.link1 = o.link1)  --maintaining link1 from matching table
+
+      where nsubtrip_link1 = 1
+--      and t.link1 is not null
+      and t.link1 is not null
+      and obs_area <> '000'
 
 )
 
@@ -358,6 +381,7 @@ trips with no link1 (unobserved)
    select t.*
     , o.link3
         , o.offwatch_haul
+        , o.offwatch_link1
     , o.source
     , o.obsrflag
     , o.fishdisp
@@ -379,6 +403,7 @@ trips with no link1 (unobserved)
   and narea_link1 = 1
   and t.link1 is not null  --maintin naming from matching table
   and t.cams_subtrip is not null
+  and obs_area <> '000'
 
 )
 -- trips with >1 subtrip and multiple areas on link1s
@@ -387,6 +412,7 @@ trips with no link1 (unobserved)
    select t.*
     , o.link3
     , o.offwatch_haul
+    , o.offwatch_link1
     , o.source
     , o.obsrflag
     , o.fishdisp    
@@ -408,6 +434,7 @@ trips with no link1 (unobserved)
   and narea_link1 > 1
   and t.link1 is not null --maintain naming from matching table
   and t.cams_subtrip is not null
+  and obs_area <> '000'
 
 )
 
@@ -415,23 +442,36 @@ trips with no link1 (unobserved)
 
 , obs_catch as 
 ( 
+    select e.* 
+    , nullif(e.meshgroup, 'xxx') meshgroup_pre
+    , nullif(e.obs_meshgroup, 'xxx') obs_meshgroup_pre
+    from trips_null e
+    
+    union all
+    
     select a.* 
     , nullif(a.meshgroup, 'xxx') meshgroup_pre
     , nullif(a.obs_meshgroup, 'xxx') obs_meshgroup_pre
-    from trips_null a
+    from trips_owh a
+    
     union all
+    
 --    select * from trips_0 -- not needed now that subtrip is the unit and not vtr
 --    union all
     select b.* 
     , nullif(b.meshgroup, 'xxx') meshgroup_pre
     , nullif(b.obs_meshgroup, 'xxx') obs_meshgroup_pre
     from trips_1 b
+    
     union all
+    
     select c.* 
     , nullif(c.meshgroup, 'xxx') meshgroup_pre
     , nullif(c.obs_meshgroup, 'xxx') obs_meshgroup_pre 
     from trips_2_area_1 c
+    
     union all
+    
     select d.* 
     , nullif(d.meshgroup, 'xxx') meshgroup_pre
     , nullif(d.obs_meshgroup, 'xxx') obs_meshgroup_pre
@@ -457,7 +497,6 @@ trips with no link1 (unobserved)
 
 /* now deal with link3 dupes  */
 
-, obs_catch3 as (
 select ACCESSAREA
 ,ACTIVITY_CODE_1
 ,AREA
@@ -477,6 +516,7 @@ select ACCESSAREA
 ,link1
 ,LINK3
 , offwatch_haul
+, offwatch_link1
 ,MESHGROUP_PRE as MESHGROUP
 ,MONTH
 ,NEGEAR
@@ -508,24 +548,6 @@ select ACCESSAREA
 ,XLRG_GILLNET_EXEMPTION
 ,YEAR
 from obs_catch_2
-)
-
-/* join to offwatch hauls*/
-
-select b.*
-, case when b.offwatch_haul3 is null then 0 else 1 end as offwatch_haul
-from (
-  select o.*
-  , coalesce(d.link3, r.link3, c.link3) as offwatch_haul3
-  from obs_catch3 o
-  
-    LEFT OUTER JOIN 
-    obdbs.OBSDO@NOVA d ON o.link3 = d.link3
-    LEFT OUTER JOIN 
-    obdbs.OBSTO@NOVA r ON o.link3 = r.link3
-    LEFT OUTER JOIN 
-    obdbs.OBCDO@NOVA c ON o.link3 = c.link3
-)  b
 
 
 
