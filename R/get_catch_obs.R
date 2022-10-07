@@ -43,6 +43,7 @@ import_query = paste0("  with obs_cams as (
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1 as link1
+	, offwatch_link1
 	, link3
 	, link3_obs
 	, offwatch_haul
@@ -85,6 +86,7 @@ import_query = paste0("  with obs_cams as (
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1
+	, offwatch_link1
 	, link3
 	, link3_obs
 	, offwatch_haul
@@ -263,6 +265,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, vtrserno
   , CAMS_SUBTRIP
 	, LINK1
+	, offwatch_link1
 	, link3
 	, link3_obs
 	, docid
@@ -306,6 +309,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, vtrserno
   , CAMS_SUBTRIP
 	, LINK1
+	, offwatch_link1
 	, link3
 	, link3_obs
 	, docid
