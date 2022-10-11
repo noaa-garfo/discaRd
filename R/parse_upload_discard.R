@@ -83,6 +83,8 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, GF
 					, AREA
 					, LINK1
+					, OFFWATCH_LINK1
+					, LINK3_OBS	
 					, N_OBS_TRIPS_F
 					, STRATA_USED
 					, STRATA_FULL
