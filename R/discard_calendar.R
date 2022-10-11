@@ -432,36 +432,29 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 # add discard source
 #
 
-
-# >5 trips in season gets in season rate
-# < 5 i nseason but >=5 past year gets transition
-# < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
-# <5, <5,  and <5 gets broad stock rate
-
-joined_table = joined_table %>% 
-        mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
-    																	, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
-    																	, is.na(LINK1) & 
-    																		n_obs_trips_f >= 5 ~ 'I'
-    																	# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-    																	, is.na(LINK1) & 
-    																		n_obs_trips_f < 5 & 
-    																		n_obs_trips_p >=5 ~ 'T'
-    																	, is.na(LINK1) & 
-    																		n_obs_trips_f < 5 &
-    																		n_obs_trips_p < 5 &
-    																		n_obs_trips_f_a >= 5 ~ 'GM'
-    																	, is.na(LINK1) & 
-    																		n_obs_trips_f < 5 &
-    																		n_obs_trips_p < 5 &
-    																		n_obs_trips_p_a >= 5 ~ 'G'
-    																	, is.na(LINK1) & 
-    																		n_obs_trips_f < 5 & 
-    																		n_obs_trips_p < 5 & 
-    																		n_obs_trips_f_a < 5 & 
-    																		n_obs_trips_p_a < 5 ~ 'G'))
-    															#		, is.na(LINK1) & is.na(final_rate) ~ 'NA'
-    															#		, is.na(LINK1) & is.nan(final_rate) ~ 'NA'))
+joined_table = joined_table %>%
+	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+																		, is.na(LINK1) &
+																			n_obs_trips_f >= 5 ~ 'I'
+																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+																		, is.na(LINK1) &
+																			n_obs_trips_f < 5 &
+																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+																		, is.na(LINK1) &
+																			n_obs_trips_f < 5 &
+																			n_obs_trips_p < 5 &
+																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+																		, is.na(LINK1) &
+																			n_obs_trips_f < 5 &
+																			n_obs_trips_p < 5 &
+																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+																		, is.na(LINK1) &
+																			n_obs_trips_f < 5 &
+																			n_obs_trips_p < 5 &
+																			n_obs_trips_f_a < 5 &
+																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 #
 # make sure CV type matches DISCARD SOURCE}
@@ -509,41 +502,13 @@ joined_table = joined_table %>%
 # discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio. 
 # the KALLs should be small.. 
 
-joined_table = joined_table %>% 
+joined_table = joined_table %>%
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-	mutate(DISCARD = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
-														 , !is.na(LINK1) & LINK3_OBS == 0 ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS # observed but no obs hauls..
-														 , is.na(LINK1) ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS)
-				 )
+	mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+													, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
+				 
+	)
 
-# joined_table %>% 
-# 	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
-# 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
-# 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
-# 	dplyr::select(-1) %>% 
-# 	colSums(na.rm = T) %>% 
-# 	round()
-
-# saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
-# 				
-# fst::write_fst(x = joined_table, path = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
-# 
-#  t2 = Sys.time()
-# 	
-# print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
-#  
-# }
-# 
-# 	       
-
- # joined_table %>% 
- #  dplyr::group_by(FED_OR_STATE) %>%
- #  dplyr::summarise(Discard_total = sum(DISCARD, na.rm=TRUE), 
- #            Kall_total = sum(SUBTRIP_KALL, na.rm=TRUE))
- 
- # fst::write_fst(x = joined_table, path = paste0('~/PROJECTS/discaRd/CAMS/MODULES/CALENDAR/OUTPUT/discard_est_', species_itis, '_trips', FY,'.fst'))
- 
- 
  outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 
  fst::write_fst(x = joined_table, path = outfile)

@@ -7,12 +7,14 @@
 #' @param scal_gf_species data frame, single row, that has species_itis and common name of groundfish under evaluation (e.g. yellowtail and windowpane flounder)
 #' @param non_gf_dat data frame containing non-groundfish trips from `CAMS_LANDINGS`. This is loaded from Oracle from a control script.
 #' @param scal_trip_dir Directory to save scallop trip results
+#' @param con ROracle database connection
 #'
 #' @return writes a .fst file for disacrd estimates on scallop trips for species under evaluation. This folder and will be referenced within the groundfish module.
 #' @export
 #'
 #' @examples
 scallop_subroutine <- function(FY = 2019
+															 , con = con_maps
 															 , scal_gf_species
 															 , non_gf_dat = non_gf_dat
 															 , scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")
@@ -92,7 +94,7 @@ for(yy in FY:(FY+end_fy)){
 	# Support table import by species
 
 	# GEAR TABLE
-	CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+	CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
 		collect() %>%
 		dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
 		filter(ITIS_TSN == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
@@ -100,7 +102,7 @@ for(yy in FY:(FY+end_fy)){
 
 	# Stat areas table
 	# unique stat areas for stock ID if needed
-	STOCK_AREAS = tbl(con_maps, sql('select * from CFG_STATAREA_STOCK')) %>%
+	STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
 		filter(ITIS_TSN == species_itis) %>%
 		collect() %>%
 		group_by(AREA_NAME, ITIS_TSN) %>%
@@ -110,7 +112,7 @@ for(yy in FY:(FY+end_fy)){
 		ungroup()
 
 	# Mortality table
-	CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+	CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
 		collect() %>%
 		mutate(SPECIES_STOCK = AREA_NAME
 					 , GEARCODE = CAMS_GEAR_GROUP
@@ -120,7 +122,7 @@ for(yy in FY:(FY+end_fy)){
 		dplyr::select(-ITIS_TSN)
 
 	# Observer codes to be removed
-	OBS_REMOVE = tbl(con_maps, sql("select * from CFG_OBSERVER_CODES"))  %>%
+	OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
 		collect() %>%
 		filter(ITIS_TSN == species_itis) %>%
 		distinct(OBS_CODES)
