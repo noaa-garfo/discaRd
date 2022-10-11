@@ -48,6 +48,8 @@ create_discard_all_years <- function(con, drop = FALSE) {
   GF	                VARCHAR2(5 CHAR),
   AREA	              VARCHAR2(3 CHAR),
   LINK1	              VARCHAR2(15 CHAR),
+  OFFWATCH_LINK1	    NUMBER(1,0),
+  LINK3_OBS	    			NUMBER(1,0),
   N_OBS_TRIPS_F	      NUMBER(5,0),
   STRATA_USED	        VARCHAR2(200 CHAR),
   STRATA_FULL	        VARCHAR2(200 CHAR),
