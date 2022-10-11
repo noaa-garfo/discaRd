@@ -41,7 +41,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 				  GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK),
 				  SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
 				  ) %>%
-				dplyr::select(-SPECIES_ITIS) %>%
+				dplyr::select(-SPECIES_ITIS, -ITIS_TSN) %>%
 				# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 				dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 											, 'CAMS_DISCARD_RATE' = 'COAL_RATE'
