@@ -160,7 +160,7 @@ link3_na = c_o_dat2 %>%
 
 
 # make these values 0 or NA or 'none' depending on the default for that field
-
+if(nrow(link3_na) > 0){
 link3_na = link3_na %>%
 	mutate(LINK1 = NA
 				 , DISCARD = NA
@@ -192,6 +192,7 @@ c_o_dat2 = c_o_dat2[-tidx,]
 c_o_dat2 = c_o_dat2 %>%
 	bind_rows(link3_na)
 
+}
 # continue the data import
 
 

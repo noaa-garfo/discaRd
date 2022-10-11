@@ -92,37 +92,37 @@ for(yy in FY:(FY+end_fy)){
 	# Support table import by species
 
 	# GEAR TABLE
-	CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CAMS_GEARCODE_STRATA')) %>%
+	CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CFG_GEARCODE_STRATA')) %>%
 		collect() %>%
 		dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
-		filter(SPECIES_ITIS == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
-		dplyr::select(-NESPP3, -SPECIES_ITIS)
+		filter(ITIS_TSN == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
+		dplyr::select(-NESPP3, -ITIS_TSN)
 
 	# Stat areas table
 	# unique stat areas for stock ID if needed
-	STOCK_AREAS = tbl(con_maps, sql('select * from CAMS_STATAREA_STOCK')) %>%
-		filter(SPECIES_ITIS == species_itis) %>%
+	STOCK_AREAS = tbl(con_maps, sql('select * from CFG_STATAREA_STOCK')) %>%
+		filter(ITIS_TSN == species_itis) %>%
 		collect() %>%
-		group_by(AREA_NAME, SPECIES_ITIS) %>%
-		distinct(STAT_AREA) %>%
-		mutate(AREA = as.character(STAT_AREA)
+		group_by(AREA_NAME, ITIS_TSN) %>%
+		distinct(AREA) %>%
+		mutate(AREA = as.character(AREA)
 					 , SPECIES_STOCK = AREA_NAME) %>%
 		ungroup()
 
 	# Mortality table
-	CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+	CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
 		collect() %>%
 		mutate(SPECIES_STOCK = AREA_NAME
 					 , GEARCODE = CAMS_GEAR_GROUP
 					 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
 		select(-AREA_NAME) %>%
-		filter(SPECIES_ITIS == species_itis) %>%
-		dplyr::select(-SPECIES_ITIS)
+		filter(ITIS_TSN == species_itis) %>%
+		dplyr::select(-ITIS_TSN)
 
 	# Observer codes to be removed
-	OBS_REMOVE = tbl(con_maps, sql("select * from CAMS_OBSERVER_CODES"))  %>%
+	OBS_REMOVE = tbl(con_maps, sql("select * from CFG_OBSERVER_CODES"))  %>%
 		collect() %>%
-		filter(SPECIES_ITIS == species_itis) %>%
+		filter(ITIS_TSN == species_itis) %>%
 		distinct(OBS_CODES)
 
 	# make tables
@@ -138,8 +138,8 @@ for(yy in FY:(FY+end_fy)){
 		left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 							, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
 		) %>%
-		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-		dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+		dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+		dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
 		relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -155,8 +155,8 @@ for(yy in FY:(FY+end_fy)){
 		left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 							, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
 		) %>%
-		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-		dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+		dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+		dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
 		relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -536,7 +536,7 @@ for(yy in FY:(FY+end_fy)){
 		)
 	# Sys.umask('775')
 	
-	outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_scal_trips_SCAL', FY,'.fst'))
+	outfile = file.path(scal_trip_dir, paste0('discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
 	
 	fst::write_fst(x = joined_table, path = outfile)
 

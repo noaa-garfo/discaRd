@@ -5,6 +5,7 @@
 #' @param FY Fishing Year
 #' @param gf_dat Data frame of groundfish trips built from CAMS_OBS_CATCH and control script routine
 #' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
+#' @param gf_trips_only Flag if user only wants to run groundfish trips (e.g. for quota monitoring)
 #' @param save_dir Directory to save (and load saved) results
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
@@ -17,6 +18,7 @@ discard_groundfish <- function(con
 															 , FY = fy
 															 , gf_dat = gf_dat
 															 , non_gf_dat = non_gf_dat
+															 , gf_trips_only = F
 															 , save_dir = file.path(getOption("maps.discardsPath"), "groundfish")
 															 ) {
 
@@ -58,22 +60,22 @@ discard_groundfish <- function(con
   # Support table import by species
 
   # GEAR TABLE
-  CAMS_GEAR_STRATA = tbl(con, sql('  select * from CAMS_GEARCODE_STRATA')) %>%
+  CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
       collect() %>%
     dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
-    dplyr::select(-NESPP3, -SPECIES_ITIS)
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
+    dplyr::select(-NESPP3, -ITIS_TSN)
 
   # Stat areas table
   # unique stat areas for stock ID if needed
-  STOCK_AREAS = tbl(con, sql('select * from CAMS_STATAREA_STOCK')) %>%
+  STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
       collect() %>%
-    group_by(AREA_NAME, SPECIES_ITIS) %>%
-    distinct(STAT_AREA) %>%
-    mutate(AREA = as.character(STAT_AREA)
+    group_by(AREA_NAME, ITIS_TSN) %>%
+    distinct(AREA) %>%
+    mutate(AREA = as.character(AREA)
            , SPECIES_STOCK = AREA_NAME) %>%
     ungroup()
   # %>%
@@ -81,7 +83,7 @@ discard_groundfish <- function(con
 
   # Mortality table
   # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
-  CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+  CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
     collect() %>%
     mutate(SPECIES_STOCK = AREA_NAME
            , GEARCODE = CAMS_GEAR_GROUP
@@ -89,14 +91,14 @@ discard_groundfish <- function(con
     dplyr::select(-AREA_NAME) %>%
     # mutate(CAREA = as.character(STAT_AREA)) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
-    dplyr::select(-SPECIES_ITIS)
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
+    dplyr::select(-ITIS_TSN)
 
 
   # Observer codes to be removed
-  OBS_REMOVE = tbl(con, sql("select * from CAMS_OBSERVER_CODES"))  %>%
+  OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
   	collect() %>%
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
   	distinct(OBS_CODES)
 
   # %>%
@@ -120,9 +122,12 @@ discard_groundfish <- function(con
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
               ) %>%
-  	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+  	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+  # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
   ddat_prev <- gf_dat %>%
@@ -136,9 +141,13 @@ discard_groundfish <- function(con
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
               ) %>%
-  	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  	dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+  	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  
+  # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+  # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 
@@ -591,7 +600,7 @@ discard_groundfish <- function(con
   
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
-  # fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
+  fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
   system(paste("chmod 770 ", outfile))
   
@@ -602,6 +611,7 @@ discard_groundfish <- function(con
   }
 
 
+  if(gf_trips_only == F){
   #'
   ## ----loop through the non sector trips for each stock, eval = T-------------------------------------------------------------------
   stratvars_nongf = c('SPECIES_STOCK'
@@ -623,29 +633,29 @@ discard_groundfish <- function(con
   # Support table import by species
 
   # GEAR TABLE
-  CAMS_GEAR_STRATA = tbl(con, sql('  select * from CAMS_GEARCODE_STRATA')) %>%
+  CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
       collect() %>%
     dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
-    dplyr::select(-NESPP3, -SPECIES_ITIS)
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
+    dplyr::select(-NESPP3, -ITIS_TSN)
 
   # Stat areas table
   # unique stat areas for stock ID if needed
-  STOCK_AREAS = tbl(con, sql('select * from CAMS_STATAREA_STOCK')) %>%
+  STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
       collect() %>%
-    group_by(AREA_NAME, SPECIES_ITIS) %>%
-    distinct(STAT_AREA) %>%
-    mutate(AREA = as.character(STAT_AREA)
+    group_by(AREA_NAME, ITIS_TSN) %>%
+    distinct(AREA) %>%
+    mutate(AREA = as.character(AREA)
            , SPECIES_STOCK = AREA_NAME) %>%
     ungroup()
   # %>%
   #   dplyr::select(SPECIES_STOCK, AREA)
 
   # Mortality table
-  CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CAMS_DISCARD_MORTALITY_STOCK"))  %>%
+  CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
     collect() %>%
     mutate(SPECIES_STOCK = AREA_NAME
            , GEARCODE = CAMS_GEAR_GROUP
@@ -653,8 +663,8 @@ discard_groundfish <- function(con
     dplyr::select(-AREA_NAME) %>%
     # mutate(CAREA = as.character(STAT_AREA)) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%
-  	dplyr::filter(SPECIES_ITIS == species_itis) %>%
-    dplyr::select(-SPECIES_ITIS)
+  	dplyr::filter(ITIS_TSN == species_itis) %>%
+    dplyr::select(-ITIS_TSN)
   # %>%
   #   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
@@ -676,8 +686,8 @@ discard_groundfish <- function(con
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
               ) %>%
-  	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+  	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
     relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -692,8 +702,8 @@ discard_groundfish <- function(con
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
               ) %>%
-  		dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  		dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
+  	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
     relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -1187,7 +1197,10 @@ discard_groundfish <- function(con
 
   }
 
+  }
+  
   system(paste("chmod 770 -R", save_dir))
 
-}
+  }
+  
 
