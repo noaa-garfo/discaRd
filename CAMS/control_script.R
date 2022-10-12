@@ -31,7 +31,7 @@ Sys.setenv(ORA_SDTZ = "America/New_York")
 
 ## ----refresh and rebuild obdbs and cams_obs_catch---------------------------------------------------------------------------------
 
-for(i in 2017:2022){
+for(i in 2022){
 	require(glue)
 	make_cams_obdbs(con_maps, i, sql_file = "inst/SQL/make_obdbs_table_cams.sql") # convert to within package
 }
@@ -118,7 +118,7 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_calendar(con = con_maps
 										 , species = species
 										 , FY = fy
-										 , non_gf_dat = non_gf_dat
+										 , all_dat = all_dat
 										 , save_dir = save_dir
 	)
 		
@@ -161,7 +161,7 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_may(con = con_maps
 									 , species = species
 									 , FY = fy
-									 , non_gf_dat = non_gf_dat
+									 , all_dat = all_dat
 									 , save_dir = save_dir
 	)
 	
@@ -202,7 +202,7 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	discard_november(con = con_maps
 									 , species = species
 									 , FY = fy
-									 , non_gf_dat = non_gf_dat
+									 , all_dat = all_dat
 									 , save_dir = save_dir
 	)
 	
@@ -245,7 +245,7 @@ ROracle::dbCommit(con_maps)
   	discard_march(con = con_maps
   									 , species = species
   									 , FY = fy
-  									 , non_gf_dat = non_gf_dat
+  									 , all_dat = all_dat
   									 , save_dir = save_dir
   	)
   	
@@ -284,7 +284,7 @@ ROracle::dbCommit(con_maps)
   	discard_april(con = con_maps
   									 , species = species
   									 , FY = fy
-  									 , non_gf_dat = non_gf_dat
+  									 , all_dat = all_dat
   									 , save_dir = save_dir
   	)
   	
