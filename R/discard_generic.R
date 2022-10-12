@@ -5,7 +5,7 @@
 #' @param FY Fishing Year
 #' @param all_dat Data frame of trips built from CAMS_OBS_CATCH and control script routine
 #' @param save_dir Directory to save (and load saved) results
-#' @param FY_TYPE Type of fishing year. This detemrines the time element for the trips used in discard estimation. Herring, Groundifsh, and scallop trips for groundfish are separate functions,
+# #' @param FY_TYPE Type of fishing year. This detemrines the time element for the trips used in discard estimation. Herring, Groundifsh, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
 #'
