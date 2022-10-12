@@ -11,7 +11,7 @@
 #'
 #' @examples
 #'
-discard_calendar <- function(con
+discard_calendar <- function(con = con_maps
 															 , species = species
 															 , FY = fy
 															 , all_dat = all_dat
@@ -54,43 +54,38 @@ species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 # Support table import by species
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %>% 
-    collect() %>% 
-  dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>% 
-  # filter(NESPP3 == species_nespp3) %>% 
-	filter(SPECIES_ITIS == species_itis) %>%
-  dplyr::select(-NESPP3, -SPECIES_ITIS)
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>% 
+	collect() %>%
+	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+	filter(ITIS_TSN == species_itis) %>%  
+	dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stat areas table  
 # unique stat areas for stock ID if needed
-STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
-  # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-	dplyr::filter(SPECIES_ITIS == species_itis) %>%
-    collect() %>% 
-  group_by(AREA_NAME) %>% 
-  distinct(STAT_AREA) %>%
-  mutate(AREA = as.character(STAT_AREA)
-         , SPECIES_STOCK = AREA_NAME) %>% 
-  ungroup() #%>% 
-  #dplyr::select(SPECIES_STOCK, AREA)
+STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+	filter(ITIS_TSN == species_itis) %>%
+	collect() %>%
+	group_by(AREA_NAME, ITIS_TSN) %>%
+	distinct(AREA) %>%
+	mutate(AREA = as.character(AREA)
+				 , SPECIES_STOCK = AREA_NAME) %>%
+	ungroup()
 
 # Mortality table
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
-  collect() %>%
-  mutate(SPECIES_STOCK = AREA_NAME
-         , GEARCODE = CAMS_GEAR_GROUP) %>%
-  select(-AREA_NAME) %>%
-   mutate(CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>% 
-  # filter(NESPP3 == species_nespp3) %>% 
-	filter(SPECIES_ITIS == species_itis_srce)
- # dplyr::select(-NESPP3, -SPECIES_ITIS) %>% 
- # dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+	collect() %>%
+	mutate(SPECIES_STOCK = AREA_NAME
+				 , GEARCODE = CAMS_GEAR_GROUP
+				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
+	select(-AREA_NAME) %>%
+	filter(ITIS_TSN == species_itis) %>%
+	dplyr::select(-ITIS_TSN)
 
 # Observer codes to be removed
-OBS_REMOVE = tbl(con_maps, sql("select * from MAPS.CAMS_OBSERVER_CODES"))  %>%
-  collect() %>% 
-	filter(SPECIES_ITIS == species_itis) %>% 
-	distinct(OBS_CODES) 
+OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
+	collect() %>%
+	filter(ITIS_TSN == species_itis) %>%
+	distinct(OBS_CODES)
 
 #--------------------------------------------------------------------------------#
 # make tables

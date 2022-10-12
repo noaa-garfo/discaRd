@@ -73,7 +73,7 @@ species <- tbl(con_maps, sql("
 save_dir = file.path(getOption("maps.discardsPath"), 'groundfish')
 
 # run it
-for(fy in 2018){ # TODO: move years to configDefaultRun.toml
+for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
