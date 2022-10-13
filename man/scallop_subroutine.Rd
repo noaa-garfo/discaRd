@@ -7,6 +7,7 @@ This function oeprates identically to otehr discard modules but is only relevant
 \usage{
 scallop_subroutine(
   FY = 2019,
+  con = con_maps,
   scal_gf_species,
   non_gf_dat = non_gf_dat,
   scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")
@@ -14,6 +15,8 @@ scallop_subroutine(
 }
 \arguments{
 \item{FY}{Groundfish Fishing year under evaluation. This value determines which scallop fishing years are run}
+
+\item{con}{ROracle database connection}
 
 \item{scal_gf_species}{data frame, single row, that has species_itis and common name of groundfish under evaluation (e.g. yellowtail and windowpane flounder)}
 

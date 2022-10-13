@@ -8,7 +8,7 @@ discard_november(
   con,
   species = species,
   FY = fy,
-  non_gf_dat = non_gf_dat,
+  all_dat = all_dat,
   save_dir = file.path(getOption("maps.discardsPath"), "november")
 )
 }
@@ -19,7 +19,7 @@ discard_november(
 
 \item{FY}{Fishing Year}
 
-\item{non_gf_dat}{Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine}
+\item{all_dat}{Data frame of trips built from CAMS_OBS_CATCH and control script routine}
 
 \item{save_dir}{Directory to save (and load saved) results}
 }

@@ -10,6 +10,7 @@ discard_groundfish(
   FY = fy,
   gf_dat = gf_dat,
   non_gf_dat = non_gf_dat,
+  gf_trips_only = F,
   save_dir = file.path(getOption("maps.discardsPath"), "groundfish")
 )
 }
@@ -23,6 +24,8 @@ discard_groundfish(
 \item{gf_dat}{Data frame of groundfish trips built from CAMS_OBS_CATCH and control script routine}
 
 \item{non_gf_dat}{Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine}
+
+\item{gf_trips_only}{Flag if user only wants to run groundfish trips (e.g. for quota monitoring)}
 
 \item{save_dir}{Directory to save (and load saved) results}
 }

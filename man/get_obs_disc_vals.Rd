@@ -7,7 +7,7 @@
 get_obs_disc_vals(c_o_tab = c_o_dat2, species_itis = "164712")
 }
 \arguments{
-\item{c_o_tab}{table of matched observer and commerical trips}
+\item{c_o_tab}{table of matched observer and commercial trips}
 
 \item{species_itis}{species of interest using SPECIES_ITIS code}
 }
@@ -18,5 +18,5 @@ The stratification variables don't matter so much as the assignment of discard i
 \description{
 This function is used to get observed discard values on observed trips. These values are used in place of estimated values for those trips that were observed. This is done at the the sub-trip level. 
 This function does not need stratification. Only VTR serial number and an observed discard for desired species
-This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH. This value must be used for assigning observed discrd to trips. It is NOT used for d/k calculations since it is pro-rated by unobserved KALL.
+This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH. This value must be used for assigning observed discard to trips. It is NOT used for d/k calculations since it is pro-rated by unobserved KALL.
 }
