@@ -1121,6 +1121,7 @@ discard_groundfish <- function(con
   for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
     scallop_subroutine(FY = FY
+    									 , con = con
                        , scal_gf_species = scal_gf_species[i, ]
                        , non_gf_dat = non_gf_dat
                        , scal_trip_dir = file.path(save_dir, "scallop_groundfish")
