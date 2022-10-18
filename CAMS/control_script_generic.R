@@ -96,20 +96,26 @@ rstudioapi::jobRunScript(
 
 # upload  it
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	# discard_groundfish(con = con_maps
-	# 									 , species = species[c(7,11),]
-	# 									 , gf_dat = gf_dat
-	# 									 , non_gf_dat = non_gf_dat
-	# 									 , gf_trips_only = F
-	# 									 , save_dir = save_dir
-	# 									 , FY = fy)
+
+	# 	rstudioapi::jobRunScript(
+	# 	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_upload_job.R',
+	# 	name = paste0('Upload groundfish discards for 2018-2022'),
+	# 	encoding = "unknown",
+	# 	workingDir = NULL,
+	# 	importEnv = T,
+	# 	exportEnv = ""
+	# )
 	
-	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), 'groundfish'), FY = fy)
+	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), 'groundfish'), FY = fy, gf_only = T)
 }
 
 # commit DB
 
 ROracle::dbCommit(con_maps)
+
+## ---- gf: create/rebuild indexes for discard_all_years ---- 
+
+MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")  
 
 ## ----run calendar year species RMD as a script, eval = T---------------------------------------------
 # group of species
