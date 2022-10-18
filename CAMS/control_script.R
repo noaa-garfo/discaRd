@@ -350,12 +350,9 @@ ROracle::dbCommit(con_maps)
 
 ## ---- create/rebuild indexes for discard_all_years ---- 
   
+MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")  
   
 ## ---- Add comments ----  
-  
-  
-  
-
 
 
  ## ----grant all discard tables from MAPS to CAMS_GARFO, eval = F-------------------------------------------------------------------
