@@ -348,7 +348,13 @@ ROracle::dbCommit(con_maps)
   # .rs.restartR()
   
 
-
+## ---- create/rebuild indexes for discard_all_years ---- 
+  
+  
+## ---- Add comments ----  
+  
+  
+  
 
 
 
@@ -583,7 +589,7 @@ ROracle::dbGetQuery(con_cams, "
 
 
 
-#'
+
 ## ----add comments to tables on MAPS and CAMS_GARFO--------------------------------------------------------------------------------
 #===============================================
 # comments
