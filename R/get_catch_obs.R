@@ -43,6 +43,7 @@ import_query = paste0("  with obs_cams as (
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1 as link1
+	, source
 	, offwatch_link1
 	, link3
 	, link3_obs
@@ -86,6 +87,7 @@ import_query = paste0("  with obs_cams as (
 	, vtrserno
 	, CAMS_SUBTRIP
 	, link1
+	, source
 	, offwatch_link1
 	, link3
 	, link3_obs
