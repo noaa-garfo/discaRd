@@ -115,7 +115,7 @@ species <- tbl(con_maps, sql("
 save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_calendar(con = con_maps
+	discard_generic(con = con_maps
 										 , species = species
 										 , FY = fy
 										 , all_dat = all_dat
@@ -129,15 +129,9 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 
 ROracle::dbCommit(con_maps)
 
-# fix some file permissions that keep geting effed up
-# system('chmod 770 -R .git/index')
-# system('chmod 770 -R .git/objects')
-
-
-# clean the workspace; restart likely not necessary anymore
-# rm(list = ls())
+# clean the workspace
 gc()
-# .rs.restartR()
+
 
 
 
@@ -158,7 +152,7 @@ save_dir = file.path(getOption("maps.discardsPath"), "may")
 
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_may(con = con_maps
+	discard_generic(con = con_maps
 									 , species = species
 									 , FY = fy
 									 , all_dat = all_dat
@@ -172,18 +166,11 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 
 ROracle::dbCommit(con_maps)
 
-# fix some file permissions that keep geting effed up
-# system('chmod 770 -R .git/index')
-# system('chmod 770 -R .git/objects')
-
-
-# clean the workspace; restart likely not necessary anymore
-# rm(list = ls())
+# clean the workspace
 gc()
-# .rs.restartR()
 
- ## ----run November year species RMD as a script, eval = F--------------------------------------------------------------------------
 
+ ## ----run November year species RMD as a script, eval = F -------------------
 
 species <- tbl(con_maps, sql("
   select *
@@ -199,7 +186,7 @@ save_dir = file.path(getOption("maps.discardsPath"), "november")
 
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_november(con = con_maps
+	discard_generic(con = con_maps
 									 , species = species
 									 , FY = fy
 									 , all_dat = all_dat
@@ -213,14 +200,10 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 
 ROracle::dbCommit(con_maps)
 
-# fix some file permissions that keep geting effed up
-# system('chmod 770 -R .git/index')
-# system('chmod 770 -R .git/objects')
 
-  # clean the workspace; restart likely not necessary anymore
-  # rm(list = ls())
-  gc()
-  # .rs.restartR()
+# clean the workspace
+gc()
+
 
 
 
@@ -242,7 +225,7 @@ ROracle::dbCommit(con_maps)
   
   
   for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-  	discard_march(con = con_maps
+  	discard_generic(con = con_maps
   									 , species = species
   									 , FY = fy
   									 , all_dat = all_dat
@@ -252,14 +235,13 @@ ROracle::dbCommit(con_maps)
   	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
   }
   
-  # commit DB
-  
-  ROracle::dbCommit(con_maps)
+# commit DB
 
-  # clean the workspace; restart likely not necessary anymore
-  # rm(list = ls())
-  gc()
-  # .rs.restartR()
+ROracle::dbCommit(con_maps)
+
+# clean workspace
+gc()
+  
 
 
 
@@ -281,7 +263,7 @@ ROracle::dbCommit(con_maps)
   
   
   for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-  	discard_april(con = con_maps
+  	discard_generic(con = con_maps
   									 , species = species
   									 , FY = fy
   									 , all_dat = all_dat
@@ -295,10 +277,9 @@ ROracle::dbCommit(con_maps)
   
   ROracle::dbCommit(con_maps)
 
-  # clean the workspace; restart likely not necessary anymore
-  # rm(list = ls())
-  gc()
-  # .rs.restartR()
+# clean the workspace
+gc()
+
 
 
   ## ----run Herring RMD as a script ----------------------------------------------------------------------------
@@ -342,10 +323,9 @@ ROracle::dbCommit(con_maps)
   
   ROracle::dbCommit(con_maps)
   
-  # clean the workspace; restart likely not necessary anymore
-  # rm(list = ls())
+# clean the workspace
   gc()
-  # .rs.restartR()
+
   
 
 ## ---- create/rebuild indexes for discard_all_years ---- 
@@ -354,295 +334,3 @@ MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")
   
 ## ---- Add comments ----  
 
-
- ## ----grant all discard tables from MAPS to CAMS_GARFO, eval = F-------------------------------------------------------------------
-
-  tab_list = ROracle::dbGetQuery(con_maps, "
-  SELECT object_name, object_type
-      FROM all_objects
-      WHERE object_type = 'TABLE'
-      and owner = 'MAPS'
-  and object_name like 'CAMS_DISCARD%'
-  and object_name not like '%DISCARD_MORTALITY%'
-  															 ")
-
-    sq = paste0("GRANT SELECT ON ", tab_list$OBJECT_NAME," TO CAMS_GARFO")
-
-    # sq = stringr::str_flatten(sq)
-
-    for(i in 1:nrow(tab_list)){
-    	ROracle::dbSendQuery(con_maps, sq[i])
-    }
-
-
-## ----create tables on cams_garfo via upload---------------------------------------------------------------------------------------
- # now make the tables on CAMS_GARFO
-
-con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
-
- Sys.setenv(TZ = "America/New_York")
- Sys.setenv(ORA_SDTZ = "America/New_York")
-
-
-for (FY in 2018:2021){
-
- parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/CALENDAR/OUTPUT/', FY = FY)
-
- parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/MAY/OUTPUT/', FY = FY)
-
- parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/NOVEMBER/OUTPUT/', FY = FY)
-
- parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/MARCH/OUTPUT/', FY = FY)
-
- parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/APRIL/OUTPUT/', FY = FY) # be careful of this one.. groundfish should not be uploaded from here!
-
-parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/APRIL/SCALLOP', FY = FY) # Scallop only
-
- parse_upload_discard(con_cams, filepath = '/maps/devel/output/MODULES/GROUNDFISH/OUTPUT/', FY = FY)	# loading this last #ensures that yellowtail and windowpane are correct
-#
-}
-
-# Commit DB
-ROracle::dbCommit(con_cams)
-
-gc()
-
-
-
-#'
-## # make a list of tables to  add
-
-## tab_list_cm = ROracle::dbGetQuery(con_cams, "
-
-## SELECT object_name, object_type
-
-##     FROM all_objects
-
-##     WHERE object_type = 'TABLE'
-
-##     and owner = 'MAPS'
-
-## and object_name like 'CAMS_DISCARD%'
-
-## and object_name not like '%DISCARD_MORTALITY%'
-
-##  -- and created >= SYSDATE - 10   --include if we want to only copy over newer tables. should work well for a weekly run or similar..
-
-## 															 "
-
-## )
-
-##
-
-## # remove all the old tables
-
-##  for(i in 1:nrow(tab_list_cm)){
-
-##     	if(ROracle::dbExistsTable(con_cams, tab_list_cm$OBJECT_NAME[i])){
-
-##     		ROracle::dbRemoveTable(con_cams, tab_list_cm$OBJECT_NAME[i])
-
-##     	}
-
-##  }
-
-##
-
-##
-
-## # make a script version of the list of tables to  add
-
-##   make_tab_sq = paste0("CREATE TABLE CAMS_GARFO.", tab_list_cm$OBJECT_NAME," AS SELECT * FROM ", tab_list_cm$OBJECT_NAME)
-
-##
-
-## # make the tables from MAPS
-
-##   for(i in 1:nrow(tab_list_cm)){
-
-##   	if(DBI::dbExistsTable(con_cams, tab_list_cm$OBJECT_NAME[i])) next
-
-##   	print(paste0("MAKING TABLE ",  tab_list_cm$OBJECT_NAME[i], " ON CAMS_GARFO"))
-
-##   	ROracle::dbSendQuery(con_cams, make_tab_sq[i])
-
-##   }
-
-##
-
-#'
-## ----make a view for all discards on MAPS-----------------------------------------------------------------------------------------
-# get list of discard tables on CAMS_GARFO
-
-tab_list = ROracle::dbGetQuery(con_maps, "
-SELECT object_name, object_type
-    FROM all_objects
-    WHERE object_type = 'TABLE'
-    and owner = 'MAPS'
-and object_name like 'CAMS_DISCARD%'
-and object_name not like '%DISCARD_MORTALITY%'
-and object_name not like '%CY%'  -- gets rid of experimental tables
-															 ")
-
-st = "CREATE OR REPLACE VIEW CAMS_DISCARD_ALL_YEARS AS "
-
-tab_line = paste0("select * from ", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only..
-
-# bidx = grep('*MORTALITY*', tab_line)
-#
-# tab_line = tab_line[-bidx]
-
-tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = tab_line[length(tab_line)])
-
-
-# create a script to pass to SQL
-
-sq = stringr::str_c(st, stringr::str_flatten(tab_line))
-
-# pass the script to make a view
-ROracle::dbSendQuery(con_maps, sq)
-
-
-# Commit DB
-ROracle::dbCommit(con_maps)
-
-# test it!
-
-
-ROracle::dbGetQuery(con_maps, "
-	select round(sum(cams_discard)) as total_discard
-	, species_stock
-	, COMMON_NAME
-	, species_itis
-	, FY
-	, GF
-	from CAMS_DISCARD_ALL_YEARS
-	group by species_itis, fy, species_stock, GF, COMMON_NAME
-	order by COMMON_NAME
-	"
-)
-
-
-
-#'
-## ----make a view for all discards on CAMS_GARFO-----------------------------------------------------------------------------------
-# get list of discard tables on CAMS_GARFO
-
-tab_list = ROracle::dbGetQuery(con_cams, "
-SELECT object_name, object_type
-    FROM all_objects
-    WHERE object_type = 'TABLE'
-    and owner = 'CAMS_GARFO'
-and object_name like 'CAMS_DISCARD%'
-and object_name not like '%DISCARD_MORTALITY%'
-and object_name not like '%CY%'  -- gets rid of experimental tables
-															 ")
-
-st = "CREATE OR REPLACE VIEW CAMS_GARFO.CAMS_DISCARD_ALL_YEARS AS "
-
-tab_line = paste0("select * from CAMS_GARFO.", tab_list$OBJECT_NAME," UNION ALL " )  # [22:23]  # groundfish only..
-
-# bidx = grep('*MORTALITY*', tab_line)
-#
-# tab_line = tab_line[-bidx]
-
-tab_line[length(tab_line)] = gsub(replacement = "", pattern = "UNION ALL", x = tab_line[length(tab_line)])
-
-
-# create a script to pass to SQL
-
-sq = stringr::str_c(st, stringr::str_flatten(tab_line))
-
-# pass the script to make a view
-ROracle::dbSendQuery(con_cams, sq)
-
-
-# Grant to CAMS_GARFO @NOVA
-
-# ROracle::dbSendQuery(con_maps, "GRANT SELECT ON CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO")
-
-# Grant to CAMS_GARFO_FOR_NEFSC
-
-ROracle::dbSendQuery(con_cams, "GRANT SELECT ON CAMS_GARFO.CAMS_DISCARD_ALL_YEARS TO CAMS_GARFO_FOR_NEFSC")
-
-# Commit DB
-ROracle::dbCommit(con_cams)
-
-# test it!
-
-
-ROracle::dbGetQuery(con_cams, "
-	select round(sum(cams_discard)) as total_discard
-	, species_stock
-	, COMMON_NAME
-	, species_itis
-	, FY
-	, GF
-	from CAMS_GARFO.CAMS_DISCARD_ALL_YEARS
-	group by species_itis, fy, species_stock, GF, COMMON_NAME
-	order by COMMON_NAME
-	"
-)
-
-
-
-
-## ----add comments to tables on MAPS and CAMS_GARFO--------------------------------------------------------------------------------
-#===============================================
-# comments
-
-print(paste("Updating Oracle comments"))
-
-definitions <-
-	googlesheets4::read_sheet(
-		"https://docs.google.com/spreadsheets/d/1YorwnjozdPwVFJPabC7Ikta6wNzlhzkUtO1TPRbR9-s/edit?usp=sharing"
-	)
-
-# save(definitions, file = "data/definitions.rda")
-devtools::load_all('~/PROJECTS/MAPS/')
-
-# con_maps <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
-
-add_comments(con = con_maps, schema = "MAPS", definitions = definitions) # 3-10 minutes
-
-add_comments(con = con_cams, schema = "CAMS_GARFO", definitions = definitions) # 3-10 minutes
-
-# dbDisconnect(con_maps)
-
-
-#'
-## ----remove table logging for performance-----------------------------------------------------------------------------------------
-
-sq_m = "begin
-for r in ( select table_name from all_tables where owner='MAPS' and table_name like 'CAMS_DISCARD%' and logging='YES')
-loop
-execute immediate 'alter table '|| r.table_name ||' NOLOGGING';
-end loop;
-end;
-"
-
-ROracle::dbSendQuery(con_maps, sq_m)
-
-
-sq_c = "begin
-for r in ( select table_name from all_tables where owner='CAMS_GARFO' and table_name like 'CAMS_DISCARD%' and logging='YES')
-loop
-execute immediate 'alter table CAMS_GARFO.'|| r.table_name ||' NOLOGGING';
-end loop;
-end;"
-
-
-ROracle::dbSendQuery(con_cams, sq_c)
-
-# Commit DB
-ROracle::dbCommit(con_maps)
-ROracle::dbCommit(con_cams)
-
-# Disconnect DB
-ROracle::dbDisconnect(con_maps)
-ROracle::dbDisconnect(con_cams)
-
-
-# add group write permissions
-# system(paste("chmod g+w -R", file.path(getOption("maps.discardsPath"))))
-system(paste("chmod 770 -R", file.path(getOption("maps.discardsPath"))))
