@@ -14,7 +14,7 @@
 #' \dontrun{
 #'parse_upload_discard(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018)
 #'}
-parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018){
+parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018, gf_only = F){
 
 	# require(ROracle)
 
@@ -30,6 +30,12 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 	for (kk in species){
 		spfiles = resfiles[grep(pattern = kk, x = resfiles)]
 
+		if(gf_only ==T){
+			
+			spfiles = spfiles[grep(pattern = 'gftrips_only', x = spfiles)]
+			
+		}
+		
 		# vectorize over mulitple files for a year for the same species
 		res = lapply(as.list(spfiles), function(x) fst::read_fst(x))
 

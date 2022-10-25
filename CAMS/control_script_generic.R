@@ -72,22 +72,50 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), 'groundfish')
 
-# run it
+
+# send the job
+
+rstudioapi::jobRunScript(
+	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_gf_job.R',
+	name = paste0('Run groundfish discards for 2018-2022'),
+	encoding = "unknown",
+	workingDir = NULL,
+	importEnv = T,
+	exportEnv = ""
+)
+
+# test only YT and WP 
+# rstudioapi::jobRunScript(
+# 	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_gf_job.R',
+# 	name = paste0('Run YT/WP discards for ', fy),
+# 	encoding = "unknown",
+# 	workingDir = NULL,
+# 	importEnv = T,
+# 	exportEnv = ""
+# )
+
+# upload  it
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_groundfish(con = con_maps
-										 , species = species #[c(7,11),]
-										 , gf_dat = gf_dat
-										 , non_gf_dat = non_gf_dat
-										 , gf_trips_only = F
-										 , save_dir = save_dir
-										 , FY = fy)
+
+	# 	rstudioapi::jobRunScript(
+	# 	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_upload_job.R',
+	# 	name = paste0('Upload groundfish discards for 2018-2022'),
+	# 	encoding = "unknown",
+	# 	workingDir = NULL,
+	# 	importEnv = T,
+	# 	exportEnv = ""
+	# )
 	
-	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), 'groundfish'), FY = fy, gf_only = T)
 }
 
 # commit DB
 
 ROracle::dbCommit(con_maps)
+
+## ---- gf: create/rebuild indexes for discard_all_years ---- 
+
+MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")  
 
 ## ----run calendar year species RMD as a script, eval = T---------------------------------------------
 # group of species
@@ -121,6 +149,20 @@ ROracle::dbCommit(con_maps)
 
 gc()
 
+##-- background job test ----
+
+# define a fishing year
+fy = 2018
+
+rstudioapi::jobRunScript(
+	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_calendar_job_noyear.R',
+	name = paste0('Run calendar year discards for ', fy),
+	encoding = "unknown",
+	workingDir = NULL,
+	importEnv = T,
+	exportEnv = ""
+)
+
 ## ----run may year species RMD as a script, eval = F-------------------------------------------------------------------------------
 
 species <- tbl(con_maps, sql("
@@ -135,16 +177,38 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), "may")
 
+# for this one, loop over 2018 to 2022
+
+rstudioapi::jobRunScript(
+	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_discard_job_noyear.R',
+	name = 'Run may year discards for 2018:2022',
+	encoding = "unknown",
+	workingDir = NULL,
+	importEnv = T,
+	exportEnv = ""
+)
+
+
+# try background processes.. 
+
+# fy = 2018
+
+# may18 = callr::r_bg(function() {source('~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_calendar_job_noyear.R')}, env = c(callr::rcmd_safe_env()), args = list( save_dir = save_dir, species = species[1,], all_dat = all_dat, fy = 2018))
+# 
+# may19 = callr::r_bg(function() {source('~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_calendar_job_noyear.R')}, env = c(callr::rcmd_safe_env()), args = list( save_dir = save_dir, species = species[1,], all_dat = all_dat, fy = 2019))
+
+# processx::poll(list(may18, may19), 1000)
+
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_generic(con = con_maps
-							, species = species
-							, FY = fy
-							, all_dat = all_dat
-							, save_dir = save_dir
-	)
+	# discard_generic(con = con_maps
+	# 						, species = species
+	# 						, FY = fy
+	# 						, all_dat = all_dat
+	# 						, save_dir = save_dir
+	# )
 	
-	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "may"), FY = fy)
 }
 
 # commit DB
@@ -152,6 +216,7 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 ROracle::dbCommit(con_maps)
 
 gc()
+
 
 ## ----run November year species RMD as a script, eval = F--------------------------------------------------------------------------
 
@@ -168,16 +233,25 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), "november")
 
+rstudioapi::jobRunScript(
+	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_discard_job_noyear.R',
+	name = 'Run november year discards for 2018:2022',
+	encoding = "unknown",
+	workingDir = NULL,
+	importEnv = T,
+	exportEnv = ""
+)
 
-for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_generic(con = con_maps
-									 , species = species
-									 , FY = fy
-									 , all_dat = all_dat
-									 , save_dir = save_dir
-	)
+
+for(fy in 2018:2021){ # TODO: move years to configDefaultRun.toml
+	# discard_generic(con = con_maps
+	# 								 , species = species
+	# 								 , FY = fy
+	# 								 , all_dat = all_dat
+	# 								 , save_dir = save_dir
+	# )
 	
-	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "november"), FY = fy)
 }
 
 # commit DB
@@ -201,16 +275,25 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), "march")
 
+rstudioapi::jobRunScript(
+	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_discard_job_noyear.R',
+	name = 'Run march year discards for 2018:2022',
+	encoding = "unknown",
+	workingDir = NULL,
+	importEnv = T,
+	exportEnv = ""
+)
+
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_generic(con = con_maps
-								, species = species
-								, FY = fy
-								, all_dat = all_dat
-								, save_dir = save_dir
-	)
+	# discard_generic(con = con_maps
+	# 							, species = species
+	# 							, FY = fy
+	# 							, all_dat = all_dat
+	# 							, save_dir = save_dir
+	# )
 	
-	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "march"), FY = fy)
 }
 
 # commit DB
@@ -235,16 +318,24 @@ species <- tbl(con_maps, sql("
 
 save_dir = file.path(getOption("maps.discardsPath"), "april")
 
+rstudioapi::jobRunScript(
+	path = '~/PROJECTS/discaRd/CAMS/TESTS_AND_EXAMPLES/run_discard_job_noyear.R',
+	name = 'Run april year discards for 2018:2022',
+	encoding = "unknown",
+	workingDir = NULL,
+	importEnv = T,
+	exportEnv = ""
+)
 
 for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
-	discard_generic(con = con_maps
-								, species = species
-								, FY = fy
-								, all_dat = all_dat
-								, save_dir = save_dir
-	)
+	# discard_generic(con = con_maps
+	# 							, species = species
+	# 							, FY = fy
+	# 							, all_dat = all_dat
+	# 							, save_dir = save_dir
+	# )
 	
-	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+	parse_upload_discard(con = con_maps, filepath = file.path(getOption("maps.discardsPath"), "april"), FY = fy)
 }
 
 # commit DB
