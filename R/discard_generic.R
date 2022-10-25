@@ -197,6 +197,7 @@ discard_generic <- function(con = con_maps
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
+			filter(SOURCE != 'ASM') %>%
 			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
 			mutate(DISCARD_PRORATE = DISCARD
 						 , OBS_AREA = AREA
@@ -229,6 +230,7 @@ discard_generic <- function(con = con_maps
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
+			filter(SOURCE != 'ASM') %>%
 			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
 			mutate(DISCARD_PRORATE = DISCARD
 						 , OBS_AREA = AREA

@@ -476,20 +476,23 @@ discard_groundfish <- function(con
   																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
   																		, is.na(LINK1) &
   																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+  																			n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
   																		, is.na(LINK1) &
   																			n_obs_trips_f < 5 &
   																			n_obs_trips_p < 5 &
-  																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p < 5 &
-  																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+  																			n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
   																		, is.na(LINK1) &
   																			n_obs_trips_f < 5 &
   																			n_obs_trips_p < 5 &
   																			n_obs_trips_f_a < 5 &
-  																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+  																			n_obs_trips_p_a >= 5 ~ 'B' # Broad stock is only for GF now
+  																		, is.na(LINK1) &
+  																			n_obs_trips_f < 5 &
+  																			n_obs_trips_p < 5 &
+  																			n_obs_trips_f_a < 5 &
+  																			n_obs_trips_p_a < 5 ~ 'B'
+  				)
+  	)
   
   
 
