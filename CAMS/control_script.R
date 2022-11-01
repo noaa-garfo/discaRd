@@ -290,9 +290,9 @@ gc()
   
   # pull herring specific data
   start_year = 2018
-  end_year = 2019
+  end_year = 2022
   
-  alldat = get_catch_obs_herring(con_maps, start_year, end_year)
+  all_dat = get_catch_obs_herring(con_maps, start_year-1, end_year)
   
   
   species <- tbl(con_maps, sql("
@@ -308,7 +308,7 @@ gc()
   save_dir = file.path(getOption("maps.discardsPath"), "herring")
   
   
-  for(fy in end_year){ # TODO: move years to configDefaultRun.toml
+  for(fy in start_year:end_year){ # TODO: move years to configDefaultRun.toml
   	discard_herring(con = con_maps
   								, species = species
   								, FY = fy
@@ -316,7 +316,7 @@ gc()
   								, save_dir = save_dir
   	)
   	
-  	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+  	# parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
   }
   
   # commit DB
