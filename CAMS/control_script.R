@@ -308,7 +308,7 @@ gc()
   save_dir = file.path(getOption("maps.discardsPath"), "herring")
   
   
-  for(fy in 2019){ # TODO: move years to configDefaultRun.toml
+  for(fy in end_year){ # TODO: move years to configDefaultRun.toml
   	discard_herring(con = con_maps
   								, species = species
   								, FY = fy

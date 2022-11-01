@@ -29,8 +29,8 @@ discard_herring <- function(con
 	# Stratification variables
 	
 	stratvars = c(
-		'HERR_FLAG' # target vs non target herring
-		,'HERR_AREA' # herring management area
+		'HERR_TARG' # target vs non target herring
+		,'AREA_HERR' # herring management area
 		,'CAMS_GEAR_GROUP')# gear 
 
 	
@@ -294,7 +294,7 @@ discard_herring <- function(con
 		#
 		# print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
 		
-		stratvars_assumed = c("HERR_FLAG"
+		stratvars_assumed = c("HERR_TARG"
 													, "CAMS_GEAR_GROUP") #AWA
 		#, "MESHGROUP")
 		
@@ -403,7 +403,7 @@ discard_herring <- function(con
 		)
 		
 		#SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
-		HERR_FLAG <- mnk_prev$allest$C$STRATA
+		HERR_TARG <- mnk_prev$allest$C$STRATA
 		
 		#CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
 		
@@ -415,8 +415,8 @@ discard_herring <- function(con
 		CV_b_cur <- round(mnk_current$allest$C$RE_rse, 2)
 		
 		
-		BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(HERR_FLAG, BROAD_STOCK_RATE, CV_b))
-		BROAD_STOCK_RATE_TABLE_CUR <- as.data.frame(cbind(HERR_FLAG, BROAD_STOCK_RATE_CUR, CV_b))
+		BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
+		BROAD_STOCK_RATE_TABLE_CUR <- as.data.frame(cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
 		
 		
 		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
@@ -436,7 +436,7 @@ discard_herring <- function(con
 			dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('HERR_FLAG')) %>% 
+			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('HERR_TARG')) %>% 
 			mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate (target,gear, HMA)
 																	 , n_obs_trips_f < 5 & 
 																	 	n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
@@ -525,7 +525,7 @@ discard_herring <- function(con
 		# Make note of the stratification variables used according to discard source
 		
 		stratvars_gear = c(#"SPECIES_STOCK", #AWA 
-			"HERR_FLAG")
+			"HERR_TARG")
 		
 		strata_f = paste(stratvars, collapse = ';')
 		strata_a = paste(stratvars_assumed, collapse = ';')
