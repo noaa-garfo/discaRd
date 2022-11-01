@@ -24,36 +24,6 @@ discard_generic <- function(con = con_maps
 		dir.create(save_dir, recursive = TRUE)
 		system(paste("chmod 770 -R", save_dir))
 	}
-
-	get_date_range = function(FY, FY_TYPE){
-		y = FY
-		if(FY_TYPE == 'APRIL'){
-			smonth = ifelse(y <= 2018, 3, 4)
-			emonth = ifelse(y <= 2018, 3, 4)
-			eday = ifelse(y <= 2018, 31, 30)
-			sdate = lubridate::as_date(paste(y, smonth, 1, sep = '-'))
-			edate = lubridate::as_date(paste(y+1, emonth, eday, sep = '-'))
-		}
-		if(FY_TYPE == 'MARCH'){
-			sdate = lubridate::as_date(paste(y, 3, 1, sep = '-'))
-			edate = lubridate::as_date(paste(y+1, 3, 1, sep = '-'))
-		}
-		if(FY_TYPE == 'MAY'){
-			sdate = lubridate::as_date(paste(y, 5, 1, sep = '-'))
-			edate = lubridate::as_date(paste(y+1, 5, 1, sep = '-'))
-		}
-		if(FY_TYPE == 'NOVEMBER'){
-			sdate = lubridate::as_date(paste(y, 11, 1, sep = '-'))
-			edate = lubridate::as_date(paste(y+1, 11, 1, sep = '-'))
-		}
-		if(FY_TYPE == 'CALENDAR'){
-			sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
-			edate = lubridate::as_date(paste(y+1, 1, 1, sep = '-'))
-		}
-		sdate = lubridate::floor_date(sdate, unit = 'day')
-		c(sdate, edate)
-		
-	}
 	
 	
 	FY_TYPE = species$RUN_ID[1]
@@ -556,5 +526,50 @@ discard_generic <- function(con = con_maps
 		print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 		
 	}
+	
+}
+
+
+#' Get Date Range
+#' get date range for particular type of fishing year
+#' @param FY Fishing Year (e.g. 2020)
+#' @param FY_TYPE  Type of fishing year (e.g. CALENDAR). This is case sensitive as it calls `CFG_DISCARD_RUNID`
+#'
+#' @return a start and end date
+#' @export
+#'
+#' @examples
+get_date_range = function(FY, FY_TYPE){
+	y = FY
+	if(FY_TYPE == 'APRIL'){
+		smonth = ifelse(y <= 2018, 3, 4)
+		emonth = ifelse(y <= 2018, 3, 4)
+		eday = ifelse(y <= 2018, 31, 30)
+		sdate = lubridate::as_date(paste(y, smonth, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, emonth, eday, sep = '-'))
+	}
+	if(FY_TYPE == 'MARCH'){
+		sdate = lubridate::as_date(paste(y, 3, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 3, 1, sep = '-'))
+	}
+	if(FY_TYPE == 'MAY'){
+		sdate = lubridate::as_date(paste(y, 5, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 5, 1, sep = '-'))
+	}
+	if(FY_TYPE == 'NOVEMBER'){
+		sdate = lubridate::as_date(paste(y, 11, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 11, 1, sep = '-'))
+	}
+	if(FY_TYPE == 'CALENDAR'){
+		sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 1, 1, sep = '-'))
+	}
+	
+	if(FY_TYPE == 'HERRING'){
+		sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 1, 1, sep = '-'))
+	}
+	sdate = lubridate::floor_date(sdate, unit = 'day')
+	c(sdate, edate)
 	
 }
