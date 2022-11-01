@@ -8,7 +8,8 @@ Parses discard results, cleans the table (e.g. infinite) and uploads to Oracle. 
 parse_upload_discard(
   con = con_maps,
   filepath = getOption("maps.discardsPath"),
-  FY = 2018
+  FY = 2018,
+  gf_only = F
 )
 }
 \arguments{

@@ -4,7 +4,7 @@
 \alias{append_discard_all_years}
 \title{append_discard_all_years: Delete and fill}
 \usage{
-append_discard_all_years(con = con, data = outlist, drop = FALSE)
+append_discard_all_years(con = con, data = outlist, drop = FALSE, gf_only = F)
 }
 \arguments{
 \item{con}{ROracle connection to Oracle (e.g. MAPS)}
