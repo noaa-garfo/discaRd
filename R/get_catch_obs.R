@@ -259,28 +259,28 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	
 	import_query = paste0(" 
 	 with obs_cams as (
-   select year
+    select year
 	, month
+	, date_trip
   , PERMIT
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
-	       end as halfofyear
   , AREA
 	, vtrserno
-    , CAMS_SUBTRIP
-	, LINK1
+	, CAMS_SUBTRIP
+	, link1 as link1
+	, source
 	, offwatch_link1
 	, link3
 	, link3_obs
+	, offwatch_haul
+	, fishdisp
 	, docid
 	, CAMSID
 	, nespp3
-    , itis_tsn as SPECIES_ITIS
-    , SECGEAR_MAPPED as GEARCODE
+  , itis_tsn as SPECIES_ITIS
+  , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
-	,FISHDISP 
 	, SECTID
   , GF
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -296,7 +296,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	, NVL(sum(discard_prorate),0) as discard
+	, NVL(sum(discard),0) as discard
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
@@ -305,24 +305,27 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   WHERE YEAR >= ", start_year, " 
   and YEAR <= ", end_year, "
 
-	group by year
+		group by year
+
   , AREA
   , PERMIT
 	, vtrserno
-  , CAMS_SUBTRIP
-	, LINK1
+	, CAMS_SUBTRIP
+	, link1
+	, source
 	, offwatch_link1
 	, link3
 	, link3_obs
+	, offwatch_haul
+	, fishdisp
 	, docid
-	, nespp3	
+	, nespp3
   , itis_tsn
     , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
 	, SECTID
-	,FISHDISP
   , GF
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
@@ -331,9 +334,9 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
        else 'FED' end
   , CAMSID
   , month
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
-	       end	, tripcategory
+  , date_trip
+	-- , halfofyear
+	, tripcategory
 	, accessarea
 	, activity_code_1
   , EM
