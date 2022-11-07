@@ -338,12 +338,11 @@ MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")
 
 devtools::load_all('~/PROJECTS/MAPS/')
   
-con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
+con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
 Sys.setenv(TZ = "America/New_York")
 Sys.setenv(ORA_SDTZ = "America/New_York")
 
-  	
 pushToCamsGarfo(con = con_cams, tables = c("cams_discard_all_years"))
