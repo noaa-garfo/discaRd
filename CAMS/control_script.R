@@ -77,15 +77,15 @@ for(fy in 2018:2022){ # TODO: move years to configDefaultRun.toml
 	# FY <- jj
 	# FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
-		discard_groundfish(con = con_maps
-											 , species = species #[c(7,11),]
-											 , gf_dat = gf_dat
-		                   , non_gf_dat = non_gf_dat
-											 , gf_trips_only = F
-											 , save_dir = save_dir
-											 , FY = fy)
+		# discard_groundfish(con = con_maps
+		# 									 , species = species #[c(7,11),]
+		# 									 , gf_dat = gf_dat
+		#                    , non_gf_dat = non_gf_dat
+		# 									 , gf_trips_only = F
+		# 									 , save_dir = save_dir
+		# 									 , FY = fy)
 
-  parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+  parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy, gf_only = F)
 }
 
 # commit DB
@@ -315,8 +315,8 @@ gc()
   								, all_dat = all_dat
   								, save_dir = save_dir
   	)
-  	
-  	# parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+
+  	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
   }
   
   # commit DB
@@ -334,3 +334,16 @@ MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")
   
 ## ---- Add comments ----  
 
+  ## ---- Push to CAMS_GARDO ----
+
+devtools::load_all('~/PROJECTS/MAPS/')
+  
+con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+Sys.setenv(TZ = "America/New_York")
+Sys.setenv(ORA_SDTZ = "America/New_York")
+
+  	
+pushToCamsGarfo(con = con_cams, tables = c("cams_discard_all_years"))
