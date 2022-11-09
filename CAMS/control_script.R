@@ -316,7 +316,7 @@ gc()
   								, save_dir = save_dir
   	)
 
-  	parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+  	# parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
   }
   
   # commit DB
