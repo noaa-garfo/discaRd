@@ -166,6 +166,7 @@ discard_herring <- function(con
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
+			filter(SOURCE != 'ASM') %>%
 			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
 			mutate(DISCARD_PRORATE = DISCARD
 						 , OBS_AREA = AREA
@@ -198,6 +199,7 @@ discard_herring <- function(con
 			filter(!is.na(LINK1)) %>% 
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
+			filter(SOURCE != 'ASM') %>%
 			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>% 
 			mutate(DISCARD_PRORATE = DISCARD
 						 , OBS_AREA = AREA
@@ -454,28 +456,29 @@ discard_herring <- function(con
 		# add discard source
 		#
 
-		# joined_table = joined_table %>% 
-		# 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 ~ 'O'  # observed with at least one obs haul
-		# 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..  
-		# 																		, is.na(LINK1) & 
+		# joined_table = joined_table %>%
+		# 		mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+		# 																			, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+		# 																			, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+		# 																		, is.na(LINK1) &
 		# 																			n_obs_trips_f >= 5 ~ 'I'
 		# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-		# 																		, is.na(LINK1) & 
-		# 																			n_obs_trips_f < 5 & 
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
 		# 																			n_obs_trips_p >=5 ~ 'T'
-		# 																		, is.na(LINK1) & 
+		# 																		, is.na(LINK1) &
 		# 																			n_obs_trips_f < 5 &
 		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a >= 5 ~ 'A' 
-		# 																		, is.na(LINK1) & 
+		# 																			n_obs_trips_f_a >= 5 ~ 'A'
+		# 																		, is.na(LINK1) &
 		# 																			n_obs_trips_f < 5 &
 		# 																			n_obs_trips_p < 5 &
 		# 																			n_obs_trips_f_a <= 5 &
 		# 																			n_obs_trips_p_a >= 5 ~ 'G'
-		# 																		, is.na(LINK1) & 
-		# 																			n_obs_trips_f < 5 & 
-		# 																			n_obs_trips_p < 5 & 
-		# 																			n_obs_trips_f_a < 5 & 
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_f_a < 5 &
 		# 																			n_obs_trips_p_a < 5 ~ 'B'))
 
 # should likely replace the above with this to match other modules		
@@ -493,7 +496,7 @@ discard_herring <- function(con
 																				, is.na(LINK1) &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p < 5 &
-																					n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+																					n_obs_trips_f_a >= 5 ~ 'A' # assumed rate for Herring: CAMS_GEAR_GROUP and HERR_TARG
 																				, is.na(LINK1) &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p < 5 &
