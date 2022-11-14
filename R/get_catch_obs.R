@@ -257,30 +257,30 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	
 	print(paste0("Pulling CAMS_OBS_CATCH Herring data for ", start_year, "-", end_year))
 	
-	import_query = paste0(" with obs_cams as (
-   select year
+	import_query = paste0(" 
+	 with obs_cams as (
+    select year
 	, month
+	, date_trip
   , PERMIT
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
-	       end as halfofyear
   , AREA
 	, vtrserno
-  , CAMS_SUBTRIP
-	, LINK1
+	, CAMS_SUBTRIP
+	, link1 as link1
+	, source
 	, offwatch_link1
 	, link3
 	, link3_obs
+	, offwatch_haul
+	, fishdisp
 	, docid
 	, CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
-  -- , itis_group1
-    , SECGEAR_MAPPED as GEARCODE
+  , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
-	,FISHDISP 
 	, SECTID
   , GF
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -296,34 +296,36 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
-	, NVL(sum(discard_prorate),0) as discard
+	, NVL(sum(discard),0) as discard
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
---	,  NVL(sum(discard)/nullif(round(max(obs_kall)), 0), 0) as dk
-	from MAPS.CAMS_OBS_CATCH
+	from CAMS_OBS_CATCH
  
- WHERE YEAR >= ", start_year, " 
+  WHERE YEAR >= ", start_year, " 
   and YEAR <= ", end_year, "
 
-	group by year
+		group by year
+
   , AREA
   , PERMIT
 	, vtrserno
-  , CAMS_SUBTRIP
-	, LINK1
+	, CAMS_SUBTRIP
+	, link1
+	, source
 	, offwatch_link1
 	, link3
 	, link3_obs
+	, offwatch_haul
+	, fishdisp
 	, docid
-	, nespp3	
+	, nespp3
   , itis_tsn
     , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
 	, MESHGROUP
 	, SECTID
-	,FISHDISP
   , GF
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
@@ -332,9 +334,9 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
        else 'FED' end
   , CAMSID
   , month
-	, case when month in (5,6,7,8,9,10) then 1
-	       when month in (11,12,1,2,3,4) then 2
-	       end	, tripcategory
+  , date_trip
+	-- , halfofyear
+	, tripcategory
 	, accessarea
 	, activity_code_1
   , EM
@@ -343,40 +345,37 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
 	order by vtrserno asc
-    ) , cams_obs_spp as( 
-
-  select case when MONTH in (1,2,3,4) then YEAR-1 else YEAR end as GF_YEAR
-  , case when MONTH in (1,2,3) then YEAR-1 else YEAR end as SCAL_YEAR
-  , o.*
-  , c.match_nespp3
-  , coalesce(c.match_nespp3, o.nespp3) as nespp3_final
-  from obs_cams o
-  left join apsd.s_nespp3_match_conv c on o.nespp3 = c.nespp3)  
+    ) 
+     
+  , area_herr as (
+        select distinct
+        camsid
+        , subtrip
+        , (camsid||'_'||subtrip) cams_subtrip
+        , area_herr
+        from
+        cams_subtrip
+  )
   
   , cams_herr as(
-  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
-  ,case when itis_tsn = '161722' then 'HERR_TRIP' else NULL end herr_targ
-  ,cl.lat_dd
-  ,cl.lon_dd
-  ,(select hs.area_herr from cams_garfo.cfg_fed_area hs where cl.area = hs.area) stat_area_hma
-	  from maps.cams_landings cl
-	  WHERE YEAR >= ", start_year," 
-	  and YEAR <= ", end_year,"
+	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
+	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
+	  from cams_landings cl
   )
   
   select 
    cos.*
-  ,ch.cams_subtrip landings_subt
-  ,ch.herr_targ
-  , case when ch.herr_targ = 'HERR_TRIP' --or cos.species_itis = '161722' 
-  then 'HERR' else 'NON_HERR' end HERR_FLAG
-  , ch.lat_dd
-  , ch.lon_dd
-  ,nvl((select hma.area from gis_herring_mgmt_areas hma where sdo_contains(hma.ora_geometry,sdo_geometry(2001,8307,sdo_point_type(NVL(ch.lon_dd,0),NVL(ch.lat_dd,0),NULL),NULL,NULL)) = 'TRUE'),stat_area_hma) herr_area
-  from cams_obs_spp cos
+  -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
+  , h.area_herr
+  , ch.herr_targ
+  from obs_cams cos
+  left join area_herr h
+  on (h.cams_subtrip = cos.cams_subtrip) 
+  
   left join cams_herr ch
-  on cos.cams_subtrip = ch.cams_subtrip
-      
+  on (ch.cams_subtrip = cos.cams_subtrip) 
+  
+ 
 "
 	)
 	
@@ -409,30 +408,39 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	
 	
 	# make these values 0 or NA or 'none' depending on the default for that field
-	link3_na = link3_na %>% 
-		mutate(LINK1 = NA
-					 , DISCARD = NA
-					 , DISCARD_PRORATE = NA
-					 , OBSRFLAG = NA
-					 , OBSVTR = NA
-					 , OBS_AREA = NA
-					 , OBS_GEAR = NA
-					 , OBS_HAUL_KALL_TRIP = 0
-					 , OBS_HAUL_KEPT = 0
-					 , OBS_KALL = 0
-					 , LINK1 = NA
-					 , OBSVTR = NA
-					 , OBS_MESHGROUP = 'none'
-					 , PRORATE = NA)
-	
-	
-	tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
-	
-	c_o_dat2 = c_o_dat2[tidx == F,]
-	
-	c_o_dat2 = c_o_dat2 %>% 
-		bind_rows(link3_na)
-	
+	if(nrow(link3_na) > 0){
+		link3_na = link3_na %>%
+			mutate(LINK1 = NA
+						 , DISCARD = NA
+						 , DISCARD_PRORATE = NA
+						 , OBSRFLAG = NA
+						 , OBSVTR = NA
+						 , OBS_AREA = NA
+						 , OBS_GEAR = NA
+						 , OBS_HAUL_KALL_TRIP = 0
+						 , OBS_HAUL_KEPT = 0
+						 , OBS_KALL = 0
+						 , OBS_LINK1 = NA
+						 , OBSVTR = NA
+						 , OBS_MESHGROUP = 'none'
+						 , PRORATE = NA)
+		
+		# this was dropping full trips...
+		# tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
+		
+		
+		# 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
+		
+		tidx = which(!is.na(c_o_dat2$LINK1) & is.na(c_o_dat2$LINK3))
+		
+		c_o_dat2 = c_o_dat2[-tidx,]
+		
+		# c_o_dat2 = c_o_dat2[tidx == F,]
+		
+		c_o_dat2 = c_o_dat2 %>%
+			bind_rows(link3_na)
+		
+	}
 	# continue the data import
 	
 	
@@ -486,6 +494,4 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 
 # dat = get_catch_obs_herring(con_maps, 2021, 2022)
 
-# Error in .oci.GetQuery(conn, statement, data = data, prefetch = prefetch,  : 
-# 											 	Error in try({ : ORA-12801: error signaled in parallel query server P017
-# 											 		ORA-01427: single-row subquery returns more than one row
+
