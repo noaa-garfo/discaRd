@@ -357,23 +357,26 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
         cams_subtrip
   )
   
-  , cams_herr as(
-	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
-	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
-	  from cams_landings cl
-  )
+ -- , cams_herr as(
+--	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
+--	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
+--	  from cams_landings cl
+--  )
   
   select 
    cos.*
   -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
   , h.area_herr
-  , ch.herr_targ
+  , b.herring as herr_targ
   from obs_cams cos
   left join area_herr h
   on (h.cams_subtrip = cos.cams_subtrip) 
   
-  left join cams_herr ch
-  on (ch.cams_subtrip = cos.cams_subtrip) 
+  --left join cams_herr ch
+  --on (ch.cams_subtrip = cos.cams_subtrip) 
+  
+  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b 
+  on (cos.cams_subtrip = b.cams_subtrip)
   
  
 "
