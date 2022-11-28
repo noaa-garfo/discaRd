@@ -22,7 +22,7 @@ Make CAMS_OBS_CATCH
 }
 \examples{
 
-# unlock keyring 
+# unlock keyring
 
 keyring::keyring_unlock("apsd_ma")
 con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
