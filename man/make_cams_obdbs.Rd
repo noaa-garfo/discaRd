@@ -26,7 +26,7 @@ Make CAMS OBDBS
 builds table for one calendar year of observer data.
 }
 \examples{
-# unlock keyring 
+# unlock keyring
 
 keyring::keyring_unlock("apsd_ma")
 con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
@@ -43,7 +43,7 @@ ROracle::dbSendQuery(con_maps, idx1)
 #test
 ROracle::dbGetQuery(con_maps, paste0("select * from MAPS.CAMS_OBDBS_", 2021)) \%>\% head()
 # create a view of all obdbs tables on CAMS_GARFO
-tab_list = ROracle::dbGetQuery(con_maps, " 
+tab_list = ROracle::dbGetQuery(con_maps, "
 SELECT object_name, object_type
     FROM all_objects
     WHERE object_type = 'TABLE'
@@ -53,7 +53,7 @@ and object_name like 'CAMS_OBDBS\%'
 
 st = "CREATE OR REPLACE VIEW CAMS_OBDBS_ALL_YEARS AS "
 
-tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )  # groundfish only.. 
+tab_line = paste0("select * from MAPS.", tab_list$OBJECT_NAME," UNION ALL " )  # groundfish only..
 
 bidx = grep('*MORTALITY*', tab_line)
 
