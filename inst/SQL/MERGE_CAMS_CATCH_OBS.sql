@@ -93,6 +93,7 @@ with obs1 as (
             , round(o.meshsize, 0) as obs_mesh
             , o.meshgroup
             , substr(nespp4, 1, 3) as NESPP3
+            , NESPP4
             , SUM(case when catdisp = 0 then o.livewt else 0 end) as discard
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
             
@@ -254,7 +255,7 @@ group by d.permit
 , obs as (
       select a.*
             , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
-            , i.ITIS_TSN
+            , i.SPECIES_ITIS as ITIS_TSN
 --            , i.ITIS_GROUP1
         from owh a
           left join (
@@ -265,8 +266,10 @@ group by d.permit
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
           
-         left join(select * from maps.CFG_NESPP3_ITIS ) i  --where SRCE_ITIS_STAT = 'valid'
-         on a.NESPP3 = i.DLR_NESPP3
+--         left join(select * from maps.CFG_NESPP3_ITIS ) i  --where SRCE_ITIS_STAT = 'valid'
+--         on a.NESPP3 = i.DLR_NESPP3
+         left join(select * from obdbs.obspec ) i  --use obdbs table since dlr nespp3 has some quirtks from nefsc nespp3 version..
+         on a.NESPP4 = i.NESPP4
       )
 
 --select count(distinct(link1)) as n_link1
