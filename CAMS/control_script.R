@@ -315,14 +315,14 @@ save_dir = file.path(getOption("maps.discardsPath"), "herring")
 
 
 for(fy in start_year:end_year){ # TODO: move years to configDefaultRun.toml
-  # 	discard_herring(con = con_maps
-  # 								, species = species
-  # 								, FY = fy
-  # 								, all_dat = all_dat
-  # 								, save_dir = save_dir
-  # 	)
+  	discard_herring(con = con_maps
+  								, species = species
+  								, FY = fy
+  								, all_dat = all_dat
+  								, save_dir = save_dir
+  	)
 
-  parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
+  # parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy)
 }
 
 # commit DB
