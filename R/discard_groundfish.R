@@ -42,6 +42,7 @@ discard_groundfish <- function(con
                 , "REDFISH_EXEMPTION"
                 , "SNE_SMALLMESH_EXEMPTION"
                 , "XLRG_GILLNET_EXEMPTION"
+  							, "EXEMPT_7130"
                 )
 
   # add a second SECTORID for Common pool/all others
