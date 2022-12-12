@@ -50,7 +50,7 @@ import_query = paste0("  with obs_cams as (
 	, offwatch_haul
 	, fishdisp
 	, docid
-	, CAMSID
+	, c.CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -72,11 +72,14 @@ import_query = paste0("  with obs_cams as (
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
+	, exempt_7130
 	, NVL(sum(discard),0) as discard
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from CAMS_OBS_CATCH
+	from CAMS_OBS_CATCH c 
+	left join (select distinct camsid, exempt_7130 from CAMS_SUBTRIP) s
+	on c.CAMSID = s.CAMSID
 	
 	where year >=", start_year , "
 	and year <= ", end_year , "
@@ -107,7 +110,7 @@ import_query = paste0("  with obs_cams as (
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
-  , CAMSID
+  , c.CAMSID
   , month
   , date_trip
 	-- , halfofyear
@@ -119,6 +122,7 @@ import_query = paste0("  with obs_cams as (
 	, closed_area_exemption
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
+	, exempt_7130
 	order by vtrserno asc
     )
 
