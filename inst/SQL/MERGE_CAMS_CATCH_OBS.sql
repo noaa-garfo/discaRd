@@ -129,6 +129,7 @@ with obs1 as (
             , round(o.meshsize, 0)
             , o.meshgroup
             , substr(nespp4, 1, 3)
+            , NESPP4
             , extract(year from dateland)
             , o.source
 
@@ -268,7 +269,7 @@ group by d.permit
           
 --         left join(select * from maps.CFG_NESPP3_ITIS ) i  --where SRCE_ITIS_STAT = 'valid'
 --         on a.NESPP3 = i.DLR_NESPP3
-         left join(select * from obdbs.obspec ) i  --use obdbs table since dlr nespp3 has some quirtks from nefsc nespp3 version..
+         left join(select * from obdbs.obspec@NOVA ) i  --use obdbs table since dlr nespp3 has some quirtks from nefsc nespp3 version..
          on a.NESPP4 = i.NESPP4
       )
 
@@ -402,7 +403,7 @@ select t.*
    ) t
       left join (select * from obs ) o
   on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND NVL(o.meshgroup, 'xxx') = NVL(t.meshgroup, 'xxx'))  -- don't use area when narea = 1
-  where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 40) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 = 1
   and t.link1 is not null  --maintin naming from matching table
   and t.cams_subtrip is not null
@@ -433,7 +434,7 @@ select t.*
    ) t
       left join (select * from obs ) o
         on (o.link1 = t.link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND NVL(o.meshgroup, 'xxx') = NVL(t.meshgroup, 'xxx') AND o.OBS_AREA = t.AREA) -- use area when narea >1
-  where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 20) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
+  where (nsubtrip_link1 > 1 AND nsubtrip_link1 < 40) -- there should never be more than a few subtrips.. zeros add up to lots, so we dont' want those here
   and narea_link1 > 1
   and t.link1 is not null --maintain naming from matching table
   and t.cams_subtrip is not null
