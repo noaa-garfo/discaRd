@@ -375,7 +375,7 @@ select t.*
       where nsubtrip_link1 = 1
 --      and t.link1 is not null
       and t.link1 is not null
-      and obs_area <> '000'
+      and (o.obs_area <> '000' or o.obs_area is null)
 
 )
 
@@ -407,7 +407,7 @@ select t.*
   and narea_link1 = 1
   and t.link1 is not null  --maintin naming from matching table
   and t.cams_subtrip is not null
-  and obs_area <> '000'
+  and (o.obs_area <> '000' or o.obs_area is null)
 
 )
 -- trips with >1 subtrip and multiple areas on link1s
@@ -438,7 +438,7 @@ select t.*
   and narea_link1 > 1
   and t.link1 is not null --maintain naming from matching table
   and t.cams_subtrip is not null
-  and obs_area <> '000'
+  and (o.obs_area <> '000' or o.obs_area is null)
 
 )
 
