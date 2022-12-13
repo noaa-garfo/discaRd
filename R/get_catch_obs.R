@@ -247,10 +247,12 @@ mrem = tbl(con_maps, sql('select * from cams_alloc_gf_mrem')) %>%
 gf_dat = gf_dat %>% 
 	left_join(x = .
 						, y = mrem %>% 
-							dplyr::select(CAMS_SUBTRIP, KALL_MREM_ADJ)
+							dplyr::select(CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO)
 						, by = 'CAMS_SUBTRIP') %>% 
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
-																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL))
+																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
+				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
+				 											, is.na(KALL_MREM_ADJ) ~ OBS_KALL))	
 
 # need this for anything not in the groundfish loop...
 all_dat = non_gf_dat %>%
