@@ -240,7 +240,7 @@ gf_dat = fed_trips%>%
 	filter(GF == 1)
 
 # Add MREM adjustment View 
-mrem = tbl(con_maps, sql('select * from cams_alloc_gf_mrem')) %>% 
+mrem = tbl(con, sql('select * from cams_alloc_gf_mrem')) %>% 
 	collect()
 
 # make the MREM KALL adjustment
@@ -514,6 +514,6 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	
 }
 
-# dat = get_catch_obs_herring(con_maps, 2021, 2022)
+# dat = get_catch_obs_herring(con, 2021, 2022)
 
 

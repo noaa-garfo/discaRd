@@ -145,7 +145,7 @@ discard_groundfish <- function(con
   	dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
-  
+
   # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
@@ -494,8 +494,8 @@ discard_groundfish <- function(con
   																			n_obs_trips_p_a < 5 ~ 'B'
   				)
   	)
-  
-  
+
+
 
   #
   # make sure CV type matches DISCARD SOURCE}
@@ -541,7 +541,7 @@ discard_groundfish <- function(con
   	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
   	mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
   													, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
-  				 
+
   	)
 
   if(FALSE) { # run this if looking manually
@@ -601,13 +601,13 @@ discard_groundfish <- function(con
   # Sys.umask('660')
 
   # Sys.umask('775')
-  
+
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
   fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
 
   system(paste("chmod 770 ", outfile))
-  
+
    t2 = Sys.time()
 
   print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
@@ -1094,19 +1094,19 @@ discard_groundfish <- function(con
   	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
   	mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
   													, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
-  				 
+
   	)
 
    # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
   # Sys.umask('660')
   # Sys.umask('775')
-  
+
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
 
   fst::write_fst(x = joined_table, path = outfile)
 
   system(paste("chmod 770 ", outfile))
-  
+
   t2 = Sys.time()
 
   print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
@@ -1162,7 +1162,7 @@ discard_groundfish <- function(con
   		res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))
 
   		# assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
-  		assign(paste0('outlist_df_scal'),  do.call(rbind, res_scal))
+  		assign(paste0('outlist_df_scal'),  do.call(dplyr::bind_rows, res_scal))
 
 
 
@@ -1194,7 +1194,7 @@ discard_groundfish <- function(con
   		write_fst(x = t1, path = gf_files)
 
   		system(paste("chmod 770 ", gf_files))
-  		
+
   		end_time = Sys.time()
 
   		print(paste('Scallop subsitution took: ', round(difftime(end_time, start_time, units = "mins"),2), ' MINUTES',  sep = ''))
@@ -1203,9 +1203,9 @@ discard_groundfish <- function(con
   }
 
   }
-  
+
   system(paste("chmod 770 -R", save_dir))
 
   }
-  
+
 
