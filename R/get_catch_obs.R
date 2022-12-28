@@ -1,13 +1,13 @@
 
 #' Get Catch OBS data
 #'
-#' @param con database connection 
+#' @param con database connection
 #' @param start_year start year (calendar year)
 #' @param end_year end year (calendar year)
 #'
-#' @return a list with the elements needed for discard estimation: 
+#' @return a list with the elements needed for discard estimation:
 #' * gf_dat : a data frame of groundfish only trips. This is used only in \link{discard_groundfish.R}
-#' * non_gf_dat : data frame of only non groundfish trips 
+#' * non_gf_dat : data frame of only non groundfish trips
 #' * all_dat : data frame of all trips
 #' @export
 #'
@@ -19,21 +19,21 @@
 #' all_dat = dat$all_dat
 #' rm(dat)
 #' gc()
-#' 
-#' # Herring example 
+#'
+#' # Herring example
 #' dat = get_catch_obs_herring(con_maps, 2021, 2022)
 #' gf_dat = dat$gf_dat
 #' non_gf_dat = dat$non_gf_dat
 #' all_dat = dat$all_dat
 #' rm(dat)
 #' gc()
-#' 
+#'
 get_catch_obs <- function(con = con_maps, start_year = 2017, end_year = 2022){
 
 t1 = Sys.time()
 
-print(paste0("Pulling CAMS_OBS_CATCH data for ", start_year, "-", end_year))	
-	
+print(paste0("Pulling CAMS_OBS_CATCH data for ", start_year, "-", end_year))
+
 import_query = paste0("  with obs_cams as (
    select year
 	, month
@@ -77,10 +77,10 @@ import_query = paste0("  with obs_cams as (
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from CAMS_OBS_CATCH c 
+	from CAMS_OBS_CATCH c
 	left join (select distinct camsid, exempt_7130 from CAMS_SUBTRIP) s
 	on c.CAMSID = s.CAMSID
-	
+
 	where year >=", start_year , "
 	and year <= ", end_year , "
 	group by year
@@ -150,7 +150,7 @@ c_o_dat2 = c_o_dat2 %>%
 	)
 	) %>%
 	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
-	mutate(DOCID_ORIG = DOCID) %>% 
+	mutate(DOCID_ORIG = DOCID) %>%
 	mutate(DOCID = CAMS_SUBTRIP)
 
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
@@ -239,20 +239,20 @@ non_gf_dat = fed_trips %>%
 gf_dat = fed_trips%>%
 	filter(GF == 1)
 
-# Add MREM adjustment View 
-mrem = tbl(con, sql('select * from cams_alloc_gf_mrem')) %>% 
+# Add MREM adjustment View
+mrem = tbl(con, sql('select * from cams_alloc_gf_mrem')) %>%
 	collect()
 
 # make the MREM KALL adjustment
-gf_dat = gf_dat %>% 
+gf_dat = gf_dat %>%
 	left_join(x = .
-						, y = mrem %>% 
+						, y = mrem %>%
 							dplyr::select(CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO)
-						, by = 'CAMS_SUBTRIP') %>% 
+						, by = 'CAMS_SUBTRIP') %>%
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
 																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
 				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
-				 											, is.na(KALL_MREM_ADJ) ~ OBS_KALL))	
+				 											, is.na(KALL_MREM_ADJ) ~ OBS_KALL))
 
 # need this for anything not in the groundfish loop...
 all_dat = non_gf_dat %>%
@@ -273,10 +273,10 @@ return(list(gf_dat = gf_dat, non_gf_dat = non_gf_dat, all_dat = all_dat))
 get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 2022){
 
 	t1 = Sys.time()
-	
+
 	print(paste0("Pulling CAMS_OBS_CATCH Herring data for ", start_year, "-", end_year))
-	
-	import_query = paste0(" 
+
+	import_query = paste0("
 	 with obs_cams as (
     select year
 	, month
@@ -320,8 +320,8 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_OBS_CATCH
- 
-  WHERE YEAR >= ", start_year, " 
+
+  WHERE YEAR >= ", start_year, "
   and YEAR <= ", end_year, "
 
 		group by year
@@ -364,8 +364,8 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
 	order by vtrserno asc
-    ) 
-     
+    )
+
   , area_herr as (
         select distinct
         camsid
@@ -373,40 +373,40 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
         , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
         from
-        cams_subtrip
+        cams_land
   )
-  
+
  -- , cams_herr as(
 --	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
 --	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
 --	  from cams_landings cl
 --  )
-  
-  select 
+
+  select
    cos.*
   -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
   , h.area_herr
   , b.herring as herr_targ
   from obs_cams cos
   left join area_herr h
-  on (h.cams_subtrip = cos.cams_subtrip) 
-  
+  on (h.cams_subtrip = cos.cams_subtrip)
+
   --left join cams_herr ch
-  --on (ch.cams_subtrip = cos.cams_subtrip) 
-  
-  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b 
+  --on (ch.cams_subtrip = cos.cams_subtrip)
+
+  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b
   on (cos.cams_subtrip = b.cams_subtrip)
-  
- 
+
+
 "
 	)
-	
-	
+
+
 	c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
-	
-	c_o_dat2 = c_o_dat2 %>% 
-		mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>% 
-		mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN' 
+
+	c_o_dat2 = c_o_dat2 %>%
+		mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
+		mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN'
 																		, PROGRAM == 'NS' ~ 'NLS'
 																		, PROGRAM == 'NN' ~ 'NLSN'
 																		, PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
@@ -415,20 +415,20 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 																		, PROGRAM == '2S' ~ 'CAII'
 																		, PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
 		)
-		) %>% 
-		mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>% 
+		) %>%
+		mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
 		mutate(DOCID = CAMS_SUBTRIP)
-	
+
 	# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
-	
-	
+
+
 	# 4/13/22
-	# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future 
-	
-	link3_na = c_o_dat2 %>% 
+	# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future
+
+	link3_na = c_o_dat2 %>%
 		filter(!is.na(LINK1) & is.na(LINK3))
-	
-	
+
+
 	# make these values 0 or NA or 'none' depending on the default for that field
 	if(nrow(link3_na) > 0){
 		link3_na = link3_na %>%
@@ -446,72 +446,72 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 						 , OBSVTR = NA
 						 , OBS_MESHGROUP = 'none'
 						 , PRORATE = NA)
-		
+
 		# this was dropping full trips...
 		# tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
-		
-		
+
+
 		# 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
-		
+
 		tidx = which(!is.na(c_o_dat2$LINK1) & is.na(c_o_dat2$LINK3))
-		
+
 		c_o_dat2 = c_o_dat2[-tidx,]
-		
+
 		# c_o_dat2 = c_o_dat2[tidx == F,]
-		
+
 		c_o_dat2 = c_o_dat2 %>%
 			bind_rows(link3_na)
-		
+
 	}
 	# continue the data import
-	
-	
+
+
 	state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 	fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
-	
-	fed_trips = fed_trips %>% 
-		mutate(ROWID = 1:nrow(fed_trips)) %>% 
+
+	fed_trips = fed_trips %>%
+		mutate(ROWID = 1:nrow(fed_trips)) %>%
 		relocate(ROWID)
-	
+
 	# filter out link1 that are doubled on VTR
-	
-	multilink = fed_trips %>% 
-		filter(!is.na(LINK1)) %>% 
-		group_by(VTRSERNO) %>% 
-		dplyr::summarise(nlink1 = n_distinct(LINK1)) %>% 
-		arrange(desc(nlink1)) %>% 
+
+	multilink = fed_trips %>%
+		filter(!is.na(LINK1)) %>%
+		group_by(VTRSERNO) %>%
+		dplyr::summarise(nlink1 = n_distinct(LINK1)) %>%
+		arrange(desc(nlink1)) %>%
 		filter(nlink1>1)
-	
-	remove_links = fed_trips %>% 
-		filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
-		dplyr::select(LINK1) %>% 
+
+	remove_links = fed_trips %>%
+		filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>%
+		dplyr::select(LINK1) %>%
 		distinct()
-	
-	remove_id = fed_trips %>% 
-		filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>% 
+
+	remove_id = fed_trips %>%
+		filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>%
 		distinct(ROWID)
-	
+
 	fed_trips =
-		fed_trips %>% 
+		fed_trips %>%
 		filter(ROWID %!in% remove_id$ROWID)
-	
-	c_o_dat2 = fed_trips %>% 
-		#	filter(GF == 0) %>% 
-		bind_rows(., state_trips) %>% 
+
+	c_o_dat2 = fed_trips %>%
+		#	filter(GF == 0) %>%
+		bind_rows(., state_trips) %>%
 		mutate(GF = "0")
-	
-	# gf_dat = fed_trips%>% 
+
+	# gf_dat = fed_trips%>%
 	# 	filter(GF == 1)
-	
-	rm(fed_trips, state_trips)	
-	
+
+	rm(fed_trips, state_trips)
+
 	gc()
 	t2 = Sys.time()
-	
+
 	print(paste0("Took ", round(difftime(t2, t1, units = 'mins'), 2) , ' minutes'))
-	
+
 	return(all_dat = c_o_dat2)
-	
+
 }
 
 # dat = get_catch_obs_herring(con, 2021, 2022)
