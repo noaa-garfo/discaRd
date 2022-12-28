@@ -506,15 +506,20 @@ discard_groundfish <- function(con
   # obs trips get 0, broad stock rate is NA
 
 
-  joined_table = joined_table %>%
-  	mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
-  												, DISCARD_SOURCE == 'I' ~ CV_f
-  												, DISCARD_SOURCE == 'T' ~ CV_f
-  												, DISCARD_SOURCE == 'A' ~ CV_f_a
-  												, DISCARD_SOURCE == 'B' ~ CV_b
+  joined_table <- joined_table |>
+    ungroup() |>
+    as.data.frame() |>
+    # rowwise() |>
+  	dplyr::mutate(CV = dplyr::case_when(DISCARD_SOURCE == 'O' ~ 0.0
+  												, DISCARD_SOURCE == 'I' ~ as.numeric(CV_f)
+  												, DISCARD_SOURCE == 'T' ~ as.numeric(CV_f)
+  												, DISCARD_SOURCE == 'A' ~ as.numeric(CV_f_a)
+  												, DISCARD_SOURCE == 'B' ~ as.numeric(CV_b),
+  												TRUE ~ NA_real_
   												# , DISCARD_SOURCE == 'AT' ~ CV_f_a
   												)  # , DISCARD_SOURCE == 'B' ~ NA
-  				 )
+  				 ) |>
+    as.data.frame()
 
   # Make note of the stratification variables used according to discard source
 
