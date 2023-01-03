@@ -240,14 +240,14 @@ gf_dat = fed_trips%>%
 	filter(GF == 1)
 
 # Add MREM adjustment View
-mrem = tbl(con, sql('select * from cams_alloc_gf_mrem')) %>%
+mrem = tbl(con, sql('select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO 
+										from cams_alloc_gf_mrem')) %>%
 	collect()
 
 # make the MREM KALL adjustment
 gf_dat = gf_dat %>%
 	left_join(x = .
-						, y = mrem %>%
-							dplyr::select(CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO)
+						, y = mrem 
 						, by = 'CAMS_SUBTRIP') %>%
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
 																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)

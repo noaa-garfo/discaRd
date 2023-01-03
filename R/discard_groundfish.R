@@ -220,7 +220,7 @@ discard_groundfish <- function(con
   	dplyr::filter(FISHDISP != '090') %>%
   	dplyr::filter(LINK3_OBS == 1) %>%
   	dplyr::filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
-  	dplyr::filter(is.na(EM) | EM != 'MREM') %>%
+  	dplyr::filter(EM != 'MREM' | is.na(EM)) %>%
     mutate(DISCARD_PRORATE = DISCARD
            , OBS_AREA = AREA
            , OBS_HAUL_KALL_TRIP = OBS_KALL
