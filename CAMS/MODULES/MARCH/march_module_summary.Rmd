@@ -103,7 +103,7 @@ Output tables are produced for each species. These can easily be recombined. Pre
 ```{r make diagnostic mackerel plot, eval = T, echo = F, fig.cap = "Histogram of Discard Rates by Species, Strata and Discard Source for Federal trips", fig.height = 8, fig.width = 12}
 # library(odbc)
 # library(dplyr, warn.conflicts = FALSE)
-# library(dbplyr)
+# # library(dbplyr)
 library(ggplot2)
 # # library(config)
 # library(stringr)
