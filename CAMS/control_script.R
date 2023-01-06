@@ -83,13 +83,13 @@ for(fy in fy_start:fy_end){ # TODO: move years to configDefaultRun.toml
   # FY <- jj
   # FY_TYPE = 'MAY START' # moved into function
   # source('groundfish_loop.R') # move this to R/ and run as function
-  # discard_groundfish(con = con_maps
-  # 									 , species = species #[c(7,11),]
-  # 									 , gf_dat = gf_dat
-  #                    , non_gf_dat = non_gf_dat
-  # 									 , gf_trips_only = F
-  # 									 , save_dir = save_dir
-  # 									 , FY = fy)
+  discard_groundfish(con = con_maps
+  									 , species = species #[c(7,11),]
+  									 , gf_dat = gf_dat
+                     , non_gf_dat = non_gf_dat
+  									 , gf_trips_only = F
+  									 , save_dir = save_dir
+  									 , FY = fy)
 
   parse_upload_discard(con = con_maps, filepath = save_dir, FY = fy, gf_only = F)
 }
