@@ -35,7 +35,7 @@ knitr::opts_chunk$set(echo=FALSE, warning = FALSE,
 
 library(odbc)
 library(dplyr, warn.conflicts = FALSE)
-library(dbplyr)
+# library(dbplyr)
 library(ggplot2)
 # library(config)
 library(stringr)
