@@ -1,7 +1,7 @@
 
 library(ROracle)
 library(dplyr, warn.conflicts = FALSE)
-library(dbplyr)
+# library(dbplyr)
 library(ggplot2)
 # library(config)
 library(stringr)

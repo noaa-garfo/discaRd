@@ -42,7 +42,7 @@ on (o.link1 = c.link1 AND substr(to_char(c.negear), 1, 1) = substr(to_char(o.obs
 library(odbc)
 library(readxl)
 library(dplyr)
-library(dbplyr)
+# library(dbplyr)
 library(knitr)
 # library(dtplyr)
 
