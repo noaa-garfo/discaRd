@@ -8,11 +8,9 @@ Maintainer: Benjamin Galuardi <benjamin.galuardi@noaa.gov>
 Description: functions for calculating Cochran bycatch estimator and CV. Version 2.0 has functionality to run within Catch Accounting and Monitoring System (CAMS)
 License: GPL-3
 Depends:
-	plyr,
 	dplyr,
 	tidyr,
 	scales,
-	reshape2,
 	lubridate,
 	xtable,
 	DT,
@@ -24,6 +22,8 @@ Depends:
 	fst,
 	glue
 Suggests:
+	reshape2,
+	plyr,
 	tree,
 	rpart,
 	gbm,
