@@ -14,9 +14,9 @@ get_catch_obs(con = con_maps, start_year = 2017, end_year = 2022)
 \item{end_year}{end year (calendar year)}
 }
 \value{
-a list with the elements needed for discard estimation: 
+a list with the elements needed for discard estimation:
 * gf_dat : a data frame of groundfish only trips. This is used only in \link{discard_groundfish.R}
-* non_gf_dat : data frame of only non groundfish trips 
+* non_gf_dat : data frame of only non groundfish trips
 * all_dat : data frame of all trips
 }
 \description{
@@ -31,7 +31,7 @@ all_dat = dat$all_dat
 rm(dat)
 gc()
 
-# Herring example 
+# Herring example
 dat = get_catch_obs_herring(con_maps, 2021, 2022)
 gf_dat = dat$gf_dat
 non_gf_dat = dat$non_gf_dat
