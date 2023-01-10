@@ -165,12 +165,15 @@ discard_herring <- function(con
 			filter(FISHDISP != '090') %>%
 			filter(LINK3_OBS == 1) %>%
 			filter(SOURCE != 'ASM') %>%
-			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
-			mutate(DISCARD_PRORATE = DISCARD
-						 , OBS_AREA = AREA
-						 , OBS_HAUL_KALL_TRIP = OBS_KALL
-						 , PRORATE = 1)
+			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES)
 
+		if(nrow(bdat_cy) > 0 ) {
+		  bdat_cy <- bdat_cy %>%
+		    mutate(DISCARD_PRORATE = DISCARD
+		           , OBS_AREA = AREA
+		           , OBS_HAUL_KALL_TRIP = OBS_KALL
+		           , PRORATE = 1)
+		}
 
 		# set up trips table for previous year
 		ddat_prev_cy = ddat_prev %>%
@@ -216,16 +219,28 @@ discard_herring <- function(con
 		)
 
 		# Run the discaRd functions on current year
-		d_focal = run_discard(bdat = bdat_cy
-													, ddat = ddat_focal_cy
-													, c_o_tab = ddat_focal
-													# , year = 2019
-													# , species_nespp3 = '081' # haddock...
-													# , species_nespp3 = species_nespp3  #'081' #cod...
-													, species_itis = species_itis
-													, stratvars = stratvars
-													, aidx = c(1:length(stratvars))  # this makes sure this isn't used..
-		)
+		if(nrow(bdat_cy) > 0) {
+		  d_focal = run_discard(bdat = bdat_cy
+		                        , ddat = ddat_focal_cy
+		                        , c_o_tab = ddat_focal
+		                        # , year = 2019
+		                        # , species_nespp3 = '081' # haddock...
+		                        # , species_nespp3 = species_nespp3  #'081' #cod...
+		                        , species_itis = species_itis
+		                        , stratvars = stratvars
+		                        , aidx = c(1:length(stratvars))  # this makes sure this isn't used..
+		  )
+
+		  dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
+		                                                 , N = N
+		                                                 , n = n
+		                                                 , orate = round(n/N, 2)
+		                                                 , drate = RE_mean
+		                                                 , KALL = K, disc_est = round(D)
+		                                                 , CV = round(RE_rse, 2)
+		  )
+
+		}
 
 		# summarize each result for convenience
 		dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
@@ -237,57 +252,90 @@ discard_herring <- function(con
 																									, CV = round(RE_rse, 2)
 		)
 
-		dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
-																									 , N = N
-																									 , n = n
-																									 , orate = round(n/N, 2)
-																									 , drate = RE_mean
-																									 , KALL = K, disc_est = round(D)
-																									 , CV = round(RE_rse, 2)
-		)
-
 		# substitute transition rates where needed
+		if(exists("dest_strata_f")) {
+		  trans_rate_df = dest_strata_f %>%
+		    left_join(., dest_strata_p, by = 'STRATA')
 
-		trans_rate_df = dest_strata_f %>%
-			left_join(., dest_strata_p, by = 'STRATA') %>%
-			mutate(STRATA = STRATA
-						 , n_obs_trips_f = n.x
-						 , n_obs_trips_p = n.y
-						 , in_season_rate = drate.x
-						 , previous_season_rate = drate.y
-			) %>%
-			mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
-			mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
-																				 , l_assumed_rate = previous_season_rate
-																				 , l_inseason_rate = in_season_rate
-			)
-			) %>%
-			dplyr::select(STRATA
-										, n_obs_trips_f
-										, n_obs_trips_p
-										, in_season_rate
-										, previous_season_rate
-										, trans_rate
-										, CV_f = CV.x
-			)
+		  trans_rate_df <- trans_rate_df %>%
+		    mutate(STRATA = STRATA
+		           , n_obs_trips_f = n.x
+		           , n_obs_trips_p = n.y
+		           , in_season_rate = drate.x
+		           , previous_season_rate = drate.y
+		    ) %>%
+		    mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
+		    mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+		                                       , l_assumed_rate = previous_season_rate
+		                                       , l_inseason_rate = in_season_rate
+		    )
+		    ) %>%
+		    dplyr::select(STRATA
+		                  , n_obs_trips_f
+		                  , n_obs_trips_p
+		                  , in_season_rate
+		                  , previous_season_rate
+		                  , trans_rate
+		                  , CV_f = CV.x
+		    )
+		} else {
+		  trans_rate_df = dest_strata_p
 
+		  trans_rate_df <- trans_rate_df %>%
+		    mutate(STRATA = STRATA
+		           , n_obs_trips_f = 0L
+		           , n_obs_trips_p = n
+		           , in_season_rate = NA_real_
+		           , previous_season_rate = drate
+		    ) %>%
+		    mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
+		    mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+		                                       , l_assumed_rate = previous_season_rate
+		                                       , l_inseason_rate = in_season_rate
+		    ),
+		    CV_f = NA_real_
+		    ) %>%
+		    dplyr::select(STRATA
+		                  , n_obs_trips_f
+		                  , n_obs_trips_p
+		                  , in_season_rate
+		                  , previous_season_rate
+		                  , trans_rate
+		                  , CV_f
+		    )
+		}
 
 		trans_rate_df = trans_rate_df %>%
-			mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate))
+		  mutate(
+		    final_rate = case_when(
+		      is.na(in_season_rate) ~ trans_rate,
+		      (in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate
+		    )
+		  )
 
 		trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
 
-
 		trans_rate_df_full = trans_rate_df
 
-		full_strata_table = trans_rate_df_full %>%
-			right_join(., y = d_focal$res, by = 'STRATA') %>%
-			as_tibble() %>%
-			mutate(SPECIES_ITIS_EVAL = species_itis
-						 , COMNAME_EVAL = species$ITIS_NAME[i]
-						 , FISHING_YEAR = FY
-						 , FY_TYPE = FY_TYPE) %>%
-			dplyr::rename(FULL_STRATA = STRATA)
+		if(exists("d_focal")) {
+		  full_strata_table = trans_rate_df_full %>%
+		    right_join(., y = d_focal$res, by = 'STRATA') %>%
+		    as_tibble() %>%
+		    mutate(SPECIES_ITIS_EVAL = species_itis
+		           , COMNAME_EVAL = species$ITIS_NAME[i]
+		           , FISHING_YEAR = FY
+		           , FY_TYPE = FY_TYPE) %>%
+		    dplyr::rename(FULL_STRATA = STRATA)
+		} else {
+		  full_strata_table = trans_rate_df_full %>%
+		    right_join(., y = d_prev$res, by = 'STRATA') %>%
+		    as_tibble() %>%
+		    mutate(SPECIES_ITIS_EVAL = species_itis
+		           , COMNAME_EVAL = species$ITIS_NAME[i]
+		           , FISHING_YEAR = FY
+		           , FY_TYPE = FY_TYPE) %>%
+		    dplyr::rename(FULL_STRATA = STRATA)
+		}
 
 		#
 		# Target/non-target and gear stratification
@@ -315,17 +363,29 @@ discard_herring <- function(con
 
 
 		# Run the discaRd functions on current year
-		d_focal_pass2 = run_discard(bdat = bdat_cy
-																, ddat = ddat_focal_cy
-																, c_o_tab = ddat_focal
-																# , year = 2019
-																# , species_nespp3 = '081' # haddock...
-																# , species_nespp3 = species_nespp3  #'081' #cod...
-																, species_itis = species_itis
-																, stratvars = stratvars_assumed
-																# , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
-																, aidx = c(1)  # this creates an unstratified broad stock rate
-		)
+		if(nrow(bdat_cy) > 0) {
+		  d_focal_pass2 = run_discard(bdat = bdat_cy
+		                              , ddat = ddat_focal_cy
+		                              , c_o_tab = ddat_focal
+		                              # , year = 2019
+		                              # , species_nespp3 = '081' # haddock...
+		                              # , species_nespp3 = species_nespp3  #'081' #cod...
+		                              , species_itis = species_itis
+		                              , stratvars = stratvars_assumed
+		                              # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
+		                              , aidx = c(1)  # this creates an unstratified broad stock rate
+		  )
+
+		  dest_strata_f_pass2 = d_focal_pass2$allest$C %>% summarise(STRATA = STRATA
+		                                                             , N = N
+		                                                             , n = n
+		                                                             , orate = round(n/N, 2)
+		                                                             , drate = RE_mean
+		                                                             , KALL = K, disc_est = round(D)
+		                                                             , CV = round(RE_rse, 2)
+		  )
+
+		}
 
 		# summarize each result for convenience
 		dest_strata_p_pass2 = d_prev_pass2$allest$C %>% summarise(STRATA = STRATA
@@ -337,43 +397,62 @@ discard_herring <- function(con
 																															, CV = round(RE_rse, 2)
 		)
 
-		dest_strata_f_pass2 = d_focal_pass2$allest$C %>% summarise(STRATA = STRATA
-																															 , N = N
-																															 , n = n
-																															 , orate = round(n/N, 2)
-																															 , drate = RE_mean
-																															 , KALL = K, disc_est = round(D)
-																															 , CV = round(RE_rse, 2)
-		)
-
 		# substitute transition rates where needed
-
-		trans_rate_df_pass2 = dest_strata_f_pass2 %>%
-			left_join(., dest_strata_p_pass2, by = 'STRATA') %>%
-			mutate(STRATA = STRATA
-						 , n_obs_trips_f = n.x
-						 , n_obs_trips_p = n.y
-						 , in_season_rate = drate.x
-						 , previous_season_rate = drate.y
-			) %>%
-			mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
-			mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
-																				 , l_assumed_rate = previous_season_rate
-																				 , l_inseason_rate = in_season_rate
-			)
-			) %>%
-			dplyr::select(STRATA
-										, n_obs_trips_f
-										, n_obs_trips_p
-										, in_season_rate
-										, previous_season_rate
-										, trans_rate
-										, CV_f = CV.x
-			)
+		if(exists("dest_strata_f_pass2")) {
+		  trans_rate_df_pass2 = dest_strata_p_pass2 %>%
+		    left_join(., dest_strata_f_pass2, by = 'STRATA') %>%
+		    mutate(STRATA = STRATA
+		           , n_obs_trips_f = n.x
+		           , n_obs_trips_p = n.y
+		           , in_season_rate = drate.x
+		           , previous_season_rate = drate.y
+		    ) %>%
+		    mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
+		    mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+		                                       , l_assumed_rate = previous_season_rate
+		                                       , l_inseason_rate = in_season_rate
+		    )
+		    ) %>%
+		    dplyr::select(STRATA
+		                  , n_obs_trips_f
+		                  , n_obs_trips_p
+		                  , in_season_rate
+		                  , previous_season_rate
+		                  , trans_rate
+		                  , CV_f = CV.x
+		    )
+		} else {
+		  trans_rate_df_pass2 = dest_strata_p_pass2 %>%
+		    mutate(STRATA = STRATA
+		           , n_obs_trips_f = 0L
+		           , n_obs_trips_p = n
+		           , in_season_rate = NA_real_
+		           , previous_season_rate = drate
+		    ) %>%
+		    mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
+		    mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+		                                       , l_assumed_rate = previous_season_rate
+		                                       , l_inseason_rate = in_season_rate
+		    ),
+		    CV_f = NA_real_
+		    ) %>%
+		    dplyr::select(STRATA
+		                  , n_obs_trips_f
+		                  , n_obs_trips_p
+		                  , in_season_rate
+		                  , previous_season_rate
+		                  , trans_rate
+		                  , CV_f)
+		}
 
 
 		trans_rate_df_pass2 = trans_rate_df_pass2 %>%
-			mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate))
+		  mutate(
+		    final_rate = case_when(
+		      is.na(in_season_rate) ~ trans_rate,
+		      (in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate
+		    )
+		  )
 
 		trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
@@ -381,7 +460,12 @@ discard_herring <- function(con
 		# get a table of broad stock rates using discaRd functions. Previously we used sector rollupresults (ARATE in pass2)
 		# herring uses this as target vs non target level rate
 
-		bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
+		if(nrow(bdat_cy > 0)) {
+		  bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
+		} else {
+		  bdat_2yrs = bdat_prev_cy
+		}
+
 		ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
 		ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
@@ -395,12 +479,19 @@ discard_herring <- function(con
 
 
 		# Run the discaRd functions on current year broad stock
+		if(nrow(bdat_cy) > 0) {
 		mnk_current = run_discard(bdat = bdat_cy
 															, ddat = ddat_focal_cy
 															, c_o_tab = ddat_focal
 															, species_itis = species_itis
 															, stratvars = stratvars[1]
 		)
+		BROAD_STOCK_RATE_CUR <-  mnk_current$allest$C$RE_mean
+		CV_b_cur <- round(mnk_current$allest$C$RE_rse, 2)
+		} else {
+		  BROAD_STOCK_RATE_CUR <-  NA_real_
+		  CV_b_cur <- NA_real_
+		}
 
 		#SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)
 		HERR_TARG <- mnk_prev$allest$C$STRATA
@@ -408,12 +499,9 @@ discard_herring <- function(con
 		#CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA)
 
 		BROAD_STOCK_RATE <-  mnk_prev$allest$C$RE_mean
-		BROAD_STOCK_RATE_CUR <-  mnk_current$allest$C$RE_mean
 
 
 		CV_b <- round(mnk_prev$allest$C$RE_rse, 2)
-		CV_b_cur <- round(mnk_current$allest$C$RE_rse, 2)
-
 
 		BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
 		BROAD_STOCK_RATE_TABLE_CUR <- as.data.frame(cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
