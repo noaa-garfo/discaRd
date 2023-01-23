@@ -403,8 +403,8 @@ discard_generic <- function(con = con_maps
 
 		# substitute transition rates where needed
 		if(exists("dest_strata_f_pass2")) {
-		trans_rate_df_pass2 = dest_strata_p_pass2 %>%
-			left_join(., dest_strata_f_pass2, by = 'STRATA') %>%
+		trans_rate_df_pass2 = dest_strata_f_pass2 %>%
+			left_join(., dest_strata_p_pass2, by = 'STRATA') %>%
 			mutate(STRATA = STRATA
 						 , n_obs_trips_f = n.x
 						 , n_obs_trips_p = n.y
