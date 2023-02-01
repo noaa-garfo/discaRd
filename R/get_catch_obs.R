@@ -497,10 +497,11 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 
 	c_o_dat2 = fed_trips %>%
 		#	filter(GF == 0) %>%
-		bind_rows(., state_trips) %>%
-		mutate(GF = "0")
-
-	# gf_dat = fed_trips%>%
+		bind_rows(., state_trips) 
+	# %>%
+	# 	mutate(GF = "0")
+	# 
+	# # gf_dat = fed_trips%>%
 	# 	filter(GF == 1)
 
 	rm(fed_trips, state_trips)
