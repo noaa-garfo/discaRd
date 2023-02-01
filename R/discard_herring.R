@@ -106,8 +106,8 @@ discard_herring <- function(con
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
-
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+			assign_strata(., stratvars = stratvars)
 
 		# DATE RANGE FOR PREVIOUS YEAR
 
@@ -131,7 +131,8 @@ discard_herring <- function(con
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>% 
+			assign_strata(., stratvars = stratvars)
 
 
 
@@ -319,7 +320,8 @@ discard_herring <- function(con
 
 		if(exists("d_focal")) {
 		  full_strata_table = trans_rate_df_full %>%
-		    right_join(., y = d_focal$res, by = 'STRATA') %>%
+		    # right_join(., y = d_focal$res, by = 'STRATA') %>%
+		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
 		           , COMNAME_EVAL = species$ITIS_NAME[i]
@@ -328,7 +330,8 @@ discard_herring <- function(con
 		    dplyr::rename(FULL_STRATA = STRATA)
 		} else {
 		  full_strata_table = trans_rate_df_full %>%
-		    right_join(., y = d_prev$res, by = 'STRATA') %>%
+		    # right_join(., y = d_prev$res, by = 'STRATA') %>%
+		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
 		           , COMNAME_EVAL = species$ITIS_NAME[i]
@@ -520,8 +523,14 @@ discard_herring <- function(con
 		#
 		# print(paste0("Constructing output table for ", species_itis, " ", FY))
 
-		joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
-			dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
+		joined_table = assign_strata(full_strata_table, stratvars_assumed) 
+		
+		if("STRATA_ASSUMED" %in% names(joined_table)) {
+			joined_table = joined_table %>% 
+				dplyr::select(-STRATA_ASSUMED)
+		}
+		
+			joined_table = joined_table %>%  # not using this anymore here..
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
 			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('HERR_TARG')) %>%
@@ -570,24 +579,24 @@ discard_herring <- function(con
 # should likely replace the above with this to match other modules
 
 		joined_table = joined_table %>%
-			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 & SOURCE != 'ASM' ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
 																				, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
 																				, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-																				, is.na(LINK1) &
+																				, is.na(LINK1)|SOURCE == 'ASM' &
 																					n_obs_trips_f >= 5 ~ 'I'
 																				# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-																				, is.na(LINK1) &
+																				, is.na(LINK1)|SOURCE == 'ASM' &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-																				, is.na(LINK1) &
+																				, is.na(LINK1)|SOURCE == 'ASM' &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p < 5 &
 																					n_obs_trips_f_a >= 5 ~ 'A' # assumed rate for Herring: CAMS_GEAR_GROUP and HERR_TARG
-																				, is.na(LINK1) &
+																				, is.na(LINK1)|SOURCE == 'ASM' &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p < 5 &
 																					n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-																				, is.na(LINK1) &
+																				, is.na(LINK1)|SOURCE == 'ASM' &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p < 5 &
 																					n_obs_trips_f_a < 5 &
