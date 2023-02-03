@@ -55,8 +55,15 @@ discard_generic <- function(con = con_maps
 
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
+		
+		# add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ---- 
+		
+		all_dat = all_dat %>% 
+			mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
+																		 , NA ~ 0))
+		
 		#--------------------------------------------------------------------------#
-		# Support table import by species
+		#-  Support table import by species ------
 
 		# GEAR TABLE
 		CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
@@ -93,7 +100,8 @@ discard_generic <- function(con = con_maps
 			distinct(OBS_CODES)
 
 		#--------------------------------------------------------------------------------#
-		# make tables
+		# make tables ----
+		
 		ddat_focal <- all_dat %>%
 			filter(DATE_TRIP >= start_date & DATE_TRIP < end_date) %>% ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -109,10 +117,11 @@ discard_generic <- function(con = con_maps
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+			assign_strata(., stratvars)
 
 
-		# DATE RANGE FOR PREVIOUS YEAR
+		# DATE RANGE FOR PREVIOUS YEAR ----
 
 		dr_prev = get_date_range(FY-1, FY_TYPE)
 		end_date_prev = dr_prev[2]
@@ -134,7 +143,8 @@ discard_generic <- function(con = con_maps
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>% 
+			assign_strata(., stratvars)
 
 
 
@@ -149,7 +159,7 @@ discard_generic <- function(con = con_maps
 			slice(1) %>%
 			ungroup()
 
-		# and join to the unobserved trips
+		# and join to the unobserved trips ----
 
 		ddat_focal_cy = ddat_focal_cy %>%
 			union_all(ddat_focal %>%
@@ -178,7 +188,7 @@ discard_generic <- function(con = con_maps
 		           , PRORATE = 1)
 		}
 
-		# set up trips table for previous year
+		# set up trips table for previous year ----
 		ddat_prev_cy = ddat_prev %>%
 			filter(!is.na(LINK1)) %>%
 			mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
@@ -208,7 +218,7 @@ discard_generic <- function(con = con_maps
 						 , OBS_HAUL_KALL_TRIP = OBS_KALL
 						 , PRORATE = 1)
 
-		# Run the discaRd functions on previous year
+		# Run the discaRd functions on previous year ----
 		d_prev = run_discard(bdat = bdat_prev_cy
 												 , ddat = ddat_prev_cy
 												 , c_o_tab = ddat_prev
@@ -219,7 +229,7 @@ discard_generic <- function(con = con_maps
 												 , aidx = c(1:length(stratvars))
 		)
 
-		# Run the discaRd functions on current year
+		# Run the discaRd functions on current year----
 		if(nrow(bdat_cy) > 0) {
 		d_focal = run_discard(bdat = bdat_cy
 													, ddat = ddat_focal_cy
@@ -243,7 +253,7 @@ discard_generic <- function(con = con_maps
 
 		}
 
-		# summarize each result for convenience
+		# summarize each result for convenience ----
 		dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
 																									, N = N
 																									, n = n
@@ -254,7 +264,7 @@ discard_generic <- function(con = con_maps
 		)
 
 
-		# substitute transition rates where needed
+		# substitute transition rates where needed ----
 		if(exists("dest_strata_f")) {
 		  trans_rate_df = dest_strata_f %>%
 		    left_join(., dest_strata_p, by = 'STRATA')
@@ -321,7 +331,8 @@ discard_generic <- function(con = con_maps
 
 		if(exists("d_focal")) {
 		full_strata_table = trans_rate_df_full %>%
-			right_join(., y = d_focal$res, by = 'STRATA') %>%
+			# right_join(., y = d_focal$res, by = 'STRATA') %>%
+			right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 			as_tibble() %>%
 			mutate(SPECIES_ITIS_EVAL = species_itis
 						 , COMNAME_EVAL = species$ITIS_NAME[i]
@@ -330,7 +341,8 @@ discard_generic <- function(con = con_maps
 			dplyr::rename(FULL_STRATA = STRATA)
 		} else {
 		  full_strata_table = trans_rate_df_full %>%
-		    right_join(., y = d_prev$res, by = 'STRATA') %>%
+		    # right_join(., y = d_prev$res, by = 'STRATA') %>%
+		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
 		           , COMNAME_EVAL = species$ITIS_NAME[i]
@@ -339,10 +351,7 @@ discard_generic <- function(con = con_maps
 		    dplyr::rename(FULL_STRATA = STRATA)
 		}
 
-		#
-		# SECTOR ROLLUP
-		#
-		# print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
+		# Second Pass: Stock, Gear, and Mesh only ----
 
 		stratvars_assumed = c("SPECIES_STOCK"
 													, "CAMS_GEAR_GROUP"
@@ -351,7 +360,7 @@ discard_generic <- function(con = con_maps
 
 		### All tables in previous run can be re-used wiht diff stratification
 
-		# Run the discaRd functions on previous year
+		# Run the discaRd functions on previous year: pass 2 ----
 		d_prev_pass2 = run_discard(bdat = bdat_prev_cy
 															 , ddat = ddat_prev_cy
 															 , c_o_tab = ddat_prev
@@ -364,7 +373,7 @@ discard_generic <- function(con = con_maps
 		)
 
 
-		# Run the discaRd functions on current year
+		# Run the discaRd functions on current year: pass 2 ----
 		if(nrow(bdat_cy) > 0) {
 		d_focal_pass2 = run_discard(bdat = bdat_cy
 																, ddat = ddat_focal_cy
@@ -389,7 +398,7 @@ discard_generic <- function(con = con_maps
 
 		}
 
-		# summarize each result for convenience
+		# summarize each result for convenience : pass 2 ----
 		dest_strata_p_pass2 = d_prev_pass2$allest$C %>% summarise(STRATA = STRATA
 																															, N = N
 																															, n = n
@@ -401,7 +410,7 @@ discard_generic <- function(con = con_maps
 
 
 
-		# substitute transition rates where needed
+		# substitute transition rates where needed: pass 2 ----
 		if(exists("dest_strata_f_pass2")) {
 		trans_rate_df_pass2 = dest_strata_f_pass2 %>%
 			left_join(., dest_strata_p_pass2, by = 'STRATA') %>%
@@ -460,7 +469,8 @@ discard_generic <- function(con = con_maps
 
 		trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
-		# get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
+		# get a table of broad stock rates using discaRd functions. ----
+		# Previosuly we used sector rollupresults (ARATE in pass2)
 
 		if(nrow(bdat_cy > 0)) {
 		bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
@@ -494,13 +504,18 @@ discard_generic <- function(con = con_maps
 
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
-		#
-		# join full and assumed strata tables
-		#
-		# print(paste0("Constructing output table for ", species_itis, " ", FY))
+		#--------------------------------------------------------------------------#
+		# join full and assumed strata tables ----
 
-		joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
-			dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
+
+		joined_table = assign_strata(full_strata_table, stratvars_assumed) 
+		
+		if("STRATA_ASSUMED" %in% names(joined_table)) {
+			joined_table = joined_table %>% 
+				dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
+		}
+		
+		joined_table = joined_table %>%  
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
 			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
@@ -518,7 +533,7 @@ discard_generic <- function(con = con_maps
 						 , FY_TYPE = FY_TYPE)
 
 		#
-		# add discard source
+		# add discard source ----
 		#
 
 		joined_table = joined_table %>%
@@ -546,7 +561,7 @@ discard_generic <- function(con = con_maps
 																					n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 		#
-		# make sure CV type matches DISCARD SOURCE}
+		# Make sure CV type matches DISCARD SOURCE ----
 		#
 
 		# obs trips get 0, broad stock rate is NA
@@ -563,7 +578,7 @@ discard_generic <- function(con = con_maps
 			)  # , DISCARD_SOURCE == 'B' ~ NA
 			)
 
-		# Make note of the stratification variables used according to discard source
+		# Make note of the stratification variables used according to discard source ----
 
 		stratvars_gear = c("SPECIES_STOCK"
 											 , "CAMS_GEAR_GROUP")
@@ -584,11 +599,11 @@ discard_generic <- function(con = con_maps
 			)
 
 
-		#
-		# get the discard for each trip using COAL_RATE}
+		#------------------------------------------------------------------------#
+		# get the discard for each trip using COAL_RATE and discard mortality ----
 		#
 
-		# discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio.
+		# discard mort ratio that are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio.
 		# the KALLs should be small..
 
 		joined_table = joined_table %>%
