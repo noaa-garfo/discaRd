@@ -37,12 +37,12 @@ run_discard <- function(bdat
 															 , species_itis = species_itis
 															 , stratvars = stratvars
 	)
-	obs_discard = get_obs_disc_vals(c_o_tab
-																	# , species_nespp3 = species_nespp3
-																	, species_itis = species_itis
-																	# , year = year
-																	# , stratvars = stratvars
-	)
+	# obs_discard = get_obs_disc_vals(c_o_tab
+	# 																# , species_nespp3 = species_nespp3
+	# 																, species_itis = species_itis
+	# 																# , year = year
+	# 																# , stratvars = stratvars
+	# )
 	assumed_discard = make_assumed_rate(bdat
 																			# , year = year
 																			, stratvars = stratvars[aidx]
@@ -115,20 +115,20 @@ run_discard <- function(bdat
 	# match on VTRSERNO? 
 	# now matching on CAMS_SUBTRIP.. 
 	
-	out_tab = obs_discard %>%
-		ungroup() %>%
-		mutate(OBS_DISCARD = DISCARD) %>%
-		dplyr::select(CAMS_SUBTRIP, OBS_DISCARD) %>% # dont need these VTRSERNO, CAMSID, 10/03/22 BG
-		# right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
-		right_join(x = ., y = ddat_rate, by = c('CAMS_SUBTRIP')) %>%   # changed 10/3/22 BG
-		mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>%
-		mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>%
-		mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
-		)
+	# out_tab = obs_discard %>%
+	# 	ungroup() %>%
+	# 	mutate(OBS_DISCARD = DISCARD) %>%
+	# 	dplyr::select(CAMS_SUBTRIP, OBS_DISCARD) %>% # dont need these VTRSERNO, CAMSID, 10/03/22 BG
+	# 	# right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
+	# 	right_join(x = ., y = ddat_rate, by = c('CAMS_SUBTRIP')) %>%   # changed 10/3/22 BG
+	# 	mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>%
+	# 	mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>%
+	# 	mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
+	# 	)
 	
 	list(species = species_itis #species_nespp3
 			 , allest = allest
-			 , res = out_tab
+			 # , res = out_tab
 	)
 	
 }
