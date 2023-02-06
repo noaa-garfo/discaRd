@@ -143,7 +143,7 @@ for(yy in FY:(FY+end_fy)){
 		dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
 		dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
 		relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-	  assign_strata(., stratvars = stratvars)
+	  assign_strata(., stratvars = stratvars_scalgf)
 
 	ddat_prev <- scal_trips %>%
 		# filter(SCAL_YEAR == yy-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
