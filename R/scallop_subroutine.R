@@ -87,7 +87,7 @@ for(yy in FY:(FY+end_fy)){
 	#
 	t1 = Sys.time()
 
-	print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", scal_gf_species$ITIS_NAME))
+	logr::log_print(paste0('ESTIMATING SCALLOP TRIP DISCARDS FOR SCALLOP YEAR', yy," ", scal_gf_species$ITIS_NAME))
 
 	# species_itis = scal_gf_species$SPECIES_ITIS
 	#---#
@@ -142,8 +142,8 @@ for(yy in FY:(FY+end_fy)){
 		) %>%
 		dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
 		dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-		relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
-
+		relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+	  assign_strata(., stratvars = stratvars)
 
 	ddat_prev <- scal_trips %>%
 		# filter(SCAL_YEAR == yy-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
@@ -307,7 +307,8 @@ for(yy in FY:(FY+end_fy)){
 	trans_rate_df_full = trans_rate_df
 
 	full_strata_table = trans_rate_df_full %>%
-		right_join(., y = d_focal$res, by = 'STRATA') %>%
+		# right_join(., y = d_focal$res, by = 'STRATA') %>%
+	  right_join(., y = ddat_focal, by = 'STRATA') %>%
 		as_tibble() %>%
 		mutate(SPECIES_ITIS_EVAL = species_itis
 					 , COMNAME_EVAL = scal_gf_species$ITIS_NAME
@@ -431,10 +432,17 @@ for(yy in FY:(FY+end_fy)){
 	#
 	# join full and assumed strata tables
 	#
-	# print(paste0("Constructing output table for ", species_itis, " ", FY))
+	# logr::log_print(paste0("Constructing output table for ", species_itis, " ", FY))
 
-	joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
-		dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
+	joined_table = assign_strata(full_strata_table, stratvars_assumed)
+
+	if("STRATA_ASSUMED" %in% names(joined_table)) {
+	  joined_table = joined_table %>%
+	    dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
+	}
+
+	joined_table <- joined_table %>%
+		# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 		dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 		left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
 		left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
@@ -484,8 +492,8 @@ for(yy in FY:(FY+end_fy)){
 																				n_obs_trips_p < 5 &
 																				n_obs_trips_f_a < 5 &
 																				n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
-	
-	
+
+
 
 	#
 	# make sure CV type matches DISCARD SOURCE}
@@ -537,16 +545,16 @@ for(yy in FY:(FY+end_fy)){
 														, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 		)
 	# Sys.umask('775')
-	
+
 	outfile = file.path(scal_trip_dir, paste0('discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
-	
+
 	fst::write_fst(x = joined_table, path = outfile)
 
 	system(paste("chmod 770 ", outfile))
-	
+
 	t2 = Sys.time()
 
-	print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+	logr::log_print(paste(species_itis, ' SCALLOP DISCARDS RAN IN ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
 }
 
