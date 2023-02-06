@@ -53,23 +53,23 @@ discard_groundfish <- function(con
 
   t1 = Sys.time()
 
-  print(paste0('Running ', species$ITIS_NAME[i], ' for Fishing Year ', FY))
+  logr::log_print(paste0('Running ', species$ITIS_NAME[i], ' for Fishing Year ', FY))
 
   # species_nespp3 = species$NESPP3[i]
   species_itis = species$ITIS_TSN[i]
   #---#
-  
-  
-  # add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ---- 
-  
-  gf_dat = gf_dat %>% 
+
+
+  # add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ----
+
+  gf_dat = gf_dat %>%
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , NA ~ 0))
-  
-  non_gf_dat = non_gf_dat %>% 
+
+  non_gf_dat = non_gf_dat %>%
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , NA ~ 0))
-  
+
   # Support table import by species ----
 
   # GEAR TABLE
@@ -108,14 +108,14 @@ discard_groundfish <- function(con
     dplyr::select(-ITIS_TSN)
 
 
-  # Observer codes to be removed 
+  # Observer codes to be removed
   OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
   	collect() %>%
   	dplyr::filter(ITIS_TSN == species_itis) %>%
   	distinct(OBS_CODES)
 
 
-  # print(paste0("Getting in-season rates for ", species_itis, " ", FY))
+  # logr::log_print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
   # make tables ----
   ddat_focal <- gf_dat %>%
@@ -131,7 +131,7 @@ discard_groundfish <- function(con
               ) %>%
   	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
   # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
@@ -151,7 +151,7 @@ discard_groundfish <- function(con
               ) %>%
   	dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
 
   # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
@@ -324,7 +324,7 @@ discard_groundfish <- function(con
   #
   # SECTOR ROLLUP: second pass ----
   #
-  # print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
+  # logr::log_print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
 
   stratvars_assumed = c("SPECIES_STOCK"
   											, "CAMS_GEAR_GROUP"
@@ -413,7 +413,7 @@ discard_groundfish <- function(con
 
 
    # get a table of broad stock rates using discaRd functions: third pass. ----
-   # Previously we used sector rollup results (ARATE in pass2) 
+   # Previously we used sector rollup results (ARATE in pass2)
 
 
   BROAD_STOCK_RATE_TABLE = list()
@@ -450,14 +450,14 @@ discard_groundfish <- function(con
   #
   # join full and assumed strata tables ----
   #
-  joined_table = assign_strata(full_strata_table, stratvars_assumed) 
-  
+  joined_table = assign_strata(full_strata_table, stratvars_assumed)
+
   if("STRATA_ASSUMED" %in% names(joined_table)) {
-  	joined_table = joined_table %>% 
+  	joined_table = joined_table %>%
   		dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
   }
-  
-  joined_table = joined_table %>% 
+
+  joined_table = joined_table %>%
   	# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
   	dplyr::rename(STRATA_ASSUMED = STRATA) %>%
   	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
@@ -581,8 +581,8 @@ discard_groundfish <- function(con
   # substitute EM data on EM trips ----
   #-------------------------------#
 
-  # TODO: Convert these print() statements to logr file write outs
-  print(paste0('Adding EM values for ', species$ITIS_NAME[i], ' Groundfish Trips ', FY))
+  # TODO: Convert these logr::log_print() statements to logr file write outs
+  logr::log_print(paste0('Adding EM values for ', species$ITIS_NAME[i], ' Groundfish Trips ', FY))
 
 
   em_tab = ROracle::dbGetQuery(conn = con, statement = "
@@ -632,7 +632,7 @@ discard_groundfish <- function(con
 
    t2 = Sys.time()
 
-  print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+  logr::log_print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
   }
 
@@ -640,7 +640,7 @@ discard_groundfish <- function(con
   if(gf_trips_only == F){
   #'
   ## ----loop through the non sector trips for each stock ----
-  # -------------------------------------------------------------------# 
+  # -------------------------------------------------------------------#
   stratvars_nongf = c('SPECIES_STOCK'
                 ,'CAMS_GEAR_GROUP'
   							, 'MESHGROUP'
@@ -652,7 +652,7 @@ discard_groundfish <- function(con
 
   t1 = Sys.time()
 
-  print(paste0('Running non-groundfish trips for ', species$ITIS_NAME[i], ' Fishing Year ', FY))
+  logr::log_print(paste0('Running non-groundfish trips for ', species$ITIS_NAME[i], ' Fishing Year ', FY))
 
   # species_nespp3 = species$NESPP3[i]
   species_itis = species$ITIS_TSN[i]
@@ -699,7 +699,7 @@ discard_groundfish <- function(con
   # haddock example trips with full strata either in year_t or year _t-1
   #---------#
 
-  # print(paste0("Getting in-season rates for ", species_itis, " ", FY))
+  # logr::log_print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
   # make tables
   ddat_focal <- non_gf_dat %>%
@@ -715,7 +715,7 @@ discard_groundfish <- function(con
               ) %>%
   	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
 
 
@@ -732,7 +732,7 @@ discard_groundfish <- function(con
               ) %>%
   		dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
 
 
@@ -894,7 +894,7 @@ discard_groundfish <- function(con
 
   # GEAR AND MESHGROUP STRATA (2nd pass)
 
-  # print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
+  # logr::log_print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
 
   stratvars_assumed = c("SPECIES_STOCK"
   											, "CAMS_GEAR_GROUP"
@@ -1015,15 +1015,15 @@ discard_groundfish <- function(con
 
   #
   # join full and assumed strata tables
-  joined_table = assign_strata(full_strata_table, stratvars_assumed) 
-  
+  joined_table = assign_strata(full_strata_table, stratvars_assumed)
+
   if("STRATA_ASSUMED" %in% names(joined_table)) {
-  	joined_table = joined_table %>% 
+  	joined_table = joined_table %>%
   		dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
   }
-  
-  joined_table = joined_table %>% 
-  	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
+
+  joined_table = joined_table %>%
+  	# dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
   	dplyr::rename(STRATA_ASSUMED = STRATA) %>%
   	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
   	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
@@ -1139,7 +1139,7 @@ discard_groundfish <- function(con
 
   t2 = Sys.time()
 
-  print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+  logr::log_print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
   }
 
@@ -1173,7 +1173,7 @@ discard_groundfish <- function(con
 
   	# for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
-  		print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$ITIS_NAME[i], ' for Groundfish Year ', GF_YEAR))
+  		logr::log_print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$ITIS_NAME[i], ' for Groundfish Year ', GF_YEAR))
 
   		sp_itis = scal_gf_species$ITIS_TSN[i]
 
@@ -1215,7 +1215,7 @@ discard_groundfish <- function(con
   		# make sure columns match
   		didx  = match(names(t1), names(t2))
 
-  		# swap the scallop estimated trips into the groundfish records ---- 
+  		# swap the scallop estimated trips into the groundfish records ----
 
 
   		t1[t1idx, ] = t2[t2idx, didx]
@@ -1227,7 +1227,7 @@ discard_groundfish <- function(con
 
   		end_time = Sys.time()
 
-  		print(paste('Scallop subsitution took: ', round(difftime(end_time, start_time, units = "mins"),2), ' MINUTES',  sep = ''))
+  		logr::log_print(paste('Scallop subsitution took: ', round(difftime(end_time, start_time, units = "mins"),2), ' MINUTES',  sep = ''))
 
 
   }
