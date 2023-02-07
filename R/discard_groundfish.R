@@ -66,9 +66,9 @@ discard_groundfish <- function(con
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , NA ~ 0))
 
-  non_gf_dat = non_gf_dat %>%
-  	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-  																 , NA ~ 0))
+  # non_gf_dat = non_gf_dat %>%
+  # 	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
+  # 																 , NA ~ 0))
 
   # Support table import by species ----
 
@@ -638,6 +638,28 @@ discard_groundfish <- function(con
 
 
   if(gf_trips_only == F){
+  	
+  # remove old objects so there is no chance of interference.. 	
+  	
+  	rm(list = ls()[grepl(x = ls(), 'ddat*')])
+  	rm(list = ls()[grepl(x = ls(), 'bdat*')])
+  	rm(list = ls()[grepl(x = ls(), 'd_f*')])
+  	rm(list = ls()[grepl(x = ls(), 'b_f*')])
+  	rm(list = ls()[grepl(x = ls(), 'dest*')])
+  	rm(list = ls()[grepl(x = ls(), 'trans*')])
+  	rm(list = ls()[grepl(x = ls(), 'strat*')])
+  	rm(list = ls()[grepl(x = ls(), 'mnk*')])
+  	rm(list = ls()[grepl(x = ls(), 'CAMS_GEAR*')])
+  	rm(list = ls()[grepl(x = ls(), 'BROAD*')])
+  	rm(list = ls()[grepl(x = ls(), 'STOCK_*')])
+ 
+  	
+  # Add OBS_DISCARD for non-GF trips	
+  	
+  	non_gf_dat = non_gf_dat %>%
+  		mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
+  																	 , NA ~ 0)) 	
+  	 	
   #'
   ## ----loop through the non sector trips for each stock ----
   # -------------------------------------------------------------------#
@@ -716,7 +738,7 @@ discard_groundfish <- function(con
   	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
     relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-  	assign_strata(., stratvars = stratvars)
+  	assign_strata(., stratvars = stratvars_nongf)
 
 
   ddat_prev <- non_gf_dat %>%
@@ -733,7 +755,7 @@ discard_groundfish <- function(con
   		dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
     relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-  	assign_strata(., stratvars = stratvars)
+  	assign_strata(., stratvars = stratvars_nongf)
 
 
 
@@ -991,7 +1013,7 @@ discard_groundfish <- function(con
   			, ddat_focal = ddat_non_gf_2yr
   			, c_o_tab = ddat_2yr
   			, species_itis = species_itis
-  			, stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+  			, stratvars = stratvars_nongf[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
   			)
 
   # rate table
@@ -1098,7 +1120,7 @@ discard_groundfish <- function(con
   stratvars_gear = c("SPECIES_STOCK"
   											, "CAMS_GEAR_GROUP")
 
-  strata_f = paste(stratvars, collapse = ';')
+  strata_f = paste(stratvars_nongf, collapse = ';')
   strata_a = paste(stratvars_assumed, collapse = ';')
   strata_b = paste(stratvars_gear, collapse = ';')
 
