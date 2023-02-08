@@ -60,7 +60,7 @@ discard_generic <- function(con = con_maps
 		
 		all_dat = all_dat %>% 
 			mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-																		 , NA ~ 0))
+																		 , TRUE ~ 0))
 		
 		#--------------------------------------------------------------------------#
 		#-  Support table import by species ------
