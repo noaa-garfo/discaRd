@@ -64,7 +64,7 @@ discard_groundfish <- function(con
 
   gf_dat = gf_dat %>%
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-  																 , NA ~ 0))
+  																 , TRUE ~ 0))
 
   # non_gf_dat = non_gf_dat %>%
   # 	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
@@ -658,7 +658,7 @@ discard_groundfish <- function(con
   	
   	non_gf_dat = non_gf_dat %>%
   		mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-  																	 , NA ~ 0)) 	
+  																	 , TRUE ~ 0)) 	
   	 	
   #'
   ## ----loop through the non sector trips for each stock ----
