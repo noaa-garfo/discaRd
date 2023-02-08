@@ -57,6 +57,13 @@ discard_groundfish <- function(con
 
   # species_nespp3 = species$NESPP3[i]
   species_itis = species$ITIS_TSN[i]
+  
+  # flag allocated vs non-allocated ----
+  # Halibut, Ocean Put, Woffish, Winodwpane are unallocated. 
+  
+  allocated = ifelse(species_itis %in% c(172933, 630979, 171341, 172746), F, T)
+  
+  
   #---#
 
 
@@ -611,7 +618,22 @@ discard_groundfish <- function(con
   														 ,  !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD_SOURCE)
   	) %>%
   	dplyr::select(names(joined_table))
+  
+  
+  # change discard_source, strata_used, discard_rate, and discard for allocated groundfish stocks ---- 
 
+  if(allocated == T){
+  	
+  	mrem_idx = emjoin$EM == 'MREM'
+  	emjoin$STRATA_USED[mrem_idx] = 'RULE BASED'
+  	emjoin$DISCARD_SOURCE[mrem_idx] = 'R'
+  	emjoin$COAL_RATE[mrem_idx] = 0
+  	emjoin$DISCARD[mrem_idx] = 0
+  	emjoin$CV[mrem_idx] = NA
+  	
+  }
+  
+  
   # emjoin %>% group_by(DISCARD_SOURCE, NMFS_DISCARD_SOURCE) %>% dplyr::summarise(sum(DISCARD_MOD, na.rm = T))
 
 
