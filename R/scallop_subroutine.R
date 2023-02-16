@@ -546,6 +546,10 @@ for(yy in FY:(FY+end_fy)){
 		)
 	# Sys.umask('775')
 
+	# force remove duplicates
+	joined_table <- joined_table |>
+	  dplyr::distinct()
+
 	outfile = file.path(scal_trip_dir, paste0('discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
 
 	fst::write_fst(x = joined_table, path = outfile)

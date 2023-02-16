@@ -55,13 +55,13 @@ discard_generic <- function(con = con_maps
 
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
-		
-		# add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ---- 
-		
-		all_dat = all_dat %>% 
+
+		# add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ----
+
+		all_dat = all_dat %>%
 			mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
 																		 , TRUE ~ 0))
-		
+
 		#--------------------------------------------------------------------------#
 		#-  Support table import by species ------
 
@@ -101,7 +101,7 @@ discard_generic <- function(con = con_maps
 
 		#--------------------------------------------------------------------------------#
 		# make tables ----
-		
+
 		ddat_focal <- all_dat %>%
 			filter(DATE_TRIP >= start_date & DATE_TRIP < end_date) %>% ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -117,7 +117,7 @@ discard_generic <- function(con = con_maps
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
 			assign_strata(., stratvars)
 
 
@@ -143,7 +143,7 @@ discard_generic <- function(con = con_maps
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>% 
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
 			assign_strata(., stratvars)
 
 
@@ -508,14 +508,14 @@ discard_generic <- function(con = con_maps
 		# join full and assumed strata tables ----
 
 
-		joined_table = assign_strata(full_strata_table, stratvars_assumed) 
-		
+		joined_table = assign_strata(full_strata_table, stratvars_assumed)
+
 		if("STRATA_ASSUMED" %in% names(joined_table)) {
-			joined_table = joined_table %>% 
+			joined_table = joined_table %>%
 				dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
 		}
-		
-		joined_table = joined_table %>%  
+
+		joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
 			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
@@ -612,6 +612,10 @@ discard_generic <- function(con = con_maps
 															, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 
 			)
+
+		# force remove duplicates
+		joined_table <- joined_table |>
+		  dplyr::distinct()
 
 		outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 
