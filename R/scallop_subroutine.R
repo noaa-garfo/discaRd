@@ -308,7 +308,7 @@ for(yy in FY:(FY+end_fy)){
 
 	full_strata_table = trans_rate_df_full %>%
 		# right_join(., y = d_focal$res, by = 'STRATA') %>%
-	  right_join(., y = ddat_focal, by = 'STRATA') %>%
+	  right_join(., y = ddat_focal_scal, by = 'STRATA') %>%
 		as_tibble() %>%
 		mutate(SPECIES_ITIS_EVAL = species_itis
 					 , COMNAME_EVAL = scal_gf_species$ITIS_NAME
