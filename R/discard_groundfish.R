@@ -930,7 +930,7 @@ discard_groundfish <- function(con
    full_strata_table = trans_rate_df_full %>%
      # right_join(., y = d_focal$res, by = 'STRATA') %>%
    	# right_join(., y = ddat_focal, by = 'STRATA') %>%
-   	right_join(., y = ddat_focal_gf, by = 'STRATA') %>% # changed 2/15/23.. wrong table being joined!!
+   	right_join(., y = ddat_focal_non_gf, by = 'STRATA') %>% # changed 2/15/23.. wrong table being joined!!
      as_tibble() %>%
    	 	mutate(SPECIES_ITIS_EVAL = species_itis
    				 , COMNAME_EVAL = species$ITIS_NAME[i]
