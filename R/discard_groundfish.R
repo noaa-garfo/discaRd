@@ -57,13 +57,13 @@ discard_groundfish <- function(con
 
   # species_nespp3 = species$NESPP3[i]
   species_itis = species$ITIS_TSN[i]
-  
+
   # flag allocated vs non-allocated ----
-  # Halibut, Ocean Put, Woffish, Winodwpane are unallocated. 
-  
+  # Halibut, Ocean Put, Woffish, Winodwpane are unallocated.
+
   allocated = ifelse(species_itis %in% c(172933, 630979, 171341, 172746), F, T)
-  
-  
+
+
   #---#
 
 
@@ -619,22 +619,22 @@ discard_groundfish <- function(con
   														 ,  !is.na(NMFS_DISCARD_SOURCE) & DISCARD_SOURCE != 'O' ~ NMFS_DISCARD_SOURCE)
   	) %>%
   	dplyr::select(names(joined_table))
-  
-  
-  # change discard_source, strata_used, discard_rate, and discard for allocated groundfish stocks ---- 
+
+
+  # change discard_source, strata_used, discard_rate, and discard for allocated groundfish stocks ----
 
   if(allocated == T){
-  	
+
   	mrem_idx = emjoin$EM == 'MREM'
   	emjoin$STRATA_USED[mrem_idx] = 'RULE BASED'
   	emjoin$DISCARD_SOURCE[mrem_idx] = 'R'
   	emjoin$COAL_RATE[mrem_idx] = 0
   	emjoin$DISCARD[mrem_idx] = 0
   	emjoin$CV[mrem_idx] = NA
-  	
+
   }
-  
-  
+
+
   # emjoin %>% group_by(DISCARD_SOURCE, NMFS_DISCARD_SOURCE) %>% dplyr::summarise(sum(DISCARD_MOD, na.rm = T))
 
 
@@ -661,9 +661,9 @@ discard_groundfish <- function(con
 
 
   if(gf_trips_only == F){
-  	
-  # remove old objects so there is no chance of interference.. 	
-  	
+
+  # remove old objects so there is no chance of interference..
+
   	rm(list = ls()[grepl(x = ls(), 'ddat*')])
   	rm(list = ls()[grepl(x = ls(), 'bdat*')])
   	rm(list = ls()[grepl(x = ls(), 'd_f*')])
@@ -675,14 +675,14 @@ discard_groundfish <- function(con
   	rm(list = ls()[grepl(x = ls(), 'CAMS_GEAR*')])
   	rm(list = ls()[grepl(x = ls(), 'BROAD*')])
   	rm(list = ls()[grepl(x = ls(), 'STOCK_*')])
- 
-  	
-  # Add OBS_DISCARD for non-GF trips	
-  	
+
+
+  # Add OBS_DISCARD for non-GF trips
+
   	non_gf_dat = non_gf_dat %>%
   		mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-  																	 , TRUE ~ 0)) 	
-  	 	
+  																	 , TRUE ~ 0))
+
   #'
   ## ----loop through the non sector trips for each stock ----
   # -------------------------------------------------------------------#
@@ -1031,7 +1031,7 @@ discard_groundfish <- function(con
 
   bdat_2yrs = bind_rows(bdat_prev_non_gf, bdat_non_gf)
   ddat_non_gf_2yr = bind_rows(ddat_prev_non_gf, ddat_focal_non_gf)
-  ddat_2yr = bind_rows(ddat_prev, ddat_focal)
+  ddat_2yr = bind_rows(ddat_prev, ddat_focal) # TODO: double check correct reuse of ddat_focal
 
   mnk = run_discard( bdat = bdat_2yrs
   			, ddat_focal = ddat_non_gf_2yr
