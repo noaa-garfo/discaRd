@@ -36,7 +36,7 @@ discard_groundfish <- function(con
   stratvars = c( 'SPECIES_STOCK'
   							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
                 , 'CAMS_GEAR_GROUP'
-                , 'MESHGROUP'
+                , 'MESH_CAT'
                 , 'SECTID'
                 , 'EM'
                 , "REDFISH_EXEMPTION"
@@ -337,7 +337,7 @@ discard_groundfish <- function(con
   stratvars_assumed = c("SPECIES_STOCK"
   											, "CAMS_GEAR_GROUP"
   											# , "GEARCODE"
-  											, "MESHGROUP"
+  											, "MESH_CAT"
   											, "SECTOR_TYPE")
 
 
@@ -692,7 +692,7 @@ discard_groundfish <- function(con
   # -------------------------------------------------------------------#
   stratvars_nongf = c('SPECIES_STOCK'
                 ,'CAMS_GEAR_GROUP'
-  							, 'MESHGROUP'
+  							, 'MESH_CAT'
   						  , 'TRIPCATEGORY'
   						  , 'ACCESSAREA')
 
@@ -942,13 +942,13 @@ discard_groundfish <- function(con
    				 , FY_TYPE = FY_TYPE) %>%
    	   dplyr::rename(FULL_STRATA = STRATA)
 
-  # GEAR AND MESHGROUP STRATA (2nd pass)
+  # GEAR AND MESH_CAT STRATA (2nd pass)
 
   # logr::log_print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
 
   stratvars_assumed = c("SPECIES_STOCK"
   											, "CAMS_GEAR_GROUP"
-  											, "MESHGROUP")
+  											, "MESH_CAT")
 
 
   ### All tables in previous run can be re-used wiht diff stratification

@@ -36,7 +36,7 @@ discard_generic <- function(con = con_maps
 
 	stratvars = c('SPECIES_STOCK'
 								,'CAMS_GEAR_GROUP'
-								, 'MESHGROUP'
+								, 'MESH_CAT'
 								, 'TRIPCATEGORY'
 								, 'ACCESSAREA')
 
@@ -355,7 +355,7 @@ discard_generic <- function(con = con_maps
 
 		stratvars_assumed = c("SPECIES_STOCK"
 													, "CAMS_GEAR_GROUP"
-													, "MESHGROUP")
+													, "MESH_CAT")
 
 
 		### All tables in previous run can be re-used wiht diff stratification

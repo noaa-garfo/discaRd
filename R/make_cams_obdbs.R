@@ -100,7 +100,7 @@ make_cams_obdbs <- function(con, year = 2022, sql_file = "~/PROJECTS/discaRd/CAM
 
 	# modify table
 
-	tab_alter = paste0("ALTER TABLE CAMS_OBDBS_", y, " DROP (meshgroup_pre, tripcategory1, accessarea1)")
+	tab_alter = paste0("ALTER TABLE CAMS_OBDBS_", y, " DROP (mesh_cat_pre, tripcategory1, accessarea1)")
 	print(tab_alter)
 
 	ROracle::dbSendQuery(con, tab_alter)

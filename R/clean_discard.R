@@ -103,7 +103,7 @@ clean_discard_fy <- function(filepath = getOption("maps.discardsPath"), FY = 201
 					, NEGEAR
 					, GEARTYPE
 					, CAMS_GEAR_GROUP
-					, MESHGROUP
+					, MESH_CAT
 					, SECTID
 					, EM
 					, REDFISH_EXEMPTION

@@ -355,7 +355,7 @@ discard_herring <- function(con
 
 		stratvars_assumed = c("HERR_TARG"
 													, "CAMS_GEAR_GROUP") #AWA
-		#, "MESHGROUP")
+		#, "MESH_CAT")
 
 
 		### All tables in previous run can be re-used with diff stratification
