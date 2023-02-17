@@ -41,7 +41,7 @@ import_query = paste0("  with obs_cams as (
   , PERMIT
   , AREA
 	, vtrserno
-	, CAMS_SUBTRIP
+	, c.CAMS_SUBTRIP
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -78,8 +78,8 @@ import_query = paste0("  with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_OBS_CATCH c
-	left join (select distinct camsid, exempt_7130 from CAMS_SUBTRIP) s
-	on c.CAMSID = s.CAMSID
+	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130 from CAMS_SUBTRIP) s
+	on c.CAMS_SUBTRIP = s.CAMS_SUBTRIP
 
 	where year >=", start_year , "
 	and year <= ", end_year , "
@@ -88,7 +88,7 @@ import_query = paste0("  with obs_cams as (
   , AREA
   , PERMIT
 	, vtrserno
-	, CAMS_SUBTRIP
+	, c.CAMS_SUBTRIP
 	, link1
 	, source
 	, offwatch_link1
