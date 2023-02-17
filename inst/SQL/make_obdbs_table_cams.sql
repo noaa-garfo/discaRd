@@ -1,15 +1,15 @@
 /*
 
-Create table of discarded species for a calendar year 
+Create table of discarded species for a calendar year
 this follows the steps used in Mid-Atlantic discard estaimtion for year end reports
 
-The eventual goal is to replace the CASE code for gear, mesh and area with tale based joins. 
+The eventual goal is to replace the CASE code for gear, mesh and area with tale based joins.
 
 Created by: Ben Galuardi, modified from Jay Hermsen's code
 
 12-23-20
 
-modified 
+modified
 3-18-21
 12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
 12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
@@ -23,13 +23,15 @@ This version ues left joins in the first set of tables which preserves more info
 
 we also keep all hauls, not just observed hauls, so prorating can be done
 
-07-11-22 modified script to build everything based on WITH statements. 
+07-11-22 modified script to build everything based on WITH statements.
  added removal of fishdisp
- added OBPRELIM! 
- 
- 
-08-05-22 
-put fishdisp 090 back in. 
+ added OBPRELIM!
+
+
+08-05-22
+put fishdisp 090 back in.
+
+02-17-23 - DJH added MESH_MATCH restriction for landings and discard mesh categories are limited to the same gear
 
 RUN FROM MAPS SCHEMA
 
@@ -42,12 +44,12 @@ RUN FROM MAPS SCHEMA
 --DROP TABLE MAPS.CAMS_OBDBS_&year
 
 --/
-CREATE TABLE CAMS_OBDBS_&year AS 
+CREATE TABLE CAMS_OBDBS_&year AS
 
 --OBPRELIM DATA
 
-with OP as ( 
-   SELECT 
+with OP as (
+   SELECT
     t.link1
     , h.link3
     , G.OBGEARCAT as GEARCAT
@@ -71,14 +73,14 @@ with OP as (
     , 'OBPRELIM' as source
 
     from
-    obprelim.optrp@NOVA t 
+    obprelim.optrp@NOVA t
     LEFT OUTER JOIN
     obprelim.ophau@NOVA h ON t.link1 = h.link1
     LEFT OUTER JOIN
     obprelim.opcatch@NOVA s ON h.link3 = s.link3
     LEFT OUTER JOIN
     obdbs.obgear@NOVA g ON g.negear = h.negear
-    
+
     WHERE
     t.year in (&YEAR)
     and h.year in (&YEAR)
@@ -88,7 +90,7 @@ with OP as (
 
 --OBDBS data
 
-, OB as ( 
+, OB as (
    SELECT
     t.link1
     , h.link3
@@ -111,15 +113,15 @@ with OP as (
     , s.drflag
     , s.hailwt
     , 'OBDBS' as source
-    
+
     from
-    obdbs.obtrp@nova t 
+    obdbs.obtrp@nova t
     LEFT OUTER JOIN
     obdbs.obhau@nova h ON t.link1 = h.link1
     LEFT OUTER JOIN
     obdbs.obspp@nova s ON h.link3 = s.link3
 
-   
+
     WHERE
     t.year in (&YEAR)
     and h.year in (&YEAR)
@@ -129,21 +131,21 @@ with OP as (
 -- ASM data
 
 , ASM as (
-SELECT 
---a.DEALNUM, 
+SELECT
+--a.DEALNUM,
 a.LINK1,
 b.link3,
-a.GEARCAT, 
+a.GEARCAT,
 a.TRIPEXT,
-a.PROGRAM, 
-a.YEAR, 
-a.PERMIT1, 
-a.HULLNUM1, 
-a.FLEET_TYPE, 
-a.DATESAIL, 
+a.PROGRAM,
+a.YEAR,
+a.PERMIT1,
+a.HULLNUM1,
+a.FLEET_TYPE,
+a.DATESAIL,
 a.DATELAND,
-b.OBSRFLAG, 
-b.AREA, 
+b.OBSRFLAG,
+b.AREA,
 SUBSTR(s.nespp4,1,3) nespp3
 , s.nespp4
 , b.negear
@@ -173,14 +175,14 @@ select s.*
     from (
         select *
          from ob
-         
-         union all 
-         
+
+         union all
+
          select *
          from op
-         
-          union all 
-         
+
+          union all
+
          select *
          from asm
      ) s
@@ -201,31 +203,31 @@ ON (s.nespp4 = c.nespp4_obs AND s.catdisp = c.catdisp_code AND s.drflag = c.drfl
 -- mesh info from trawls
 
 , mesh1 as (
-SELECT DISTINCT(a.LINK1), 
-a.LINK3, 
-a.LINK4, 
-a.CODLINERUSD, 
-a.CODMSIZE, 
-a.LINERMSIZE, 
-a.MONTH, 
-a.NEGEAR, 
-a.PROGRAM, 
-a.TRIPID, 
-a.YEAR 
+SELECT DISTINCT(a.LINK1),
+a.LINK3,
+a.LINK4,
+a.CODLINERUSD,
+a.CODMSIZE,
+a.LINERMSIZE,
+a.MONTH,
+a.NEGEAR,
+a.PROGRAM,
+a.TRIPID,
+a.YEAR
 FROM obdbs.obotgh@nova a
 WHERE a.YEAR = &YEAR
 UNION ALL
-SELECT DISTINCT(a.LINK1), 
-a.LINK3, 
-a.LINK4, 
-a.CODLINERUSD, 
-a.CODMSIZE, 
-a.LINERMSIZE, 
-a.MONTH, 
-a.NEGEAR, 
-a.PROGRAM, 
-a.TRIPID, 
-a.YEAR 
+SELECT DISTINCT(a.LINK1),
+a.LINK3,
+a.LINK4,
+a.CODLINERUSD,
+a.CODMSIZE,
+a.LINERMSIZE,
+a.MONTH,
+a.NEGEAR,
+a.PROGRAM,
+a.TRIPID,
+a.YEAR
 FROM obdbs.asmotgh@nova a
 WHERE a.YEAR = &YEAR
 )
@@ -234,28 +236,28 @@ WHERE a.YEAR = &YEAR
 
 ,mesh2 as (
 
-SELECT DISTINCT(a.HAULNUM), 
-a.LINK1, 
-a.LINK3, 
-a.LINK4, 
-a.MSMAX, 
-a.MSMIN, 
-a.MSWGTAVG, 
-a.NEGEAR, 
-a.TRIPID, 
+SELECT DISTINCT(a.HAULNUM),
+a.LINK1,
+a.LINK3,
+a.LINK4,
+a.MSMAX,
+a.MSMIN,
+a.MSWGTAVG,
+a.NEGEAR,
+a.TRIPID,
 a.YEAR
 FROM obdbs.obgggh@nova a
 WHERE a.YEAR = &YEAR
 UNION ALL
-SELECT DISTINCT(a.HAULNUM), 
-a.LINK1, 
-a.LINK3, 
-a.LINK4, 
-a.MSMAX, 
-a.MSMIN, 
-a.MSWGTAVG, 
-a.NEGEAR, 
-a.TRIPID, 
+SELECT DISTINCT(a.HAULNUM),
+a.LINK1,
+a.LINK3,
+a.LINK4,
+a.MSMAX,
+a.MSMIN,
+a.MSWGTAVG,
+a.NEGEAR,
+a.TRIPID,
 a.YEAR
 FROM obdbs.asmgggh@nova a
 WHERE a.YEAR = &YEAR
@@ -270,12 +272,12 @@ WHERE a.YEAR = &YEAR
     , b.CODMSIZE
     , b.LINERMSIZE
     from all_obs o
-    left join (select * from kall) k 
+    left join (select * from kall) k
     on o.link1 = k.link1
-    
+
     LEFT OUTER JOIN mesh1 b
-    ON o.link3 = b.link3 
-    
+    ON o.link3 = b.link3
+
     WHERE o.program <> '127'
     AND o.tripext IN ('C', 'X')
 --    AND o.FISHDISP <> '090' -- keep this in.. deal with it in R
@@ -287,28 +289,28 @@ select b.*
              END as meshgroup
 from(
     SELECT a.*
-        , CASE WHEN (meshsize < 4) then 'SM' --
-             WHEN (meshsize >= 4) then 'LM'
+        , CASE WHEN (meshsize < 4 AND mesh_match = 1) then 'SM' --
+             WHEN (meshsize >= 4 AND mesh_match = 1) then 'LM'
              else null
              END as meshgroup_pre
-             
-        
+
+
         , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
-        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory                     
-        
+        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory
+
     from  (
         SELECT a.*, b.MSWGTAVG
---        ,  (CASE WHEN (a.month<=06) then 1 
---                WHEN (a.month>06) then 2 
+--        ,  (CASE WHEN (a.month<=06) then 1
+--                WHEN (a.month>06) then 2
 --                END) as halfofyear
 --        ,
---          (CASE WHEN (a.month<=03) then 1 
---                  WHEN (a.month between 04 and 06) then 2 
---                  WHEN (a.month between 07 and 09) then 3 
---                  WHEN (a.month>09) then 4 
+--          (CASE WHEN (a.month<=03) then 1
+--                  WHEN (a.month between 04 and 06) then 2
+--                  WHEN (a.month between 07 and 09) then 3
+--                  WHEN (a.month>09) then 4
 --                END) as calendarqtr
-        , 
-        (CASE WHEN a.linermsize IS NULL AND b.mswgtavg IS NULL THEN codmsize*0.03937--converting millimeters to inches  
+        ,
+        (CASE WHEN a.linermsize IS NULL AND b.mswgtavg IS NULL THEN codmsize*0.03937--converting millimeters to inches
               WHEN a.codmsize IS NULL AND b.mswgtavg IS NULL THEN linermsize*0.03937
               WHEN a.codmsize IS NULL AND a.linermsize IS NULL THEN mswgtavg
              WHEN NVL(a.codmsize,0) < NVL(a.linermsize,0) THEN codmsize*0.03937
@@ -319,19 +321,19 @@ from(
                         WHEN a.area >= 600 THEN 'S'
                         ELSE 'Other'
                         END) as region
-        ,  (case when a.area in (511, 512, 513, 514, 515, 521, 522, 561) 
-                        then 'N' 
+        ,  (case when a.area in (511, 512, 513, 514, 515, 521, 522, 561)
+                        then 'N'
                        when a.area  NOT IN (511, 512, 513, 514, 515, 521, 522, 561)
                        then 'S'
-                       else 'Unknown' end)	as stockarea  
-        
+                       else 'Unknown' end)	as stockarea
+
         , (CASE WHEN a.FLEET_TYPE IN ('000', '050', '101', '102') THEN 'all'
                         WHEN a.FLEET_TYPE = '046' THEN 'LIM'
                         WHEN a.FLEET_TYPE = '047' THEN 'GEN'
                         ELSE 'Unknown'
                         END) as tripcategory1
-        
-        ,	(CASE WHEN a.program IN ('000', '010', '041', '042', '044','045','101', 
+
+        ,	(CASE WHEN a.program IN ('000', '010', '041', '042', '044','045','101',
                         '102', '103','130','140', '141', '146', '147', '171','230', '231','233', '234','240') THEN 'OPEN'
                         WHEN a.program IN ('201', '202', '203', '204', '205', '206', '207','208','209','210','211', '212','213','219') THEN 'AA'
                         ELSE 'all'
@@ -351,14 +353,17 @@ from(
                         WHEN a.negear IN ('052') THEN 'Scallop Trawl'
                         WHEN a.negear IN ('058') THEN 'Shrimp Trawl'
                         WHEN a.negear IN ('100', '105','110', '115','116', '117','500') THEN 'Sink, Anchor, Drift Gillnet'
-                        WHEN a.negear NOT IN 
+                        WHEN a.negear NOT IN
                         ('070','020', '021','010','170','370','350','050','057','054','053','181',
-                        '186','120','121', '123','132','052','058','100', '105', '110','115','116', '117','500') THEN 'Other' 
+                        '186','120','121', '123','132','052','058','100', '105', '110','115','116', '117','500') THEN 'Other'
                         WHEN a.negear IS NULL THEN 'Unknown'
                         END) as geartype
-              
-        FROM tab1 a LEFT OUTER JOIN mesh2 b
-        ON a.link3 = b.link3 
+
+        FROM tab1 a
+        LEFT OUTER JOIN mesh2 b
+        ON a.link3 = b.link3
+        LEFT OUTER JOIN cfg_negear g
+        ON a.negear = g.negear
     ) a
   ) b
 --/
