@@ -56,7 +56,7 @@ import_query = paste0("  with obs_cams as (
   , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
-	, MESHGROUP
+	, MESH_CAT
 	, SECTID
   , GF
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -102,7 +102,7 @@ import_query = paste0("  with obs_cams as (
     , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
-	, MESHGROUP
+	, MESH_CAT
 	, SECTID
   , GF
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -180,7 +180,7 @@ link3_na = link3_na %>%
 				 , OBS_KALL = 0
 				 , OBS_LINK1 = NA
 				 , OBSVTR = NA
-				 , OBS_MESHGROUP = 'none'
+				 , OBS_MESH_CAT = 'none'
 				 , PRORATE = NA)
 
 # this was dropping full trips...
@@ -240,14 +240,14 @@ gf_dat = fed_trips%>%
 	filter(GF == 1)
 
 # Add MREM adjustment View
-mrem = tbl(con, sql('select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO 
+mrem = tbl(con, sql('select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
 										from cams_alloc_gf_mrem')) %>%
 	collect()
 
 # make the MREM KALL adjustment
 gf_dat = gf_dat %>%
 	left_join(x = .
-						, y = mrem 
+						, y = mrem
 						, by = 'CAMS_SUBTRIP') %>%
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
 																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
@@ -299,7 +299,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
-	, MESHGROUP
+	, MESH_CAT
 	, SECTID
   , GF
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -343,7 +343,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
     , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
-	, MESHGROUP
+	, MESH_CAT
 	, SECTID
   , GF
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
@@ -444,7 +444,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 						 , OBS_KALL = 0
 						 , OBS_LINK1 = NA
 						 , OBSVTR = NA
-						 , OBS_MESHGROUP = 'none'
+						 , OBS_MESH_CAT = 'none'
 						 , PRORATE = NA)
 
 		# this was dropping full trips...
@@ -497,10 +497,10 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 
 	c_o_dat2 = fed_trips %>%
 		#	filter(GF == 0) %>%
-		bind_rows(., state_trips) 
+		bind_rows(., state_trips)
 	# %>%
 	# 	mutate(GF = "0")
-	# 
+	#
 	# # gf_dat = fed_trips%>%
 	# 	filter(GF == 1)
 

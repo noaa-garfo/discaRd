@@ -31,11 +31,11 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 		spfiles = resfiles[grep(pattern = kk, x = resfiles)]
 
 		if(gf_only ==T){
-			
+
 			spfiles = spfiles[grep(pattern = 'gftrips_only', x = spfiles)]
-			
+
 		}
-		
+
 		# vectorize over mulitple files for a year for the same species
 		res = lapply(as.list(spfiles), function(x) fst::read_fst(x))
 
@@ -90,7 +90,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, AREA
 					, LINK1
 					, OFFWATCH_LINK1
-					, LINK3_OBS	
+					, LINK3_OBS
 					, N_OBS_TRIPS_F
 					, STRATA_USED
 					, STRATA_FULL
@@ -116,7 +116,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 					, NEGEAR
 					, GEARTYPE
 					, CAMS_GEAR_GROUP
-					, MESHGROUP
+					, MESH_CAT
 					, SECTID
 					, EM
 					, REDFISH_EXEMPTION

@@ -33,7 +33,7 @@ scal_trips = non_gf_dat %>%
 
 stratvars_scalgf = c('SPECIES_STOCK'
 										 ,'CAMS_GEAR_GROUP'
-										 , 'MESHGROUP'
+										 , 'MESH_CAT'
 										 , 'TRIPCATEGORY'
 										 , 'ACCESSAREA'
 										 , 'SCALLOP_AREA')
@@ -62,7 +62,7 @@ scal_trips = non_gf_dat %>%
 
 stratvars_scalgf = c('SPECIES_STOCK'
 										 ,'CAMS_GEAR_GROUP'
-										 , 'MESHGROUP'
+										 , 'MESH_CAT'
 										 , 'TRIPCATEGORY'
 										 , 'ACCESSAREA'
 										 , 'SCALLOP_AREA')
@@ -320,7 +320,7 @@ for(yy in FY:(FY+end_fy)){
 	# join full and assumed strata tables
 	stratvars_assumed = c("SPECIES_STOCK"
 												, "CAMS_GEAR_GROUP"
-												, "MESHGROUP")
+												, "MESH_CAT")
 
 
 	### All tables in previous run can be re-used with diff stratification

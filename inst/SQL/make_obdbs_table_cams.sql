@@ -11,9 +11,9 @@ Created by: Ben Galuardi, modified from Jay Hermsen's code
 
 modified
 3-18-21
-12-2-21 changed meshgroup defnitions to match CAMS definitons. changed name of final output table
+12-2-21 changed mesh_cat defnitions to match CAMS definitons. changed name of final output table
 12-21-21 change output names to MAPS.CAMS_OBDBS_YYYY
-01-04-22 update mesh categories (meshgroup): 0-3.99 = sm, >=4 = L, FOR GILLNETS, >=8 = XL
+01-04-22 update mesh categories (mesh_cat): 0-3.99 = sm, >=4 = L, FOR GILLNETS, >=8 = XL
 02-03-22 update filter for tripext to include Limited sampling trips (see obdbs.tripext@nova)
 04-12-22 changed the date filter in table 3 to match only on year rather than dateland.. this was dropping trips for timestamp reasons
 
@@ -285,14 +285,14 @@ WHERE a.YEAR = &YEAR
 
 select b.*
         , CASE WHEN (meshsize >= 8 AND negear in ('100','105','117', '116','115')) then 'XL'
-             else meshgroup_pre
-             END as meshgroup
+             else mesh_cat_pre
+             END as mesh_cat
 from(
     SELECT a.*
         , CASE WHEN (meshsize < 4 AND mesh_match = 1) then 'SM' --
              WHEN (meshsize >= 4 AND mesh_match = 1) then 'LM'
              else null
-             END as meshgroup_pre
+             END as mesh_cat_pre
 
 
         , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
@@ -368,4 +368,4 @@ from(
   ) b
 --/
 
---ALTER TABLE MAPS.CAMS_OBDBS_&year DROP (meshgroup_pre, tripcategory1, accessarea1)
+--ALTER TABLE MAPS.CAMS_OBDBS_&year DROP (mesh_cat_pre, tripcategory1, accessarea1)
