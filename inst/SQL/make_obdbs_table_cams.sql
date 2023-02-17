@@ -295,8 +295,8 @@ from(
              END as mesh_cat_pre
 
 
-        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else accessarea1 end as accessarea
-        , CASE when geartype NOT LIKE 'Scallop%' then 'all' else tripcategory1 end as tripcategory
+        , CASE when geartype NOT LIKE 'Scallop%' then 'ALL' else accessarea1 end as accessarea
+        , CASE when geartype NOT LIKE 'Scallop%' then 'ALL' else tripcategory1 end as tripcategory
 
     from  (
         SELECT a.*, b.MSWGTAVG
@@ -327,7 +327,7 @@ from(
                        then 'S'
                        else 'Unknown' end)	as stockarea
 
-        , (CASE WHEN a.FLEET_TYPE IN ('000', '050', '101', '102') THEN 'all'
+        , (CASE WHEN a.FLEET_TYPE IN ('000', '050', '101', '102') THEN 'ALL'
                         WHEN a.FLEET_TYPE = '046' THEN 'LIM'
                         WHEN a.FLEET_TYPE = '047' THEN 'GEN'
                         ELSE 'Unknown'
@@ -336,7 +336,7 @@ from(
         ,	(CASE WHEN a.program IN ('000', '010', '041', '042', '044','045','101',
                         '102', '103','130','140', '141', '146', '147', '171','230', '231','233', '234','240') THEN 'OPEN'
                         WHEN a.program IN ('201', '202', '203', '204', '205', '206', '207','208','209','210','211', '212','213','219') THEN 'AA'
-                        ELSE 'all'
+                        ELSE 'ALL'
                         END) as accessarea1
         , (CASE WHEN a.negear IN ('070') THEN 'Beach Seine'
                         WHEN a.negear IN ('020', '021') THEN 'Handline'
