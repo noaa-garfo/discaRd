@@ -647,6 +647,10 @@ discard_groundfish <- function(con
 
   # Sys.umask('775')
 
+  # force remove duplicates
+  emjoin <- emjoin |>
+    dplyr::distinct()
+
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
   fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
@@ -1173,6 +1177,10 @@ discard_groundfish <- function(con
 
   	)
 
+  # force remove duplicates
+  joined_table <- joined_table |>
+    dplyr::distinct()
+
    # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
   # Sys.umask('660')
   # Sys.umask('775')
@@ -1265,6 +1273,10 @@ discard_groundfish <- function(con
 
 
   		t1[t1idx, ] = t2[t2idx, didx]
+
+  		# force remove duplicates
+  		t1 <- t1 |>
+  		  dplyr::distinct()
 
 # --- Overwrite the original non-gf with the new version including scallop replacement ----
   		write_fst(x = t1, path = gf_files)

@@ -33,7 +33,7 @@ discard_herring <- function(con
 		,'AREA_HERR' # herring management area
 		,'CAMS_GEAR_GROUP')# gear
 
-	
+
 
 	# Begin loop ----
 
@@ -50,14 +50,14 @@ discard_herring <- function(con
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 
-		
-		# add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ---- 
-		
-		all_dat = all_dat %>% 
+
+		# add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ----
+
+		all_dat = all_dat %>%
 			mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
 																	 , TRUE ~ 0))
-		
-		# Support table import by species ---- 
+
+		# Support table import by species ----
 
 		# GEAR TABLE
 		CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
@@ -96,7 +96,7 @@ discard_herring <- function(con
 			distinct(OBS_CODES)
 
 		#--------------------------------------------------------------------------------#
-		# make tables ---- 
+		# make tables ----
 		ddat_focal <- all_dat %>%
 			filter(YEAR == FY) %>%   ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -112,10 +112,10 @@ discard_herring <- function(con
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>% 
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
 			assign_strata(., stratvars = stratvars)
 
-		# DATE RANGE FOR PREVIOUS YEAR ---- 
+		# DATE RANGE FOR PREVIOUS YEAR ----
 
 		dr_prev = get_date_range(FY-1, FY_TYPE)
 		end_date_prev = dr_prev[2]
@@ -137,7 +137,7 @@ discard_herring <- function(con
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>% 
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
 			assign_strata(., stratvars = stratvars)
 
 
@@ -153,7 +153,7 @@ discard_herring <- function(con
 			slice(1) %>%
 			ungroup()
 
-		# and join to the unobserved trips ---- 
+		# and join to the unobserved trips ----
 
 		ddat_focal_cy = ddat_focal_cy %>%
 			union_all(ddat_focal %>%
@@ -182,7 +182,7 @@ discard_herring <- function(con
 		           , PRORATE = 1)
 		}
 
-		# set up trips table for previous year ---- 
+		# set up trips table for previous year ----
 		ddat_prev_cy = ddat_prev %>%
 			filter(!is.na(LINK1)) %>%
 			mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
@@ -249,7 +249,7 @@ discard_herring <- function(con
 
 		}
 
-		# summarize each result for convenience ---- 
+		# summarize each result for convenience ----
 		dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
 																									, N = N
 																									, n = n
@@ -259,7 +259,7 @@ discard_herring <- function(con
 																									, CV = round(RE_rse, 2)
 		)
 
-		# substitute transition rates where needed ---- 
+		# substitute transition rates where needed ----
 		if(exists("dest_strata_f")) {
 		  trans_rate_df = dest_strata_f %>%
 		    left_join(., dest_strata_p, by = 'STRATA')
@@ -324,8 +324,8 @@ discard_herring <- function(con
 
 		trans_rate_df_full = trans_rate_df
 
-		# join calculated rates to trips table ---- 
-		
+		# join calculated rates to trips table ----
+
 		if(exists("d_focal")) {
 		  full_strata_table = trans_rate_df_full %>%
 		    # right_join(., y = d_focal$res, by = 'STRATA') %>%
@@ -489,7 +489,7 @@ discard_herring <- function(con
 		)
 
 
-		# Run the discaRd functions on current year broad stock: third pass ---- 
+		# Run the discaRd functions on current year broad stock: third pass ----
 		if(nrow(bdat_cy) > 0) {
 		mnk_current = run_discard(bdat = bdat_cy
 															, ddat = ddat_focal_cy
@@ -527,18 +527,18 @@ discard_herring <- function(con
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
 		#
-		# join full and assumed strata tables ---- 
+		# join full and assumed strata tables ----
 		#
 		# print(paste0("Constructing output table for ", species_itis, " ", FY))
 
-		joined_table = assign_strata(full_strata_table, stratvars_assumed) 
-		
+		joined_table = assign_strata(full_strata_table, stratvars_assumed)
+
 		if("STRATA_ASSUMED" %in% names(joined_table)) {
-			joined_table = joined_table %>% 
+			joined_table = joined_table %>%
 				dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
 		}
-		
-			joined_table = joined_table %>% 
+
+			joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
 			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('HERR_TARG')) %>%
@@ -556,7 +556,7 @@ discard_herring <- function(con
 						 , FY_TYPE = FY_TYPE)
 
 		#
-		# add discard source ---- 
+		# add discard source ----
 		#
 
 		# joined_table = joined_table %>%
@@ -611,7 +611,7 @@ discard_herring <- function(con
 																					n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 		#
-		# make sure CV type matches DISCARD SOURCE ---- 
+		# make sure CV type matches DISCARD SOURCE ----
 		#
 
 		# obs trips get 0, broad stock rate is NA
@@ -628,7 +628,7 @@ discard_herring <- function(con
 			)  # , DISCARD_SOURCE == 'B' ~ NA
 			)
 
-		# Make note of the stratification variables used according to discard source ---- 
+		# Make note of the stratification variables used according to discard source ----
 
 		stratvars_gear = c(#"SPECIES_STOCK", #AWA
 			"HERR_TARG")
@@ -664,8 +664,8 @@ discard_herring <- function(con
 #
 # 	)
 
-# get the final discard amount from estimation, observation and discard mortality ---- 
-		
+# get the final discard amount from estimation, observation and discard mortality ----
+
 joined_table = joined_table %>%
 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
 	mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
@@ -673,8 +673,12 @@ joined_table = joined_table %>%
 
 	)
 
-# output an fst file ----- 
-		
+		# force remove duplicates
+		joined_table <- joined_table |>
+		  dplyr::distinct()
+
+# output an fst file -----
+
 		outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 
 		fst::write_fst(x = joined_table, path = outfile)
