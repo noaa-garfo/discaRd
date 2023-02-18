@@ -299,7 +299,9 @@ from(
         , CASE when geartype NOT LIKE 'Scallop%' then 'ALL' else tripcategory1 end as tripcategory
 
     from  (
-        SELECT a.*, b.MSWGTAVG
+        SELECT a.*
+        , b.MSWGTAVG
+        , g.mesh_match
 --        ,  (CASE WHEN (a.month<=06) then 1
 --                WHEN (a.month>06) then 2
 --                END) as halfofyear
