@@ -196,7 +196,7 @@ select d.permit
 from (
         select a.*
         , a.camsid || '_' || a.subtrip as cams_subtrip -- add cams_subtrip here..
-        from MAPS.CAMS_LANDINGS a
+        from CAMS_LANDINGS a
         where year >= 2017
  ) d
     left join (  --adds observer link field
