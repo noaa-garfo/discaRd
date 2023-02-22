@@ -73,6 +73,20 @@ discard_groundfish <- function(con
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , TRUE ~ 0))
 
+  if(FALSE) {
+    non_gf_dat |>
+      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+                    SPECIES_ITIS == '172873') |>
+      dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
+                       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
+
+    gf_dat |>
+      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+                    SPECIES_ITIS == '172873') |>
+      dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
+                       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+                       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
+  }
   # non_gf_dat = non_gf_dat %>%
   # 	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   # 																 , NA ~ 0))
@@ -80,8 +94,7 @@ discard_groundfish <- function(con
   # Support table import by species ----
 
   # GEAR TABLE
-  CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
-      collect() %>%
+  CAMS_GEAR_STRATA = ROracle::dbGetQuery(con, 'select * from CFG_GEARCODE_STRATA') %>%
     dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%
   	dplyr::filter(ITIS_TSN == species_itis) %>%
@@ -89,10 +102,9 @@ discard_groundfish <- function(con
 
   # Stat areas table
   # unique stat areas for stock ID if needed
-  STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+  STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
   	dplyr::filter(ITIS_TSN == species_itis) %>%
-      collect() %>%
     group_by(AREA_NAME, ITIS_TSN) %>%
     distinct(AREA) %>%
     mutate(AREA = as.character(AREA)
@@ -103,8 +115,7 @@ discard_groundfish <- function(con
 
   # Mortality table
   # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
-  CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-    collect() %>%
+  CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
     mutate(SPECIES_STOCK = AREA_NAME
            , GEARCODE = CAMS_GEAR_GROUP
     			 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
@@ -116,8 +127,7 @@ discard_groundfish <- function(con
 
 
   # Observer codes to be removed
-  OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
-  	collect() %>%
+  OBS_REMOVE = ROracle::dbGetQuery(con, "select * from CFG_OBSERVER_CODES")  %>%
   	dplyr::filter(ITIS_TSN == species_itis) %>%
   	distinct(OBS_CODES)
 
@@ -144,6 +154,14 @@ discard_groundfish <- function(con
   # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
+  if(FALSE) {
+    ddat_focal |>
+      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+                    SPECIES_ITIS == '172873') |>
+      dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
+                       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+                       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
+  }
 
   ddat_prev <- gf_dat %>%
     dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
@@ -171,15 +189,19 @@ discard_groundfish <- function(con
   # need to select only discards for species evaluated. All OBS trips where nothing of that species was disacrded Must be zero!
   # Observed trips with NO obs hauls can be treated the same here. The assignment of DISCARD source happens at the end and contains the correct filtration criteria.
 
-  ddat_focal_gf = ddat_focal %>%
-    dplyr::filter(!is.na(LINK1)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-  																					)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-    group_by(LINK1, CAMS_SUBTRIP) %>%
-  	arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-  	slice(1) %>%
-    ungroup()
+  ddat_focal_gf <- summarise_single_discard_row(data = ddat_focal)
+
+  if(FALSE) {
+    ddat_focal_gf |>
+      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+                    ITIS_TSN == '172873') |>
+      dplyr::summarise(
+        discard_total = sum(DISCARD, na.rm = TRUE),
+        discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+        discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
+        discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
+      )
+  }
 
   # and join to the unobserved trips ----
 
@@ -209,27 +231,9 @@ discard_groundfish <- function(con
 
 
   # set up trips table for previous year ----
-  ddat_prev_gf = ddat_prev %>%
-    dplyr::filter(!is.na(LINK1)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-  																					)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-    group_by(LINK1, CAMS_SUBTRIP) %>%
-  	arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-  	slice(1) %>%
-    ungroup()
+  ddat_prev_gf <- summarise_single_discard_row(data = ddat_prev)
 
-  ddat_prev_gf = ddat_prev_gf %>%
-    union_all(ddat_prev %>%
-    						 dplyr::filter(is.na(LINK1))
-    					# %>%
-                 # group_by(VTRSERNO) %>%
-                 # slice(1) %>%
-                 # ungroup()
-    					)
-
-
-  # previous year observer data needed..
+# previous year observer data needed..
   bdat_prev_gf = ddat_prev %>%
     dplyr::filter(!is.na(LINK1)) %>%
   	dplyr::filter(FISHDISP != '090') %>%
@@ -328,6 +332,12 @@ discard_groundfish <- function(con
    				 , FISHING_YEAR = FY
    				 , FY_TYPE = FY_TYPE) %>%
    	   dplyr::rename(FULL_STRATA = STRATA)
+
+   # check one row per species-subtrip-link1
+   if(nrow(full_strata_table) !=
+     full_strata_table |> dplyr::select(CAMS_SUBTRIP, ITIS_TSN, LINK1) |> dplyr::distinct() |> nrow()) {
+     warning("Duplicate rows in GF full_strata_table")
+   }
 
   #
   # SECTOR ROLLUP: second pass ----
@@ -651,6 +661,18 @@ discard_groundfish <- function(con
   emjoin <- emjoin |>
     dplyr::distinct()
 
+  if(FALSE) {
+    emjoin |>
+      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+                    ITIS_TSN == '172873') |>
+      dplyr::summarise(
+        discard_total = sum(DISCARD, na.rm = TRUE),
+        discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+        discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
+        discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
+      )
+  }
+
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
   fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
@@ -709,8 +731,7 @@ discard_groundfish <- function(con
   # Support table import by species
 
   # GEAR TABLE
-  CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
-      collect() %>%
+  CAMS_GEAR_STRATA = ROracle::dbGetQuery(con, 'select * from CFG_GEARCODE_STRATA') %>%
     dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%
   	dplyr::filter(ITIS_TSN == species_itis) %>%
@@ -718,10 +739,9 @@ discard_groundfish <- function(con
 
   # Stat areas table
   # unique stat areas for stock ID if needed
-  STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+  STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
     # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
   	dplyr::filter(ITIS_TSN == species_itis) %>%
-      collect() %>%
     group_by(AREA_NAME, ITIS_TSN) %>%
     distinct(AREA) %>%
     mutate(AREA = as.character(AREA)
@@ -731,8 +751,7 @@ discard_groundfish <- function(con
   #   dplyr::select(SPECIES_STOCK, AREA)
 
   # Mortality table
-  CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-    collect() %>%
+  CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
     mutate(SPECIES_STOCK = AREA_NAME
            , GEARCODE = CAMS_GEAR_GROUP
     			 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
@@ -767,7 +786,6 @@ discard_groundfish <- function(con
     relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars_nongf)
 
-
   ddat_prev <- non_gf_dat %>%
     dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
     dplyr::filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -785,22 +803,12 @@ discard_groundfish <- function(con
   	assign_strata(., stratvars = stratvars_nongf)
 
 
-
   # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
   # need to select only discards for species evaluated. All OBS trips where nothing of that species was disacrded Must be zero!
 
-  ddat_focal_non_gf = ddat_focal %>%
-    dplyr::filter(!is.na(LINK1)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-  																					)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-    group_by(LINK1, CAMS_SUBTRIP) %>%
-  	arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-  	slice(1) %>%
-    ungroup()
+  ddat_focal_non_gf <- summarise_single_discard_row(data = ddat_focal)
 
   # and join to the unobserved trips
-
   ddat_focal_non_gf = ddat_focal_non_gf %>%
     union_all(ddat_focal %>%
                 dplyr::filter(is.na(LINK1))
@@ -826,15 +834,7 @@ discard_groundfish <- function(con
 
 
   # set up trips table for previous year
-  ddat_prev_non_gf = ddat_prev %>%
-    dplyr::filter(!is.na(LINK1)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-  																					)) %>%
-  	mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-    group_by(LINK1, CAMS_SUBTRIP) %>%
-  	arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-  	slice(1) %>%
-    ungroup()
+  ddat_prev_non_gf <- summarise_single_discard_row(data = ddat_prev)
 
   ddat_prev_non_gf = ddat_prev_non_gf %>%
     union_all(ddat_prev %>%

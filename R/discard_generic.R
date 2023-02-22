@@ -149,25 +149,13 @@ discard_generic <- function(con = con_maps
 
 
 		# need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
-		ddat_focal_cy = ddat_focal %>%
-			filter(!is.na(LINK1)) %>%
-			mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-			)) %>%
-			mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-			group_by(LINK1, CAMS_SUBTRIP) %>%
-			arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-			slice(1) %>%
-			ungroup()
+		ddat_focal_cy <- summarise_single_discard_row(data = ddat_focal)
 
 		# and join to the unobserved trips ----
 
 		ddat_focal_cy = ddat_focal_cy %>%
 			union_all(ddat_focal %>%
 									filter(is.na(LINK1)))
-		#    group_by(VTRSERNO, CAMSID) %>%
-		#    slice(1) %>%
-		#    ungroup()
-		# )
 
 
 		# if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
@@ -189,22 +177,11 @@ discard_generic <- function(con = con_maps
 		}
 
 		# set up trips table for previous year ----
-		ddat_prev_cy = ddat_prev %>%
-			filter(!is.na(LINK1)) %>%
-			mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-			)) %>%
-			mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-			group_by(LINK1, CAMS_SUBTRIP) %>%
-			arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-			slice(1) %>%
-			ungroup()
+		ddat_prev_cy <- summarise_single_discard_row(data = ddat_prev)
 
 		ddat_prev_cy = ddat_prev_cy %>%
 			union_all(ddat_prev %>%
 									filter(is.na(LINK1))) #%>%
-		# group_by(VTRSERNO,CAMSID) %>%
-		# slice(1) %>%
-		# ungroup()
 
 		# previous year observer data needed..
 		bdat_prev_cy = ddat_prev %>%
