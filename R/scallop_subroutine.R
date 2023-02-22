@@ -166,15 +166,7 @@ for(yy in FY:(FY+end_fy)){
 	# need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
 	# need to select only discards for species evaluated. All OBS trips where nothing of that species was disacrded Must be zero!
 
-	ddat_focal_scal = ddat_focal %>%
-		filter(!is.na(LINK1)) %>%
-		mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-		)) %>%
-		mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-		group_by(LINK1, CAMS_SUBTRIP) %>%
-		arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-		slice(1) %>%
-		ungroup()
+	ddat_focal_scal <- summarise_single_discard_row(data = ddat_focal)
 
 	# and join to the unobserved trips
 
@@ -202,15 +194,7 @@ for(yy in FY:(FY+end_fy)){
 
 
 	# set up trips table for previous year
-	ddat_prev_scal = ddat_prev %>%
-		filter(!is.na(LINK1)) %>%
-		mutate(SPECIES_EVAL_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD
-		)) %>%
-		mutate(SPECIES_EVAL_DISCARD = coalesce(SPECIES_EVAL_DISCARD, 0)) %>%
-		group_by(LINK1, CAMS_SUBTRIP) %>%
-		arrange(desc(SPECIES_EVAL_DISCARD)) %>%
-		slice(1) %>%
-		ungroup()
+	ddat_prev_scal <- summarise_single_discard_row(data = ddat_prev)
 
 	ddat_prev_scal = ddat_prev_scal %>%
 		union_all(ddat_prev %>%
