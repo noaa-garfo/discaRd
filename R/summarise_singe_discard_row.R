@@ -1,7 +1,8 @@
 #' Reduce the dataframe for inputting into discards to one row per species-subtrip-link1
 #' @author Daniel J. Hocking
 #'
-#' @param dataframe
+#' @param dataframe to summarise
+#' @param itis_tsn focal species itis code
 #'
 #' @details Reduce the dataframe for inputting into discards to one row per species-subtrip-link1
 #'
@@ -9,13 +10,13 @@
 #' @export
 #'
 #' @examples
-summarise_single_discard_row <- function(data) {
+summarise_single_discard_row <- function(data, itis_tsn) {
 
 data_summary <- data %>%
   dplyr::filter(!is.na(LINK1)) %>%
   mutate(
     SPECIES_EVAL_DISCARD = case_when(
-      SPECIES_ITIS == species_itis ~ DISCARD,
+      SPECIES_ITIS == itis_tsn ~ DISCARD,
       TRUE ~ 0.0
     )
   )

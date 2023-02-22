@@ -149,7 +149,7 @@ discard_generic <- function(con = con_maps
 
 
 		# need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
-		ddat_focal_cy <- summarise_single_discard_row(data = ddat_focal)
+		ddat_focal_cy <- summarise_single_discard_row(data = ddat_focal, itis_tsn = species_itis)
 
 		# and join to the unobserved trips ----
 
@@ -177,7 +177,7 @@ discard_generic <- function(con = con_maps
 		}
 
 		# set up trips table for previous year ----
-		ddat_prev_cy <- summarise_single_discard_row(data = ddat_prev)
+		ddat_prev_cy <- summarise_single_discard_row(data = ddat_prev, itis_tsn = species_itis)
 
 		ddat_prev_cy = ddat_prev_cy %>%
 			union_all(ddat_prev %>%

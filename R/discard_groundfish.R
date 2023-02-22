@@ -189,7 +189,7 @@ discard_groundfish <- function(con
   # need to select only discards for species evaluated. All OBS trips where nothing of that species was disacrded Must be zero!
   # Observed trips with NO obs hauls can be treated the same here. The assignment of DISCARD source happens at the end and contains the correct filtration criteria.
 
-  ddat_focal_gf <- summarise_single_discard_row(data = ddat_focal)
+  ddat_focal_gf <- summarise_single_discard_row(data = ddat_focal, itis_tsn = species_itis)
 
   if(FALSE) {
     ddat_focal_gf |>
@@ -231,7 +231,7 @@ discard_groundfish <- function(con
 
 
   # set up trips table for previous year ----
-  ddat_prev_gf <- summarise_single_discard_row(data = ddat_prev)
+  ddat_prev_gf <- summarise_single_discard_row(data = ddat_prev, itis_tsn = species_itis)
 
 # previous year observer data needed..
   bdat_prev_gf = ddat_prev %>%
@@ -806,7 +806,7 @@ discard_groundfish <- function(con
   # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
   # need to select only discards for species evaluated. All OBS trips where nothing of that species was disacrded Must be zero!
 
-  ddat_focal_non_gf <- summarise_single_discard_row(data = ddat_focal)
+  ddat_focal_non_gf <- summarise_single_discard_row(data = ddat_focal, itis_tsn = species_itis)
 
   # and join to the unobserved trips
   ddat_focal_non_gf = ddat_focal_non_gf %>%
@@ -834,7 +834,7 @@ discard_groundfish <- function(con
 
 
   # set up trips table for previous year
-  ddat_prev_non_gf <- summarise_single_discard_row(data = ddat_prev)
+  ddat_prev_non_gf <- summarise_single_discard_row(data = ddat_prev, itis_tsn = species_itis)
 
   ddat_prev_non_gf = ddat_prev_non_gf %>%
     union_all(ddat_prev %>%
