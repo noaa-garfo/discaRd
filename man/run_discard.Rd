@@ -29,9 +29,9 @@ run_discard(
 \item{year}{year where discard is needed}
 }
 \value{
-a list of: 
-1) Species, 
-2) discaRd results (summary table, CV, etc), 
+a list of:
+1) Species,
+2) discaRd results (summary table, CV, etc),
 3)Complete table of commercial trips and discard amounts
 }
 \description{
