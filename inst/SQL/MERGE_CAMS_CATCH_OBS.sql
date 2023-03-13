@@ -247,7 +247,8 @@ group by d.permit
     left join (
           select distinct(NEGEAR) as VTR_NEGEAR
            , SECGEAR_MAPPED
-          from MAPS.STG_OBS_VTR_GEARMAP
+          --from MAPS.STG_OBS_VTR_GEARMAP
+          from CFG_NEGEAR
           where NEGEAR is not null
          ) g
      on j.NEGEAR = g.VTR_NEGEAR
@@ -262,7 +263,8 @@ group by d.permit
           left join (
             select distinct(NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED
-            from maps.STG_OBS_VTR_GEARMAP
+            -- from maps.STG_OBS_VTR_GEARMAP
+            from CFG_NEGEAR
             where NEGEAR is not null
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
