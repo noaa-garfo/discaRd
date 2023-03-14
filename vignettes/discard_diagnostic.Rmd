@@ -320,4 +320,120 @@ nongf_trips_wtf_summary %>%
 
 ```
 
+## Yellowtail example with scallop trips
+
+```{r groundfish example, echo = T}
+
+species <- tbl(con, sql("
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>%
+	filter(RUN_ID == 'GROUNDFISH') %>%
+	collect() %>%
+	group_by(ITIS_TSN) %>%
+	slice(1) %>%
+	ungroup()
+
+# get one species for testing (witch flounder)
+species = species %>% 
+	filter(NESPP3 == 123)
+
+
+# GEAR TABLE
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+	collect() %>%
+	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+	filter(ITIS_TSN == species$ITIS_TSN) %>%
+	dplyr::select(-NESPP3, -ITIS_TSN)
+
+# Stock (Estimation) areas table ----
+STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+	collect() %>%
+	filter(ITIS_TSN == species$ITIS_TSN) %>%
+	group_by(AREA_NAME, ITIS_TSN) %>%
+	distinct(AREA) %>%
+	mutate(AREA = as.character(AREA)
+				 , SPECIES_STOCK = AREA_NAME) %>%
+	ungroup()
+
+# Discard Mortality table ----
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+	collect() %>%
+	mutate(SPECIES_STOCK = AREA_NAME
+				 , GEARCODE = CAMS_GEAR_GROUP
+				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
+	select(-AREA_NAME) %>%
+	filter(ITIS_TSN == species$ITIS_TSN) %>%
+	dplyr::select(-ITIS_TSN)
+
+# discard estimate ----
+
+discard_ytf = discard_groundfish_diagnostic(con = con
+															 , FY = 2019
+															 , species = species
+															 , gf_dat = gf_dat
+															 , non_gf_dat = non_gf_dat
+															 , return_table = T
+															 , return_summary = T
+															 , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
+															 , STOCK_AREAS = STOCK_AREAS
+															 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+															 ) 
+
+
+# summary output 
+
+discard_ytf$discard_summary %>% 
+	DT::datatable()
+
+# tabular summary output
+
+# GF trips only 
+ gftrips_ytf_summary = discard_wtf$trips_discard %>% 
+ 	filter(GF == 1) %>% 
+ 	group_by(SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, SECTID, EM, REDFISH_EXEMPTION , SNE_SMALLMESH_EXEMPTION, XLRG_GILLNET_EXEMPTION, EXEMPT_7130) %>% 	dplyr::summarise(rate = max(COAL_RATE, na.rm = T)
+										 , n_f = max(n_obs_trips_f)
+										 , n_p = max(n_obs_trips_p)
+										 , N = n_distinct(CAMS_SUBTRIP)
+										 # , rate_min = min(COAL_RATE, na.rm = T)
+										 , KALL = round(sum(LIVE_POUNDS, na.rm = T))
+										 , D = round(sum(DISCARD, na.rm = T), 2)
+										 , CV = max(CV, na.rm = T)
+		)
+ 	
+
+
+
+nongf_trips_ytf_summary = discard_wtf$trips_discard %>% 
+	filter(GF == 0) %>%
+		group_by(FISHING_YEAR
+						 , GF
+						 , STRATA_USED
+						 , DISCARD_SOURCE
+						 , SPECIES_STOCK
+						 , CAMS_GEAR_GROUP
+						 , MESH_CAT
+						 , TRIPCATEGORY
+						 , ACCESSAREA
+						 , FED_OR_STATE) %>%
+		dplyr::summarise(rate = max(COAL_RATE, na.rm = T)
+										 , n_f = max(n_obs_trips_f)
+										 , n_p = max(n_obs_trips_p)
+										 , N = n_distinct(CAMS_SUBTRIP)
+										 # , rate_min = min(COAL_RATE, na.rm = T)
+										 , KALL = round(sum(LIVE_POUNDS, na.rm = T))
+										 , D = round(sum(DISCARD, na.rm = T), 2)
+										 , CV = max(CV, na.rm = T)
+		)
+
+
+gftrips_ytf_summary %>% 
+	DT::datatable()
+
+nongf_trips_ytf_summary %>% 
+	DT::datatable()
+
+
+
+```
 
