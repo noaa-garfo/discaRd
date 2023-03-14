@@ -1211,7 +1211,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 
   		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))  # don't need for the diagnostic function 
-  				assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
+  				# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 
   		# t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
   		
