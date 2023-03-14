@@ -1,5 +1,5 @@
 ---
-title: "Discard Diganostic Example"
+title: "Discard Diagnostic Example"
 output: html_document
 date: "2023-03-14"
 author: "Benjamin Galuardi"
