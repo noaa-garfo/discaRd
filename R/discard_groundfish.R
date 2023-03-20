@@ -703,11 +703,6 @@ discard_groundfish <- function(con
   	rm(list = ls()[grepl(x = ls(), 'STOCK_*')])
 
 
-  # Add OBS_DISCARD for non-GF trips
-
-  	non_gf_dat = non_gf_dat %>%
-  		mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-  																	 , TRUE ~ 0))
 
   #'
   ## ----loop through the non sector trips for each stock ----
@@ -721,10 +716,18 @@ discard_groundfish <- function(con
 
   for(i in 1:length(species$ITIS_TSN)){
 
+  
   t1 = Sys.time()
 
   logr::log_print(paste0('Running non-groundfish trips for ', species$ITIS_NAME[i], ' Fishing Year ', FY))
 
+  # Add OBS_DISCARD for non-GF trips
+  
+  non_gf_dat = non_gf_dat %>%
+  	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
+  																 , TRUE ~ 0))
+  
+  
   # species_nespp3 = species$NESPP3[i]
   species_itis = species$ITIS_TSN[i]
   #---#
