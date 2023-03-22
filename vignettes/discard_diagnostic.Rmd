@@ -27,7 +27,7 @@ options(dplyr.summarise.inform = FALSE)
 
 # you can also use odbc, or connect via server using keyring or other method
 library(remotes)
-remotes::install_github("NOAA-Fisheries-Greater-Atlantic-Region/discaRd", ref = 'model_estimator')
+remotes::install_github("NOAA-Fisheries-Greater-Atlantic-Region/discaRd", ref = 'demo')
 
 library(discaRd)
 
