@@ -175,7 +175,7 @@ mydiscard = discard_generic_diagnostic(con = con
 
 mydiscard$discard_summary %>% 
 	# knitr::kable()
-	DT::datatable(filter = 'top')
+	DT::datatable(filter = 'top', caption = 'Summary from run')
 
 
 ```
@@ -198,7 +198,7 @@ d_summary = mydiscard$trips_discard %>%
 		)
 
 d_summary %>% 
-	DT::datatable(filter = 'top')
+	DT::datatable(filter = 'top', caption = 'Summary built from trips')
 	# knitr::kable()
 
 ```
@@ -229,7 +229,7 @@ dys_summary = DYS %>%
 	mutate(D_mt = round(D/2204.62262))
 
 dys_summary %>% 
-	DT::datatable(filter = 'top')
+	DT::datatable(filter = 'top', caption = 'Summary from discard_all_years table')
  
 ```
 
@@ -298,7 +298,7 @@ discard_wtf = discard_groundfish_diagnostic(con = con
 # summary output 
 
 discard_wtf$discard_summary %>% 
-	DT::datatable(filter = 'top')
+	DT::datatable(filter = 'top', caption = 'Witch flounder, discard summary from run (all trips)')
 
 # tabular summary output
 
@@ -342,10 +342,10 @@ nongf_trips_wtf_summary = discard_wtf$trips_discard %>%
 
 
 gftrips_wtf_summary %>% 
-	DT::datatable(filter = 'top')
+	DT::datatable(filter = 'top', caption = 'Witch flounder, groundfish trips summary')
 
 nongf_trips_wtf_summary %>% 
-	DT::datatable(filter = 'top')
+	DT::datatable(filter = 'top', caption = 'Witch flounder, non groundfish trips summary')
 
 
 
