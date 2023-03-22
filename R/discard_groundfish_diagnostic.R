@@ -677,13 +677,12 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   logr::log_print(paste0('Running non-groundfish trips for ', species$ITIS_NAME[i], ' Fishing Year ', FY))
 
+  species_itis = species$ITIS_TSN[i]
+  
   non_gf_dat = non_gf_dat %>%
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , TRUE ~ 0))
   
-
-  # species_nespp3 = species$NESPP3[i]
-  species_itis = species$ITIS_TSN[i]
   #---#
   # Support table import by species
 
