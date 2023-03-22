@@ -156,7 +156,7 @@ if(species$ITIS_TSN == '079718'){
 ```{r run discard function}
 mydiscard = discard_generic_diagnostic(con = con
 														, species = species
-														, FY = 2019
+														, FY = 2021
 														#, FY_TYPE = c('Calendar','March','April','May','November')
 														, all_dat = all_dat
 														, return_table = T
@@ -175,7 +175,7 @@ mydiscard = discard_generic_diagnostic(con = con
 
 mydiscard$discard_summary %>% 
 	# knitr::kable()
-	DT::datatable()
+	DT::datatable(filter = 'top')
 
 
 ```
@@ -198,10 +198,41 @@ d_summary = mydiscard$trips_discard %>%
 		)
 
 d_summary %>% 
-	DT::datatable()
+	DT::datatable(filter = 'top')
 	# knitr::kable()
 
 ```
+
+### Look at `CAMS_DISCARD_ALL_YEARS`
+
+```{r discard alll years summary}
+
+
+DYS = tbl(con, sql('select * from CAMS_DISCARD_ALL_YEARS where FY = 2021 and ITIS_TSN = 167687'))
+
+dys_summary = DYS %>% 
+ filter(FED_OR_STATE == 'FED') %>% 
+	collect() %>%
+	group_by(STRATA_USED, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA) %>% 
+	dplyr::summarise(CAMS_RATE = max(CAMS_DISCARD_RATE, na.rm = T)
+									 , OBS_RATE = sum(OBS_DISCARD, na.rm = T)/(sum(OBS_KALL, na.rm = T))
+									 # , n_f = max(N_OBS_TRIPS_F)
+									 # , n_p = max(N_OBS_TRIPS_P)
+									 , N = n_distinct(CAMS_SUBTRIP)
+									 # , rate_min = min(COAL_RATE, na.rm = T)
+									 , OBS_DISCARD = sum(OBS_DISCARD, na.rm = T)
+									 , KALL = round(sum(SUBTRIP_KALL, na.rm = T))
+									 , D = round(sum(CAMS_DISCARD, na.rm = T), 2)
+									 , CV = max(CAMS_CV, na.rm = T)
+	) %>% 
+	arrange(desc(D)) %>% 
+	mutate(D_mt = round(D/2204.62262))
+
+dys_summary %>% 
+	DT::datatable(filter = 'top')
+ 
+```
+
 
 ## Groundfish example (all at once)
 
@@ -267,7 +298,7 @@ discard_wtf = discard_groundfish_diagnostic(con = con
 # summary output 
 
 discard_wtf$discard_summary %>% 
-	DT::datatable()
+	DT::datatable(filter = 'top')
 
 # tabular summary output
 
@@ -311,10 +342,10 @@ nongf_trips_wtf_summary = discard_wtf$trips_discard %>%
 
 
 gftrips_wtf_summary %>% 
-	DT::datatable()
+	DT::datatable(filter = 'top')
 
 nongf_trips_wtf_summary %>% 
-	DT::datatable()
+	DT::datatable(filter = 'top')
 
 
 
