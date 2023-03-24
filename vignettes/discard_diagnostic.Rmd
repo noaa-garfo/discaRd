@@ -74,7 +74,7 @@ gc()
 
 species <- tbl(con, sql("
   select *
-  from CFG_DISCARD_RUNID
+  from CAMS_GARFO.CFG_DISCARD_RUNID
   ")) %>%
 	filter(RUN_ID == 'CALENDAR') %>%
 	collect() %>%
@@ -94,14 +94,14 @@ species = species %>%
 ```{r read in default support tables}
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CAMS_GARFO.CFG_GEARCODE_STRATA')) %>%
 	collect() %>%
 	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 	dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stock (Estimation) areas table ----
-STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con, sql('select * from CAMS_GARFO.CFG_STATAREA_STOCK')) %>%
 	collect() %>%
 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 	group_by(AREA_NAME, ITIS_TSN) %>%
@@ -111,7 +111,7 @@ STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
 	ungroup()
 
 # Discard Mortality table ----
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CAMS_GARFO.CFG_DISCARD_MORTALITY_STOCK"))  %>%
 	collect() %>%
 	mutate(SPECIES_STOCK = AREA_NAME
 				 , GEARCODE = CAMS_GEAR_GROUP
@@ -210,7 +210,7 @@ d_summary %>%
 ```{r discard alll years summary}
 
 
-DYS = tbl(con, sql('select * from CAMS_DISCARD_ALL_YEARS where FY = 2021 and ITIS_TSN = 167687'))
+DYS = tbl(con, sql('select * from CAMS_GARFO.WG_CAMS_DISCARD_ALL_YEARS where FY = 2021 and ITIS_TSN = 167687'))
 
 dys_summary = DYS %>% 
  filter(FED_OR_STATE == 'FED') %>% 
@@ -242,7 +242,7 @@ dys_summary %>%
 
 species <- tbl(con, sql("
   select *
-  from CFG_DISCARD_RUNID
+  from CAMS_GARFO.CFG_DISCARD_RUNID
   ")) %>%
 	filter(RUN_ID == 'GROUNDFISH') %>%
 	collect() %>%
@@ -256,14 +256,14 @@ species = species %>%
 
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CAMS_GARFO.CFG_GEARCODE_STRATA')) %>%
 	collect() %>%
 	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 	dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stock (Estimation) areas table ----
-STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con, sql('select * from CAMS_GARFO.CFG_STATAREA_STOCK')) %>%
 	collect() %>%
 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 	group_by(AREA_NAME, ITIS_TSN) %>%
@@ -273,7 +273,7 @@ STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
 	ungroup()
 
 # Discard Mortality table ----
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CAMS_GARFO.CFG_DISCARD_MORTALITY_STOCK"))  %>%
 	collect() %>%
 	mutate(SPECIES_STOCK = AREA_NAME
 				 , GEARCODE = CAMS_GEAR_GROUP
@@ -359,7 +359,7 @@ nongf_trips_wtf_summary %>%
 
 species <- tbl(con, sql("
   select *
-  from CFG_DISCARD_RUNID
+  from CAMS_GARFO.CFG_DISCARD_RUNID
   ")) %>%
 	filter(RUN_ID == 'GROUNDFISH') %>%
 	collect() %>%
@@ -373,14 +373,14 @@ species = species %>%
 
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CAMS_GARFO.CFG_GEARCODE_STRATA')) %>%
 	collect() %>%
 	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 	dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stock (Estimation) areas table ----
-STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+STOCK_AREAS = tbl(con, sql('select * from CAMS_GARFO.CFG_STATAREA_STOCK')) %>%
 	collect() %>%
 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 	group_by(AREA_NAME, ITIS_TSN) %>%
@@ -390,7 +390,7 @@ STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
 	ungroup()
 
 # Discard Mortality table ----
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CAMS_GARFO.CFG_DISCARD_MORTALITY_STOCK"))  %>%
 	collect() %>%
 	mutate(SPECIES_STOCK = AREA_NAME
 				 , GEARCODE = CAMS_GEAR_GROUP

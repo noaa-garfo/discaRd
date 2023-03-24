@@ -32,7 +32,7 @@ get_catch_obs_nefsc <- function(con = con_maps, start_year = 2017, end_year = 20
 
 t1 = Sys.time()
 
-print(paste0("Pulling CAMS_OBS_CATCH data for ", start_year, "-", end_year))
+print(paste0("Pulling CAMS_GARFO.WG_CAMS_OBS_CATCH data for ", start_year, "-", end_year))
 
 import_query = paste0("  with obs_cams as (
    select year
@@ -77,8 +77,8 @@ import_query = paste0("  with obs_cams as (
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from WG_CAMS_OBS_CATCH c
-	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130 from CAMS_SUBTRIP) s
+	from CAMS_GARFO.WG_CAMS_OBS_CATCH c
+	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130 from CAMS_GARFO.CAMS_SUBTRIP) s
 	on c.CAMS_SUBTRIP = s.CAMS_SUBTRIP
 
 	where year >=", start_year , "
@@ -136,20 +136,6 @@ import_query = paste0("  with obs_cams as (
 
 
 c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
-
-if(FALSE) {
-  c_o_dat2 |>
-    dplyr::filter(CAMSID == '330448_20221126104200_33044822111911',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-  c_o_dat2 |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-}
 
 c_o_dat2 = c_o_dat2 %>%
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
@@ -215,20 +201,6 @@ c_o_dat2 = c_o_dat2 %>%
 }
 # continue the data import
 
-if(FALSE) {
-  c_o_dat2 |>
-    dplyr::filter(CAMSID == '330448_20221126104200_33044822111911',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-  c_o_dat2 |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-}
-
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
 
@@ -244,11 +216,6 @@ multilink = fed_trips %>%
 	dplyr::summarise(nlink1 = n_distinct(LINK1)) %>%
 	arrange(desc(nlink1)) %>%
 	filter(nlink1>1)
-
-if(FALSE) {
-  multilink |>
-    dplyr::filter(VTRSERNO == '2505122212270901')
-}
 
 remove_links = fed_trips %>%
 	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>%
@@ -271,23 +238,10 @@ non_gf_dat = fed_trips %>%
 gf_dat = fed_trips%>%
 	filter(GF == 1)
 
-if(FALSE) {
-  non_gf_dat |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-  gf_dat |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-}
 
 # Add MREM adjustment View
 mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-										from cams_alloc_gf_mrem')
+										from CAMS_GARFO.WG_cams_alloc_gf_mrem')
 
 # make the MREM KALL adjustment
 gf_dat = gf_dat %>%
@@ -299,19 +253,6 @@ gf_dat = gf_dat %>%
 				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
 				 											, is.na(KALL_MREM_ADJ) ~ OBS_KALL))
 
-if(FALSE) {
-  non_gf_dat |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-  gf_dat |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-}
 
 # need this for anything not in the groundfish loop...
 all_dat = non_gf_dat %>%
@@ -324,20 +265,6 @@ t2 = Sys.time()
 
 print(paste0("Took ", round(difftime(t2, t1, units = 'mins'), 2) , ' minutes'))
 
-if(FALSE) {
-  non_gf_dat |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-  gf_dat |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-}
-
 return(list(gf_dat = gf_dat, non_gf_dat = non_gf_dat, all_dat = all_dat))
 
 }
@@ -347,7 +274,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 
 	t1 = Sys.time()
 
-	print(paste0("Pulling CAMS_OBS_CATCH Herring data for ", start_year, "-", end_year))
+	print(paste0("Pulling CAMS_GARFO.WG_CAMS_OBS_CATCH Herring data for ", start_year, "-", end_year))
 
 	import_query = paste0("
 	 with obs_cams as (
@@ -392,7 +319,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from CAMS_OBS_CATCH
+	from CAMS_GARFO.WG_CAMS_OBS_CATCH
 
   WHERE YEAR >= ", start_year, "
   and YEAR <= ", end_year, "
@@ -446,13 +373,13 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
         , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
         from
-        cams_land
+        CAMS_GARFO.WG_cams_land
   )
 
  -- , cams_herr as(
 --	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
 --	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
---	  from cams_landings cl
+--	  from CAMS_GARFO.WG_cams_landings cl
 --  )
 
   select
@@ -467,7 +394,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   --left join cams_herr ch
   --on (ch.cams_subtrip = cos.cams_subtrip)
 
-  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b
+  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from CAMS_GARFO.WG_cams_fishery_group c ) b
   on (cos.cams_subtrip = b.cams_subtrip)
 
 
