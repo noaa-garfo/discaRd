@@ -46,8 +46,8 @@ stratvars_scalgf = c('SPECIES_STOCK'
 get_scal_range = function(scal_fy){
 	y = scal_fy
 	smonth = ifelse(y <= 2018, 3, 4)
-	emonth = ifelse(y <= 2018, 2, 3)
-	eday = ifelse(y <= 2018, 28, 31)
+	emonth = ifelse(y < 2018, 2, 3)
+	eday = ifelse(y < 2018, 28, 31)
 	sdate = lubridate::as_date(paste(y, smonth, 1, sep = '-'))
 	edate = lubridate::as_date(paste(y+1, emonth, eday, sep = '-'))
 
