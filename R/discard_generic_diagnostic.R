@@ -766,7 +766,6 @@ discard_generic_diagnostic <- function(con = con_maps
 
 }
 
-
 #' Get Date Range
 #' get date range for particular type of fishing year
 #' @param FY Fishing Year (e.g. 2020)
@@ -780,8 +779,8 @@ get_date_range = function(FY, FY_TYPE){
 	y = FY
 	if(FY_TYPE == 'APRIL'){
 		smonth = ifelse(y <= 2018, 3, 4)
-		emonth = ifelse(y <= 2018, 3, 4)
-		eday = ifelse(y <= 2018, 31, 30)
+		emonth = ifelse(y < 2018, 3, 4)
+		eday = ifelse(y < 2018, 31, 30)
 		sdate = lubridate::as_date(paste(y, smonth, 1, sep = '-'))
 		edate = lubridate::as_date(paste(y+1, emonth, eday, sep = '-'))
 	}
@@ -794,8 +793,20 @@ get_date_range = function(FY, FY_TYPE){
 		edate = lubridate::as_date(paste(y+1, 5, 1, sep = '-'))
 	}
 	if(FY_TYPE == 'NOVEMBER'){
-		sdate = lubridate::as_date(paste(y, 11, 1, sep = '-'))
-		edate = lubridate::as_date(paste(y+1, 11, 1, sep = '-'))
+		smonth = case_when(y <= 2021 ~ 11
+											 , y == 2022 ~ 11
+											 , y > 2022 ~ 1
+		)
+		emonth = case_when(y <= 2021 ~ 10
+											 , y == 2022 ~ 12
+											 , y > 2022 ~ 12
+		)
+		syear = case_when(y <= 2021 ~ y-1
+											, y == 2022 ~ y-1
+											, y > 2022 ~ y
+		)
+		sdate = lubridate::as_date(paste(syear, smonth, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y, emonth, 31, sep = '-'))
 	}
 	if(FY_TYPE == 'CALENDAR'){
 		sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
