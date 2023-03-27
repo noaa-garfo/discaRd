@@ -636,8 +636,20 @@ get_date_range = function(FY, FY_TYPE){
 		edate = lubridate::as_date(paste(y+1, 5, 1, sep = '-'))
 	}
 	if(FY_TYPE == 'NOVEMBER'){
-		sdate = lubridate::as_date(paste(y, 11, 1, sep = '-'))
-		edate = lubridate::as_date(paste(y+1, 11, 1, sep = '-'))
+		smonth = case_when(y <= 2021 ~ 11
+											 , y == 2022 ~ 11
+											 , y > 2022 ~ 1
+		)
+		emonth = case_when(y <= 2021 ~ 10
+											 , y == 2022 ~ 12
+											 , y > 2022 ~ 12
+		)
+		syear = case_when(y <= 2021 ~ y-1
+											, y == 2022 ~ y-1
+											, y > 2022 ~ y
+		)
+		sdate = lubridate::as_date(paste(syear, smonth, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y, emonth, 31, sep = '-'))
 	}
 	if(FY_TYPE == 'CALENDAR'){
 		sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
