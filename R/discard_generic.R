@@ -622,8 +622,8 @@ get_date_range = function(FY, FY_TYPE){
 	y = FY
 	if(FY_TYPE == 'APRIL'){
 		smonth = ifelse(y <= 2018, 3, 4)
-		emonth = ifelse(y <= 2018, 3, 4)
-		eday = ifelse(y <= 2018, 31, 30)
+		emonth = ifelse(y < 2018, 3, 4)
+		eday = ifelse(y < 2018, 31, 30)
 		sdate = lubridate::as_date(paste(y, smonth, 1, sep = '-'))
 		edate = lubridate::as_date(paste(y+1, emonth, eday, sep = '-'))
 	}

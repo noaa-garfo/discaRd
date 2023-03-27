@@ -73,20 +73,20 @@ discard_groundfish <- function(con
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , TRUE ~ 0))
 
-  if(FALSE) {
-    non_gf_dat |>
-      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                    SPECIES_ITIS == '172873') |>
-      dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-    gf_dat |>
-      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                    SPECIES_ITIS == '172873') |>
-      dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-                       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
-  }
+  # if(FALSE) {
+  #   non_gf_dat |>
+  #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+  #                   SPECIES_ITIS == '172873') |>
+  #     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
+  #                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
+  # 
+  #   gf_dat |>
+  #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+  #                   SPECIES_ITIS == '172873') |>
+  #     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
+  #                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+  #                      discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
+  # }
   # non_gf_dat = non_gf_dat %>%
   # 	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   # 																 , NA ~ 0))
@@ -154,14 +154,14 @@ discard_groundfish <- function(con
   # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
-  if(FALSE) {
-    ddat_focal |>
-      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                    SPECIES_ITIS == '172873') |>
-      dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-                       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
-  }
+  # if(FALSE) {
+  #   ddat_focal |>
+  #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+  #                   SPECIES_ITIS == '172873') |>
+  #     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
+  #                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+  #                      discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
+  # }
 
   ddat_prev <- gf_dat %>%
     dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
@@ -191,17 +191,17 @@ discard_groundfish <- function(con
 
   ddat_focal_gf <- summarise_single_discard_row(data = ddat_focal, itis_tsn = species_itis)
 
-  if(FALSE) {
-    ddat_focal_gf |>
-      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                    ITIS_TSN == '172873') |>
-      dplyr::summarise(
-        discard_total = sum(DISCARD, na.rm = TRUE),
-        discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-        discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
-        discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
-      )
-  }
+  # if(FALSE) {
+  #   ddat_focal_gf |>
+  #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+  #                   ITIS_TSN == '172873') |>
+  #     dplyr::summarise(
+  #       discard_total = sum(DISCARD, na.rm = TRUE),
+  #       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+  #       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
+  #       discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
+  #     )
+  # }
 
   # and join to the unobserved trips ----
 
@@ -661,17 +661,17 @@ discard_groundfish <- function(con
   emjoin <- emjoin |>
     dplyr::distinct()
 
-  if(FALSE) {
-    emjoin |>
-      dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                    ITIS_TSN == '172873') |>
-      dplyr::summarise(
-        discard_total = sum(DISCARD, na.rm = TRUE),
-        discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-        discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
-        discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
-      )
-  }
+  # if(FALSE) {
+  #   emjoin |>
+  #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
+  #                   ITIS_TSN == '172873') |>
+  #     dplyr::summarise(
+  #       discard_total = sum(DISCARD, na.rm = TRUE),
+  #       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
+  #       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
+  #       discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
+  #     )
+  # }
 
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
