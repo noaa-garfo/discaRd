@@ -55,7 +55,7 @@ con <- ROracle::dbConnect(
 start_year = 2020
 end_year = 2022 #year(today())
 
-dat = get_catch_obs(con, start_year, end_year)
+dat = get_catch_obs_nefsc(con, start_year, end_year)
 # dat = get_catch_obs_nefsc(con, start_year, end_year) # if at NEFSC, use this
 
 gf_dat = dat$gf_dat

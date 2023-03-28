@@ -241,7 +241,7 @@ gf_dat = fed_trips%>%
 
 # Add MREM adjustment View
 mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-										from CAMS_GARFO.WG_cams_alloc_gf_mrem')
+										from CAMS_GARFO.cams_alloc_gf_mrem')
 
 # make the MREM KALL adjustment
 gf_dat = gf_dat %>%
