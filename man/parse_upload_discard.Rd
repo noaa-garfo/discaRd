@@ -9,7 +9,8 @@ parse_upload_discard(
   con = con_maps,
   filepath = getOption("maps.discardsPath"),
   FY = 2018,
-  gf_only = F
+  gf_only = F,
+  date_run = NULL
 )
 }
 \arguments{
