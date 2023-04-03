@@ -19,38 +19,60 @@ get_date_range = function(FY, FY_TYPE){
 	}
 	if(FY_TYPE == 'MARCH'){
 		sdate = lubridate::as_date(paste(y, 3, 1, sep = '-'))
-		edate = lubridate::as_date(paste(y+1, 3, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 2, ifelse(c(y+1) %in% seq(1900, 2100, by = 4), 29, 28), sep = '-')) # account for leap years
 	}
 	if(FY_TYPE == 'MAY'){
 		sdate = lubridate::as_date(paste(y, 5, 1, sep = '-'))
-		edate = lubridate::as_date(paste(y+1, 5, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y+1, 4, 30, sep = '-'))
 	}
 	if(FY_TYPE == 'NOVEMBER'){
-		smonth = case_when(y <= 2021 ~ 11
+		smonth = dplyr::case_when(y < 2022 ~ 11
 											 , y == 2022 ~ 11
 											 , y > 2022 ~ 1
 		)
-		emonth = case_when(y <= 2021 ~ 10
+		emonth = dplyr::case_when(y < 2022 ~ 10
 											 , y == 2022 ~ 12
 											 , y > 2022 ~ 12
 		)
-		syear = case_when(y <= 2021 ~ y-1
-											, y == 2022 ~ y-1
-											, y > 2022 ~ y
+		syear = dplyr::case_when(y < 2022 ~ as.numeric(y-1)
+											, y == 2022 ~ as.numeric(y-1)
+											, y > 2022 ~ as.numeric(y)
 		)
 		sdate = lubridate::as_date(paste(syear, smonth, 1, sep = '-'))
 		edate = lubridate::as_date(paste(y, emonth, 31, sep = '-'))
 	}
 	if(FY_TYPE == 'CALENDAR'){
 		sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
-		edate = lubridate::as_date(paste(y+1, 1, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y, 12, 31, sep = '-'))
 	}
 	
 	if(FY_TYPE == 'HERRING'){
 		sdate = lubridate::as_date(paste(y, 1, 1, sep = '-'))
-		edate = lubridate::as_date(paste(y+1, 1, 1, sep = '-'))
+		edate = lubridate::as_date(paste(y, 12, 31, sep = '-'))
 	}
 	sdate = lubridate::floor_date(sdate, unit = 'day')
 	c(sdate, edate)
 	
 }
+
+# test it.. 
+
+# fylist = list()
+# 
+# for (k in c('APRIL','MAY','CALENDAR','NOVEMBER','MARCH','HERRING')){
+# 	
+# 	for(i in 2017:2023){
+# 		
+# 		df = data.frame(FY_TYPE = k
+# 										, FY = i
+# 										, fy_start = get_date_range(FY = i, FY_TYPE = k)[1]
+# 										, fy_end = get_date_range(FY = i, FY_TYPE = k)[2])
+# 		
+# 		fylist[[k]] = bind_rows(fylist[[k]], df)
+# 		
+# 	}
+# 	
+# }
+# 
+# fylist
+
