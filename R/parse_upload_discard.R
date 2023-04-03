@@ -14,9 +14,19 @@
 #' \dontrun{
 #'parse_upload_discard(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018)
 #'}
-parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018, gf_only = F){
+parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.discardsPath"), FY = 2018, gf_only = F, date_run = NULL){
 
 	# require(ROracle)
+
+  if(is.null(date_run)) {
+    date_run <- Sys.Date()
+  }
+  if(class(date_run) != "Date") {
+    date_run <- as.Date(date_run)
+  }
+  if(class(date_run) != "Date") {
+    date_run <- Sys.Date()
+  }
 
 	t1 = Sys.time()
 
@@ -63,7 +73,7 @@ parse_upload_discard <- function(con = con_maps, filepath = getOption("maps.disc
 											, 'DISCARD_RATE_G' = 'BROAD_STOCK_RATE'
 											, 'CAMS_CV' = 'CV'
 				) %>%
-				mutate(DATE_RUN = Sys.Date()
+				mutate(DATE_RUN = date_run
 							 , FY = as.integer(FY)
 							 , DOCID = dplyr::case_when(
 							   nchar(DOCID, keepNA = TRUE) > 15 ~ NA_character_,
