@@ -37,7 +37,7 @@ discard_herring <- function(con
 
 	# Begin loop ----
 
-	i <- 1
+
 	for(i in 1:length(species$ITIS_TSN)){
 
 		t1 = Sys.time()
@@ -646,6 +646,11 @@ joined_table = joined_table %>%
 													, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 
 	)
+
+## AWA modify non-target purse seine so we are not estimating discards in HMA 2(set to zero), menhaden fishery estimates not supported
+joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISCARDS, FULL_STRATA == '0_2_120',0)) %>%
+  mutate(COAL_RATE = replace(COAL_RATE, FULL_STRATA == '0_2_120',0)) %>%
+  mutate(DISCARD = replace(DISCARD, FULL_STRATA == '0_2_120',0))
 
 		# force remove duplicates
 		joined_table <- joined_table |>
