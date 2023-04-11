@@ -520,7 +520,8 @@ discard_herring <- function(con
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
 																	 , n_obs_trips_f < 5 &
-																	 	n_obs_trips_p < 5 & n_obs_trips_p_a > 5 ~ trans_rate_a  #in season gear, HMA transition
+																	 	n_obs_trips_p < 5 & 
+																	 	n_obs_trips_p_a > 5 ~ trans_rate_a  #in season gear, HMA transition
 			)
 			) %>%
 			mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%

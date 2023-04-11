@@ -484,7 +484,12 @@ discard_groundfish <- function(con
   															 , n_obs_trips_f < 5 &
   															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
   															 , n_obs_trips_f < 5 &
-  															 	n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
+  															 	n_obs_trips_p < 5  &
+  															 	n_obs_trips_f_a >= 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
+  															 , n_obs_trips_f < 5 &
+  															 	n_obs_trips_p < 5  &
+  															 	n_obs_trips_f_a < 5 &
+  															 	n_obs_trips_p_a >= 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
   		                           )
   	) %>%
   	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
@@ -1084,7 +1089,12 @@ discard_groundfish <- function(con
   															 , n_obs_trips_f < 5 &
   															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
   															 , n_obs_trips_f < 5 &
-  															 	n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
+  															 	n_obs_trips_p < 5  &
+  															 	n_obs_trips_f_a >= 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
+  															 , n_obs_trips_f < 5 &
+  															 	n_obs_trips_p < 5  &
+  															 	n_obs_trips_f_a < 5 &
+  															 	n_obs_trips_p_a >= 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
   		                           )
   	) %>%
   	mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
