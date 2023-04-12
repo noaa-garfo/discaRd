@@ -119,16 +119,16 @@
 
 
 discard_generic_diagnostic <- function(con = con_maps
-														, species = species
-														, FY = fy
-														#, FY_TYPE = c('Calendar','March','April','May','November')
-														, all_dat = all_dat
-														, return_table = T
-														, return_summary = F
-														, CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
-														, STOCK_AREAS = STOCK_AREAS
-														, CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
-														
+																			 , species = species
+																			 , FY = fy
+																			 #, FY_TYPE = c('Calendar','March','April','May','November')
+																			 , all_dat = all_dat
+																			 , return_table = T
+																			 , return_summary = F
+																			 , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
+																			 , STOCK_AREAS = STOCK_AREAS
+																			 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+																			 
 ) {
 	
 	
@@ -639,7 +639,12 @@ discard_generic_diagnostic <- function(con = con_maps
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
 																	 , n_obs_trips_f < 5 &
-																	 	n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking trasnition into account
+																	 	n_obs_trips_p < 5  &
+																	 	n_obs_trips_f_a >= 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
+																	 , n_obs_trips_f < 5 &
+																	 	n_obs_trips_p < 5  &
+																	 	n_obs_trips_f_a < 5 &
+																	 	n_obs_trips_p_a >= 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
 			)
 			) %>%
 			mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
@@ -733,7 +738,7 @@ discard_generic_diagnostic <- function(con = con_maps
 		joined_table <- joined_table |>
 			dplyr::distinct()
 		
-
+		
 		
 		# outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 		
@@ -763,7 +768,5 @@ discard_generic_diagnostic <- function(con = con_maps
 	if (return_table == F & return_summary == T) {return(dest_obj)}
 	if (return_table == T & return_summary == T) {return(list(trips_discard = joined_table, discard_summary = dest_obj))}
 	if(return_table == F & return_summary == F) {(print("What did you do all that work for?"))}
-
+	
 }
-
-
