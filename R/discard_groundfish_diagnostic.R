@@ -1268,10 +1268,19 @@ discard_groundfish_diagnostic <- function(con = con_maps
  	
  } # end if statement
 
-# join GF and non-gf trip results ----  	
+# join GF and non-gf trip results ----
+	# add element for non-estimated gear types ----  	
   	
   	joined_table = joined_table %>% 
-  		bind_rows(., emjoin)
+  		bind_rows(., emjoin) %>% 
+  		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
+  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0
+  															 ,TRUE ~ DISCARD))%>% 																 
+  		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA
+  															 ,TRUE ~ CV))
+
+      
   	
   	dest_obj = joined_table %>% 
   		group_by(FISHING_YEAR, GF, STRATA_USED, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA, FED_OR_STATE) %>%
