@@ -735,8 +735,15 @@ discard_generic_diagnostic <- function(con = con_maps
 			)
 		
 		# force remove duplicates
+		 # add element for non-estimated discard gears
 		joined_table <- joined_table |>
-			dplyr::distinct()
+			dplyr::distinct() %>% 
+  		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
+  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0
+  															 ,TRUE ~ DISCARD))%>% 																 
+  		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA
+  															 ,TRUE ~ CV))
 		
 
 		
