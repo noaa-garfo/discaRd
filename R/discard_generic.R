@@ -594,6 +594,15 @@ discard_generic <- function(con = con_maps
 															, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 
 			)
+	# add element for non-estimated gear types 	
+  	
+  	joined_table = joined_table %>% 
+  		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
+  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
+  															 ,TRUE ~ DISCARD))%>% 																 
+  		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
+  															 ,TRUE ~ CV))
 
 		# force remove duplicates
 		joined_table <- joined_table |>

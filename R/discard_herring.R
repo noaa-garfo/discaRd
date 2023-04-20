@@ -654,8 +654,15 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
   mutate(DISCARD = replace(DISCARD, FULL_STRATA == '0_2_120',0))
 
 		# force remove duplicates
+  		# add element for non-estimated discard gears
 		joined_table <- joined_table |>
-		  dplyr::distinct()
+		  dplyr::distinct()%>% 
+  		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
+  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
+  															 ,TRUE ~ DISCARD))%>% 																 
+  		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
+  															 ,TRUE ~ CV))
 
 # output an fst file -----
 

@@ -524,11 +524,22 @@ for(yy in FY:(FY+end_fy)){
 	# the KALLs should be small..
 
 	joined_table = joined_table %>%
-		mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-		mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
-														, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
-		)
+		mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) # %>%
+		# mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
+		# 												, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
+		# )
 	# Sys.umask('775')
+	
+	joined_table <- joined_table |>
+		dplyr::distinct()%>%
+		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
+																			,TRUE ~ DISCARD_SOURCE)) %>% 
+		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0,
+															 DISCARD_SOURCE == 'O' ~ DISC_MORT_RATIO*OBS_DISCARD,
+															 DISCARD_SOURCE != 'O' ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS,
+															 TRUE ~ NA_real_))%>% 																 
+		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
+													,TRUE ~ CV)) 
 
 	# force remove duplicates
 	joined_table <- joined_table |>
