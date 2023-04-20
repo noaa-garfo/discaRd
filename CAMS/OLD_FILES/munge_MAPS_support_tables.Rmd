@@ -1,0 +1,260 @@
+---
+title: "setup support tables for MAPS discard module"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r global_options, echo = F}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, 
+											message = FALSE, cache = FALSE,
+											progress = TRUE, verbose = FALSE, fig.width = 12, fig.height = 8)
+options(knitr.kable.NA = '')
+
+```
+
+```{r, load_libs}
+library(odbc)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(reshape2)
+library(readxl)
+library(discaRd)
+
+# load('SAW_2018_discaRd_test.Rdata')
+
+# connect to database
+
+dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+
+bcon <- dbConnect(odbc::odbc(), 
+									DSN = dw_apsd$dsn, 
+									UID = dw_apsd$uid, 
+									PWD = dw_apsd$pwd)
+
+```
+
+```{r read in the gear table}
+# change this path as needed
+
+setwd("~/GitHub/discaRd/CAMS")
+
+# change this path as needed
+mgear = readxl::read_xlsx('GAR master gear codes.xlsx', sheet = 1)
+
+dbWriteTable(conn = bcon, name = 'MASTER_GEAR', value = mgear)
+
+dbSendQuery(bcon, 'grant all on APSD.MASTER_GEAR to MAPS')
+
+mgear = tbl(bcon, sql('select * from apsd.master_gear'))
+
+
+# make it a long table.. no need!
+
+# mgear_long = reshape2::melt(data = mgear, c('NEGEAR','VTR_GEAR_CODE'))
+
+```
+
+```{r Dans stat area mapping code}
+#library(openxlsx)
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(sf)
+library(ggpubr)
+
+#source("pdf.bookmarks.R")
+
+# take a character list of stat areas, turn to vector of numbers
+l_to_v <- function(x){
+  as.numeric(strsplit(
+    paste(unlist(x),collapse=","),",")[[1]])
+}
+cbp1 <- c("#E69F00", "#56B4E9", "#009E73","#F0E442", 
+          "#0072B2", "#D55E00", "#CC79A7","#999999")
+
+# change this path as needed
+t_areas <- read_xlsx("C:/Users/benjamin.galuardi/Documents/CAMS/stock_definition_list_statareas.xlsx")
+
+
+# stat areas
+areas <- sort(unique(as.numeric(strsplit(
+  paste(unlist(t_areas$`Stock stat areas`),collapse=","),",")[[1]])))
+
+species <- sort(unique(t_areas$`common name`))
+
+nespp4 <- sort(unique(t_areas$nespp4_output))
+
+defs = c("stock","mgmt_unit","NEFSC_discards",
+               "QM_landings","QM_discards", "CAMS")
+
+stat_df <- expand.grid(
+  species = species,
+  # nespp4 = nespp4,
+  stat_area = areas,
+  definition = defs,
+  area_name = NA
+)
+# is it listed in the spreadsheet?
+stat_df$listed <- 0
+
+# names/area collections 
+definitions <- c("Stock Area", "Stock Mgmt Unit", 
+                 "Area Fished for discards","QM Landing Unit","QM Discard Unit", "CAMS unit")
+area_names <- c("Stock stat areas", "Mgmt Unit stat areas",
+                "OB SPEC stat areas", "QMLandings stat areas", "QMDiscard stat areas", "CAMS stat areas")
+
+for (i in 1:nrow(t_areas)){
+  spp <- as.character(t_areas[i,c("common name")])
+  # spp <- as.character(t_areas[i,c("nespp4_output")])
+
+  for (j in 1:length(definitions)){
+    area_name <- as.character(t_areas[i,definitions[j]])
+    
+    stat_df[which(stat_df$species==spp &
+              stat_df$definition==defs[j] &
+              stat_df$stat_area %in% l_to_v(t_areas[i,area_names[j]])
+              ),"area_name"] <- area_name
+
+    stat_df[which(stat_df$species==spp &
+              stat_df$definition==defs[j] &
+              stat_df$stat_area %in% l_to_v(t_areas[i,area_names[j]])
+              ),"listed"] <- 1
+    
+    #     stat_df[which(stat_df$nespp4 == spp &
+    #           stat_df$definition == defs[j] &
+    #           stat_df$stat_area %in% l_to_v(t_areas[i,area_names[j]])
+    #           ),"area_name"] <- area_name
+    # 
+    # stat_df[which(stat_df$nespp4 == spp &
+    #           stat_df$definition == defs[j] &
+    #           stat_df$stat_area %in% l_to_v(t_areas[i,area_names[j]])
+    #           ),"listed"] <- 1
+  }
+}
+
+stat_df <- stat_df[stat_df$listed==1,]
+#stat_df$area_name[which(is.na(stat_df$area_name))] <- "UNIT"
+
+# add NESPP4 back in
+
+stat_df = stat_df %>% 
+	mutate(`common name` = species) %>% 
+	left_join(., t_areas, by = 'common name') %>% 
+	select(c(1:5,8)) 
+# 
+save(stat_df, file = "C:/Users/benjamin.galuardi/Documents/CAMS/stat_areas_defined.Rdata")
+
+```
+
+
+```{r Dans code to plot the stat areas, eval = F}
+
+# write.csv(stat_df,file="stat_areas_defined.csv")
+# 
+# stat_shp <- st_read("./GIS/Statistical_Areas.shp")
+# EEZ <- st_read("./GIS/EEZ.shp")
+
+species2 <- species[c(10,17)]
+#-------------------------------------------------------#
+# plotting all species to single PDF
+#-------------------------------------------------------#
+# pdf(file = "Stat_Areas_species.pdf",onefile = T,
+#     pointsize=12,width=8.5,height=11
+#     )
+
+for (spp in species2){
+
+p <- list()  
+  
+for (defn in c(1:6)){
+
+#spp <- species[1]
+#def <- defs[c(1:3,5)][defn]
+def <- defs[defn]
+def.exists <- TRUE
+  
+stat_df1 <- stat_df %>% filter(
+  species == spp 
+  & !is.na(definition)
+  & definition == def
+) %>%
+  mutate(Id = stat_area)
+
+if(nrow(stat_df1)==0){
+  def.exists <- FALSE
+  stat_df1 <- stat_df %>% filter(
+    species == spp 
+  ) %>% group_by(species,stat_area) %>%
+    select(species,stat_area) %>%
+    mutate(Id = stat_area,
+           definition = def,
+           area_name = NA)
+}
+if(nrow(stat_df1)==0) break
+
+merged <- left_join(stat_shp,stat_df1,by="Id")
+if(!def.exists){
+  p[[defn]] <- NULL
+} else {
+
+p[[defn]] <- ggplot(merged) + geom_sf(aes(fill=factor(area_name))) + theme_minimal() +
+  geom_sf(data=EEZ,color=rgb(0,0,0,0.2),lwd=2) +
+  #scale_fill_brewer(palette = "Set1") + 
+  scale_fill_manual(values = cbp1) +
+  coord_sf(xlim=c(-80,-60),ylim=c(34.5,45)) +
+  labs(fill="Stratum",title=spp,
+       subtitle=def,
+       x=NULL,y=NULL) + 
+  geom_sf_text(aes(label=Id),size=2) + 
+  #facet_wrap(~definition) +
+  theme(legend.position = "bottom")
+  #theme(legend.key.width = unit(1.5,"cm"))
+}
+}
+#ggsave(filename = paste0("Stat Areas for ",spp," by ",def,".png"),height=4,width=5,dpi=300)
+
+#print(ggarrange(p[[1]],p[[2]],p[[3]],p[[4]],p[[5]],
+#          ncol=2,nrow=3))
+print(ggarrange(plotlist = p,
+                ncol=2,nrow=3))
+
+ggsave(filename = paste0("./maps/Stat Areas for ",spp,".png"),height=11,width=8.5,dpi=300)
+}
+
+#dev.off()
+#-------------------------------------------------------#
+
+
+
+# stockqm <- t_areas %>% select(`common name`,`Stock Area`,`Stock stat areas`,QM,`QMDiscard stat areas`)
+# 
+# not_in_stock <- apply(stockqm,1,
+#       function(x){l_to_v(x[c("Stock stat areas")])[which(!l_to_v(x[c("Stock stat areas")]) %in% 
+#                                                    l_to_v(x[c("QMDiscard stat areas")]))]})
+# 
+# not_in_qm <- apply(stockqm,1,
+#                       function(x){l_to_v(x[c("QMDiscard stat areas")])[which(!l_to_v(x[c("QMDiscard stat areas")]) %in% 
+#                                                                            l_to_v(x[c("Stock stat areas")]))]})
+
+```
+
+```{r upload stat area table}
+
+stat_area_df = read.csv('H:/DLINDEN/CAMS/stat_areas_defined.csv')
+
+dbWriteTable(conn = bcon, name = 'stat_areas_def', value = stat_area_df)
+
+dbSendQuery(bcon, 'grant all on apsd.stat_areas_def to MAPS')
+
+stat_area_df = tbl(bcon, sql('select * from apsd.stat_areas_def'))
+
+```
+
+
+

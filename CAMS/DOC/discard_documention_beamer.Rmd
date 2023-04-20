@@ -1,0 +1,291 @@
+---
+title: "CAMS discaRd Update"
+author: 
+  - Ben Galuardi & Dan Linden
+  - ^[APSD]
+date: "`r lubridate::today()`"  
+output:
+  beamer_presentation:
+    highlight: haddock
+    includes:
+    keep_tex: yes
+    theme: Singapore
+editor_options:
+  chunk_output_type: inline
+---
+
+
+## Discard Rate Current Method Summary (J. Michael Lanning summary)
+
+1. Rates determine by observer reported values (gear, area, etc)
+2. Incomplete observed trips have missing 'hauls' prorated by observed information from that trip
+3. Trips with observer get reported/calculated observed discards   of that specific trip
+4. Unobserved trips get discards from the rate calculated from 1)
+5. QM is only interested in the summary total of discards for each trip, not subtrips. Often the interested number is a summary of trips, ie. the herring total of bycatch for an area/season or a sector's season's total of GB Cod.
+6. Other others are driven by regs. Here I would place transition rates and EM methods.
+
+<!-- I recommend separating out issues such as mismatching gear and area for the future QA data system.  -->
+
+<!-- And of course, any change management must be worked through proper and transparent interaction with all end users and clients including council and  SFD. -->
+
+## discaRd Base and Support tables
+
+```{r table_flow0, echo = F, fig.height = 8, fig.width = 10, fig.cap = "Base tables (rectangle), Intermediary (circle), and Support tables (Oval)", warning = F}
+library(DiagrammeR)
+
+grViz("
+digraph boxes_and_circles {
+
+  # a 'graph' statement
+  graph [overlap = false, fontsize = 32, fillcolor = red]
+
+  # several 'node' statements
+  node [shape = box,
+        fontname = Helvetica
+        , fontsize = 32
+        fontcolor = 'darkgreen', 
+        penwidth = 2]
+  'CAMS 
+  Appt'; 
+  
+  'CAMS 
+  trip attr';
+  
+  'NEFOP';
+  
+  'ASM';
+
+ node [shape = oval,
+        fontname = Helvetica
+        , fillcolor = 'Cyan']
+  'CAMS
+  STATAREA
+  STOCK'; 
+  
+  'CAMS
+  GEARCODE
+  STRATA'; 
+  
+  'CAMS
+  DISCARD
+  MORTALITY
+  STOCK';
+
+  node [shape = circle,
+        fixedsize = false,
+        width = 2,  fontsize = 32] // sets as circles
+  'CAMS
+  OBS
+  CATCH'; 
+  
+  'OBS 
+   by YEAR' ; 
+   
+   'CAMS
+   CATCH
+   TA
+   MOCK'; 
+   
+   'OBS
+   CAMS
+   PRORATE';
+  
+  node [shape = diamond,
+        fixedsize = false,
+        width = 2,  fontsize = 40, fontweight = 'bold'] // 
+  'R';
+  
+
+  # several 'edge' statements
+
+  'NEFOP'->'OBS 
+   by YEAR'
+
+  'ASM'->'OBS 
+   by YEAR'
+
+  'OBS 
+   by YEAR'->'OBS
+   CAMS
+   PRORATE'
+  
+  'CAMS 
+  Appt' -> 'CAMS
+   CATCH
+   TA
+   MOCK'
+  'CAMS 
+  trip attr' ->'CAMS
+   CATCH
+   TA
+   MOCK'
+  
+  'CAMS
+   CATCH
+   TA
+   MOCK'->  'CAMS
+  OBS
+  CATCH'
+  
+'OBS
+   CAMS
+   PRORATE'->  'CAMS
+  OBS
+  CATCH'
+  
+  'CAMS
+  OBS
+  CATCH'->'R'
+  
+  'CAMS
+  STATAREA
+  STOCK'-> 'R'
+  
+  'CAMS
+  GEARCODE
+  STRATA'->'R'
+  
+  'CAMS
+  DISCARD
+  MORTALITY
+  STOCK'->'R'
+  
+ 
+}
+")
+
+```
+
+
+<!-- ## Tables created and steps to date -->
+
+<!-- **Rates determine by observer reported values (gear, area, etc)** -->
+<!-- Observed discards -->
+
+<!-- `make_obdbs_table_cams_v2.sql` -->
+
+<!-- created:  -->
+
+<!-- * `apsd.bg_obdbs_cams_mock2018` -->
+<!-- * `apsd.bg_obdbs_cams_mock2019` -->
+<!-- * `apsd.bg_obdbs_cams_mock2020` -->
+
+## Prorated discards
+**Incomplete observed trips have missing 'hauls' prorated by observed information from that trip**
+
+Prorate observed discards on unobserved hauls within a subtrip.
+This is done by applying a ratio of kept all on the entire trip to kept all on the unobserved hauls only
+
+$$d_{total} = d_{observedhauls}*(1+KALL_{unobserved hauls}/KALL_{subtrip})$$
+
+<!-- `make_obdbs_prorate.sql` -->
+
+<!-- created: -->
+
+<!-- * `apsd.obs_cams_prorate`   -->
+<!-- 	+ this table was made using  `apsd.bg_obdbs_cams_mock2018` and `apsd.bg_obdbs_cams_mock2019` -->
+
+<!-- ## Use prorated observed discard values  -->
+<!-- **Trips with observer get reported/calculated observed discards of that specific trip** -->
+
+<!-- Match observed hauls to subtrips -->
+
+<!-- `explore_link3_mesh_match.sql` -->
+
+<!-- This step matches on `LINK1` -->
+<!-- `AREA`, `GEAR` and `MESHGROUP` (sm, lg, xlg). This is a hard match and will go awry if there is a mismatch in the data. -->
+
+<!-- ## Use prorated observed discard values (cont.) -->
+<!-- tables created:  -->
+
+<!-- * `apsd.bg_cams_catch_mock` -->
+<!-- 	+ follows the steps layed out for mid-Atlantic discard estimation. `Gear`, `mesh`, `region`, `half of year` CASE statements should be replaced at some point with table driven code.   -->
+<!-- 	+ Utilizes the current apportionment table: `apsd.cams_apport_20201230` -->
+<!-- * `apsd.bg_obs_cams_tmp1` -->
+<!-- 	+ links to `dmis.d_match_obs_link` and `apsd.bg_cams_catch_mock`; **multiple** subtrips only.  -->
+<!-- <!-- * to date (`r lubridate::today()`), this is only using trips that have **multiple** subtrips. These are the only cases where the pro-ration step matters.  --> 
+<!-- *  `apsd.bg_obs_cams_tmp2` is used in the `squid example` and include all trips.  -->
+
+<!-- **Unobserved trips get discards from the rate calculated from 1)** -->
+
+
+## R Process
+
+`discaRd` R package built for 2016 Discard Estimation Peer Review
+
+\includegraphics[width = .25\textwidth, height = .25\textheight]{discaRd.png}
+
+New functions for CAMS:
+
+<!-- - `get_obs_disc_vals`  -->
+- `make_assumed_rate` Calculates 'fallback rate' using a subset of `STRATA` variables
+- `make_bdat_focal` Constructs data frame of observed trip data for species of interest
+- `run_discard` Runs these functions in conjucntion with `discaRd`
+
+## Running it 
+
+- refresh Oracle tables?
+- define species and stock (if applicable)
+	+ generates SQL
+- import to R
+	+ apply CAMS_GEAR_GROUP according to SPECIES
+	+ apply STOCK STAT AREA according to SPECIES and stock (if needed)
+	+ join discard mortality by species/stock/CAMS_GEAR_GROUP
+- `run_discard`
+	+ STRATA is assigned dynamically by using elements of the imported data
+	+ If using `transition rates`, two time periods are defined
+	+ Assumed (fallback rates) are defined as a subset of STRATA
+- Apply Discard Mortality 
+	
+
+<!-- ## output -->
+
+<!-- \includegraphics[width = \textwidth]{dest_strata_squid_ex.jpg} -->
+<!-- \vspace{2cm} -->
+<!-- \includegraphics[width = \textwidth]{squid_ex_table.jpg} -->
+
+<!-- ## compare to ACL summary -->
+<!-- \includegraphics[width = \textwidth]{CAMS_discaRd_ACL_comparison.jpg} -->
+
+## TO DO
+- utilize support tables
+	+ `CAMS_GEAR_GROUP` **DONE**
+	+ `STAT_AREAS` **DONE**
+	+ `CAMS_DISCARD_MORTALITY_STOCK` **in process**
+- add `SECTOR` for multispecies (see above) **DONE**
+- Time periods **Determined by STOCK/SPECIES**
+	+ Species with the same time period, e.g. Calendar year, can be imported at once. 
+- Assumed (fallback) rate criteria: how simplified must this be?
+- implement transitions (if using fixed time period) **DONE**
+- Deal with Exemptions
+- Incorporate stratification for EM trips
+- refine exact operational process*
+
+***Will likely be based on modules that run common sets of species (e.g. common `CAMS_GEAR_GROUP` and stock definition)**
+
+## Modules
+
+<!-- We envision CAMS discards to run via several modules that are specific to the FMP and purpose. They will include: -->
+<!-- \begin{small} -->
+
+- Quota Monitoring
+	+ Squid/Mackerel/Butterfish (Calendar year)
+		++ This may encompass any UNIT stock with calendar year
+	+ Groundfish (May year)
+	+ Monkfish (May year)
+	+ Yellowtail/Windowpane in scallop fishery (April year)
+	+ Skates (?)
+	+ Small mesh species (hakes)
+	+ Dogfish (May year)
+	+ ??
+- SBRM
+	+ 300 species on SBRM year (Calendar?)
+-Stock Assessments
+	+ typically run on calendar years for all species
+
+<!-- \end{small} -->
+
+
+```{r}
+
+```

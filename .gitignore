@@ -4,3 +4,8 @@
 .Ruserdata
 .RDS
 .fst
+
+configRun.toml
+discard_est_164499_trips2019.fst
+
+log/

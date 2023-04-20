@@ -4,8 +4,13 @@
 \alias{get.bydat}
 \title{Get Fishery data, specify bycatch species}
 \usage{
-get.bydat(fdat, load = T, bspec = 366, aggfact = "LINK1",
-  catch_disp = c(0, 1)[1])
+get.bydat(
+  fdat,
+  load = T,
+  bspec = 366,
+  aggfact = "LINK1",
+  catch_disp = c(0, 1)[1]
+)
 }
 \arguments{
 \item{fdat}{name of file to be loaded OR name of variable in workspace containing data}
@@ -36,4 +41,3 @@ dmo = dm[dm$OBSFLAG==1&dm$FY==1800,]  # one year of data
 bspec = 'LE_KG_BSS' # European seabass (FAO code BSS)
 bdat = get.bydat(dmo, aggfact = 'DOCID',load = F, bspec = bspec, catch_disp = 1) # unstratified
 }
-
