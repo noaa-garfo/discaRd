@@ -1,0 +1,231 @@
+---
+title: "Discard Diagnostic Example"
+author: "Benjamin Galuardi"
+date: "2023-03-14"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+## This vignette is designed to illustrate running alternative scenarios of standard CAMS discard functions. Here, Support tables are function variables. This allows them to be modified and run for diagnostic testing. You can output a summary of discard information by strata, including number of trips used, variance, CV, discard amount, and KALL. Youcan also output a table, by subtrip, with all information. This table can be summarized afterward as well. If testing several scenarios, it is recommended to only output the summary rather than the full subtrip table as each output is 1-2GB. The original function pushed .fst files directly to the Wind server at GARFO. This version does not do that and only produces local results.
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = FALSE, 
+											message = FALSE, cache = FALSE,
+											progress = TRUE, verbose = FALSE, comment = F
+											, error = FALSE, dev = 'png', dpi = 200)
+
+options(knitr.kable.NA = '')
+options(dplyr.summarise.inform = FALSE)
+
+library(discaRd)
+```	
+
+### Get connected. 
+
+```{r setup, echo = T, eval = F}
+
+# you can also use odbc, or connect via server using keyring or other method
+library(remotes)
+remotes::install_github("NOAA-Fisheries-Greater-Atlantic-Region/discaRd", ref = 'model_estimator')
+
+library(discaRd)
+
+keyring::keyring_unlock(keyring = 'apsd_ma', password = 'mysecrets')
+con = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+# or source your uid and password
+
+con <- ROracle::dbConnect(
+	drv = ROracle::Oracle(),
+	username = uid,
+	password = pwd,  
+	dbname = "NERO.world"
+)
+
+
+```
+
+### load the `CAMS_OBS_CATCH` table. This may be slow.. 
+
+```{r load CAMS_OBS_CATCH data, echo = T ,eval = F}
+## ----get obs and catch data from oracle ----
+# you need to get enough years to cover the current (focal) and previous fishing year. This is for transitions rate determination
+
+start_year = 2020
+end_year = 2022
+
+dat = get_catch_obs(con, start_year, end_year)
+gf_dat = dat$gf_dat
+non_gf_dat = dat$non_gf_dat
+all_dat = dat$all_dat
+rm(dat)
+gc()
+
+```
+
+## Groundfish example (all at once)
+
+```{r groundfish example, echo = T, eval = F}
+
+species <- tbl(con, sql("
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>%
+	filter(RUN_ID == 'GROUNDFISH') %>%
+	collect() %>%
+	group_by(ITIS_TSN) %>%
+	slice(1) %>%
+	ungroup()
+
+species = species %>% 
+	filter(NESPP3 == 512) # wolffish
+
+
+# GEAR TABLE
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+	collect() %>%
+	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+	filter(ITIS_TSN == species$ITIS_TSN) %>%
+	dplyr::select(-NESPP3, -ITIS_TSN)
+
+# Stock (Estimation) areas table ----
+STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+	collect() %>%
+	filter(ITIS_TSN == species$ITIS_TSN) %>%
+	group_by(AREA_NAME, ITIS_TSN) %>%
+	distinct(AREA) %>%
+	mutate(AREA = as.character(AREA)
+				 , SPECIES_STOCK = AREA_NAME) %>%
+	ungroup()
+
+# Discard Mortality table ----
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+	collect() %>%
+	mutate(SPECIES_STOCK = AREA_NAME
+				 , GEARCODE = CAMS_GEAR_GROUP
+				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
+	select(-AREA_NAME) %>%
+	filter(ITIS_TSN == species$ITIS_TSN) %>%
+	dplyr::select(-ITIS_TSN)
+
+# discard estimate ----
+
+discard_wolf = discard_groundfish_diagnostic(con = con
+															 , FY = 2021
+															 , species = species
+															 , gf_dat = gf_dat
+															 , non_gf_dat = non_gf_dat
+															 , return_table = T
+															 , return_summary = T
+															 , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
+															 , STOCK_AREAS = STOCK_AREAS
+															 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+															 ) 
+
+
+# summary output 
+
+ gftrips_wolf_summary = discard_wolf$trips_discard %>% 
+ 	filter(GF == 0) %>% 
+ 	group_by(SPECIES_STOCK, CAMS_GEAR_GROUP, DISCARD_SOURCE) %>% 	
+ 					dplyr::summarise(rate = max(COAL_RATE, na.rm = T)
+										 , n_f = max(n_obs_trips_f)
+										 , n_p = max(n_obs_trips_p)
+										 , N = n_distinct(CAMS_SUBTRIP)
+										 # , rate_min = min(COAL_RATE, na.rm = T)
+										 , OBS_DISCARD = sum(OBS_DISCARD, na.rm = T)
+										 , KALL = round(sum(LIVE_POUNDS, na.rm = T))
+										 , D = round(sum(DISCARD, na.rm = T), 2)
+										 , CV = max(CV, na.rm = T)
+		)
+ 	
+
+
+
+```
+
+```{r wolffish check, echo = T , eval = T}
+
+# data before discard is run
+
+# one stock to check
+gom = STOCK_AREAS %>% 
+	filter(AREA_NAME == 'GOM') %>% 
+	distinct(AREA)
+
+# d
+d = non_gf_dat %>% 
+	filter(GF_YEAR == 2021 
+				 & GF == 0 
+				 & !is.na(LINK1) 
+				 & AREA %in% gom$AREA 
+				 & NEGEAR == 200 
+				 & SPECIES_ITIS == species$ITIS_TSN) %>% 
+	summarise(d = sum(DISCARD, na.rm = T))
+
+# k
+k = non_gf_dat %>% 
+	filter(GF_YEAR == 2021 
+				 & GF == 0 
+				 & !is.na(LINK1) 
+				 & AREA %in% gom$AREA 
+				 & NEGEAR == 200) %>% 
+	group_by(CAMS_SUBTRIP) %>%
+	dplyr::summarise(kall = max(OBS_KALL, na.rm = T)) %>% 
+	ungroup() %>% 
+	summarise(k = sum(kall), N = n_distinct(CAMS_SUBTRIP))
+
+
+# results after the run
+dk_sum = discard_wolf$trips_discard %>% 
+	filter(GF == 0
+				 # & AREA %in% gom$AREA
+				 & SPECIES_STOCK == 'GOM'
+				 & !is.na(LINK1) 
+				 & NEGEAR == 200) %>% 
+	group_by(SPECIES_STOCK, CAMS_GEAR_GROUP, DISCARD_SOURCE) %>% 	
+	dplyr::summarise(CAMS_RATE = max(COAL_RATE, na.rm = T)
+									 , OBS_RATE = sum(OBS_DISCARD, na.rm = T)/(sum(OBS_KALL, na.rm = T))
+									 , n_f = max(n_obs_trips_f)
+									 , n_p = max(n_obs_trips_p)
+									 , N = n_distinct(CAMS_SUBTRIP)
+									 # , rate_min = min(COAL_RATE, na.rm = T)
+									 , OBS_DISCARD = sum(OBS_DISCARD, na.rm = T)
+									 , KALL = round(sum(LIVE_POUNDS, na.rm = T))
+									 , D = round(sum(DISCARD, na.rm = T), 2)
+									 , CV = max(CV, na.rm = T)
+	)
+
+# see what is in CAMS_DISCARD_ALL_YEARS
+
+DYS = tbl(con, sql('select * from CAMS_DISCARD_ALL_YEARS where FY = 2021 and ITIS_TSN = 171341'))
+
+DYS %>% 
+ filter(GF == 0
+				 # & AREA %in% gom$AREA
+				 # & SPECIES_STOCK == 'GOM'
+				 & !is.na(LINK1)
+				 & NEGEAR == 200) %>% 
+	collect() %>% 
+	filter(AREA %in% gom$AREA) %>% 
+	group_by(DISCARD_SOURCE) %>% 	
+	dplyr::summarise(CAMS_RATE = max(CAMS_DISCARD_RATE, na.rm = T)
+									 , OBS_RATE = sum(OBS_DISCARD, na.rm = T)/(sum(OBS_KALL, na.rm = T))
+									 # , n_f = max(n_obs_trips_f)
+									 # , n_p = max(n_obs_trips_p)
+									 , N = n_distinct(CAMS_SUBTRIP)
+									 # , rate_min = min(COAL_RATE, na.rm = T)
+									 , OBS_DISCARD = sum(OBS_DISCARD, na.rm = T)
+									 , KALL = round(sum(SUBTRIP_KALL, na.rm = T))
+									 , D = round(sum(CAMS_DISCARD, na.rm = T), 2)
+									 , CV = max(CAMS_CV, na.rm = T)
+	)
+	
+
+
+```
+

@@ -32,4 +32,3 @@ plot(get.trans.rate(l_observed_trips = 1:100, l_assumed_rate = 0.001, l_inseason
 \seealso{
 \code{\link{cochran.trans.calc}}
 }
-

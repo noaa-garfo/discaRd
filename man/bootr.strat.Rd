@@ -5,8 +5,16 @@
 \title{Bootstrap discard rate with stratification
 bootstraps Cochran discard rate from a set of observed trips}
 \usage{
-bootr.strat(bdat, ddat, focal_year = 2015, strata_name = "strata",
-  strata_complete = NULL, coverage = NULL, keep.samps = F, ...)
+bootr.strat(
+  bdat,
+  ddat,
+  focal_year = 2015,
+  strata_name = "strata",
+  strata_complete = NULL,
+  coverage = NULL,
+  keep.samps = F,
+  ...
+)
 }
 \arguments{
 \item{bdat}{observer data with strata column}
@@ -48,4 +56,3 @@ lines(colSums(bout.list[[i]]), typ='l', col =2, lty = 2)
 \seealso{
 \code{\link{samp.by.strat}}
 }
-

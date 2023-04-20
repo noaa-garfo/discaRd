@@ -1,0 +1,105 @@
+---
+title: "CAMS: GF_EM_DELTA_VTR_DISCARD"
+#author: "Ben Galuardi"
+output:
+  html_document: default
+  github_document:
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(odbc)
+library(ROracle)
+library(dplyr, warn.conflicts = FALSE)
+
+# # unlock keyring
+# keyring::keyring_unlock("apsd_ma")
+# 
+# # local run
+# # dw_apsd <- config::get(value = "apsd", file = "K:/R_DEV/config.yml")
+# 
+# # if on server..
+# # dw_apsd <- config::get(value = "maps", file = "~/config.yml")
+# 
+# 
+# # connect to MAPS
+# 
+# con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+
+```
+
+```{r, include = FALSE, echo = FALSE}
+Sys.setenv(TZ = "America/New_York")
+Sys.setenv(ORA_SDTZ = "America/New_York")
+  
+if(file.exists(here::here("vignettes/articles", "pw.csv"))) {
+  pw_df <- readr::read_csv(here::here("vignettes/articles", "pw.csv"), col_types = "c")
+  pw <- pw_df$pw
+} else {
+  pw <- rstudioapi::askForPassword("Enter keyring password")
+}
+
+keyring::keyring_unlock("apsd_ma", password = pw) # will prompt for password
+con_maps <- apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+```
+
+## Summary
+This table contains VTR discard estimates, EM discard estimates for EM reviewed GF trips and delta model estimates for unreviewed EM trips from FY20 forward. From May 1, 2021 to December 31, 2021 VTR estimates were used until adequate data was available to fit the delta model. Discards from observer coverage take precedent over discard estimates from EM. 
+
+
+## Description
+
+- **OUTPUT TABLE:** GF_EM_DELTA_VTR_DISCARD
+- **YEARS:** 2020+
+- **RESOLUTION:** Species discard estimate by VTRSERNO (subtrip)
+- **DEVELOPMENT LANGUAGE:** R
+- **CODE:** https://github.com/NOAA-Fisheries-Greater-Atlantic-Region/discaRd/tree/model_estimator/CAMS
+
+
+## Data Sources
+nemis.NEMIS_TRIP_MV@nova
+nemis.NEMIS_HAUL_MV@nova
+nemis.NEMIS_CATCH_MV@nova
+noaa.document 
+noaa.images 
+
+```{r table_flow0, echo=F,fig.height=3,fig.width=8, fig.cap="Figure 1.   GF_EM_DELTA_VTR_DISCARD table lineage"}
+DiagrammeR::mermaid("
+  graph LR
+nemis.NEMIS_TRIP_MV --> GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_HAUL_MV --> GF_EM_DELTA_VTR_DISCARD
+nemis.NEMIS_CATCH_MV --> GF_EM_DELTA_VTR_DISCARD
+noaa.document --> GF_EM_DELTA_VTR_DISCARD
+noaa.images --> GF_EM_DELTA_VTR_DISCARD
+        ")
+```
+
+## Approach
+Criteria for EM data to be used to fit delta model:
+(ct_tot >= 30 AND fishnk_pct >= .1) THEN 'N' ELSE haul_observed
+
+Delta model:
+ EM_DISCARD ~ LOG_EVTR_DISCARD + (1+LOG_EVTR_DISCARD|SPECIES_ID) + (1+LOG_EVTR_DISCARD | PERMIT)
+
+
+## Data Dictionary
+
+```{r echo = F}
+comments <- ROracle::dbGetQuery(con_maps, "SELECT * FROM all_col_comments WHERE owner = 'MAPS' AND table_name = 'GF_EM_DELTA_VTR_DISCARD'")
+
+comments %>%
+dplyr::select(
+COLUMN = COLUMN_NAME,
+DESCRIPTION = COMMENTS) %>%
+knitr::kable(booktabs = TRUE) %>%
+kableExtra::kable_styling(bootstrap_options = c("striped", 
+"hover", "condensed", "responsive"),full_width = FALSE,position = "left", fixed_thead = TRUE,
+font_size = 10)
+```
+
+
