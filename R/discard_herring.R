@@ -663,6 +663,10 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
   															 ,TRUE ~ DISCARD))%>% 																 
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
+		
+		
+# add N, n, and covariance ---- 
+		joined_table = get_covrow(joined_table)  		
 
 # output an fst file -----
 

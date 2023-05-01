@@ -683,6 +683,10 @@ discard_groundfish <- function(con
   #       discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
   #     )
   # }
+  
+  
+  # add N, n, and covariance ---- 
+  emjoin = get_covrow(emjoin)  
 
   outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
 
@@ -1207,6 +1211,10 @@ discard_groundfish <- function(con
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))  
 
+  
+  # add N, n, and covariance ---- 
+  joined_table = get_covrow(joined_table)  
+  
    # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
   # Sys.umask('660')
   # Sys.umask('775')
@@ -1304,6 +1312,10 @@ discard_groundfish <- function(con
   		t1 <- t1 |>
   		  dplyr::distinct()
 
+  # add N, n, and covariance ---- 
+  		t1 = get_covrow(t1)  		
+  		
+  		
 # --- Overwrite the original non-gf with the new version including scallop replacement ----
   		write_fst(x = t1, path = gf_files)
 

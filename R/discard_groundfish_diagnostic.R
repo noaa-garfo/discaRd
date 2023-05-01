@@ -632,8 +632,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # force remove duplicates
   emjoin <- emjoin |>
     dplyr::distinct()
-
-
+  
   # outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
   # 
   # fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
@@ -1280,7 +1279,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
 
-      
+  	
+ # add N, n, and covariance ---- 
+  	joined_table = get_covrow(joined_table)      
   	
   	dest_obj = joined_table %>% 
   		group_by(FISHING_YEAR, GF, STRATA_USED, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA, FED_OR_STATE) %>%
