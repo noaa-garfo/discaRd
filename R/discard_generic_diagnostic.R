@@ -745,7 +745,8 @@ discard_generic_diagnostic <- function(con = con_maps
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
 		
-
+		# add N, n, and covariance ---- 
+		joined_table = get_covrow(joined_table)
 		
 		# outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 		
