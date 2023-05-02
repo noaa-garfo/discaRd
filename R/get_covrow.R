@@ -54,7 +54,7 @@ get_covrow <- function(joined_table){
 
   # Go through each STRATA_USED and split out the columns used
   sidx = joined_table %>%
-    filter(!(DISCARD_SOURCE %in% c('O', 'R'))) %>%
+    filter(!(DISCARD_SOURCE %in% c('O', 'R', 'N'))) %>% 
     dplyr::select(STRATA_USED, DISCARD_SOURCE) %>%
     distinct()
 
