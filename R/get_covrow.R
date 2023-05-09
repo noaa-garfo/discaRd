@@ -54,7 +54,7 @@ get_covrow <- function(joined_table){
 
   # Go through each STRATA_USED and split out the columns used
   sidx = joined_table %>%
-    filter(!(DISCARD_SOURCE %in% c('O', 'R', 'N'))) %>% 
+    filter(!(DISCARD_SOURCE %in% c('O', 'R', 'N'))) %>%
     dplyr::select(STRATA_USED, DISCARD_SOURCE) %>%
     distinct()
 
@@ -132,7 +132,7 @@ get_covrow <- function(joined_table){
 
   # add Legaults covrow ----
   joined_table = joined_table %>%
-    tidyr::unite(., col = 'STRATA_USED_DESC', unlist(strsplit(joined_table$STRATA_USED, ';')), remove = F)
+    tidyr::unite(., col = 'STRATA_USED_DESC', unlist(strsplit(joined_table$STRATA_USED, ';')), remove = F, sep = ';')
 
   # Legaults covrow ----
   joined_table = joined_table %>%
