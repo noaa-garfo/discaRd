@@ -26,7 +26,18 @@
 make_strata_desc <- function(x, remove = FALSE) {
 
   x <- x |>
-    ungroup()
+    dplyr::ungroup() |>
+    dplyr::mutate(row_x = dplyr::row_number())
+
+  x_missing <- x |>
+    dtplyr::lazy_dt() |>
+    dplyr::filter(is.na(STRATA_USED) | STRATA_USED == '') |>
+    as.data.frame()
+
+  x <- x |>
+    dtplyr::lazy_dt() |>
+    dplyr::filter(!(row_x %in% unique(x_missing$row_x))) |>
+    as.data.frame()
 
   x_list <- x |>
     dplyr::group_by(STRATA_USED) |>
@@ -50,12 +61,12 @@ make_strata_desc <- function(x, remove = FALSE) {
     }
   }
 
-  tab <- ungroup(tab)
+  tab <- dplyr::ungroup(tab)
 
   if(isTRUE(remove)) {
     return(tab)
   } else {
-    x <- suppressMessages(dplyr::left_join(x, tab))
-    return(x)
+    tab <- dplyr::bind_rows(tab, x_missing)
+    return(tab)
   }
 }
