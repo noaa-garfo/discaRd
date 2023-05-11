@@ -55,8 +55,7 @@ make_strata_desc <- function(x, remove = FALSE) {
   if(isTRUE(remove)) {
     return(tab)
   } else {
-    x <- x |>
-      dplyr::left_join(tab)
+    x <- suppressMessages(dplyr::left_join(x, tab))
     return(x)
   }
 }
