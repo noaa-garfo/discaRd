@@ -30,12 +30,12 @@ make_strata_desc <- function(x, remove = FALSE) {
     dplyr::mutate(row_x = dplyr::row_number())
 
   x_missing <- x |>
-    dtplyr::lazy_dt() |>
+    # dtplyr::lazy_dt() |>
     dplyr::filter(is.na(STRATA_USED) | STRATA_USED == '') |>
     as.data.frame()
 
   x <- x |>
-    dtplyr::lazy_dt() |>
+    # dtplyr::lazy_dt() |>
     dplyr::filter(!(row_x %in% unique(x_missing$row_x))) |>
     as.data.frame()
 
