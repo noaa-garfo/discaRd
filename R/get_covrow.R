@@ -131,8 +131,7 @@ get_covrow <- function(joined_table){
 
 
   # add Legaults covrow ----
-  joined_table = joined_table %>%
-    tidyr::unite(., col = 'STRATA_USED_DESC', unlist(strsplit(joined_table$STRATA_USED, ';')), remove = F, sep = ';')
+  joined_table <- make_strata_desc(joined_table)
 
   # Legaults covrow ----
   joined_table = joined_table %>%
