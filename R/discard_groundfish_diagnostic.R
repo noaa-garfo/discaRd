@@ -1,7 +1,7 @@
 #' discard_groundfish_diagnostic: Calculate groundfish discards: Calculate discards for May groundfish fishing year
 #'
 #' Support tables in this version ar function variables. This allows them to be modified and run for diagnostic testing. This function can output a summary of discard information by strata, including number of trips used, variance, CV, discard amount, and KALL. It can also output a table, by subtrip, with all information. This table can be summarized afterward as well. If testing several scenarios, it is recommended to only output the summary rather than the full subtrip table as each output is 1-2GB.
-#' 
+#'
 #' The original function pushed .fst files directly to the Wind server at GARFO. This version does not do that and only produces local results.
 #' When running windowpane or yellowtail flounders, this function will save .fst files of scallop trips locally. These will be auto-saved in your working directory.
 #'
@@ -94,7 +94,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   #   # dplyr::filter(NESPP3 == species_nespp3) %>%
   # 	dplyr::filter(ITIS_TSN == species_itis) %>%
   #   dplyr::select(-NESPP3, -ITIS_TSN)
-  # 
+  #
   # # Stat areas table
   # # unique stat areas for stock ID if needed
   # STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
@@ -107,7 +107,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   #   ungroup()
   # # %>%
   # #   dplyr::select(SPECIES_STOCK, AREA)
-  # 
+  #
   # # Mortality table
   # # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
   # CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
@@ -564,6 +564,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   	)
 
+  # add variance and strata_desc for groundfish trips ----
+  joined_table = get_covrow(joined_table)
+
   # if(FALSE) { # run this if looking manually
   # joined_table %>%
   # 	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>%
@@ -632,11 +635,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # force remove duplicates
   emjoin <- emjoin |>
     dplyr::distinct()
-  
+
   # outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
-  # 
+  #
   # fst::write_fst(x = emjoin, path = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst')))
-  # 
+  #
   # system(paste("chmod 770 ", outfile))
 
    t2 = Sys.time()
@@ -682,11 +685,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
   logr::log_print(paste0('Running non-groundfish trips for ', species$ITIS_NAME[i], ' Fishing Year ', FY))
 
   species_itis = species$ITIS_TSN[i]
-  
+
   non_gf_dat = non_gf_dat %>%
   	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
   																 , TRUE ~ 0))
-  
+
   #---#
   # Support table import by species
 
@@ -696,7 +699,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   #   # dplyr::filter(NESPP3 == species_nespp3) %>%
   # 	dplyr::filter(ITIS_TSN == species_itis) %>%
   #   dplyr::select(-NESPP3, -ITIS_TSN)
-  # 
+  #
   # # Stat areas table
   # # unique stat areas for stock ID if needed
   # STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
@@ -709,7 +712,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   #   ungroup()
   # # %>%
   # #   dplyr::select(SPECIES_STOCK, AREA)
-  # 
+  #
   # # Mortality table
   # CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
   #   mutate(SPECIES_STOCK = AREA_NAME
@@ -1151,7 +1154,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # Sys.umask('775')
 
   # outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
-  # 
+  #
   # fst::write_fst(x = joined_table, path = outfile)
 
   # system(paste("chmod 770 ", outfile))
@@ -1171,12 +1174,12 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   # for(species_itis %in% c('172909', '172746')){
 
- if(nrow(scal_gf_species) > 0){ 	
-  	
+ if(nrow(scal_gf_species) > 0){
+
   for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
-  save_dir = getwd()	
-  	
+  save_dir = getwd()
+
     scallop_subroutine(FY = FY
     									 , con = con
                        , scal_gf_species = scal_gf_species[i, ]
@@ -1202,7 +1205,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   		# get only the non-gf trips for each species and fishing year
 
-  		# gf_files = list.files(save_dir, pattern = paste0('discard_est_', sp_itis), full.names = T) # don't need for the diagnostic function 
+  		# gf_files = list.files(save_dir, pattern = paste0('discard_est_', sp_itis), full.names = T) # don't need for the diagnostic function
   		# gf_files = gf_files[grep(GF_YEAR, gf_files)]
   		# gf_files = gf_files[grep('non_gf', gf_files)]
 
@@ -1212,18 +1215,18 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   		# read in files
   		res_scal = lapply(as.list(scal_files), function(x) fst::read_fst(x))
-  		# res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))  # don't need for the diagnostic function 
+  		# res_gf = lapply(as.list(gf_files), function(x) fst::read_fst(x))  # don't need for the diagnostic function
 
   		# assign(paste0('outlist_df_scal'),  do.call(rbind, outlist))
   		assign(paste0('outlist_df_scal'),  do.call(dplyr::bind_rows, res_scal))
 
 
 
-  		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))  # don't need for the diagnostic function 
+  		# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))  # don't need for the diagnostic function
   				# assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
 
   		# t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
-  		
+
   		t1 = joined_table
   		# %>%
   		# 	dplyr::select(-DATE_TRIP.1)
@@ -1251,7 +1254,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 # --- Overwrite the original non-gf with the new version including scallop replacement ----
   		# write_fst(x = t1, path = gf_files)
-  		# 
+  		#
   		# system(paste("chmod 770 ", gf_files))
 
   		end_time = Sys.time()
@@ -1259,31 +1262,32 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		logr::log_print(paste('Scallop subsitution took: ', round(difftime(end_time, start_time, units = "mins"),2), ' MINUTES',  sep = ''))
 
 
- # rename the t1 object with subbed in scallop trips to joined table. this will overwrite the object created outside the scallop loop ---- 
-  		
-  		joined_table = t1 
-  		
+ # rename the t1 object with subbed in scallop trips to joined table. this will overwrite the object created outside the scallop loop ----
+
+  		joined_table = t1
+
   }
- 	
+
  } # end if statement
 
+# add N, n, and covariance non-groundfish ----
+  	joined_table = get_covrow(joined_table)
+
 # join GF and non-gf trip results ----
-	# add element for non-estimated gear types ----  	
-  	
-  	joined_table = joined_table %>% 
-  		bind_rows(., emjoin) %>% 
+	# add element for non-estimated gear types ----
+
+  	joined_table = joined_table %>%
+  		bind_rows(., emjoin) %>%
   		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
-  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  																			,TRUE ~ DISCARD_SOURCE)) %>%
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
-  															 ,TRUE ~ DISCARD))%>% 																 
+  															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
 
-  	
- # add N, n, and covariance ---- 
-  	joined_table = get_covrow(joined_table)      
-  	
-  	dest_obj = joined_table %>% 
+
+
+  	dest_obj = joined_table %>%
   		group_by(FISHING_YEAR, GF, STRATA_USED, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA, FED_OR_STATE) %>%
   		dplyr::summarise(rate = max(COAL_RATE, na.rm = T)
   										 , n_f = max(n_obs_trips_f)
@@ -1294,12 +1298,12 @@ discard_groundfish_diagnostic <- function(con = con_maps
   										 , D = round(sum(DISCARD, na.rm = T), 2)
   										 , CV = max(CV, na.rm = T)
   		)
-  	
+
   	if(return_table == T & return_summary == F){return(joined_table)}
   	if (return_table == F & return_summary == T) {return(dest_obj)}
   	if (return_table == T & return_summary == T) {return(list(trips_discard = joined_table, discard_summary = dest_obj))}
-  	if(return_table == F & return_summary == F) {(print("What did you do all that work for?"))} 	
-  
+  	if(return_table == F & return_summary == F) {(print("What did you do all that work for?"))}
+
 
   }
 
