@@ -526,12 +526,12 @@ discard_groundfish <- function(con
                                           n_obs_trips_f < 5 &
                                           n_obs_trips_p < 5 &
                                           n_obs_trips_f_a < 5 &
-                                          n_obs_trips_p_a >= 5 ~ 'B' # Broad stock is only for GF now
+                                          n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
                                         , is.na(LINK1) &
                                           n_obs_trips_f < 5 &
                                           n_obs_trips_p < 5 &
                                           n_obs_trips_f_a < 5 &
-                                          n_obs_trips_p_a < 5 ~ 'B'
+                                          n_obs_trips_p_a < 5 ~ 'B'  # Broad stock is only for GF now
       )
       )
 
