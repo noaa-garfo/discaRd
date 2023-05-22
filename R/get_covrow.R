@@ -74,8 +74,8 @@ get_covrow <- function(joined_table){
 
     ntable = joined_table %>%
       group_by_at(vars(all_of(cidx))) %>%
-      dplyr::summarize(N = n_distinct(CAMS_SUBTRIP)
-                       , n = n_distinct(LINK1)) %>%
+      dplyr::summarize(N = n_distinct(na.omit(CAMS_SUBTRIP))
+                       , n = n_distinct(na.omit(LINK1))) %>%
       dplyr::rename({{N_name}} := N
                     , {{n_name}} := n)
 
