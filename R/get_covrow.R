@@ -76,7 +76,7 @@ get_covrow <- function(joined_table){
     # n = total observed subtrips in strata
     ntable = joined_table %>%
       group_by_at(vars(all_of(cidx))) %>%
-      dplyr::summarize(N = n_distinct(na.omit(CAMS_SUBTRIP))
+      dplyr::summarize(N = n_distinct(CAMS_SUBTRIP)
                        , n = n_distinct(CAMS_SUBTRIP[!is.na(LINK1)])) %>%
       dplyr::rename({{N_name}} := N
                     , {{n_name}} := n)
