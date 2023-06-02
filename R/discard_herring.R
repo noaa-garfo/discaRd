@@ -64,8 +64,8 @@ discard_herring <- function(con
 			collect() %>%
 			dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
 			filter(ITIS_TSN == species_itis) %>%
-			dplyr::select(-NESPP3, -ITIS_TSN) %>%
-			mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
+			dplyr::select(-NESPP3, -ITIS_TSN) #%>%
+			#mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
 
 
 		# Stat areas table
@@ -520,7 +520,7 @@ discard_herring <- function(con
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
 																	 , n_obs_trips_f < 5 &
-																	 	n_obs_trips_p < 5 & 
+																	 	n_obs_trips_p < 5 &
 																	 	n_obs_trips_p_a > 5 ~ trans_rate_a  #in season gear, HMA transition
 			)
 			) %>%
@@ -656,17 +656,17 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
 		# force remove duplicates
   		# add element for non-estimated discard gears
 		joined_table <- joined_table |>
-		  dplyr::distinct()%>% 
+		  dplyr::distinct()%>%
   		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
-  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  																			,TRUE ~ DISCARD_SOURCE)) %>%
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
-  															 ,TRUE ~ DISCARD))%>% 																 
+  															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
-		
-		
-# add N, n, and covariance ---- 
-		joined_table = get_covrow(joined_table)  		
+
+
+# add N, n, and covariance ----
+		joined_table = get_covrow(joined_table)
 
 # output an fst file -----
 
