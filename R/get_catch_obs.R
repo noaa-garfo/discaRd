@@ -60,7 +60,13 @@ import_query = paste0("  with obs_cams as (
 	, SECTID
   , GF
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
+	   when activity_code_1 like 'MNK-SAC%' then 'COMMON_POOL'
+	   when activity_code_1 like 'MNK-NAC%' then 'COMMON_POOL'
+	   when activity_code_1 like 'MNK-NOC%' then 'COMMON_POOL'
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
+	   when activity_code_1 like 'MNK-NAS%' then 'SECTOR'
+	   when activity_code_1 like 'MNK-NOS%' then 'SECTOR'
+       when activity_code_1 like 'MNK-SAS%' then 'SECTOR'
 			 else 'non_GF' end as SECTOR_TYPE
 , case when PERMIT = '000000' then 'STATE'
        else 'FED' end as FED_OR_STATE
@@ -106,7 +112,13 @@ import_query = paste0("  with obs_cams as (
 	, SECTID
   , GF
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
+	   when activity_code_1 like 'MNK-SAC%' then 'COMMON_POOL'
+	   when activity_code_1 like 'MNK-NAC%' then 'COMMON_POOL'
+	   when activity_code_1 like 'MNK-NOC%' then 'COMMON_POOL'
        when activity_code_1 like 'NMS-SEC%' then 'SECTOR'
+	   when activity_code_1 like 'MNK-NAS%' then 'SECTOR'
+	   when activity_code_1 like 'MNK-NOS%' then 'SECTOR'
+       when activity_code_1 like 'MNK-SAS%' then 'SECTOR'
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
@@ -137,19 +149,6 @@ import_query = paste0("  with obs_cams as (
 
 c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
 
-if(FALSE) {
-  c_o_dat2 |>
-    dplyr::filter(CAMSID == '330448_20221126104200_33044822111911',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-
-  c_o_dat2 |>
-    dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-                  SPECIES_ITIS == '172873') |>
-    dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-                     discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-}
 
 c_o_dat2 = c_o_dat2 %>%
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
@@ -215,19 +214,6 @@ c_o_dat2 = c_o_dat2 %>%
 }
 # continue the data import
 
-# if(FALSE) {
-#   c_o_dat2 |>
-#     dplyr::filter(CAMSID == '330448_20221126104200_33044822111911',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# 
-#   c_o_dat2 |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# }
 
 state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
 fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
@@ -245,10 +231,6 @@ multilink = fed_trips %>%
 	arrange(desc(nlink1)) %>%
 	filter(nlink1>1)
 
-# if(FALSE) {
-#   multilink |>
-#     dplyr::filter(VTRSERNO == '2505122212270901')
-# }
 
 remove_links = fed_trips %>%
 	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>%
@@ -271,19 +253,6 @@ non_gf_dat = fed_trips %>%
 gf_dat = fed_trips%>%
 	filter(GF == 1)
 
-# if(FALSE) {
-#   non_gf_dat |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# 
-#   gf_dat |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# }
 
 # Add MREM adjustment View
 mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
@@ -299,19 +268,6 @@ gf_dat = gf_dat %>%
 				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
 				 											, is.na(KALL_MREM_ADJ) ~ OBS_KALL))
 
-# if(FALSE) {
-#   non_gf_dat |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# 
-#   gf_dat |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# }
 
 # need this for anything not in the groundfish loop...
 all_dat = non_gf_dat %>%
@@ -324,19 +280,6 @@ t2 = Sys.time()
 
 print(paste0("Took ", round(difftime(t2, t1, units = 'mins'), 2) , ' minutes'))
 
-# if(FALSE) {
-#   non_gf_dat |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# 
-#   gf_dat |>
-#     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-#                   SPECIES_ITIS == '172873') |>
-#     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-#                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-# }
 
 return(list(gf_dat = gf_dat, non_gf_dat = non_gf_dat, all_dat = all_dat))
 
