@@ -715,6 +715,7 @@ discard_generic_diagnostic <- function(con = con_maps
 																		 , DISCARD_SOURCE == 'T' ~ strata_f
 																		 , DISCARD_SOURCE == 'GM' ~ strata_a
 																		 , DISCARD_SOURCE == 'G' ~ strata_b
+																		 , TRUE ~ NA_character_
 																		 #	, DISCARD_SOURCE == 'NA' ~ 'NA'
 			)
 			)

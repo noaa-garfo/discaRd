@@ -619,6 +619,7 @@ discard_herring <- function(con
 																		 , DISCARD_SOURCE == 'T' ~ strata_f
 																		 , DISCARD_SOURCE == 'A' ~ strata_a
 																		 , DISCARD_SOURCE == 'G' ~ strata_b
+																		 , TRUE ~ NA_character_
 																		 #	, DISCARD_SOURCE == 'NA' ~ 'NA'
 			)
 			)
