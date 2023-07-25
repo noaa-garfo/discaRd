@@ -454,10 +454,10 @@ discard_herring <- function(con
 		ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
 		ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
-		# previous year broad stock rate
-		mnk_prev = run_discard(bdat = bdat_prev_cy
-													 , ddat = ddat_prev_cy
-													 , c_o_tab = ddat_prev
+		# previous year plus current year broad stock rate
+		mnk_prev = run_discard(bdat = bdat_2yrs
+													 , ddat_focal = ddat_cy_2yr
+													 , c_o_tab = ddat_2yr
 													 , species_itis = species_itis
 													 , stratvars = stratvars[1]
 		)
