@@ -1262,7 +1262,7 @@ discard_groundfish <- function(con
       # for(j in 2018:2019){
       start_time = Sys.time()
 
-      GF_YEAR = FY
+      GF_YEAR_EVAL = FY  # change variable name to avoid self selection..
 
       # for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
@@ -1273,7 +1273,7 @@ discard_groundfish <- function(con
       # get only the non-gf trips for each species and fishing year
       # gf_file_dif = here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/')
       gf_files = list.files(save_dir, pattern = paste0('discard_est_', sp_itis), full.names = T)
-      gf_files = gf_files[grep(GF_YEAR, gf_files)]
+      gf_files = gf_files[grep(GF_YEAR_EVAL, gf_files)]
       gf_files = gf_files[grep('non_gf', gf_files)]
 
       # get list all scallop trips bridging fishing years
@@ -1290,31 +1290,37 @@ discard_groundfish <- function(con
 
 
       # assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, outlist))
-      assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR),  do.call(rbind, res_gf))
+      assign(paste0('outlist_df_',sp_itis,'_',GF_YEAR_EVAL),  do.call(rbind, res_gf))
 
-      t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR))
+      t1  = get(paste0('outlist_df_',sp_itis,'_',GF_YEAR_EVAL))
       # %>%
       # 	dplyr::select(-DATE_TRIP.1)
       t2 = get(paste0('outlist_df_scal'))	%>%
-        dplyr::filter(GF_YEAR == GF_YEAR)
+        dplyr::filter(GF_YEAR == GF_YEAR_EVAL)
 
       # add N, n, and covariance ----
       t2 = get_covrow(t2)
 
+
       # index scallop records present in groundfish year table
-      t2idx = t2$CAMS_SUBTRIP %in% t1$CAMS_SUBTRIP # & t2$CAMSID %in% t1$CAMSID
+      # t2idx = t2$CAMS_SUBTRIP %in% t1$CAMS_SUBTRIP # & t2$CAMSID %in% t1$CAMSID
 
       # index records in groundfish table to be removed
-      t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
+      # t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
 
 
       # make sure columns match
-      didx  = match(names(t1), names(t2))
+      # didx  = match(names(t1), names(t2))
 
       # swap the scallop estimated trips into the groundfish records ----
+      #### Replace indexing with rbind (7/27/23) -----
 
 
-      t1[t1idx, ] = t2[t2idx, didx]
+      # t1[t1idx, ] = t2[t2idx, didx]
+
+      t1 = t1 %>%
+        filter(substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
+        rbind(t2)
 
       # force remove duplicates
       t1 <- t1 |>
@@ -1322,7 +1328,6 @@ discard_groundfish <- function(con
 
       # add N, n, and covariance ----
       # t1 = get_covrow(t1)
-
 
       # --- Overwrite the original non-gf with the new version including scallop replacement ----
       write_fst(x = t1, path = gf_files)

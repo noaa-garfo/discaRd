@@ -1146,6 +1146,10 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   	)
 
+
+  # add N, n, and covariance ----
+  joined_table = get_covrow(joined_table)
+
   # force remove duplicates
   joined_table <- joined_table |>
     dplyr::distinct()
@@ -1196,7 +1200,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # for(j in 2018:2019){
   start_time = Sys.time()
 
-  	GF_YEAR = FY
+  	GF_YEAR_EVAL = FY
 
   	# for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
@@ -1232,22 +1236,32 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		# %>%
   		# 	dplyr::select(-DATE_TRIP.1)
   		t2 = get(paste0('outlist_df_scal'))	%>%
-  			dplyr::filter(GF_YEAR == GF_YEAR)
+  			dplyr::filter(GF_YEAR == GF_YEAR_EVAL)
+
+  		# add N, n, and covariance ----
+  		t2 = get_covrow(t2)
 
   		# index scallop records present in groundfish year table
-  		t2idx = t2$CAMS_SUBTRIP %in% t1$CAMS_SUBTRIP # & t2$CAMSID %in% t1$CAMSID
+  		# t2idx = t2$CAMS_SUBTRIP %in% t1$CAMS_SUBTRIP # & t2$CAMSID %in% t1$CAMSID
 
   		# index records in groundfish table to be removed
-  		t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
+  		# t1idx = t1$CAMS_SUBTRIP %in% t2$CAMS_SUBTRIP # & t1$CAMSID %in% t2$CAMSID
 
 
   		# make sure columns match
-  		didx  = match(names(t1), names(t2))
+  		# didx  = match(names(t1), names(t2))
 
   		# swap the scallop estimated trips into the groundfish records ----
 
 
-  		t1[t1idx, ] = t2[t2idx, didx]
+  		# t1[t1idx, ] = t2[t2idx, didx]
+
+  		#### Replace indexing with rbind (7/27/23) -----
+
+  		t1 = t1 %>%
+  		  filter(substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
+  		  rbind(t2)
+
 
   		# force remove duplicates
   		t1 <- t1 |>
