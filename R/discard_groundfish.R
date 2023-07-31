@@ -1299,7 +1299,7 @@ discard_groundfish <- function(con
         dplyr::filter(GF_YEAR == GF_YEAR_EVAL)
 
       # add N, n, and covariance ----
-      t2 = get_covrow(t2)
+      # t2 = get_covrow(t2) -- do this in scallop subroutine now..
 
 
       # index scallop records present in groundfish year table
@@ -1320,7 +1320,7 @@ discard_groundfish <- function(con
 
       t1 = t1 %>%
         filter(substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
-        rbind(t2)
+        bind_rows(., t2)
 
       # force remove duplicates
       t1 <- t1 |>
