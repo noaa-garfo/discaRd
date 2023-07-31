@@ -1266,7 +1266,7 @@ discard_groundfish <- function(con
 
       # for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
-      logr::log_print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$ITIS_NAME[i], ' for Groundfish Year ', GF_YEAR))
+      logr::log_print(paste0('Adding scallop trip estimates of: ',  scal_gf_species$ITIS_NAME[i], ' for Groundfish Year ', GF_YEAR_EVAL))
 
       sp_itis = scal_gf_species$ITIS_TSN[i]
 
