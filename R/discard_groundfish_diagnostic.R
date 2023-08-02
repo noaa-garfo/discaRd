@@ -1239,7 +1239,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   			dplyr::filter(GF_YEAR == GF_YEAR_EVAL)
 
   		# add N, n, and covariance ----
-  		t2 = get_covrow(t2)
+  		# t2 = get_covrow(t2)
 
   		# index scallop records present in groundfish year table
   		# t2idx = t2$CAMS_SUBTRIP %in% t1$CAMS_SUBTRIP # & t2$CAMSID %in% t1$CAMSID
@@ -1260,7 +1260,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   		t1 = t1 %>%
   		  filter(substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
-  		  rbind(t2)
+  		  bind_rows(t2)
 
 
   		# force remove duplicates
@@ -1286,7 +1286,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
  } # end if statement
 
 # add N, n, and covariance non-groundfish ----
-  	joined_table = get_covrow(joined_table)
+  	# joined_table = get_covrow(joined_table)
 
 # join GF and non-gf trip results ----
 	# add element for non-estimated gear types ----
