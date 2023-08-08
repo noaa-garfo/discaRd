@@ -483,33 +483,35 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
   # <5, <5,  and <5 gets broad stock rate
 
-  joined_table = joined_table %>%
-  	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-  																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-  																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f >= 5 ~ 'I'
-  																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
-  																		, is.na(LINK1) &
-  																		  n_obs_trips_f < 5 &
-  																		  n_obs_trips_p < 5 &
-  																		  n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
-  																		, is.na(LINK1) &
-  																		  n_obs_trips_f < 5 &
-  																		  n_obs_trips_p < 5 &
-  																		  n_obs_trips_f_a < 5 &
-  																		  n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p < 5 &
-  																			n_obs_trips_f_a < 5 &
-  																			n_obs_trips_p_a < 5 ~ 'B'
-  				)
-  	)
+  joined_table = assign_discard_source(joined_table, GF = 1)
 
+  # %>%
+  # 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+  # 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+  # 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+  # 																		, is.na(LINK1) &
+  # 																			n_obs_trips_f >= 5 ~ 'I'
+  # 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+  # 																		, is.na(LINK1) &
+  # 																			n_obs_trips_f < 5 &
+  # 																			n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
+  # 																		, is.na(LINK1) &
+  # 																		  n_obs_trips_f < 5 &
+  # 																		  n_obs_trips_p < 5 &
+  # 																		  n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
+  # 																		, is.na(LINK1) &
+  # 																		  n_obs_trips_f < 5 &
+  # 																		  n_obs_trips_p < 5 &
+  # 																		  n_obs_trips_f_a < 5 &
+  # 																		  n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
+  # 																		, is.na(LINK1) &
+  # 																			n_obs_trips_f < 5 &
+  # 																			n_obs_trips_p < 5 &
+  # 																			n_obs_trips_f_a < 5 &
+  # 																			n_obs_trips_p_a < 5 ~ 'B'
+  # 				)
+  # 	)
+  #
 
 
   #
@@ -1068,29 +1070,31 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
   # <5, <5,  and <5 gets broad stock rate
 
-  joined_table = joined_table %>%
-  	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-  																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-  																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f >= 5 ~ 'I'
-  																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p < 5 &
-  																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p < 5 &
-  																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-  																		, is.na(LINK1) &
-  																			n_obs_trips_f < 5 &
-  																			n_obs_trips_p < 5 &
-  																			n_obs_trips_f_a < 5 &
-  																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+  joined_table = assign_discard_source(joined_table, GF = 0)
+#
+#     joined_table %>%
+#   	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+#   																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+#   																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+#   																		, is.na(LINK1) &
+#   																			n_obs_trips_f >= 5 ~ 'I'
+#   																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+#   																		, is.na(LINK1) &
+#   																			n_obs_trips_f < 5 &
+#   																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+#   																		, is.na(LINK1) &
+#   																			n_obs_trips_f < 5 &
+#   																			n_obs_trips_p < 5 &
+#   																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+#   																		, is.na(LINK1) &
+#   																			n_obs_trips_f < 5 &
+#   																			n_obs_trips_p < 5 &
+#   																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+#   																		, is.na(LINK1) &
+#   																			n_obs_trips_f < 5 &
+#   																			n_obs_trips_p < 5 &
+#   																			n_obs_trips_f_a < 5 &
+#   																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 
   #
