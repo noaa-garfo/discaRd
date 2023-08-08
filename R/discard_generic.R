@@ -518,29 +518,31 @@ discard_generic <- function(con = con_maps
 		# add discard source ----
 		#
 
-		joined_table = joined_table %>%
-			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-																				, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-																				, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-																				, is.na(LINK1) &
-																					n_obs_trips_f >= 5 ~ 'I'
-																				# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p < 5 &
-																					n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p < 5 &
-																					n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p < 5 &
-																					n_obs_trips_f_a < 5 &
-																					n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+		joined_table = assign_discard_source(joined_table, GF = 0)
+		#
+		# %>%
+		# 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+		# 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+		# 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f >= 5 ~ 'I'
+		# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_f_a < 5 &
+		# 																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 		#
 		# Make sure CV type matches DISCARD SOURCE ----
@@ -595,21 +597,21 @@ discard_generic <- function(con = con_maps
 															, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 
 			)
-	# add element for non-estimated gear types 	
-  	
-  	joined_table = joined_table %>% 
+	# add element for non-estimated gear types
+
+  	joined_table = joined_table %>%
   		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
-  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  																			,TRUE ~ DISCARD_SOURCE)) %>%
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
-  															 ,TRUE ~ DISCARD))%>% 																 
+  															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
 
 		# force remove duplicates
 		joined_table <- joined_table |>
 		  dplyr::distinct()
-		
-		# add N, n, and covariance ---- 
+
+		# add N, n, and covariance ----
 		joined_table = get_covrow(joined_table)
 
 		outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
