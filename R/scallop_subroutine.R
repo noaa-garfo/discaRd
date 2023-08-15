@@ -440,43 +440,44 @@ for(yy in FY:(FY+end_fy)){
 		mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
 		mutate(SPECIES_ITIS_EVAL = species_itis
 					 , COMNAME_EVAL = scal_gf_species$ITIS_NAME
-					 , FISHING_YEAR = FY
+					 , FISHING_YEAR = yy
 					 , FY_TYPE = FY_TYPE)
 
 	#
 	# add discard source
 	#
 
+	joined_table = assign_discard_source(joined_table, GF = 1)
 
 	# >5 trips in season gets in season rate
 	# < 5 i nseason but >=5 past year gets transition
 	# < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
 	# <5, <5,  and <5 gets broad stock rate
 
-	joined_table = joined_table %>%
-		mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-																			, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-																			, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-																			, is.na(LINK1) &
-																				n_obs_trips_f >= 5 ~ 'I'
-																			# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-																			, is.na(LINK1) &
-																				n_obs_trips_f < 5 &
-																				n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-																			, is.na(LINK1) &
-																				n_obs_trips_f < 5 &
-																				n_obs_trips_p < 5 &
-																				n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-																			, is.na(LINK1) &
-																				n_obs_trips_f < 5 &
-																				n_obs_trips_p < 5 &
-																				n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-																			, is.na(LINK1) &
-																				n_obs_trips_f < 5 &
-																				n_obs_trips_p < 5 &
-																				n_obs_trips_f_a < 5 &
-																				n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
-
+	# joined_table = joined_table %>%
+	# 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+	# 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+	# 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+	# 																		, is.na(LINK1) &
+	# 																			n_obs_trips_f >= 5 ~ 'I'
+	# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+	# 																		, is.na(LINK1) &
+	# 																			n_obs_trips_f < 5 &
+	# 																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+	# 																		, is.na(LINK1) &
+	# 																			n_obs_trips_f < 5 &
+	# 																			n_obs_trips_p < 5 &
+	# 																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+	# 																		, is.na(LINK1) &
+	# 																			n_obs_trips_f < 5 &
+	# 																			n_obs_trips_p < 5 &
+	# 																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+	# 																		, is.na(LINK1) &
+	# 																			n_obs_trips_f < 5 &
+	# 																			n_obs_trips_p < 5 &
+	# 																			n_obs_trips_f_a < 5 &
+	# 																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+	#
 
 
 	#
