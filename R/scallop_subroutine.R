@@ -547,6 +547,13 @@ for(yy in FY:(FY+end_fy)){
 
 	joined_table = get_covrow(joined_table)
 
+
+	# make sure the fishing year file contains ONLY trips in that scallop fishing year ----
+
+	joined_table = joined_table %>%
+	  filter(SCAL_YEAR == yy)
+
+
 	# force remove duplicates ----
 	joined_table <- joined_table |>
 	  dplyr::distinct()
