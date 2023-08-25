@@ -875,6 +875,11 @@ discard_groundfish <- function(con
         )
 
 
+      # Observer codes to be removed
+      OBS_REMOVE = ROracle::dbGetQuery(con, "select * from CFG_OBSERVER_CODES")  %>%
+        dplyr::filter(ITIS_TSN == species_itis) %>%
+        distinct(OBS_CODES)
+
       # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
       # DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
 
