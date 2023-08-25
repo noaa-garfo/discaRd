@@ -20,6 +20,7 @@ discard_groundfish <- function(con
                                , non_gf_dat = non_gf_dat
                                , gf_trips_only = F
                                , save_dir = file.path(getOption("maps.discardsPath"), "groundfish")
+                               , run_parallel = FALSE
 ) {
 
   if(!dir.exists(save_dir)) {
@@ -47,9 +48,23 @@ discard_groundfish <- function(con
 
   # add a second SECTORID for Common pool/all others
 
+  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
+    ncores <- length(unique(species))
+    cl <- makeCluster(ncores)
+    registerDoParallel(cl, cores = ncores)
 
-  for(i in 1:length(species$ITIS_TSN)){
+    foreach(
+      i = 1:length(species$ITIS_TSN),
+      .export = c("pw"),
+      .noexport = "con",
+      .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr")
+    ) %op% {
+
+      # setDTthreads(threads = 5)
+      options(keyring_file_lock_timeout = 100000)
+      keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+      con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
     t1 = Sys.time()
 
@@ -706,6 +721,7 @@ discard_groundfish <- function(con
 
   }
 
+    parallel::stopCluster(cl)
 
   if(gf_trips_only == F){
 
@@ -735,8 +751,23 @@ discard_groundfish <- function(con
                         , 'ACCESSAREA')
 
 
-    for(i in 1:length(species$ITIS_TSN)){
+    # for(i in 1:length(species$ITIS_TSN)){
 
+    ncores <- length(unique(species$ITIS_TSN))
+    cl <- makeCluster(ncores)
+    registerDoParallel(cl, cores = ncores)
+
+    foreach(
+      i = 1:length(species$ITIS_TSN),
+      .export = c("pw"),
+      .noexport = "con",
+      .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr")
+    ) %op% {
+
+      # setDTthreads(threads = 5)
+      options(keyring_file_lock_timeout = 100000)
+      keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+      con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
       t1 = Sys.time()
 
@@ -1240,6 +1271,8 @@ discard_groundfish <- function(con
 
     }
 
+    parallel::stopCluster(cl)
+
     ## ----estimate discards on scallop trips for each subACL stock using subroutine ----
 
     # do only the yellowtail and windowpane for scallop trips
@@ -1346,6 +1379,8 @@ discard_groundfish <- function(con
     }
 
   }
+
+    # closeAllConnections()
 
   system(paste("chmod 770 -R", save_dir))
 
