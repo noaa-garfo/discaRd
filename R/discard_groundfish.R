@@ -7,6 +7,7 @@
 #' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
 #' @param gf_trips_only Flag if user only wants to run groundfish trips (e.g. for quota monitoring)
 #' @param save_dir Directory to save (and load saved) results
+#' @param run_parallel option to run species discard calculations in parallel
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
