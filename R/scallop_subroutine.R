@@ -28,6 +28,11 @@ scallop_subroutine <- function(FY = 2019
   species_itis <- scal_gf_species$ITIS_TSN
 
   # {r estimate discards on scallop trips for each subACL stock, purl = T, eval = T}
+
+  non_gf_dat = non_gf_dat %>%
+    mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
+                                   , TRUE ~ 0))
+
   scal_trips = non_gf_dat %>%
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 

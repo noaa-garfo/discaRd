@@ -64,7 +64,7 @@ discard_groundfish <- function(con
     i = 1:length(species$ITIS_TSN),
     .export = c("pw"),
     .noexport = "con",
-    .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr", "discaRd")
+    .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
 
     # setDTthreads(threads = 5)
@@ -769,7 +769,7 @@ discard_groundfish <- function(con
         i = 1:length(species$ITIS_TSN),
         .export = c("pw"),
         .noexport = "con",
-        .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr", "discaRd")
+        .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
       ) %op% {
 
         # setDTthreads(threads = 5)
