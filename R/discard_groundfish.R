@@ -29,6 +29,11 @@ discard_groundfish <- function(con
     system(paste("chmod 770 -R", save_dir))
   }
 
+  unregister <- function() {
+    env <- foreach:::.foreachGlobals
+    rm(list=ls(name=env), pos=env)
+  }
+
   FY_TYPE = species$RUN_ID[1]
 
   ## ----loop through the sector trips for each stock, eval = T-----------------------------------------------------------------------
@@ -722,7 +727,9 @@ discard_groundfish <- function(con
 
   }
 
-  parallel::stopCluster(cl)
+  stopCluster(cl)
+
+  unregister()
 
   if(gf_trips_only == F){
 
@@ -753,8 +760,8 @@ discard_groundfish <- function(con
 
 
       ncores <- length(unique(species$ITIS_TSN))
-      cl <- makeCluster(ncores)
-      registerDoParallel(cl, cores = ncores)
+      cl2 <- makeCluster(ncores)
+      registerDoParallel(cl2, cores = ncores)
 
       # for(i in 1:length(species$ITIS_TSN)){
 
@@ -1277,7 +1284,9 @@ discard_groundfish <- function(con
 
     }
 
-    parallel::stopCluster(cl)
+    parallel::stopCluster(cl2)
+
+    unregister()
 
     ## ----estimate discards on scallop trips for each subACL stock using subroutine ----
 
