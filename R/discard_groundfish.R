@@ -51,7 +51,7 @@ discard_groundfish <- function(con
 
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-    ncores <- length(unique(species))
+    ncores <- length(unique(species$ITIS_TSN))
     cl <- makeCluster(ncores)
     registerDoParallel(cl, cores = ncores)
 
@@ -59,7 +59,7 @@ discard_groundfish <- function(con
       i = 1:length(species$ITIS_TSN),
       .export = c("pw"),
       .noexport = "con",
-      .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr")
+      .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr", "discaRd")
     ) %op% {
 
       # setDTthreads(threads = 5)
@@ -762,7 +762,7 @@ discard_groundfish <- function(con
       i = 1:length(species$ITIS_TSN),
       .export = c("pw"),
       .noexport = "con",
-      .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr")
+      .packages = c("MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst", "dplyr", "discaRd")
     ) %op% {
 
       # setDTthreads(threads = 5)
