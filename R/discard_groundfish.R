@@ -62,7 +62,7 @@ discard_groundfish <- function(con
 
   foreach(
     i = 1:length(species$ITIS_TSN),
-    .export = c("pw"),
+    # .export = c("pw"),
     .noexport = "con",
     .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
@@ -776,7 +776,7 @@ discard_groundfish <- function(con
 
       foreach(
         i = 1:length(species$ITIS_TSN),
-        .export = c("pw"),
+        # .export = c("pw"),
         .noexport = "con",
         .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
       ) %op% {
