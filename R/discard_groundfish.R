@@ -69,6 +69,15 @@ discard_groundfish <- function(con
 
     # setDTthreads(threads = 5)
     options(keyring_file_lock_timeout = 100000)
+
+
+
+    # keyring unlock
+    if(!exists("pw")) {
+      con_run <- configr::read.config(file = here::here("configRun.toml"))
+      pw <- con_run$pw
+    }
+
     keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
     con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
@@ -773,6 +782,12 @@ discard_groundfish <- function(con
       ) %op% {
 
         # setDTthreads(threads = 5)
+
+        if(!exists("pw")) {
+          con_run <- configr::read.config(file = here::here("configRun.toml"))
+          pw <- con_run$pw
+        }
+
         options(keyring_file_lock_timeout = 100000)
         keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
         con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
