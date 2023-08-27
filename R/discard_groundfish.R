@@ -24,6 +24,9 @@ discard_groundfish <- function(con
                                , run_parallel = FALSE
 ) {
 
+  config_run <- configr::read.config(file = here::here("configRun.toml"))
+  pw <- as.character(config_run$pw)
+
   if(!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
     system(paste("chmod 770 -R", save_dir))
@@ -62,7 +65,7 @@ discard_groundfish <- function(con
 
   foreach(
     i = 1:length(species$ITIS_TSN),
-    # .export = c("pw"),
+    .export = c("pw"),
     .noexport = "con",
     .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
@@ -776,7 +779,7 @@ discard_groundfish <- function(con
 
       foreach(
         i = 1:length(species$ITIS_TSN),
-        # .export = c("pw"),
+        .export = c("pw"),
         .noexport = "con",
         .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
       ) %op% {
