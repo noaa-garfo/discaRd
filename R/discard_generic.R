@@ -52,9 +52,9 @@ discard_generic <- function(con = con_maps
 
 	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-	  ncores <- length(unique(species$ITIS_TSN))
-	  cl <- makeCluster(ncores)
-	  registerDoParallel(cl, cores = ncores)
+	  ncores <- min(length(unique(species$ITIS_TSN)), 15)
+	  cl3 <- makeCluster(ncores)
+	  registerDoParallel(cl3, cores = ncores)
 
 	  foreach(
 	    i = 1:length(species$ITIS_TSN),
@@ -65,7 +65,7 @@ discard_generic <- function(con = con_maps
 
 		t1 = Sys.time()
 
-		print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
+		# print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
 
 		# setDTthreads(threads = 5)
 		options(keyring_file_lock_timeout = 100000)
@@ -647,17 +647,17 @@ discard_generic <- function(con = con_maps
 
 		fst::write_fst(x = joined_table, path = outfile)
 		#
-		system(paste("chmod 770", outfile))
+		# system(paste("chmod 770", outfile))
 
 		t2 = Sys.time()
 
-		print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+		# print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
 		DBI::dbDisconnect(con)
 
 	}
 
-	  stopCluster(cl)
+	  stopCluster(cl3)
 	  unregister()
 
 }
