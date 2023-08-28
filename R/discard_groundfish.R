@@ -54,7 +54,7 @@ discard_groundfish <- function(con
 
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-  ncores <- length(unique(species$ITIS_TSN))
+  ncores <- min(length(unique(species$ITIS_TSN)), 13)
   cl <- makeCluster(ncores)
   registerDoParallel(cl, cores = ncores)
 
