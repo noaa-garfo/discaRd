@@ -9,7 +9,8 @@ discard_generic(
   species = species,
   FY = fy,
   all_dat = all_dat,
-  save_dir = file.path(getOption("maps.discardsPath"), "calendar")
+  save_dir = file.path(getOption("maps.discardsPath"), "calendar"),
+  run_parallel = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ discard_generic(
 \item{all_dat}{Data frame of trips built from CAMS_OBS_CATCH and control script routine}
 
 \item{save_dir}{Directory to save (and load saved) results}
+
+\item{run_parallel}{option to run species discard calculations in parallel}
 }
 \value{
 nothing currently, writes out to fst files (add oracle?)

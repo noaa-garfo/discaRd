@@ -32,11 +32,6 @@ discard_groundfish <- function(con
     system(paste("chmod 770 -R", save_dir))
   }
 
-  unregister <- function() {
-    env <- foreach:::.foreachGlobals
-    rm(list=ls(name=env), pos=env)
-  }
-
   FY_TYPE = species$RUN_ID[1]
 
   ## ----loop through the sector trips for each stock, eval = T-----------------------------------------------------------------------
@@ -72,8 +67,6 @@ discard_groundfish <- function(con
 
     # setDTthreads(threads = 5)
     options(keyring_file_lock_timeout = 100000)
-
-
 
     # keyring unlock
     if(!exists("pw")) {
@@ -737,6 +730,8 @@ discard_groundfish <- function(con
 
     logr::log_print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
+    DBI::dbDisconnect(con)
+
   }
 
   stopCluster(cl)
@@ -1299,6 +1294,8 @@ discard_groundfish <- function(con
       t2 = Sys.time()
 
       logr::log_print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+
+      DBI::dbDisconnect(con)
 
     }
 
