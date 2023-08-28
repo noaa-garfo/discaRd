@@ -52,8 +52,8 @@ discard_generic <- function(con = con_maps
 
 	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-	  ncores <- min(length(unique(species$ITIS_TSN)), 15)
-	  cl3 <- makeCluster(ncores)
+	  ncores <- min(length(unique(species$ITIS_TSN)), 10)
+	  cl3 <- makeCluster(ncores, outfile = "")
 	  registerDoParallel(cl3, cores = ncores)
 
 	  foreach(
