@@ -5,6 +5,8 @@
 #' @param FY Fishing Year
 #' @param all_dat Data frame of trips built from CAMS_OBS_CATCH and control script routine
 #' @param save_dir Directory to save (and load saved) results
+#' @param run_parallel option to run species discard calculations in parallel
+#'
 # #' @param FY_TYPE Type of fishing year. This detemrines the time element for the trips used in discard estimation. Herring, Groundifsh, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
@@ -17,8 +19,11 @@ discard_generic <- function(con = con_maps
 														 #, FY_TYPE = c('Calendar','March','April','May','November')
 														 , all_dat = all_dat
 														 , save_dir = file.path(getOption("maps.discardsPath"), "calendar")
+														 , run_parallel = FALSE
 ) {
 
+  config_run <- configr::read.config(file = here::here("configRun.toml"))
+  pw <- as.character(config_run$pw)
 
 	if(!dir.exists(save_dir)) {
 		dir.create(save_dir, recursive = TRUE)
@@ -43,12 +48,36 @@ discard_generic <- function(con = con_maps
 
 	# Begin loop
 
+	# for(i in 1:length(species$ITIS_TSN)){
 
-	for(i in 1:length(species$ITIS_TSN)){
+	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
+
+	  ncores <- length(unique(species$ITIS_TSN))
+	  cl <- makeCluster(ncores)
+	  registerDoParallel(cl, cores = ncores)
+
+	  foreach(
+	    i = 1:length(species$ITIS_TSN),
+	    .export = c("pw"),
+	    .noexport = "con",
+	    .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
+	  ) %op% {
 
 		t1 = Sys.time()
 
 		print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
+
+		# setDTthreads(threads = 5)
+		options(keyring_file_lock_timeout = 100000)
+
+		# keyring unlock
+		if(!exists("pw")) {
+		  con_run <- configr::read.config(file = here::here("configRun.toml"))
+		  pw <- con_run$pw
+		}
+
+		keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+		con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
 		# species_nespp3 = species$NESPP3[i]
 		#species_itis = species$ITIS_TSN[i]
@@ -624,7 +653,12 @@ discard_generic <- function(con = con_maps
 
 		print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
+		DBI::dbDisconnect(con)
+
 	}
+
+	  stopCluster(cl)
+	  unregister()
 
 }
 
