@@ -2,8 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
-.RDS
+*.RDS
 .fst
+*.rdata
+*.Rdata
+*.rdat
+*.Rdat
 
 configRun.toml
 discard_est_164499_trips2019.fst

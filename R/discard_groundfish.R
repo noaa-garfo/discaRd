@@ -7,6 +7,7 @@
 #' @param non_gf_dat Data frame of non-groundfish trips built from CAMS_OBS_CATCH and control script routine
 #' @param gf_trips_only Flag if user only wants to run groundfish trips (e.g. for quota monitoring)
 #' @param save_dir Directory to save (and load saved) results
+#' @param run_parallel option to run species discard calculations in parallel
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
@@ -20,7 +21,11 @@ discard_groundfish <- function(con
                                , non_gf_dat = non_gf_dat
                                , gf_trips_only = F
                                , save_dir = file.path(getOption("maps.discardsPath"), "groundfish")
+                               , run_parallel = FALSE
 ) {
+
+  config_run <- configr::read.config(file = here::here("configRun.toml"))
+  pw <- as.character(config_run$pw)
 
   if(!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
@@ -47,9 +52,30 @@ discard_groundfish <- function(con
 
   # add a second SECTORID for Common pool/all others
 
+  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
+  ncores <- min(length(unique(species$ITIS_TSN)), 13)
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl, cores = ncores)
 
-  for(i in 1:length(species$ITIS_TSN)){
+  foreach(
+    i = 1:length(species$ITIS_TSN),
+    .export = c("pw"),
+    .noexport = "con",
+    .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
+  ) %op% {
+
+    # setDTthreads(threads = 5)
+    options(keyring_file_lock_timeout = 100000)
+
+    # keyring unlock
+    if(!exists("pw")) {
+      con_run <- configr::read.config(file = here::here("configRun.toml"))
+      pw <- con_run$pw
+    }
+
+    keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+    con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
     t1 = Sys.time()
 
@@ -149,7 +175,7 @@ discard_groundfish <- function(con
       dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
       dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
       relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-      assign_strata(., stratvars = stratvars)
+      discaRd::assign_strata(., stratvars = stratvars)
     # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
     # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
     #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
@@ -177,7 +203,7 @@ discard_groundfish <- function(con
       dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
       dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
       relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-      assign_strata(., stratvars = stratvars)
+      discaRd::assign_strata(., stratvars = stratvars)
 
     # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
     # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
@@ -468,7 +494,7 @@ discard_groundfish <- function(con
     #
     # join full and assumed strata tables ----
     #
-    joined_table = assign_strata(full_strata_table, stratvars_assumed)
+    joined_table = discaRd::assign_strata(full_strata_table, stratvars_assumed)
 
     if("STRATA_ASSUMED" %in% names(joined_table)) {
       joined_table = joined_table %>%
@@ -508,34 +534,34 @@ discard_groundfish <- function(con
     # < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
     # <5, <5,  and <5 gets broad stock rate
 
-    joined_table = assign_discard_source(joined_table, GF = 1)
-      #
-      # joined_table %>%
-      # mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-      #                                   , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-      #                                   , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f >= 5 ~ 'I'
-      #                                   # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p < 5 &
-      #                                     n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p < 5 &
-      #                                     n_obs_trips_f_a < 5 &
-      #                                     n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p < 5 &
-      #                                     n_obs_trips_f_a < 5 &
-      #                                     n_obs_trips_p_a < 5 ~ 'B'  # Broad stock is only for GF now
-      # )
-      # )
+    joined_table = discaRd::assign_discard_source(joined_table, GF = 1)
+    #
+    # joined_table %>%
+    # mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+    #                                   , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+    #                                   , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+    #                                   , is.na(LINK1) &
+    #                                     n_obs_trips_f >= 5 ~ 'I'
+    #                                   # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+    #                                   , is.na(LINK1) &
+    #                                     n_obs_trips_f < 5 &
+    #                                     n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
+    #                                   , is.na(LINK1) &
+    #                                     n_obs_trips_f < 5 &
+    #                                     n_obs_trips_p < 5 &
+    #                                     n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
+    #                                   , is.na(LINK1) &
+    #                                     n_obs_trips_f < 5 &
+    #                                     n_obs_trips_p < 5 &
+    #                                     n_obs_trips_f_a < 5 &
+    #                                     n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
+    #                                   , is.na(LINK1) &
+    #                                     n_obs_trips_f < 5 &
+    #                                     n_obs_trips_p < 5 &
+    #                                     n_obs_trips_f_a < 5 &
+    #                                     n_obs_trips_p_a < 5 ~ 'B'  # Broad stock is only for GF now
+    # )
+    # )
 
 
 
@@ -704,8 +730,13 @@ discard_groundfish <- function(con
 
     logr::log_print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
+    DBI::dbDisconnect(con)
+
   }
 
+  stopCluster(cl)
+
+  unregister()
 
   if(gf_trips_only == F){
 
@@ -735,8 +766,29 @@ discard_groundfish <- function(con
                         , 'ACCESSAREA')
 
 
-    for(i in 1:length(species$ITIS_TSN)){
+      ncores <- length(unique(species$ITIS_TSN))
+      cl2 <- makeCluster(ncores)
+      registerDoParallel(cl2, cores = ncores)
 
+      # for(i in 1:length(species$ITIS_TSN)){
+
+      foreach(
+        i = 1:length(species$ITIS_TSN),
+        .export = c("pw"),
+        .noexport = "con",
+        .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
+      ) %op% {
+
+        # setDTthreads(threads = 5)
+
+        if(!exists("pw")) {
+          con_run <- configr::read.config(file = here::here("configRun.toml"))
+          pw <- con_run$pw
+        }
+
+        options(keyring_file_lock_timeout = 100000)
+        keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+        con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
       t1 = Sys.time()
 
@@ -808,7 +860,7 @@ discard_groundfish <- function(con
         dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
         dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
         relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-        assign_strata(., stratvars = stratvars_nongf)
+        discaRd::assign_strata(., stratvars = stratvars_nongf)
 
       ddat_prev <- non_gf_dat %>%
         dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
@@ -824,7 +876,7 @@ discard_groundfish <- function(con
         dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
         dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
         relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-        assign_strata(., stratvars = stratvars_nongf)
+        discaRd::assign_strata(., stratvars = stratvars_nongf)
 
 
       # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
@@ -842,6 +894,11 @@ discard_groundfish <- function(con
                   # ungroup()
         )
 
+
+      # Observer codes to be removed
+      OBS_REMOVE = ROracle::dbGetQuery(con, "select * from CFG_OBSERVER_CODES")  %>%
+        dplyr::filter(ITIS_TSN == species_itis) %>%
+        distinct(OBS_CODES)
 
       # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
       # DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
@@ -1089,7 +1146,7 @@ discard_groundfish <- function(con
 
       #
       # join full and assumed strata tables
-      joined_table = assign_strata(full_strata_table, stratvars_assumed)
+      joined_table = discaRd::assign_strata(full_strata_table, stratvars_assumed)
 
       if("STRATA_ASSUMED" %in% names(joined_table)) {
         joined_table = joined_table %>%
@@ -1129,31 +1186,31 @@ discard_groundfish <- function(con
       # < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
       # <5, <5,  and <5 gets broad stock rate
 
-      joined_table = assign_discard_source(joined_table, GF = 0)
+      joined_table = discaRd::assign_discard_source(joined_table, GF = 0)
 
-        # joined_table %>%
-        # mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-        #                                   , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-        #                                   , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-        #                                   , is.na(LINK1) &
-        #                                     n_obs_trips_f >= 5 ~ 'I'
-        #                                   # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-        #                                   , is.na(LINK1) &
-        #                                     n_obs_trips_f < 5 &
-        #                                     n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-        #                                   , is.na(LINK1) &
-        #                                     n_obs_trips_f < 5 &
-        #                                     n_obs_trips_p < 5 &
-        #                                     n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-        #                                   , is.na(LINK1) &
-        #                                     n_obs_trips_f < 5 &
-        #                                     n_obs_trips_p < 5 &
-        #                                     n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-        #                                   , is.na(LINK1) &
-        #                                     n_obs_trips_f < 5 &
-        #                                     n_obs_trips_p < 5 &
-        #                                     n_obs_trips_f_a < 5 &
-        #                                     n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+      # joined_table %>%
+      # mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+      #                                   , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+      #                                   , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+      #                                   , is.na(LINK1) &
+      #                                     n_obs_trips_f >= 5 ~ 'I'
+      #                                   # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+      #                                   , is.na(LINK1) &
+      #                                     n_obs_trips_f < 5 &
+      #                                     n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+      #                                   , is.na(LINK1) &
+      #                                     n_obs_trips_f < 5 &
+      #                                     n_obs_trips_p < 5 &
+      #                                     n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+      #                                   , is.na(LINK1) &
+      #                                     n_obs_trips_f < 5 &
+      #                                     n_obs_trips_p < 5 &
+      #                                     n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+      #                                   , is.na(LINK1) &
+      #                                     n_obs_trips_f < 5 &
+      #                                     n_obs_trips_p < 5 &
+      #                                     n_obs_trips_f_a < 5 &
+      #                                     n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 
       #
@@ -1238,7 +1295,13 @@ discard_groundfish <- function(con
 
       logr::log_print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
+      DBI::dbDisconnect(con)
+
     }
+
+    parallel::stopCluster(cl2)
+
+    unregister()
 
     ## ----estimate discards on scallop trips for each subACL stock using subroutine ----
 
@@ -1346,6 +1409,8 @@ discard_groundfish <- function(con
     }
 
   }
+
+  # closeAllConnections()
 
   system(paste("chmod 770 -R", save_dir))
 
