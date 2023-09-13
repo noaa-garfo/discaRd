@@ -159,6 +159,7 @@ c_o_dat2 = c_o_dat2 %>%
 																	, PROGRAM == 'NW' ~ 'NLSW'
 																	, PROGRAM == '1S' ~ 'CAI'
 																	, PROGRAM == '2S' ~ 'CAII'
+																	, PROGRAM == 'NG' ~ 'NGOM'
 																	, PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
 	)
 	) %>%
