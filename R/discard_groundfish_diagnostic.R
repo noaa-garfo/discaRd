@@ -618,9 +618,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   # change discard_source, strata_used, discard_rate, and discard for allocated groundfish stocks ----
 
-  if(allocated == T & DISCARD_SOURCE != 'O'){
+  if(allocated == T){
 
-  	mrem_idx = emjoin$EM == 'MREM'
+  	mrem_idx = emjoin$EM == 'MREM' & emjoin$DISCARD_SOURCE != 'O'
   	emjoin$STRATA_USED[mrem_idx] = 'RULE BASED'
   	emjoin$DISCARD_SOURCE[mrem_idx] = 'R'
   	emjoin$COAL_RATE[mrem_idx] = 0
