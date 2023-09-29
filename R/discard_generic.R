@@ -37,6 +37,10 @@ discard_generic <- function(con = con_maps
 	end_date = dr[2]
 	start_date = dr[1]
 
+	if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
+		FY_TYPE = 'CALENDAR'
+		}
+
 	# Stratification variables
 
 	stratvars = c('SPECIES_STOCK'
