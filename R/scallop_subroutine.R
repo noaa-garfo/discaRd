@@ -36,12 +36,14 @@ scallop_subroutine <- function(FY = 2019
   scal_trips = non_gf_dat %>%
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
-  stratvars_scalgf = c('SPECIES_STOCK'
+  stratvars_scalgf = c("SCAL_YEAR"
+                       , 'SPECIES_STOCK'
                        ,'CAMS_GEAR_GROUP'
                        , 'MESH_CAT'
                        , 'TRIPCATEGORY'
                        , 'ACCESSAREA'
-                       , 'SCALLOP_AREA')
+                       , 'SCALLOP_AREA'
+                       )
 
   # scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
 
@@ -65,14 +67,16 @@ scallop_subroutine <- function(FY = 2019
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
 
-  stratvars_scalgf = c('SPECIES_STOCK'
-                       ,'CAMS_GEAR_GROUP'
+  stratvars_scalgf = c("SCAL_YEAR"
+                       , 'SPECIES_STOCK'
+                       , 'CAMS_GEAR_GROUP'
                        , 'MESH_CAT'
                        , 'TRIPCATEGORY'
                        , 'ACCESSAREA'
-                       , 'SCALLOP_AREA')
+                       , 'SCALLOP_AREA'
+                       )
 
-  FY_TYPE = 'APRIL START'
+  FY_TYPE = 'APRIL/GROUNDFISH'
 
   # Can't run discard for a future year.. this prevents that
   end_fy = ifelse(year(Sys.Date()) == FY, 0, 1)
@@ -228,7 +232,7 @@ scallop_subroutine <- function(FY = 2019
                          , species_itis = species_itis
                          , stratvars = stratvars_scalgf
                          # , aidx = c(1:length(stratvars))
-                         , aidx = c(1:2) # uses GEAR as assumed
+                         , aidx = c(1:3) # uses GEAR as assumed
     )
 
 
@@ -239,7 +243,7 @@ scallop_subroutine <- function(FY = 2019
                           , species_itis = species_itis
                           , stratvars = stratvars_scalgf
                           # , aidx = c(1:length(stratvars))  # this makes sure this isn't used..
-                          , aidx = c(1:2) # uses GEAR as assumed
+                          , aidx = c(1:3) # uses GEAR as assumed
     )
 
     # summarize each result for convenience
@@ -307,7 +311,8 @@ scallop_subroutine <- function(FY = 2019
 
     # GEAR and MESh rollup (2nd pass for scallop trips)
     # join full and assumed strata tables
-    stratvars_assumed = c("SPECIES_STOCK"
+    stratvars_assumed = c("SCAL_YEAR"
+                          ,"SPECIES_STOCK"
                           , "CAMS_GEAR_GROUP"
                           , "MESH_CAT")
 
@@ -321,7 +326,7 @@ scallop_subroutine <- function(FY = 2019
                                , species_itis = species_itis
                                , stratvars = stratvars_assumed
                                # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
-                               , aidx = c(1)  # this creates an unstratified broad stock rate
+                               , aidx = c(1:2)  # this creates an unstratified broad stock rate
     )
 
 
@@ -332,7 +337,7 @@ scallop_subroutine <- function(FY = 2019
                                 , species_itis = species_itis
                                 , stratvars = stratvars_assumed
                                 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
-                                , aidx = c(1)  # this creates an unstratified broad stock rate
+                                , aidx = c(1:2)  # this creates an unstratified broad stock rate
     )
 
     # summarize each result for convenience
@@ -397,7 +402,7 @@ scallop_subroutine <- function(FY = 2019
                              , ddat_focal = ddat_non_gf_2yr
                              , c_o_tab = ddat_2yr
                              , species_itis = species_itis
-                             , stratvars = stratvars_scalgf[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+                             , stratvars = stratvars_scalgf[1:3]  #SCAL_YEAR, "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
     )
 
     # rate table
@@ -505,7 +510,8 @@ scallop_subroutine <- function(FY = 2019
 
     # Make note of the stratification variables used according to discard source
 
-    stratvars_gear = c("SPECIES_STOCK"
+    stratvars_gear = c("SCAL_YEAR"
+                       , "SPECIES_STOCK"
                        , "CAMS_GEAR_GROUP")
 
     strata_f = paste(stratvars_scalgf, collapse = ';')
