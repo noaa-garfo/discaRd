@@ -1307,11 +1307,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 
   	dest_obj = joined_table %>%
-  		group_by(FISHING_YEAR, GF, STRATA_USED, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA, FED_OR_STATE) %>%
+  		group_by(FISHING_YEAR, GF_YEAR, SCAL_YEAR, GF, STRATA_USED, STRATA_USED_DESC, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA, FED_OR_STATE) %>%
   		dplyr::summarise(rate = max(COAL_RATE, na.rm = T)
-  										 , n_f = max(n_obs_trips_f)
-  										 , n_p = max(n_obs_trips_p)
-  										 , N = n_distinct(CAMS_SUBTRIP)
+  										 , n_obs = max(n_USED)
+  										 , n_unobs = max(N_USED-n_USED)
+  										 , n_total = n_distinct(CAMS_SUBTRIP)
   										 # , rate_min = min(COAL_RATE, na.rm = T)
   										 , KALL = round(sum(LIVE_POUNDS, na.rm = T))
   										 , D = round(sum(DISCARD, na.rm = T), 2)
