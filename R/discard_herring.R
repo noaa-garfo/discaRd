@@ -64,8 +64,8 @@ discard_herring <- function(con
 			collect() %>%
 			dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
 			filter(ITIS_TSN == species_itis) %>%
-			dplyr::select(-NESPP3, -ITIS_TSN) %>%
-			mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
+			dplyr::select(-NESPP3, -ITIS_TSN) #%>%
+			#mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
 
 
 		# Stat areas table
@@ -454,10 +454,10 @@ discard_herring <- function(con
 		ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
 		ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
-		# previous year broad stock rate
-		mnk_prev = run_discard(bdat = bdat_prev_cy
-													 , ddat = ddat_prev_cy
-													 , c_o_tab = ddat_prev
+		# previous year plus current year broad stock rate
+		mnk_prev = run_discard(bdat = bdat_2yrs
+													 , ddat_focal = ddat_cy_2yr
+													 , c_o_tab = ddat_2yr
 													 , species_itis = species_itis
 													 , stratvars = stratvars[1]
 		)
@@ -520,7 +520,7 @@ discard_herring <- function(con
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
 																	 , n_obs_trips_f < 5 &
-																	 	n_obs_trips_p < 5 & 
+																	 	n_obs_trips_p < 5 &
 																	 	n_obs_trips_p_a > 5 ~ trans_rate_a  #in season gear, HMA transition
 			)
 			) %>%
@@ -619,6 +619,7 @@ discard_herring <- function(con
 																		 , DISCARD_SOURCE == 'T' ~ strata_f
 																		 , DISCARD_SOURCE == 'A' ~ strata_a
 																		 , DISCARD_SOURCE == 'G' ~ strata_b
+																		 , TRUE ~ NA_character_
 																		 #	, DISCARD_SOURCE == 'NA' ~ 'NA'
 			)
 			)
@@ -656,17 +657,17 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
 		# force remove duplicates
   		# add element for non-estimated discard gears
 		joined_table <- joined_table |>
-		  dplyr::distinct()%>% 
+		  dplyr::distinct()%>%
   		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
-  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  																			,TRUE ~ DISCARD_SOURCE)) %>%
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
-  															 ,TRUE ~ DISCARD))%>% 																 
+  															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
-		
-		
-# add N, n, and covariance ---- 
-		joined_table = get_covrow(joined_table)  		
+
+
+# add N, n, and covariance ----
+		joined_table = get_covrow(joined_table)
 
 # output an fst file -----
 

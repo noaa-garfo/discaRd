@@ -11,7 +11,8 @@ discard_groundfish(
   gf_dat = gf_dat,
   non_gf_dat = non_gf_dat,
   gf_trips_only = F,
-  save_dir = file.path(getOption("maps.discardsPath"), "groundfish")
+  save_dir = file.path(getOption("maps.discardsPath"), "groundfish"),
+  run_parallel = FALSE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ discard_groundfish(
 \item{gf_trips_only}{Flag if user only wants to run groundfish trips (e.g. for quota monitoring)}
 
 \item{save_dir}{Directory to save (and load saved) results}
+
+\item{run_parallel}{option to run species discard calculations in parallel}
 }
 \value{
 nothing currently, writes out to fst files (add oracle?)

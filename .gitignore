@@ -2,8 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
-.RDS
+*.RDS
 .fst
+*.rdata
+*.Rdata
+*.rdat
+*.Rdat
 
 AWA_discaRd.Rproj
 bens_discarRd_prj.Rproj
