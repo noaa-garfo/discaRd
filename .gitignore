@@ -5,6 +5,9 @@
 .RDS
 .fst
 
+AWA_discaRd.Rproj
+bens_discarRd_prj.Rproj
+
 configRun.toml
 discard_est_164499_trips2019.fst
 
