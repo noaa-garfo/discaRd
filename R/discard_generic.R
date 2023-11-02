@@ -5,6 +5,8 @@
 #' @param FY Fishing Year
 #' @param all_dat Data frame of trips built from CAMS_OBS_CATCH and control script routine
 #' @param save_dir Directory to save (and load saved) results
+#' @param run_parallel option to run species discard calculations in parallel
+#'
 # #' @param FY_TYPE Type of fishing year. This detemrines the time element for the trips used in discard estimation. Herring, Groundifsh, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
@@ -17,8 +19,11 @@ discard_generic <- function(con = con_maps
 														 #, FY_TYPE = c('Calendar','March','April','May','November')
 														 , all_dat = all_dat
 														 , save_dir = file.path(getOption("maps.discardsPath"), "calendar")
+														 , run_parallel = FALSE
 ) {
 
+  config_run <- configr::read.config(file = here::here("configRun.toml"))
+  pw <- as.character(config_run$pw)
 
 	if(!dir.exists(save_dir)) {
 		dir.create(save_dir, recursive = TRUE)
@@ -32,6 +37,10 @@ discard_generic <- function(con = con_maps
 	end_date = dr[2]
 	start_date = dr[1]
 
+	if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
+		FY_TYPE = 'CALENDAR'
+		}
+
 	# Stratification variables
 
 	stratvars = c('SPECIES_STOCK'
@@ -43,12 +52,36 @@ discard_generic <- function(con = con_maps
 
 	# Begin loop
 
+	# for(i in 1:length(species$ITIS_TSN)){
 
-	for(i in 1:length(species$ITIS_TSN)){
+	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
+
+	  ncores <- min(length(unique(species$ITIS_TSN)), 10)
+	  cl3 <- makeCluster(ncores, outfile = "")
+	  registerDoParallel(cl3, cores = ncores)
+
+	  foreach(
+	    i = 1:length(species$ITIS_TSN),
+	    .export = c("pw"),
+	    .noexport = "con",
+	    .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
+	  ) %op% {
 
 		t1 = Sys.time()
 
-		print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
+		# print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
+
+		# setDTthreads(threads = 5)
+		options(keyring_file_lock_timeout = 100000)
+
+		# keyring unlock
+		if(!exists("pw")) {
+		  con_run <- configr::read.config(file = here::here("configRun.toml"))
+		  pw <- con_run$pw
+		}
+
+		keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+		con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
 
 		# species_nespp3 = species$NESPP3[i]
 		#species_itis = species$ITIS_TSN[i]
@@ -518,29 +551,31 @@ discard_generic <- function(con = con_maps
 		# add discard source ----
 		#
 
-		joined_table = joined_table %>%
-			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-																				, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-																				, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-																				, is.na(LINK1) &
-																					n_obs_trips_f >= 5 ~ 'I'
-																				# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p < 5 &
-																					n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p < 5 &
-																					n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-																				, is.na(LINK1) &
-																					n_obs_trips_f < 5 &
-																					n_obs_trips_p < 5 &
-																					n_obs_trips_f_a < 5 &
-																					n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+		joined_table = assign_discard_source(joined_table, GF = 0)
+		#
+		# %>%
+		# 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+		# 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+		# 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f >= 5 ~ 'I'
+		# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+		# 																		, is.na(LINK1) &
+		# 																			n_obs_trips_f < 5 &
+		# 																			n_obs_trips_p < 5 &
+		# 																			n_obs_trips_f_a < 5 &
+		# 																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
 		#
 		# Make sure CV type matches DISCARD SOURCE ----
@@ -576,6 +611,7 @@ discard_generic <- function(con = con_maps
 																		 , DISCARD_SOURCE == 'T' ~ strata_f
 																		 , DISCARD_SOURCE == 'GM' ~ strata_a
 																		 , DISCARD_SOURCE == 'G' ~ strata_b
+																		 , TRUE ~ NA_character_
 																		 #	, DISCARD_SOURCE == 'NA' ~ 'NA'
 			)
 			)
@@ -594,34 +630,39 @@ discard_generic <- function(con = con_maps
 															, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 
 			)
-	# add element for non-estimated gear types 	
-  	
-  	joined_table = joined_table %>% 
+	# add element for non-estimated gear types
+
+  	joined_table = joined_table %>%
   		mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
-  																			,TRUE ~ DISCARD_SOURCE)) %>% 
+  																			,TRUE ~ DISCARD_SOURCE)) %>%
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
-  															 ,TRUE ~ DISCARD))%>% 																 
+  															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
   															 ,TRUE ~ CV))
 
 		# force remove duplicates
 		joined_table <- joined_table |>
 		  dplyr::distinct()
-		
-		# add N, n, and covariance ---- 
+
+		# add N, n, and covariance ----
 		joined_table = get_covrow(joined_table)
 
 		outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 
 		fst::write_fst(x = joined_table, path = outfile)
 		#
-		system(paste("chmod 770", outfile))
+		# system(paste("chmod 770", outfile))
 
 		t2 = Sys.time()
 
-		print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+		# print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+
+		DBI::dbDisconnect(con)
 
 	}
+
+	  stopCluster(cl3)
+	  unregister()
 
 }
 

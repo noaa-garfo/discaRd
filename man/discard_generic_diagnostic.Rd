@@ -50,7 +50,7 @@ library(discaRd)
 con <- ROracle::dbConnect(
 	drv = ROracle::Oracle(),
 	username = uid,
-	password = pwd,  
+	password = pwd,
 	dbname = "NERO.world"
 )
 
@@ -82,7 +82,7 @@ species <- tbl(con, sql("
 	ungroup()
 
 # get one species for testing (black sea bass)
-species = species \%>\% 
+species = species \%>\%
 	filter(NESPP3 == 335)
 
 # GEAR TABLE
@@ -112,11 +112,11 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY
 	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
 	dplyr::select(-ITIS_TSN)
 
-# Now, modify anything you wish to test in the support tables! For example, here is an example for scallop estiamtion areas. CAMS do not match the previous assessment and were worth investigating. CAMS ended up doing a good job in this case, regardless of the area splits. 
+# Now, modify anything you wish to test in the support tables! For example, here is an example for scallop estiamtion areas. CAMS do not match the previous assessment and were worth investigating. CAMS ended up doing a good job in this case, regardless of the area splits.
 
 
 if(species$ITIS_TSN == '079718'){
-	
+
 	STOCK_AREAS = tbl(con, sql("
 				select ITIS_TSN
 				, AREA
@@ -138,6 +138,6 @@ if(species$ITIS_TSN == '079718'){
 		mutate(AREA = as.character(AREA)
 					 , SPECIES_STOCK = AREA_NAME) \%>\%
 		ungroup()
-	
+
 }
 }
