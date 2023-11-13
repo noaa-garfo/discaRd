@@ -36,14 +36,14 @@ scallop_subroutine <- function(FY = 2019
   scal_trips = non_gf_dat %>%
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
-  stratvars_scalgf = c("SCAL_YEAR"
-                       , 'SPECIES_STOCK'
-                       ,'CAMS_GEAR_GROUP'
-                       , 'MESH_CAT'
-                       , 'TRIPCATEGORY'
-                       , 'ACCESSAREA'
-                       , 'SCALLOP_AREA'
-                       )
+  # stratvars_scalgf = c("SCAL_YEAR"
+  #                      , 'SPECIES_STOCK'
+  #                      ,'CAMS_GEAR_GROUP'
+  #                      , 'MESH_CAT'
+  #                      , 'TRIPCATEGORY'
+  #                      , 'ACCESSAREA'
+  #                      , 'SCALLOP_AREA'
+  #                      )
 
   # scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
 
@@ -67,7 +67,8 @@ scallop_subroutine <- function(FY = 2019
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
 
-  stratvars_scalgf = c("SCAL_YEAR"
+  stratvars_scalgf = c('FY'
+                       , 'FY_TYPE'
                        , 'SPECIES_STOCK'
                        , 'CAMS_GEAR_GROUP'
                        , 'MESH_CAT'
@@ -76,7 +77,7 @@ scallop_subroutine <- function(FY = 2019
                        , 'SCALLOP_AREA'
                        )
 
-  FY_TYPE = 'APRIL/GROUNDFISH'
+  FY_TYPE = 'APRIL'
 
   # Can't run discard for a future year.. this prevents that
   end_fy = ifelse(year(Sys.Date()) == FY, 0, 1)
@@ -138,6 +139,8 @@ scallop_subroutine <- function(FY = 2019
 
     # make tables
     ddat_focal <- scal_trips %>%
+      mutate(FY_TYPE = FY_TYPE
+             , FY = SCAL_YEAR) %>%
       # filter(SCAL_YEAR == yy) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
       filter(DATE_TRIP >= scal_start_date & DATE_TRIP <= scal_end_date) %>%
       filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -155,6 +158,8 @@ scallop_subroutine <- function(FY = 2019
       assign_strata(., stratvars = stratvars_scalgf)
 
     ddat_prev <- scal_trips %>%
+      mutate(FY_TYPE = FY_TYPE
+             , FY = SCAL_YEAR) %>%
       # filter(SCAL_YEAR == yy-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
       filter(DATE_TRIP >= scal_start_date-365 & DATE_TRIP <= scal_end_date-365) %>%
       filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -311,7 +316,8 @@ scallop_subroutine <- function(FY = 2019
 
     # GEAR and MESh rollup (2nd pass for scallop trips)
     # join full and assumed strata tables
-    stratvars_assumed = c("SCAL_YEAR"
+    stratvars_assumed = c('FY'
+                          , 'FY_TYPE'
                           ,"SPECIES_STOCK"
                           , "CAMS_GEAR_GROUP"
                           , "MESH_CAT")
@@ -402,7 +408,7 @@ scallop_subroutine <- function(FY = 2019
                              , ddat_focal = ddat_non_gf_2yr
                              , c_o_tab = ddat_2yr
                              , species_itis = species_itis
-                             , stratvars = stratvars_scalgf[1:3]  #SCAL_YEAR, "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+                             , stratvars = stratvars_scalgf[1:4]  #FY, FY_TYPE "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
     )
 
     # rate table
@@ -510,7 +516,8 @@ scallop_subroutine <- function(FY = 2019
 
     # Make note of the stratification variables used according to discard source
 
-    stratvars_gear = c("SCAL_YEAR"
+    stratvars_gear = c("FY"
+                       , "FY_TYPE"
                        , "SPECIES_STOCK"
                        , "CAMS_GEAR_GROUP")
 

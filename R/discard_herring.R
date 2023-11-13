@@ -28,10 +28,11 @@ discard_herring <- function(con
 
 	# Stratification variables ----
 
-	stratvars = c(
-		'HERR_TARG' # target vs non target herring
-		,'AREA_HERR' # herring management area
-		,'CAMS_GEAR_GROUP')# gear
+	stratvars = c('FY'
+	              , 'FY_TYPE'
+            		, 'HERR_TARG' # target vs non target herring
+            		,'AREA_HERR' # herring management area
+            		,'CAMS_GEAR_GROUP')# gear
 
 
 
@@ -100,6 +101,8 @@ discard_herring <- function(con
 		ddat_focal <- all_dat %>%
 			filter(YEAR == FY) %>%   ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -125,6 +128,8 @@ discard_herring <- function(con
 		ddat_prev <- all_dat %>%
 			filter(YEAR == FY-1) %>%   ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -327,7 +332,9 @@ discard_herring <- function(con
 		#
 
 
-		stratvars_assumed = c("HERR_TARG"
+		stratvars_assumed = c("FY"
+		                      , "FY_TYPE"
+		                      , "HERR_TARG"
 													, "CAMS_GEAR_GROUP") #AWA
 		#, "MESH_CAT")
 
@@ -459,7 +466,7 @@ discard_herring <- function(con
 													 , ddat_focal = ddat_cy_2yr
 													 , c_o_tab = ddat_2yr
 													 , species_itis = species_itis
-													 , stratvars = stratvars[1]
+													 , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_HERR
 		)
 
 
@@ -469,7 +476,7 @@ discard_herring <- function(con
 															, ddat = ddat_focal_cy
 															, c_o_tab = ddat_focal
 															, species_itis = species_itis
-															, stratvars = stratvars[1]
+															, stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_HERR
 		)
 		BROAD_STOCK_RATE_CUR <-  mnk_current$allest$C$RE_mean
 		CV_b_cur <- round(mnk_current$allest$C$RE_rse, 2)
@@ -606,7 +613,7 @@ discard_herring <- function(con
 		# Make note of the stratification variables used according to discard source ----
 
 		stratvars_gear = c(#"SPECIES_STOCK", #AWA
-			"HERR_TARG")
+			"FY", "FY_TYPE", "HERR_TARG")
 
 		strata_f = paste(stratvars, collapse = ';')
 		strata_a = paste(stratvars_assumed, collapse = ';')

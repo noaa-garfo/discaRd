@@ -146,7 +146,9 @@ discard_generic_diagnostic <- function(con = con_maps
 
 	# Stratification variables
 
-	stratvars = c('SPECIES_STOCK'
+	stratvars = c('FY'
+	              ,'FY_TYPE'
+	              ,'SPECIES_STOCK'
 								,'CAMS_GEAR_GROUP'
 								, 'MESH_CAT'
 								, 'TRIPCATEGORY'
@@ -244,6 +246,8 @@ discard_generic_diagnostic <- function(con = con_maps
 		ddat_focal <- all_dat %>%
 			filter(DATE_TRIP >= start_date & DATE_TRIP < end_date) %>% ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -270,6 +274,8 @@ discard_generic_diagnostic <- function(con = con_maps
 		ddat_prev <- all_dat %>%
 			filter(DATE_TRIP >= start_date_prev & DATE_TRIP < end_date_prev) %>% ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -469,7 +475,9 @@ discard_generic_diagnostic <- function(con = con_maps
 
 		# Second Pass: Stock, Gear, and Mesh only ----
 
-		stratvars_assumed = c("SPECIES_STOCK"
+		stratvars_assumed = c("FY"
+		                      ,"FY_TYPE"
+		                      ,"SPECIES_STOCK"
 													, "CAMS_GEAR_GROUP"
 													, "MESH_CAT")
 
@@ -601,7 +609,7 @@ discard_generic_diagnostic <- function(con = con_maps
 											 , ddat_focal = ddat_cy_2yr
 											 , c_o_tab = ddat_2yr
 											 , species_itis = species_itis
-											 , stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+											 , stratvars = stratvars[1:4]  # 'FY', 'FY_TYPE', "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
 		)
 
 		SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)
@@ -703,7 +711,9 @@ discard_generic_diagnostic <- function(con = con_maps
 
 		# Make note of the stratification variables used according to discard source ----
 
-		stratvars_gear = c("SPECIES_STOCK"
+		stratvars_gear = c("FY"
+		                   , "FY_TYPE"
+		                   , "SPECIES_STOCK"
 											 , "CAMS_GEAR_GROUP")
 
 		strata_f = paste(stratvars, collapse = ';')
