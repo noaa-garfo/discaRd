@@ -499,22 +499,29 @@ discard_generic <- function(con = con_maps
 		ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
 		ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
-		mnk = run_discard( bdat = bdat_2yrs
+		gear_only = run_discard( bdat = bdat_2yrs
 											 , ddat_focal = ddat_cy_2yr
 											 , c_o_tab = ddat_2yr
 											 , species_itis = species_itis
 											 , stratvars = stratvars[1:4]  #"FY","FY_TYPE", "SPECIES_STOCK", "CAMS_GEAR_GROUP"
 		)
 
-		SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)
+		# broad rate table ----
 
-		CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA)
+		FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
 
-		BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
+		SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+		  gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
 
-		CV_b <- round(mnk$allest$C$RE_rse, 2)
+		CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+		  gsub("^([^_]+)_", "", .)%>%
+		  gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
 
-		BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+		BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
+
+		CV_b <- round(gear_only$allest$C$RE_rse, 2)
+
+		BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
 
 		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 		BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
@@ -536,7 +543,7 @@ discard_generic <- function(con = con_maps
 		joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
+			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
 			mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
