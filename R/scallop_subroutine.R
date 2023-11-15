@@ -66,6 +66,7 @@ scallop_subroutine <- function(FY = 2019
   scal_trips = non_gf_dat %>%
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
+# setup scallop strata ----
 
   stratvars_scalgf = c('FY'
                        , 'FY_TYPE'
@@ -78,7 +79,7 @@ scallop_subroutine <- function(FY = 2019
                        )
 
   FY_TYPE = 'APRIL'
-
+# get date ranges for current and previous fishing year ----
   # Can't run discard for a future year.. this prevents that
   end_fy = ifelse(year(Sys.Date()) == FY, 0, 1)
 
@@ -101,7 +102,7 @@ scallop_subroutine <- function(FY = 2019
 
     # species_itis = scal_gf_species$SPECIES_ITIS
     #---#
-    # Support table import by species
+    # Support table import by species ----
 
     # GEAR TABLE
     CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
@@ -137,7 +138,7 @@ scallop_subroutine <- function(FY = 2019
       filter(ITIS_TSN == species_itis) %>%
       distinct(OBS_CODES)
 
-    # make tables
+    # make trip and obs tables ----
     ddat_focal <- scal_trips %>%
       mutate(FY_TYPE = FY_TYPE
              , FY = SCAL_YEAR) %>%
@@ -207,7 +208,7 @@ scallop_subroutine <- function(FY = 2019
              , PRORATE = 1)
 
 
-    # set up trips table for previous year
+    # set up trips table for previous year ----
     ddat_prev_scal <- summarise_single_discard_row(data = ddat_prev, itis_tsn = species_itis)
 
     ddat_prev_scal = ddat_prev_scal %>%
@@ -230,7 +231,7 @@ scallop_subroutine <- function(FY = 2019
               , OBS_HAUL_KALL_TRIP = OBS_KALL
               , PRORATE = 1)
 
-    # Run the discaRd functions on previous year
+    # Run the discaRd functions on previous year ----
     d_prev = run_discard(bdat = bdat_prev_scal
                          , ddat = ddat_prev_scal
                          , c_o_tab = ddat_prev
@@ -241,7 +242,7 @@ scallop_subroutine <- function(FY = 2019
     )
 
 
-    # Run the discaRd functions on current year
+    # Run the discaRd functions on current year ----
     d_focal = run_discard(bdat = bdat_scal
                           , ddat = ddat_focal_scal
                           , c_o_tab = ddat_focal
@@ -251,7 +252,7 @@ scallop_subroutine <- function(FY = 2019
                           , aidx = c(1:3) # uses GEAR as assumed
     )
 
-    # summarize each result for convenience
+    # summarize each result for convenience ----
     dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
                                                   , N = N
                                                   , n = n
@@ -270,7 +271,7 @@ scallop_subroutine <- function(FY = 2019
                                                    , CV = round(RE_rse, 2)
     )
 
-    # substitute transition rates where needed
+    # substitute transition rates where needed ----
 
     trans_rate_df = dest_strata_f %>%
       left_join(., dest_strata_p, by = 'STRATA') %>%
@@ -315,6 +316,8 @@ scallop_subroutine <- function(FY = 2019
       dplyr::rename(FULL_STRATA = STRATA)
 
     # GEAR and MESh rollup (2nd pass for scallop trips)
+
+    # Make 'assumed' strata ----
     # join full and assumed strata tables
     stratvars_assumed = c('FY'
                           , 'FY_TYPE'
@@ -325,7 +328,7 @@ scallop_subroutine <- function(FY = 2019
 
     ### All tables in previous run can be re-used with diff stratification
 
-    # Run the discaRd functions on previous year
+    ### Run the discaRd functions on previous year ----
     d_prev_pass2 = run_discard(bdat = bdat_prev_scal
                                , ddat = ddat_prev_scal
                                , c_o_tab = ddat_prev
@@ -336,7 +339,7 @@ scallop_subroutine <- function(FY = 2019
     )
 
 
-    # Run the discaRd functions on current year
+    ### Run the discaRd functions on current year ----
     d_focal_pass2 = run_discard(bdat = bdat_scal
                                 , ddat = ddat_focal_scal
                                 , c_o_tab = ddat_focal
@@ -346,7 +349,7 @@ scallop_subroutine <- function(FY = 2019
                                 , aidx = c(1:2)  # this creates an unstratified broad stock rate
     )
 
-    # summarize each result for convenience
+    ### summarize each result for convenience ----
     dest_strata_p_pass2 = d_prev_pass2$allest$C %>% summarise(STRATA = STRATA
                                                               , N = N
                                                               , n = n
@@ -365,7 +368,7 @@ scallop_subroutine <- function(FY = 2019
                                                                , CV = round(RE_rse, 2)
     )
 
-    # substitute transition rates where needed
+    ### substitute transition rates where needed ----
 
     trans_rate_df_pass2 = dest_strata_f_pass2 %>%
       left_join(., dest_strata_p_pass2, by = 'STRATA') %>%
@@ -398,7 +401,7 @@ scallop_subroutine <- function(FY = 2019
 
 
 
-    # Gear only Rollup: this replaces a baod sotck rate. and, this is only scallop trips so it may be redundant with previous pass
+    # Gear only Rollup: this replaces a broad stock rate. and, this is only scallop trips so it may be redundant with previous pass ----
 
     bdat_2yrs = bind_rows(bdat_prev_scal, bdat_scal)
     ddat_non_gf_2yr = bind_rows(ddat_prev_scal, ddat_focal_scal)
@@ -411,17 +414,22 @@ scallop_subroutine <- function(FY = 2019
                              , stratvars = stratvars_scalgf[1:4]  #FY, FY_TYPE "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
     )
 
-    # rate table
+    # broad rate table ----
 
-    SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
+    FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
 
-    CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
+    SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+      gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
+
+    CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+      gsub("^([^_]+)_", "", .)%>%
+      gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
 
     BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
 
     CV_b <- round(gear_only$allest$C$RE_rse, 2)
 
-    BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+    BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
 
     BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
     BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
@@ -445,7 +453,7 @@ scallop_subroutine <- function(FY = 2019
       # dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
       dplyr::rename(STRATA_ASSUMED = STRATA) %>%
       left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-      left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
+      left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
       mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
                                    , n_obs_trips_f < 5 &
                                      n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -463,7 +471,7 @@ scallop_subroutine <- function(FY = 2019
     # add discard source
     #
 
-    joined_table = assign_discard_source(joined_table, GF = 1)
+    joined_table = assign_discard_source(joined_table, GF = 0)
 
     # >5 trips in season gets in season rate
     # < 5 i nseason but >=5 past year gets transition
