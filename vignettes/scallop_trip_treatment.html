@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.0.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Benjamin Galuardi">
+<meta name="dcterms.date" content="2023-11-28">
+
+<title>Treatment of Groundfish discards on scallop trips in CAMS Discards</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+<script src="scallop_trip_treatment_files/libs/clipboard/clipboard.min.js"></script>
+<script src="scallop_trip_treatment_files/libs/quarto-html/quarto.js"></script>
+<script src="scallop_trip_treatment_files/libs/quarto-html/popper.min.js"></script>
+<script src="scallop_trip_treatment_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="scallop_trip_treatment_files/libs/quarto-html/anchor.min.js"></script>
+<link href="scallop_trip_treatment_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="scallop_trip_treatment_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="scallop_trip_treatment_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="scallop_trip_treatment_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="scallop_trip_treatment_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Treatment of Groundfish discards on scallop trips in CAMS Discards</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Benjamin Galuardi </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 28, 2023</p>
+    </div>
+  </div>
+    
+  </div>
+  
+
+</header>
+
+<section id="scallop-trips" class="level2">
+<h2 class="anchored" data-anchor-id="scallop-trips">Scallop Trips</h2>
+<p>Yellowtail flounder and windowpane flounder have a <a href="https://d23h0vhsm26o6d.cloudfront.net/230818-GF-FW-65-Final-Rule-2023-17592.pdf">subACL discard component</a> specific to the scallop fishery. This subACL is allocated and <a href="https://www.greateratlantic.fisheries.noaa.gov/ro/fso/reports/ScallopProgram/CURRENT_REPORTS/bycatch_reports.html">monitored</a> according to the scallop fishing year (April 1 to March 30).</p>
+<p>CAMS runs each species discard according to the fishing year for that species. All trips within that time window receive a discard rate, amount, and variance estimation (or observation). Since yellowtail and windowpane have a subACL specific to the federal scallop fishery, with a different regulatory application, scallop trips within the groundfish time window receive rates and stratification based on the <strong>scallop fishing year</strong> in which they fall.</p>
+<p><code>CAMS_DISCARD_ALL_YEARS</code> is categorized by species and fishing year of that species. The stratification elements within the <code>STRATA_USED</code> and <code>STRATA_USED_DESC</code> columns normally will match the fishing year for that species. In the case of federal scallop trips, they do not.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/scallop_trips_ytf_example.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Example of a diagnostic run of yellowtail flounder highlighting differences in FY_TYPE and STRATA_USED_DESC for scallop trip strata. Note that FY (Fishing Year) refers to the species evaluated (yellowtail)</figcaption><p></p>
+</figure>
+</div>
+<p>Another detail to note is that there exist trips that fished with a scallop dredge that are not part of the federal scallop fishery. These trips occur in state waters, by federally permitted vessels, but lack a federal scallop permit. Yellowtail and windowpane from these trips are not evaluated as federal scallop trips and do not count toward scallop subACL estimation or monitoring.</p>
+<!-- ### Example of discard diagnostic for yellowtail -->
+<!-- Note: this is not optimized for NEFSC use. Function modification must be made to include schema and dblink elements, e.g., `select * from CFG_DISCARD_RUNID` becomes `select * from CAMS_GARFO.CFG_DISCARD_RUNID@NOVA` -->
+<div class="cell">
+
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
