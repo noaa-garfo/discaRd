@@ -1,0 +1,135 @@
+---
+title: "Treatment of Groundfish discards on scallop trips in CAMS Discards"
+author: "Benjamin Galuardi"
+date: November 28, 2023
+format: html
+editor: visual
+---
+
+## Scallop Trips
+
+Yellowtail flounder and windowpane flounder have a [subACL discard component](https://d23h0vhsm26o6d.cloudfront.net/230818-GF-FW-65-Final-Rule-2023-17592.pdf) specific to the scallop fishery. This subACL is allocated and [monitored](https://www.greateratlantic.fisheries.noaa.gov/ro/fso/reports/ScallopProgram/CURRENT_REPORTS/bycatch_reports.html) according to the scallop fishing year (April 1 to March 30).
+
+CAMS runs each species discard according to the fishing year for that species. All trips within that time window receive a discard rate, amount, and variance estimation (or observation). Since yellowtail and windowpane have a subACL specific to the federal scallop fishery, with a different regulatory application, scallop trips within the groundfish time window receive rates and stratification based on the **scallop fishing year** in which they fall.
+
+`CAMS_DISCARD_ALL_YEARS` is categorized by species and fishing year of that species. The stratification elements within the `STRATA_USED` and `STRATA_USED_DESC` columns normally will match the fishing year for that species. In the case of federal scallop trips, they do not.
+
+![Example of a diagnostic run of yellowtail flounder highlighting differences in FY_TYPE and STRATA_USED_DESC for scallop trip strata. Note that FY (Fishing Year) refers to the species evaluated (yellowtail)](images/scallop_trips_ytf_example.PNG)
+
+Another detail to note is that there exist trips that fished with a scallop dredge that are not part of the federal scallop fishery. These trips occur in state waters, by federally permitted vessels, but lack a federal scallop permit. Yellowtail and windowpane from these trips are not evaluated as federal scallop trips and do not count toward scallop subACL estimation or monitoring.
+
+<!-- ### Example of discard diagnostic for yellowtail -->
+
+<!-- Note: this is not optimized for NEFSC use. Function modification must be made to include schema and dblink elements, e.g., `select * from CFG_DISCARD_RUNID` becomes `select * from CAMS_GARFO.CFG_DISCARD_RUNID@NOVA` -->
+
+```{r, echo = F, eval = F}
+# pull discaRd/CAMSNR-727 to ~/PROJECTS/discaRd/
+
+# load package functions from git pull ---- 
+devtools::load_all(path = '~/PROJECTS/discaRd/')
+
+# make connection to oracle ----
+keyring::keyring_unlock(keyring = 'apsd_ma', password = .rs.askForPassword(prompt = T))
+
+con = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+
+# get data ---- 
+start_year = 2021
+end_year = year(today())
+
+dat = get_catch_obs(con, start_year, end_year)
+gf_dat = dat$gf_dat
+non_gf_dat = dat$non_gf_dat
+all_dat = dat$all_dat
+rm(dat)
+gc()
+
+# define species and set support info ----
+species <- tbl(con, sql("
+  select *
+  from CFG_DISCARD_RUNID
+  ")) %>%
+  filter(RUN_ID == 'GROUNDFISH') %>%
+  collect() %>%
+  group_by(ITIS_TSN) %>%
+  slice(1) %>%
+  ungroup()
+
+species = species %>%
+  # filter(ITIS_TSN == '172746') # (windowpane)
+  filter(ITIS_TSN == '172909')  # (yellowtail)
+
+
+### GEAR TABLE ----
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+  collect() %>%
+  dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+  filter(ITIS_TSN == species$ITIS_TSN) %>%
+  dplyr::select(-NESPP3, -ITIS_TSN)
+
+### Stock (Estimation) areas table ----
+STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+  collect() %>%
+  filter(ITIS_TSN == species$ITIS_TSN) %>%
+  group_by(AREA_NAME, ITIS_TSN) %>%
+  distinct(AREA) %>%
+  mutate(AREA = as.character(AREA)
+         , SPECIES_STOCK = AREA_NAME) %>%
+  ungroup()
+
+### Discard Mortality table ----
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+  collect() %>%
+  mutate(SPECIES_STOCK = AREA_NAME
+         , GEARCODE = CAMS_GEAR_GROUP
+         , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
+  select(-AREA_NAME) %>%
+  filter(ITIS_TSN == species$ITIS_TSN) %>%
+  dplyr::select(-ITIS_TSN)
+
+
+# run discard diagnostic function ----
+
+run_FY = 2022
+
+discard_yt_23 = discard_groundfish_diagnostic(con = con
+                                              , FY = run_FY
+                                              , species = species
+                                              , gf_dat = gf_dat
+                                              , non_gf_dat = non_gf_dat
+                                              , return_table = T
+                                              , return_summary = T
+                                              , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
+                                              , STOCK_AREAS = STOCK_AREAS
+                                              , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+)
+
+trips_yt = parse_discard_diag(joined_table = discard_yt_23$trips_discard
+                              , FY = run_FY
+                              )
+
+
+trips_yt %>%
+  group_by(FY
+           , FY_TYPE
+           # , CAMSID
+           # , DATE_TRIP
+           , GF
+           , STRATA_USED
+           , STRATA_USED_DESC
+           , DISCARD_SOURCE
+           , SPECIES_STOCK
+           , CAMS_GEAR_GROUP
+           , MESH_CAT
+           , SCALLOP_AREA
+  ) %>%
+  dplyr::summarise(rate = max(CAMS_DISCARD_RATE, na.rm = T)
+                   , n_obs = max(N_OBSERVED)
+                   , n_total = max(N_UNOBSERVED+N_OBSERVED)
+                   , n_unobs = max(N_UNOBSERVED)
+                   , KALL = round(sum(SUBTRIP_KALL, na.rm = T))
+                   , D = round(sum(CAMS_DISCARD, na.rm = T), 2)
+                   , CV = max(CAMS_CV, na.rm = T)
+  ) %>%
+  View()
+```
