@@ -72,11 +72,17 @@ ul.task-list{list-style: none;}
 <h2 class="anchored" data-anchor-id="scallop-trips">Scallop Trips</h2>
 <p>Yellowtail flounder and windowpane flounder have a <a href="https://d23h0vhsm26o6d.cloudfront.net/230818-GF-FW-65-Final-Rule-2023-17592.pdf">subACL discard component</a> specific to the scallop fishery. This subACL is allocated and <a href="https://www.greateratlantic.fisheries.noaa.gov/ro/fso/reports/ScallopProgram/CURRENT_REPORTS/bycatch_reports.html">monitored</a> according to the scallop fishing year (April 1 to March 30).</p>
 <p>CAMS runs each species discard according to the fishing year for that species. All trips within that time window receive a discard rate, amount, and variance estimation (or observation). Since yellowtail and windowpane have a subACL specific to the federal scallop fishery, with a different regulatory application, scallop trips within the groundfish time window receive rates and stratification based on the <strong>scallop fishing year</strong> in which they fall.</p>
-<p><code>CAMS_DISCARD_ALL_YEARS</code> is categorized by species and fishing year of that species. The stratification elements within the <code>STRATA_USED</code> and <code>STRATA_USED_DESC</code> columns normally will match the fishing year for that species. In the case of federal scallop trips, they do not.</p>
+<p><code>CAMS_DISCARD_ALL_YEARS</code> is categorized by species and fishing year of that species. The stratification elements (FY and FY_TYPE) within the <code>STRATA_USED</code> and <code>STRATA_USED_DESC</code> columns normally will match the fishing year for that species. In the case of yellowtail flounder and windowpane in federal scallop trips, the fishing year (FY) matches the groundfish fishing year.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/scallop_trips_ytf_example.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">Example of a diagnostic run of yellowtail flounder highlighting differences in FY_TYPE and STRATA_USED_DESC for scallop trip strata. Note that FY (Fishing Year) refers to the species evaluated (yellowtail)</figcaption><p></p>
+<p></p><figcaption class="figure-caption">Example of a diagnostic run of yellowtail flounder highlighting differences in <code>FY_TYPE</code> and <code>STRATA_USED_DESC</code> for scallop trip strata. Note that <code>FY</code> (Fishing Year) refers to the species evaluated (yellowtail). The <code>FY_TYPE</code> will always match that used in the stratification.</figcaption><p></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/scallop_trips_ytf_example_2.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Another example showing that the <code>FY</code> used in stratification may have multiple values in the case of scallops trips. The <code>FY</code> column is always set to the fishing year of the species evaluated, and can only have a single value. The <code>FY_TYPE</code> will always match that used in the stratification.</figcaption><p></p>
 </figure>
 </div>
 <p>Another detail to note is that there exist trips that fished with a scallop dredge that are not part of the federal scallop fishery. These trips occur in state waters, by federally permitted vessels, but lack a federal scallop permit. Yellowtail and windowpane from these trips are not evaluated as federal scallop trips and do not count toward scallop subACL estimation or monitoring.</p>
