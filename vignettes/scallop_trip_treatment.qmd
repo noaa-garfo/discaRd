@@ -18,7 +18,7 @@ CAMS runs each species discard according to the fishing year for that species. A
 
 ![Another example showing that the `FY` used in stratification may have multiple values in the case of scallops trips. The `FY` column is always set to the fishing year of the species evaluated, and can only have a single value. The `FY_TYPE` will always match that used in the stratification.](images/scallop_trips_ytf_example_2.PNG)
 
-Another detail to note is that there exist trips that fished with a scallop dredge that are not part of the federal scallop fishery. These trips occur in state waters, by federally permitted vessels, but lack a federal scallop permit. Yellowtail and windowpane from these trips are not evaluated as federal scallop trips and do not count toward scallop subACL estimation or monitoring.
+Another detail to note is that there exist trips that fished with a scallop dredge that are not part of the federal scallop fishery. These trips occur in state waters, by federally permitted vessels, but lack a federal scallop permit. Yellowtail and windowpane from these trips are not evaluated as federal scallop trips and do not count toward scallop subACL estimation or monitoring. These trips may be identified by filtering for scallop dredge trips (e.g. `NEGEAR` = 132) that do not have a `FY_TYPE` = APRIL.
 
 <!-- ### Example of discard diagnostic for yellowtail -->
 
