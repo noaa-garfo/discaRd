@@ -7,7 +7,7 @@
 #' @param save_dir Directory to save (and load saved) results
 #' @param run_parallel option to run species discard calculations in parallel
 #'
-# #' @param FY_TYPE Type of fishing year. This detemrines the time element for the trips used in discard estimation. Herring, Groundifsh, and scallop trips for groundfish are separate functions,
+# #' @param FY_TYPE Type of fishing year. This determines the time element for the trips used in discard estimation. Herring, Groundfish, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @export
 #'
@@ -33,13 +33,13 @@ discard_generic <- function(con = con_maps
 
 	FY_TYPE = species$RUN_ID[1]
 
+	if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
+		FY_TYPE = 'CALENDAR'
+	}
+
 	dr = get_date_range(FY, FY_TYPE)
 	end_date = dr[2]
 	start_date = dr[1]
-
-	if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
-		FY_TYPE = 'CALENDAR'
-		}
 
 	# Stratification variables
 
