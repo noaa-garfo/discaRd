@@ -531,6 +531,7 @@ discard_herring <- function(con
 
 			joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
+			dplyr::mutate(HERR_TARG = as.charachater(HERR_TARG)) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
 			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'HERR_TARG')) %>%
 			mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate (target,gear, HMA)
