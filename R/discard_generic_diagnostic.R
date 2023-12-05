@@ -138,11 +138,15 @@ discard_generic_diagnostic <- function(con = con_maps
 	# }
 
 
-	FY_TYPE = species$RUN_ID[1]
+  FY_TYPE = species$RUN_ID[1]
 
-	dr = get_date_range(FY, FY_TYPE)
-	end_date = dr[2]
-	start_date = dr[1]
+  if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
+    FY_TYPE = 'CALENDAR'
+  }
+
+  dr = get_date_range(FY, FY_TYPE)
+  end_date = dr[2]
+  start_date = dr[1]
 
 	# Stratification variables
 
