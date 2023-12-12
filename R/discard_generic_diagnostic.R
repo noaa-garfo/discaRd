@@ -138,15 +138,21 @@ discard_generic_diagnostic <- function(con = con_maps
 	# }
 
 
-	FY_TYPE = species$RUN_ID[1]
+  FY_TYPE = species$RUN_ID[1]
 
-	dr = get_date_range(FY, FY_TYPE)
-	end_date = dr[2]
-	start_date = dr[1]
+  if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
+    FY_TYPE = 'CALENDAR'
+  }
+
+  dr = get_date_range(FY, FY_TYPE)
+  end_date = dr[2]
+  start_date = dr[1]
 
 	# Stratification variables
 
-	stratvars = c('SPECIES_STOCK'
+	stratvars = c('FY'
+	              ,'FY_TYPE'
+	              ,'SPECIES_STOCK'
 								,'CAMS_GEAR_GROUP'
 								, 'MESH_CAT'
 								, 'TRIPCATEGORY'
@@ -244,6 +250,8 @@ discard_generic_diagnostic <- function(con = con_maps
 		ddat_focal <- all_dat %>%
 			filter(DATE_TRIP >= start_date & DATE_TRIP < end_date) %>% ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -270,6 +278,8 @@ discard_generic_diagnostic <- function(con = con_maps
 		ddat_prev <- all_dat %>%
 			filter(DATE_TRIP >= start_date_prev & DATE_TRIP < end_date_prev) %>% ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -469,7 +479,9 @@ discard_generic_diagnostic <- function(con = con_maps
 
 		# Second Pass: Stock, Gear, and Mesh only ----
 
-		stratvars_assumed = c("SPECIES_STOCK"
+		stratvars_assumed = c("FY"
+		                      ,"FY_TYPE"
+		                      ,"SPECIES_STOCK"
 													, "CAMS_GEAR_GROUP"
 													, "MESH_CAT")
 
@@ -597,22 +609,29 @@ discard_generic_diagnostic <- function(con = con_maps
 		ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
 		ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
-		mnk = run_discard( bdat = bdat_2yrs
-											 , ddat_focal = ddat_cy_2yr
-											 , c_o_tab = ddat_2yr
-											 , species_itis = species_itis
-											 , stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+		gear_only = run_discard( bdat = bdat_2yrs
+		                         , ddat_focal = ddat_cy_2yr
+		                         , c_o_tab = ddat_2yr
+		                         , species_itis = species_itis
+		                         , stratvars = stratvars[1:4]  #"FY","FY_TYPE", "SPECIES_STOCK", "CAMS_GEAR_GROUP"
 		)
 
-		SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)
+		# broad rate table ----
 
-		CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA)
+		FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
 
-		BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
+		SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+		  gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
 
-		CV_b <- round(mnk$allest$C$RE_rse, 2)
+		CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+		  gsub("^([^_]+)_", "", .)%>%
+		  gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
 
-		BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+		BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
+
+		CV_b <- round(gear_only$allest$C$RE_rse, 2)
+
+		BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
 
 		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 		BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
@@ -634,7 +653,7 @@ discard_generic_diagnostic <- function(con = con_maps
 		joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
+		  left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
 			mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -703,7 +722,9 @@ discard_generic_diagnostic <- function(con = con_maps
 
 		# Make note of the stratification variables used according to discard source ----
 
-		stratvars_gear = c("SPECIES_STOCK"
+		stratvars_gear = c("FY"
+		                   , "FY_TYPE"
+		                   , "SPECIES_STOCK"
 											 , "CAMS_GEAR_GROUP")
 
 		strata_f = paste(stratvars, collapse = ';')

@@ -40,7 +40,7 @@ jtable = jtable %>%
 tab1 = jtable %>%
   filter(!is.na(LINK1) & LINK3_OBS == 0 & DISCARD_SOURCE == 'I')
 
-tab1_camsid = unique(tab1$CAMSID)
+tab1_cams_subtrip = unique(tab1$CAMS_SUBTRIP)
 
 tab1 = tab1 %>%
   mutate(DISCARD_SOURCE = case_when(  n_obs_trips_f >= 5 ~ 'I'
@@ -61,7 +61,7 @@ tab1 = tab1 %>%
   )
 
 tab2 = jtable %>%
-  filter(CAMSID %!in% tab1_camsid)
+  filter(CAMS_SUBTRIP %!in% tab1_cams_subtrip)
 
 tab2 = tab2 %>%
   bind_rows(., tab1)
@@ -96,7 +96,7 @@ if(GF == 0) {
   tab1 = jtable %>%
     filter(!is.na(LINK1) & LINK3_OBS == 0 & DISCARD_SOURCE == 'I')
 
-  tab1_camsid = unique(tab1$CAMSID)
+  tab1_cams_subtrip = unique(tab1$CAMS_SUBTRIP)
 
   tab1 = tab1 %>%
   mutate(DISCARD_SOURCE = case_when(  n_obs_trips_f >= 5 ~ 'I'
@@ -115,7 +115,7 @@ if(GF == 0) {
     )
 
   tab2 = jtable %>%
-    filter(CAMSID %!in% tab1_camsid)
+    filter(CAMS_SUBTRIP %!in% tab1_cams_subtrip)
 
   tab2 = tab2 %>%
     bind_rows(., tab1)
