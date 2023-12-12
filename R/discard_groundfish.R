@@ -38,7 +38,9 @@ discard_groundfish <- function(con
 
   # Stratification variables ----
 
-  stratvars = c( 'SPECIES_STOCK'
+  stratvars = c('FY'
+                , 'FY_TYPE'
+                , 'SPECIES_STOCK'
                  # , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
                  , 'CAMS_GEAR_GROUP'
                  , 'MESH_CAT'
@@ -164,6 +166,8 @@ discard_groundfish <- function(con
     ddat_focal <- gf_dat %>%
       dplyr::filter(GF_YEAR == FY) %>%   ## time element is here!!
       dplyr::filter(AREA %in% STOCK_AREAS$AREA) %>%
+      mutate(FY_TYPE = FY_TYPE
+             , FY = FY) %>%
       mutate(LIVE_POUNDS = SUBTRIP_KALL
              ,SEADAYS = 0
       ) %>%
@@ -192,6 +196,8 @@ discard_groundfish <- function(con
     ddat_prev <- gf_dat %>%
       dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
       dplyr::filter(AREA %in% STOCK_AREAS$AREA) %>%
+      mutate(FY_TYPE = FY_TYPE
+             , FY = FY) %>%
       mutate(LIVE_POUNDS = SUBTRIP_KALL
              ,SEADAYS = 0
       ) %>%
@@ -370,7 +376,9 @@ discard_groundfish <- function(con
     #
     # logr::log_print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
 
-    stratvars_assumed = c("SPECIES_STOCK"
+    stratvars_assumed = c("FY"
+                          ,"FY_TYPE"
+                          ,"SPECIES_STOCK"
                           , "CAMS_GEAR_GROUP"
                           # , "GEARCODE"
                           , "MESH_CAT"
@@ -471,14 +479,15 @@ discard_groundfish <- function(con
                                                           , ddat_focal_sp = ddat_focal_gf
                                                           , ddat_focal = ddat_focal
                                                           , species_itis = species_itis
-                                                          , stratvars = stratvars[1]
+                                                          , stratvars = stratvars[1:3]
                                                           # , aidx = 1
                                                           , stock = k
       )
       kk = kk + 1
     }
 
-    BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)
+    BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)%>%
+      mutate(FY = FY, FY_TYPE = FY_TYPE)
 
     rm(kk, k)
 
@@ -505,7 +514,7 @@ discard_groundfish <- function(con
       # dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
       dplyr::rename(STRATA_ASSUMED = STRATA) %>%
       left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-      left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = 'SPECIES_STOCK') %>%
+      left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK')) %>%
       mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
                                    , n_obs_trips_f < 5 &
                                      n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -591,7 +600,7 @@ discard_groundfish <- function(con
 
     strata_f = paste(stratvars, collapse = ';')
     strata_a = paste(stratvars_assumed, collapse = ';')
-    strata_b = stratvars[1]
+    strata_b = paste(stratvars[1:3], collapse = ';')
 
     joined_table = joined_table %>%
       mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
@@ -759,7 +768,9 @@ discard_groundfish <- function(con
     #'
     ## ----loop through the non sector trips for each stock ----
     # -------------------------------------------------------------------#
-    stratvars_nongf = c('SPECIES_STOCK'
+    stratvars_nongf = c('FY'
+                        , 'FY_TYPE'
+                        , 'SPECIES_STOCK'
                         ,'CAMS_GEAR_GROUP'
                         , 'MESH_CAT'
                         , 'TRIPCATEGORY'
@@ -849,6 +860,8 @@ discard_groundfish <- function(con
       ddat_focal <- non_gf_dat %>%
         dplyr::filter(GF_YEAR == FY) %>%   ## time element is here!!
         dplyr::filter(AREA %in% STOCK_AREAS$AREA) %>%
+        mutate(FY_TYPE = FY_TYPE
+               , FY = FY) %>%
         mutate(LIVE_POUNDS = SUBTRIP_KALL
                ,SEADAYS = 0
         ) %>%
@@ -865,6 +878,8 @@ discard_groundfish <- function(con
       ddat_prev <- non_gf_dat %>%
         dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
         dplyr::filter(AREA %in% STOCK_AREAS$AREA) %>%
+        mutate(FY_TYPE = FY_TYPE
+               , FY = FY) %>%
         mutate(LIVE_POUNDS = SUBTRIP_KALL
                ,SEADAYS = 0
         ) %>%
@@ -1027,7 +1042,9 @@ discard_groundfish <- function(con
 
       # logr::log_print(paste0("Getting rates across sectors for ", species_itis, " ", FY))
 
-      stratvars_assumed = c("SPECIES_STOCK"
+      stratvars_assumed = c("FY"
+                            , "FY_TYPE"
+                            , "SPECIES_STOCK"
                             , "CAMS_GEAR_GROUP"
                             , "MESH_CAT")
 
@@ -1111,32 +1128,43 @@ discard_groundfish <- function(con
       trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
 
-      # get a table of broad stock rates using discaRd functions. Previosuly we used sector rollupresults (ARATE in pass2)
+      # get a table of broad stock rates using discaRd functions. Previously we used sector rollup results (ARATE in pass2)
 
 
       bdat_2yrs = bind_rows(bdat_prev_non_gf, bdat_non_gf)
       ddat_non_gf_2yr = bind_rows(ddat_prev_non_gf, ddat_focal_non_gf)
-      ddat_2yr = bind_rows(ddat_prev, ddat_focal) # TODO: double check correct reuse of ddat_focal
+      ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
       mnk = run_discard( bdat = bdat_2yrs
                          , ddat_focal = ddat_non_gf_2yr
                          , c_o_tab = ddat_2yr
                          , species_itis = species_itis
-                         , stratvars = stratvars_nongf[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+                         , stratvars = stratvars_nongf[1:4]  # 'FY', 'FY_TYPE', "SPECIES_STOCK" ,  "CAMS_GEAR_GROUP"
       )
 
-      # rate table
-      mnk$allest$C
+      gear_only = run_discard( bdat = bdat_2yrs
+                               , ddat_focal = ddat_non_gf_2yr
+                               , c_o_tab = ddat_2yr
+                               , species_itis = species_itis
+                               , stratvars = stratvars_nongf[1:4]  #  FY, FY_TYPE, "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+      )
 
-      SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)
+      # broad rate table ----
 
-      CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA)
+      FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
 
-      BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
+      SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+        gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
 
-      CV_b <- round(mnk$allest$C$RE_rse, 2)
+      CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+        gsub("^([^_]+)_", "", .)%>%
+        gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
 
-      BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+      BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
+
+      CV_b <- round(gear_only$allest$C$RE_rse, 2)
+
+      BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
 
       BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
       BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
@@ -1157,7 +1185,7 @@ discard_groundfish <- function(con
         # dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
         dplyr::rename(STRATA_ASSUMED = STRATA) %>%
         left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-        left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
+        left_join(.,  y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK', 'CAMS_GEAR_GROUP')) %>%
         mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
                                      , n_obs_trips_f < 5 &
                                        n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -1233,7 +1261,9 @@ discard_groundfish <- function(con
 
       # Make note of the stratification variables used according to discard source
 
-      stratvars_gear = c("SPECIES_STOCK"
+      stratvars_gear = c("FY"
+                         ,"FY_TYPE"
+                         ,"SPECIES_STOCK"
                          , "CAMS_GEAR_GROUP")
 
       strata_f = paste(stratvars_nongf, collapse = ';')

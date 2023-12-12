@@ -28,10 +28,11 @@ discard_herring <- function(con
 
 	# Stratification variables ----
 
-	stratvars = c(
-		'HERR_TARG' # target vs non target herring
-		,'AREA_HERR' # herring management area
-		,'CAMS_GEAR_GROUP')# gear
+	stratvars = c('FY'
+	              , 'FY_TYPE'
+            		, 'HERR_TARG' # target vs non target herring
+            		,'AREA_HERR' # herring management area
+            		,'CAMS_GEAR_GROUP')# gear
 
 
 
@@ -100,6 +101,8 @@ discard_herring <- function(con
 		ddat_focal <- all_dat %>%
 			filter(YEAR == FY) %>%   ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -125,6 +128,8 @@ discard_herring <- function(con
 		ddat_prev <- all_dat %>%
 			filter(YEAR == FY-1) %>%   ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) %>%
+		  mutate(FY_TYPE = FY_TYPE
+		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
@@ -327,7 +332,9 @@ discard_herring <- function(con
 		#
 
 
-		stratvars_assumed = c("HERR_TARG"
+		stratvars_assumed = c("FY"
+		                      , "FY_TYPE"
+		                      , "HERR_TARG"
 													, "CAMS_GEAR_GROUP") #AWA
 		#, "MESH_CAT")
 
@@ -455,45 +462,55 @@ discard_herring <- function(con
 		ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 
 		# previous year plus current year broad stock rate
-		mnk_prev = run_discard(bdat = bdat_2yrs
+		gear_only_prev = run_discard(bdat = bdat_2yrs
 													 , ddat_focal = ddat_cy_2yr
 													 , c_o_tab = ddat_2yr
 													 , species_itis = species_itis
-													 , stratvars = stratvars[1]
+													 , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_HERR
 		)
 
 
 		# Run the discaRd functions on current year broad stock: third pass ----
 		if(nrow(bdat_cy) > 0) {
-		mnk_current = run_discard(bdat = bdat_cy
+		gear_only_current = run_discard(bdat = bdat_cy
 															, ddat = ddat_focal_cy
 															, c_o_tab = ddat_focal
 															, species_itis = species_itis
-															, stratvars = stratvars[1]
+															, stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_HERR
 		)
-		BROAD_STOCK_RATE_CUR <-  mnk_current$allest$C$RE_mean
-		CV_b_cur <- round(mnk_current$allest$C$RE_rse, 2)
+		BROAD_STOCK_RATE_CUR <-  gear_only_current$allest$C$RE_mean
+		CV_b_cur <- round(gear_only_current$allest$C$RE_rse, 2)
 		} else {
 		  BROAD_STOCK_RATE_CUR <-  NA_real_
 		  CV_b_cur <- NA_real_
 		}
 
-		#SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)
-		HERR_TARG <- mnk_prev$allest$C$STRATA
+		#SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
+		HERR_TARG <- gear_only_prev$allest$C$STRATA
 
-		#CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA)
+		#CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
 
-		BROAD_STOCK_RATE <-  mnk_prev$allest$C$RE_mean
+		# make broad stock rate table ----
+		FY_BST = as.numeric(sub("_.*", "", gear_only_prev$allest$C$STRATA))
+
+		### this table appears to not be used for anything.... ----
+		FY_BST_CUR = as.numeric(sub("_.*", "", gear_only_current$allest$C$STRATA))
+
+		BROAD_STOCK_RATE <-  gear_only_prev$allest$C$RE_mean
 
 
-		CV_b <- round(mnk_prev$allest$C$RE_rse, 2)
+		CV_b <- round(gear_only_prev$allest$C$RE_rse, 2)
 
-		BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
-		BROAD_STOCK_RATE_TABLE_CUR <- as.data.frame(cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
+		BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
+
+		### this table appears to not be used for anything.... ----
+		BROAD_STOCK_RATE_TABLE_CUR <- data.frame(FY = FY_BST_CUR, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
 
 
 		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 		BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+
+		### this table appears to not be used for anything.... ----
 		BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR)
 		BROAD_STOCK_RATE_TABLE_CUR$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$CV_b)
 
@@ -514,8 +531,9 @@ discard_herring <- function(con
 
 			joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
+			dplyr::mutate(HERR_TARG = as.character(HERR_TARG)) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('HERR_TARG')) %>%
+			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'HERR_TARG')) %>%
 			mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate (target,gear, HMA)
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
@@ -606,7 +624,7 @@ discard_herring <- function(con
 		# Make note of the stratification variables used according to discard source ----
 
 		stratvars_gear = c(#"SPECIES_STOCK", #AWA
-			"HERR_TARG")
+			"FY", "FY_TYPE", "HERR_TARG")
 
 		strata_f = paste(stratvars, collapse = ';')
 		strata_a = paste(stratvars_assumed, collapse = ';')
