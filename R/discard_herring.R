@@ -486,7 +486,11 @@ discard_herring <- function(con
 		}
 
 		#SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
-		HERR_TARG <- gear_only_prev$allest$C$STRATA
+		# HERR_TARG <- gear_only_prev$allest$C$STRATA
+
+		HERR_TARG = stringr::str_split(gear_only_prev$allest$C$STRATA, pattern = '_') %>%
+		  lapply(., function(x) x[3]) %>%
+		  unlist()
 
 		#CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
 
