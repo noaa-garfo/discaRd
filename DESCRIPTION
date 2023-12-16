@@ -1,7 +1,7 @@
 Package: discaRd
 Type: Package
 Title: Cochran bycatch estimation
-Version: 2.1.0
+Version: 2.1.1
 Date: 2023-12-12
 Author: Benjamin Galuardi, Daniel Linden, Brant McAfee, Daniel J. Hocking, Kristopher Winiarski
 Maintainer: Benjamin Galuardi <benjamin.galuardi@noaa.gov>
