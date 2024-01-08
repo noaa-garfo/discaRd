@@ -466,24 +466,25 @@ discard_herring <- function(con
 													 , ddat_focal = ddat_cy_2yr
 													 , c_o_tab = ddat_2yr
 													 , species_itis = species_itis
-													 , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_HERR
+													 , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_TARG
 		)
 
 
+		# THIS SECTION IS REDUNDANT AS THE PREVIOUS SECTION ALREADY USES A 2 YEAR TIME WINDOW FOR BROAD STOCK
 		# Run the discaRd functions on current year broad stock: third pass ----
-		if(nrow(bdat_cy) > 0) {
-		gear_only_current = run_discard(bdat = bdat_cy
-															, ddat = ddat_focal_cy
-															, c_o_tab = ddat_focal
-															, species_itis = species_itis
-															, stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_HERR
-		)
-		BROAD_STOCK_RATE_CUR <-  gear_only_current$allest$C$RE_mean
-		CV_b_cur <- round(gear_only_current$allest$C$RE_rse, 2)
-		} else {
-		  BROAD_STOCK_RATE_CUR <-  NA_real_
-		  CV_b_cur <- NA_real_
-		}
+		# if(nrow(bdat_cy) > 0) {
+		# gear_only_current = run_discard(bdat = bdat_cy
+		#													, ddat = ddat_focal_cy
+		#													, c_o_tab = ddat_focal
+		#													, species_itis = species_itis
+		#													, stratvars = stratvars[1:3]  # FY, FY_TYPE, HERR_TARG
+		#)
+		#BROAD_STOCK_RATE_CUR <-  gear_only_current$allest$C$RE_mean
+		#CV_b_cur <- round(gear_only_current$allest$C$RE_rse, 2)
+		#} else {
+		#  BROAD_STOCK_RATE_CUR <-  NA_real_
+		#  CV_b_cur <- NA_real_
+		#}
 
 		#SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
 		# HERR_TARG <- gear_only_prev$allest$C$STRATA
@@ -498,7 +499,7 @@ discard_herring <- function(con
 		FY_BST = as.numeric(sub("_.*", "", gear_only_prev$allest$C$STRATA))
 
 		### this table appears to not be used for anything.... ----
-		FY_BST_CUR = as.numeric(sub("_.*", "", gear_only_current$allest$C$STRATA))
+		# FY_BST_CUR = as.numeric(sub("_.*", "", gear_only_current$allest$C$STRATA))
 
 		BROAD_STOCK_RATE <-  gear_only_prev$allest$C$RE_mean
 
@@ -508,15 +509,15 @@ discard_herring <- function(con
 		BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
 
 		### this table appears to not be used for anything.... ----
-		BROAD_STOCK_RATE_TABLE_CUR <- data.frame(FY = FY_BST_CUR, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
+		# BROAD_STOCK_RATE_TABLE_CUR <- data.frame(FY = FY_BST_CUR, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
 
 
 		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 		BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
 
 		### this table appears to not be used for anything.... ----
-		BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR)
-		BROAD_STOCK_RATE_TABLE_CUR$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$CV_b)
+		# BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR)
+		# BROAD_STOCK_RATE_TABLE_CUR$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$CV_b)
 
 
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
