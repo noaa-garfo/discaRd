@@ -113,6 +113,7 @@ get.cochran.ss.by.strat <- function(bydat
 
 
 
+
   if(nrow(bydat)>0){
     # C = ddply(bydat, "STRATA", function(x) cochran_calc_ss(x, x$N[1], targCV))
 
