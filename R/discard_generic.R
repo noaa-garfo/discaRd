@@ -13,6 +13,7 @@
 #'
 #' @examples
 #'
+#'
 discard_generic <- function(con = con_maps
 														 , species = species
 														 , FY = fy
