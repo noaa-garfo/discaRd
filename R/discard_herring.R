@@ -489,36 +489,45 @@ discard_herring <- function(con
 		#SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
 		# HERR_TARG <- gear_only_prev$allest$C$STRATA
 
-		HERR_TARG = stringr::str_split(gear_only_prev$allest$C$STRATA, pattern = '_') %>%
-		  lapply(., function(x) x[3]) %>%
-		  unlist()
-
-		#CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
-
-		# make broad stock rate table ----
-		FY_BST = as.numeric(sub("_.*", "", gear_only_prev$allest$C$STRATA))
-
-		### this table appears to not be used for anything.... ----
-		# FY_BST_CUR = as.numeric(sub("_.*", "", gear_only_current$allest$C$STRATA))
-
-		BROAD_STOCK_RATE <-  gear_only_prev$allest$C$RE_mean
-
-
-		CV_b <- round(gear_only_prev$allest$C$RE_rse, 2)
-
-		BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
-
-		### this table appears to not be used for anything.... ----
-		# BROAD_STOCK_RATE_TABLE_CUR <- data.frame(FY = FY_BST_CUR, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE_CUR, CV_b))
+		BROAD_STOCK_RATE_TABLE = stock_only$allest$C |>
+		  dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
+		  mutate(FY = as.numeric(sub("_.*", "", STRATA))
+		         , FY_TYPE = FY_TYPE) |>
+		  mutate(HERR_TARG = stringr::str_split(string = STRATA, pattern = '_') |>
+		             lapply(., function(x) x[3]) |>
+		             unlist()
+		         , CV_b = round(RE_rse, 2)
+		  ) |>
+		  dplyr::rename(BROAD_STOCK_RATE = RE_mean
+		                , n_B = n
+		                , N_B = N) |>
+		  dplyr::select(FY
+		                , FY_TYPE
+		                , HERR_TARG
+		                , BROAD_STOCK_RATE
+		                , CV_b
+		                , n_B
+		                , N_B)
 
 
-		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-		BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+		#
+		# HERR_TARG = stringr::str_split(gear_only_prev$allest$C$STRATA, pattern = '_') %>%
+		#   lapply(., function(x) x[3]) %>%
+		#   unlist()
+		#
+		# #CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
+		#
+		# # make broad stock rate table ----
+		# FY_BST = as.numeric(sub("_.*", "", gear_only_prev$allest$C$STRATA))
+		#
+		# BROAD_STOCK_RATE <-  gear_only_prev$allest$C$RE_mean
+		#
+		# CV_b <- round(gear_only_prev$allest$C$RE_rse, 2)
+		#
+		# BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
 
-		### this table appears to not be used for anything.... ----
-		# BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$BROAD_STOCK_RATE_CUR)
-		# BROAD_STOCK_RATE_TABLE_CUR$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE_CUR$CV_b)
-
+		# BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
+		# BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
 
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
@@ -690,7 +699,11 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
 
 
 # add N, n, and covariance ----
-		joined_table = get_covrow(joined_table)
+		# now these steps are separate functions
+		joined_table <- joined_table |>
+		  add_nobs() |>
+		  make_strata_desc() |>
+		  get_covrow()
 
 # output an fst file -----
 
