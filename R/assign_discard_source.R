@@ -85,12 +85,13 @@ if(GF == 0) {
                                       , is.na(LINK1) &
                                         n_obs_trips_f < 5 &
                                         n_obs_trips_p < 5 &
-                                        n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+                                        n_obs_trips_f_a < 5 &
+                                        n_obs_trips_p_a >= 5 ~ 'GM' # Gear and Mesh transition
                                       , is.na(LINK1) &
                                         n_obs_trips_f < 5 &
                                         n_obs_trips_p < 5 &
                                         n_obs_trips_f_a < 5 &
-                                        n_obs_trips_p_a < 5 ~ 'G')
+                                        n_obs_trips_p_a < 5 ~ 'G') # Gear only replaces broad stock for non-GF
            ) # Gear only, replaces broad stock for non-GF
 
   tab1 = jtable %>%
@@ -107,11 +108,12 @@ if(GF == 0) {
                                        n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
                                      , n_obs_trips_f < 5 &
                                        n_obs_trips_p < 5 &
-                                       n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+                                       n_obs_trips_f_a < 5 &
+                                       n_obs_trips_p_a >= 5 ~ 'GM' # Gear and Mesh transition
                                      , n_obs_trips_f < 5 &
                                        n_obs_trips_p < 5 &
                                        n_obs_trips_f_a < 5 &
-                                       n_obs_trips_p_a < 5 ~ 'G')
+                                       n_obs_trips_p_a < 5 ~ 'G')  # Gear only replaces broad stock for non-GF
     )
 
   tab2 = jtable %>%
