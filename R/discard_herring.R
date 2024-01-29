@@ -489,12 +489,12 @@ discard_herring <- function(con
 		#SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
 		# HERR_TARG <- gear_only_prev$allest$C$STRATA
 
-		BROAD_STOCK_RATE_TABLE = stock_only$allest$C |>
+		BROAD_STOCK_RATE_TABLE = gear_only_prev$allest$C |>
 		  dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
 		  mutate(FY = as.numeric(sub("_.*", "", STRATA))
 		         , FY_TYPE = FY_TYPE) |>
 		  mutate(HERR_TARG = stringr::str_split(string = STRATA, pattern = '_') |>
-		             lapply(., function(x) x[3]) |>
+		             lapply(function(x) x[3]) |>
 		             unlist()
 		         , CV_b = round(RE_rse, 2)
 		  ) |>
