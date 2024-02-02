@@ -17,6 +17,7 @@
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -417,28 +418,58 @@ discard_groundfish_diagnostic <- function(con = con_maps
    # Previously we used sector rollup results (ARATE in pass2)
 
 
-  BROAD_STOCK_RATE_TABLE = list()
+   stock_only = run_discard( bdat = bdat_gf
+                            , ddat_focal = ddat_focal_gf
+                            , c_o_tab = ddat_focal
+                            , species_itis = species_itis
+                            , stratvars = stratvars[1:3]  #  FY, FY_TYPE, "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+   )
 
-  kk = 1
+   # broad rate table ----
 
-  ustocks = bdat_gf$SPECIES_STOCK %>% unique()
+   BROAD_STOCK_RATE_TABLE = stock_only$allest$C |>
+     dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
+     mutate(FY = as.numeric(sub("_.*", "", STRATA))
+            , FY_TYPE = FY_TYPE) |>
+     mutate(SPECIES_STOCK = gsub("^([^_]+)_", "", STRATA)  |>
+              gsub(pattern = "^([^_]+)_", replacement = "")  |>
+              sub(pattern ="_.*", replacement ="")
+            # , CAMS_GEAR_GROUP = gsub("^([^_]+)_", "", STRATA)  %>%
+            #   gsub(pattern = "^([^_]+)_", replacement = "")  %>%
+            #   gsub(pattern = "^([^_]+)_", replacement = "")
+            , CV_b = round(RE_rse, 2)
+     ) |>
+     dplyr::rename(BROAD_STOCK_RATE = RE_mean
+                   , n_B = n
+                   , N_B = N) |>
+     dplyr::select(FY, FY_TYPE, SPECIES_STOCK
+                   # , CAMS_GEAR_GROUP
+                   , BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
-  for(k in ustocks){
-  	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_gf
-  											 , ddat_focal_sp = ddat_focal_gf
-  											 , ddat_focal = ddat_focal
-  											 , species_itis = species_itis
-  											 , stratvars = stratvars[1:3]
-  											 # , aidx = 1
-  											 , stock = k
-  											 )
-  	kk = kk + 1
-  }
 
-  BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE) %>%
-    mutate(FY = FY, FY_TYPE = FY_TYPE)
 
-  rm(kk, k)
+  # BROAD_STOCK_RATE_TABLE = list()
+  #
+  # kk = 1
+  #
+  # ustocks = bdat_gf$SPECIES_STOCK %>% unique()
+  #
+  # for(k in ustocks){
+  # 	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_gf
+  # 											 , ddat_focal_sp = ddat_focal_gf
+  # 											 , ddat_focal = ddat_focal
+  # 											 , species_itis = species_itis
+  # 											 , stratvars = stratvars[1:3]
+  # 											 # , aidx = 1
+  # 											 , stock = k
+  # 											 )
+  # 	kk = kk + 1
+  # }
+  #
+  # BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE) %>%
+  #   mutate(FY = FY, FY_TYPE = FY_TYPE)
+  #
+  # rm(kk, k)
 
   #
   # BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>%
@@ -576,7 +607,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
   	)
 
   # add variance and strata_desc for groundfish trips ----
-  joined_table = get_covrow(joined_table)
+  joined_table <- joined_table |>
+    add_nobs() |>
+    make_strata_desc() |>
+    get_covrow()
+  # joined_table = get_covrow(joined_table)
 
   # if(FALSE) { # run this if looking manually
   # joined_table %>%
@@ -1028,23 +1063,41 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   # broad rate table ----
 
-  FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
+  BROAD_STOCK_RATE_TABLE = gear_only$allest$C |>
+    dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
+    mutate(FY = as.numeric(sub("_.*", "", STRATA))
+           , FY_TYPE = FY_TYPE) |>
+    mutate(SPECIES_STOCK = gsub("^([^_]+)_", "", STRATA)  |>
+             gsub(pattern = "^([^_]+)_", replacement = "")  |>
+             sub(pattern ="_.*", replacement ="")
+           , CAMS_GEAR_GROUP = gsub("^([^_]+)_", "", STRATA) |>
+             gsub(pattern = "^([^_]+)_", replacement = "")  |>
+             gsub(pattern = "^([^_]+)_", replacement = "")
+           , CV_b = round(RE_rse, 2)
+    ) |>
+    dplyr::rename(BROAD_STOCK_RATE = RE_mean
+                  , n_B = n
+                  , N_B = N) |>
+    dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
-  SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-    gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
 
-  CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-    gsub("^([^_]+)_", "", .)%>%
-    gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
-
-  BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
-
-  CV_b <- round(gear_only$allest$C$RE_rse, 2)
-
-  BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
-
-  BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-  BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+  # FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
+  #
+  # SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+  #   gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
+  #
+  # CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+  #   gsub("^([^_]+)_", "", .)%>%
+  #   gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
+  #
+  # BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
+  #
+  # CV_b <- round(gear_only$allest$C$RE_rse, 2)
+  #
+  # BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+  #
+  # BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
+  # BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
 
 
   names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
@@ -1175,7 +1228,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 
   # add N, n, and covariance ----
-  joined_table = get_covrow(joined_table)
+  joined_table <- joined_table |>
+    add_nobs() |>
+    make_strata_desc() |>
+    get_covrow()
+  # joined_table = get_covrow(joined_table)
 
   # force remove duplicates
   joined_table <- joined_table |>
@@ -1333,7 +1390,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		group_by(FISHING_YEAR, GF_YEAR, SCAL_YEAR, GF, STRATA_USED, STRATA_USED_DESC, DISCARD_SOURCE, SPECIES_STOCK, CAMS_GEAR_GROUP, MESH_CAT, TRIPCATEGORY, ACCESSAREA, FED_OR_STATE) %>%
   		dplyr::summarise(rate = max(COAL_RATE, na.rm = T)
   										 , n_obs = max(n_USED)
-  										 , n_unobs = max(N_USED-n_USED)
+  										 , n_unobs = max(N_USED) # max(N_USED-n_USED)
   										 , n_total = n_distinct(CAMS_SUBTRIP)
   										 # , rate_min = min(COAL_RATE, na.rm = T)
   										 , KALL = round(sum(LIVE_POUNDS, na.rm = T))
