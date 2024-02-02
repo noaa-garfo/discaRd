@@ -12,6 +12,7 @@ require(tidyr)
 #' @param stratvars variables in `dat` to coalesce
 #'
 #' @return a data frame (dat) with a `STRATA` column
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -42,6 +43,7 @@ assign_strata <- function(dat, stratvars){
 #' @param species_itis species of interest using SPECIES_ITIS code
 #' @return a tibble with: YEAR, VTRSERNO, GEARTYPE, MESHGROUP,KALL, DISCARD, dk
 #' The stratification variables don't matter so much as the assignment of discard is done using VTR Serial Number.
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -80,6 +82,7 @@ get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 #' This table is used in `discaRd`
 #'
 #' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it's available..)
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -135,6 +138,7 @@ make_bdat_focal <- function(bdat
 #'
 #'
 #' @return a tibbleS with STRATA, KALL (Kept All), BYCATCH (discard of species), dk (discard rate)
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -180,6 +184,7 @@ make_assumed_rate <- function(bdat
 #' 1) Species,
 #' 2) discaRd results (summary table, CV, etc),
 #' 3)Complete table of commercial trips and discard amounts
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -314,6 +319,7 @@ run_discard <- function(bdat
 #' 1) Species stock
 #' 2) discaRd rate
 #' 3) CV
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
@@ -365,6 +371,8 @@ get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, s
 
   data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
              , CV_b = d_broad_stock$allest$CVTOT
+             , n_B = d_broad_stock$allest$tout$n
+             , N_B = d_broad_stock$allest$tout$N
   )
 
 }
@@ -381,6 +389,7 @@ get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, s
 #' @param stock
 #'
 #' @return
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
