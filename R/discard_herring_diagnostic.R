@@ -97,7 +97,7 @@ discard_herring_diagnostic <- function(con
     #   dplyr::select(-ITIS_TSN)
     #
     # Observer codes to be removed
-    OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
+    OBS_REMOVE = tbl(con, sql("select * from CAMS_GARFO.CFG_OBSERVER_CODES"))  %>%
       collect() %>%
       filter(ITIS_TSN == species_itis) %>%
       distinct(OBS_CODES)
