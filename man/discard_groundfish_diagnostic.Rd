@@ -53,3 +53,6 @@ see vignette
 
 
 }
+\author{
+Benjamin Galuardi
+}
