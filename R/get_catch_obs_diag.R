@@ -336,7 +336,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
-	from CAMS_OBS_CATCH
+	from CAMS_GARFO.CAMS_OBS_CATCH
 
   WHERE YEAR >= ", start_year, "
   and YEAR <= ", end_year, "
@@ -389,8 +389,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
         , subtrip
         , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
-        from
-        cams_land
+        from cams_garfo.cams_land
   )
 
  -- , cams_herr as(
@@ -411,7 +410,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   --left join cams_herr ch
   --on (ch.cams_subtrip = cos.cams_subtrip)
 
-  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b
+  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_garfo.cams_fishery_group c ) b
   on (cos.cams_subtrip = b.cams_subtrip)
 
 
