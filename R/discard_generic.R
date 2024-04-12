@@ -9,9 +9,11 @@
 #'
 # #' @param FY_TYPE Type of fishing year. This determines the time element for the trips used in discard estimation. Herring, Groundfish, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
+#' @author Benjamin Galuardi
 #' @export
 #'
 #' @examples
+#'
 #'
 discard_generic <- function(con = con_maps
 														 , species = species
@@ -508,24 +510,42 @@ discard_generic <- function(con = con_maps
 
 		# broad rate table ----
 
-		FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
+		BROAD_STOCK_RATE_TABLE = gear_only$allest$C |>
+		  dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
+		  mutate(FY = as.numeric(sub("_.*", "", STRATA))
+		         , FY_TYPE = FY_TYPE) |>
+		  mutate(SPECIES_STOCK = gsub("^([^_]+)_", "", STRATA)  |>
+		           gsub(pattern = "^([^_]+)_", replacement = "")  |>
+		           sub(pattern ="_.*", replacement ="")
+		         , CAMS_GEAR_GROUP = gsub("^([^_]+)_", "", STRATA)  |>
+		           gsub(pattern = "^([^_]+)_", replacement = "")  |>
+		           gsub(pattern = "^([^_]+)_", replacement = "")
+		         , CV_b = round(RE_rse, 2)
+		         ) |>
+		  dplyr::rename(BROAD_STOCK_RATE = RE_mean
+		                , n_B = n
+		                , N_B = N) |>
+		  dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
-		SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-		  gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
+		#
+		# FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
+		#
+		# SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+		#   gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
+		#
+		# CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
+		#   gsub("^([^_]+)_", "", .)%>%
+		#   gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
+		#
+		# BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
+		#
+		# CV_b <- round(gear_only$allest$C$RE_rse, 2)
 
-		CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-		  gsub("^([^_]+)_", "", .)%>%
-		  gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
-
-		BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
-
-		CV_b <- round(gear_only$allest$C$RE_rse, 2)
-
-		BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
-
-		BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-		BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
-
+		# BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+		#
+		# BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
+		# BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+		#
 
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
@@ -662,7 +682,14 @@ discard_generic <- function(con = con_maps
 		  dplyr::distinct()
 
 		# add N, n, and covariance ----
-		joined_table = get_covrow(joined_table)
+
+		# add N, n, and covariance ----
+		joined_table <- joined_table |>
+		  add_nobs() |>
+		  make_strata_desc() |>
+		  get_covrow()
+
+		# joined_table = get_covrow(joined_table)
 
 		outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 

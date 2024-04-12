@@ -4,14 +4,14 @@
 \alias{cochran.calc.ss}
 \title{Estimates Cochran discard rate and required sample sizes}
 \usage{
-cochran.calc.ss(l_df, l_N, l_CVtarg = NA)
+cochran.calc.ss(df, n_trips, n_obs, CV_targ = NA)
 }
 \arguments{
-\item{l_df}{dataframe where each row is a trip. Requires LINK1, BYCATCH, KALL naming convention}
+\item{df}{dataframe where each row is a trip. Requires LINK1, BYCATCH, KALL naming convention}
 
-\item{l_N}{Number of total trips}
+\item{n_trips}{Number of total trips}
 
-\item{l_CVtarg}{target CV}
+\item{CV_targ}{target CV}
 }
 \value{
 observed sample size needed for target CV
@@ -21,6 +21,7 @@ This function estimates the discard rate using the Cochran ratio estimator and r
 }
 \examples{
 cochran.calc.ss
+
 }
 \references{
 Wiley: Sampling Techniques, 3rd Edition - William G. Cochran. (n.d.). Available from http://www.wiley.com/WileyCDA/WileyTitle/productCd-047116240X.html [accessed 1 August 2016].

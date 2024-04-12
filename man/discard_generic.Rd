@@ -32,3 +32,6 @@ nothing currently, writes out to fst files (add oracle?)
 \description{
 discard_generic: Calculate discards for January fishing year species
 }
+\author{
+Benjamin Galuardi
+}
