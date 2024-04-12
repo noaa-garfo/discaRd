@@ -120,7 +120,7 @@ get.cochran.ss.by.strat <- function(bydat
     C = bydat %>%
       dplyr::group_by(STRATA) %>%
       mutate(n_obs = n_distinct(CAMS_SUBTRIP)) %>%
-      group_modify(~ cochran.calc.ss(df = .x, n_trips = .$N[1], n_obs = .$n_obs[1], CV_targ = targCV) , .keep = T) %>%
+      group_modify(~ cochran.calc.ss(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) %>%
       ungroup()
     # dplyr::group_modify(.f = cochran.calc.ss(., l_N = .$N[1], l_CVtarg = targCV))
     # dplyr::summarise(cochran.calc.ss(., .$N[1], targCV))
