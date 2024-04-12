@@ -125,7 +125,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 
   # Observer codes to be removed
-  OBS_REMOVE = ROracle::dbGetQuery(con, "select * from CFG_OBSERVER_CODES")  %>%
+  OBS_REMOVE = ROracle::dbGetQuery(con, "select * from CAMS_GARFO.CFG_OBSERVER_CODES")  %>%
   	dplyr::filter(ITIS_TSN == species_itis) %>%
   	distinct(OBS_CODES)
 
