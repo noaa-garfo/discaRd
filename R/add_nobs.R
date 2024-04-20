@@ -23,31 +23,28 @@ sidx = joined_table %>%
 # addone = function(x,y){x+y}
 
 joined_table =  joined_table |>
-    # assign_discard_source(GF = 0) |>
   mutate(n_obs_trips_p  = as.integer(n_obs_trips_p )
          , n_obs_trips_p_a  = as.integer(n_obs_trips_p_a)
-         # , n_B = as.numeric(n_B)
-         # , N_B = as.numeric(N_B)
-         ) |>
+  ) |>
 
-  mutate(n_A2 = n_obs_trips_f_a+n_obs_trips_p_a
-         , n_T = n_obs_trips_f + n_obs_trips_p
-         , n_GM2 = n_obs_trips_f_a + n_obs_trips_p_a) |>
+  mutate(n_A2 = as.integer(n_obs_trips_f_a+n_obs_trips_p_a)
+         , n_T = as.integer(n_obs_trips_f + n_obs_trips_p)
+         , n_GM2 = as.integer(n_obs_trips_f_a + n_obs_trips_p_a)) |>
 
-  mutate(n_USED = case_when(DISCARD_SOURCE == 'I' ~ n_obs_trips_f
+  mutate(n_USED = case_when(DISCARD_SOURCE == 'I' ~ as.integer(n_obs_trips_f)
                             , DISCARD_SOURCE == 'T' ~ n_T
-                           , DISCARD_SOURCE == 'A'  ~ n_obs_trips_f_a # assumed (groundfish, second pass) &  n_obs_trips_f_a >= 5
-                           , DISCARD_SOURCE == 'A' & n_obs_trips_f_a < 5  ~ n_A2 # assumed with transition (groundfish, second pass)  & n_obs_trips_p_a >= 5
-                            , DISCARD_SOURCE == 'GM' & n_obs_trips_f_a >= 5 ~ n_obs_trips_f_a # Gear Mesh (non-groundfish, second pass)
+                            , DISCARD_SOURCE == 'A'  ~ as.integer(n_obs_trips_f_a) # assumed (groundfish, second pass) &  n_obs_trips_f_a >= 5
+                            , DISCARD_SOURCE == 'A' & n_obs_trips_f_a < 5  ~ n_A2 # assumed with transition (groundfish, second pass)  & n_obs_trips_p_a >= 5
+                            , DISCARD_SOURCE == 'GM' & n_obs_trips_f_a >= 5 ~ as.integer(n_obs_trips_f_a) # Gear Mesh (non-groundfish, second pass)
                             , DISCARD_SOURCE == 'GM' & n_obs_trips_f_a < 5  ~ n_GM2 # Gear Mesh with transition (non-groundfish, second pass) &  n_obs_trips_p_a >= 5
-                            , DISCARD_SOURCE == 'B' ~ n_B
-                            , DISCARD_SOURCE == 'G' ~ n_B
+                            , DISCARD_SOURCE == 'B' ~ as.integer(n_B)
+                            , DISCARD_SOURCE == 'G' ~ as.integer(n_B)
                             , DISCARD_SOURCE == 'DELTA' ~ NA_integer_ # n_DELTA
                             , DISCARD_SOURCE == 'EM' ~ NA_integer_
                             , TRUE ~ NA_integer_
 
-    ), .after = FULL_STRATA
-)
+  ), .after = FULL_STRATA
+  )
 
 
     # joined_table |>
