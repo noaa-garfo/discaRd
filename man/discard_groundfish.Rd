@@ -38,3 +38,6 @@ nothing currently, writes out to fst files (add oracle?)
 \description{
 discard_groundfish: Calculate groundfish discards
 }
+\author{
+Benjamin Galuardi
+}
