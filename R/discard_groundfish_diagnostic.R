@@ -643,7 +643,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   			 , VTRSERNO
   			 from
   			 -- CAMS_GF_EM_DELTA_VTR_DISCARD_20_22
-  			 CAMS_GF_EM_DELTA_VTR_DISCARD
+  			 CAMS_GARFO.CAMS_GF_EM_DELTA_VTR_DISCARD
   			 ") %>%
   	      as_tibble()
 
@@ -1269,7 +1269,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   save_dir = getwd()
 
-    scallop_subroutine(FY = FY
+    scallop_subroutine_diag(FY = FY
     									 , con = con
                        , scal_gf_species = scal_gf_species[i, ]
                        , non_gf_dat = non_gf_dat
