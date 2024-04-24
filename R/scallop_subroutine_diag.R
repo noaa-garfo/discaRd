@@ -13,7 +13,7 @@
 #' @export
 #'
 #' @examples
-scallop_subroutine <- function(FY = 2019
+scallop_subroutine_diag <- function(FY = 2019
                                , con = con_maps
                                , scal_gf_species
                                , non_gf_dat = non_gf_dat
@@ -105,7 +105,7 @@ scallop_subroutine <- function(FY = 2019
     # Support table import by species ----
 
     # GEAR TABLE
-    CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+    CAMS_GEAR_STRATA = tbl(con, sql('  select * from cams_garfo.CFG_GEARCODE_STRATA')) %>%
       collect() %>%
       dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
       filter(ITIS_TSN == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
@@ -113,7 +113,7 @@ scallop_subroutine <- function(FY = 2019
 
     # Stat areas table
     # unique stat areas for stock ID if needed
-    STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+    STOCK_AREAS = tbl(con, sql('select * from cams_garfo.CFG_STATAREA_STOCK')) %>%
       filter(ITIS_TSN == species_itis) %>%
       collect() %>%
       group_by(AREA_NAME, ITIS_TSN) %>%
@@ -123,7 +123,7 @@ scallop_subroutine <- function(FY = 2019
       ungroup()
 
     # Mortality table
-    CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
+    CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from cams_garfo.CFG_DISCARD_MORTALITY_STOCK"))  %>%
       collect() %>%
       mutate(SPECIES_STOCK = AREA_NAME
              , GEARCODE = CAMS_GEAR_GROUP
@@ -133,7 +133,7 @@ scallop_subroutine <- function(FY = 2019
       dplyr::select(-ITIS_TSN)
 
     # Observer codes to be removed
-    OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
+    OBS_REMOVE = tbl(con, sql("select * from cams_garfo.CFG_OBSERVER_CODES"))  %>%
       collect() %>%
       filter(ITIS_TSN == species_itis) %>%
       distinct(OBS_CODES)
@@ -588,7 +588,10 @@ scallop_subroutine <- function(FY = 2019
 
     # add covrow ----
 
-    joined_table = get_covrow(joined_table)
+    joined_table = joined_table |>
+      add_nobs() |>
+      make_strata_desc() |>
+      get_covrow()
 
 
     # make sure the fishing year file contains ONLY trips in that scallop fishing year ----
