@@ -588,7 +588,12 @@ scallop_subroutine <- function(FY = 2019
 
     # add covrow ----
 
-    joined_table = get_covrow(joined_table)
+    # joined_table = get_covrow(joined_table)
+
+    joined_table = joined_table |>
+      add_nobs() |>
+      make_strata_desc() |>
+      get_covrow()
 
 
     # make sure the fishing year file contains ONLY trips in that scallop fishing year ----
