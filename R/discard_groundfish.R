@@ -1390,6 +1390,8 @@ discard_groundfish <- function(con
 
     # for(species_itis %in% c('172909', '172746')){
 
+    con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+
     for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
       scallop_subroutine(FY = FY
