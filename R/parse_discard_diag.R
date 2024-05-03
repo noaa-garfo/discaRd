@@ -44,8 +44,8 @@ parse_discard_diag <- function(joined_table
 
     # # setDTthreads(threads = 5)
     # options(keyring_file_lock_timeout = 100000)
-    # keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
-    # con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+    # keyring::keyring_unlock(keyring = 'apsd', password = pw)
+    # con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
     #
 
 
