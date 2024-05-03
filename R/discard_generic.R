@@ -84,8 +84,8 @@ discard_generic <- function(con = con_maps
 		  pw <- con_run$pw
 		}
 
-		keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
-		con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+		keyring::keyring_unlock(keyring = 'apsd', password = pw)
+		con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
 		# species_nespp3 = species$NESPP3[i]
 		#species_itis = species$ITIS_TSN[i]
