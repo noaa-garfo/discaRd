@@ -610,7 +610,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
   joined_table <- joined_table |>
     add_nobs() |>
     make_strata_desc() |>
-    get_covrow()
+    get_covrow() |>
+    mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
+                                              , NA ~ covrow))
   # joined_table = get_covrow(joined_table)
 
   # if(FALSE) { # run this if looking manually
@@ -1231,7 +1233,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
   joined_table <- joined_table |>
     add_nobs() |>
     make_strata_desc() |>
-    get_covrow()
+    get_covrow() |>
+    mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
+                              , NA ~ covrow))
   # joined_table = get_covrow(joined_table)
 
   # force remove duplicates

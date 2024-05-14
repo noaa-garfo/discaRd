@@ -709,7 +709,9 @@ discard_herring_diagnostic <- function(con
     joined_table <- joined_table |>
       add_nobs() |>
       make_strata_desc() |>
-      get_covrow()
+      get_covrow() |>
+      mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
+                                , NA ~ covrow))
 
 # output objects ----
     dest_obj = joined_table %>%
