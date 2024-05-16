@@ -58,7 +58,7 @@ discard_groundfish <- function(con
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
   ncores <- dplyr::case_when(
-    config_run$load$run_type == "preprod" ~ min(length(unique(species$ITIS_TSN)), 5, parallel::detectCores() -1),
+    config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 5, parallel::detectCores() -1),
     TRUE ~ min(length(unique(species$ITIS_TSN)), 13, parallel::detectCores() -1)
   )
 
@@ -815,7 +815,7 @@ discard_groundfish <- function(con
                         , 'ACCESSAREA')
 
       ncores <- dplyr::case_when(
-        config_run$load$run_type == "preprod" ~ min(length(unique(species$ITIS_TSN)), 3, parallel::detectCores() -1),
+        config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 3, parallel::detectCores() -1),
         TRUE ~ min(length(unique(species$ITIS_TSN)), 13, parallel::detectCores() -1)
       )
 
