@@ -57,7 +57,11 @@ discard_groundfish <- function(con
 
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-  ncores <- min(length(unique(species$ITIS_TSN)), 13)
+  ncores <- dplyr::case_when(
+    config_run$load$run_type == "preprod" ~ min(length(unique(species$ITIS_TSN)), 5, parallel::detectCores() -1),
+    TRUE ~ min(length(unique(species$ITIS_TSN)), 13, parallel::detectCores() -1)
+  )
+
   cl <- makeCluster(ncores)
   registerDoParallel(cl, cores = ncores)
 
@@ -810,8 +814,11 @@ discard_groundfish <- function(con
                         , 'TRIPCATEGORY'
                         , 'ACCESSAREA')
 
+      ncores <- dplyr::case_when(
+        config_run$load$run_type == "preprod" ~ min(length(unique(species$ITIS_TSN)), 3, parallel::detectCores() -1),
+        TRUE ~ min(length(unique(species$ITIS_TSN)), 13, parallel::detectCores() -1)
+      )
 
-      ncores <- length(unique(species$ITIS_TSN))
       cl2 <- makeCluster(ncores)
       registerDoParallel(cl2, cores = ncores)
 
