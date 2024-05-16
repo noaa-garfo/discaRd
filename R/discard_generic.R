@@ -66,7 +66,7 @@ discard_generic <- function(con = con_maps
 
 	  foreach(
 	    i = 1:length(species$ITIS_TSN),
-	    .export = c("pw"),
+	    .export = c("pw", "database"),
 	    .noexport = "con",
 	    .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
 	  ) %op% {

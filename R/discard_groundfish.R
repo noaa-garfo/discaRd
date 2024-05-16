@@ -63,7 +63,7 @@ discard_groundfish <- function(con
 
   foreach(
     i = 1:length(species$ITIS_TSN),
-    .export = c("pw"),
+    .export = c("pw", "database"),
     .noexport = "con",
     .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
@@ -78,7 +78,8 @@ discard_groundfish <- function(con
     }
 
     keyring::keyring_unlock(keyring = 'apsd', password = pw)
-    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'cams_garfo')
+
+    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
     t1 = Sys.time()
 
@@ -818,7 +819,7 @@ discard_groundfish <- function(con
 
       foreach(
         i = 1:length(species$ITIS_TSN),
-        .export = c("pw"),
+        .export = c("pw", "database"),
         .noexport = "con",
         .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
       ) %op% {
@@ -832,7 +833,7 @@ discard_groundfish <- function(con
 
         options(keyring_file_lock_timeout = 100000)
         keyring::keyring_unlock(keyring = 'apsd', password = pw)
-        con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'cams_garfo')
+        con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
       t1 = Sys.time()
 
@@ -1390,7 +1391,7 @@ discard_groundfish <- function(con
 
     # for(species_itis %in% c('172909', '172746')){
 
-    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'cams_garfo')
+    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
     for(i in 1:length(scal_gf_species$ITIS_TSN)){
 
