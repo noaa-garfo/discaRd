@@ -35,7 +35,7 @@ discard_generic <- function(con = con_maps
 
 	FY_TYPE = species$RUN_ID[1]
 
-	if(FY >= 2022 & FY_TYPE == 'NOVEMEBER'){
+	if(FY >= 2022 & FY_TYPE == 'NOVEMBER'){
 		FY_TYPE = 'CALENDAR'
 	}
 
