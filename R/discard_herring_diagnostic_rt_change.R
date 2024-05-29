@@ -11,7 +11,7 @@
 #'
 #' @examples
 #'
-discard_herring_diagnostic <- function(con
+discard_herring_diagnostic_rt_change <- function(con
                                        , species = species
                                        , FY = fy
                                        , herr_dat = herr_dat
