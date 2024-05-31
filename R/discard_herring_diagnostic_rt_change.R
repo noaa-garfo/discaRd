@@ -459,46 +459,47 @@ discard_herring_diagnostic_rt_change <- function(con
   # herring uses this as target vs non target level rate
   # do not calculate target vs non target here
 
-  # if(nrow(bdat_cy) > 0) {
-  #   bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
-  # } else {
-  #   bdat_2yrs = bdat_prev_cy
-  # }
-  #
-  # ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
-  # ddat_2yr = bind_rows(ddat_prev, ddat_focal)
-  #
-  # # previous year plus current year broad stock rate
-  # gear_only_prev = run_discard(bdat = bdat_2yrs
-  #                              , ddat_focal = ddat_cy_2yr
-  #                              , c_o_tab = ddat_2yr
-  #                              , species_itis = species_itis
-  #                              , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_TARG
-  # )
+  if(nrow(bdat_cy) > 0) {
+    bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
+  } else {
+    bdat_2yrs = bdat_prev_cy
+  }
+
+  ddat_cy_2yr = bind_rows(ddat_prev_cy, ddat_focal_cy)
+  ddat_2yr = bind_rows(ddat_prev, ddat_focal)
+
+  # previous year plus current year broad stock rate
+  gear_only_prev = run_discard(bdat = bdat_2yrs
+                               , ddat_focal = ddat_cy_2yr
+                               , c_o_tab = ddat_2yr
+                               , species_itis = species_itis
+                               , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_TARG
+  )
 
 
 
-  # BROAD_STOCK_RATE_TABLE = gear_only_prev$allest$C |>
-  #   dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
-  #   mutate(FY = as.numeric(sub("_.*", "", STRATA))
-  #          , FY_TYPE = FY_TYPE) |>
-  #   mutate(HERR_TARG = stringr::str_split(string = STRATA, pattern = '_') |>
-  #            lapply(function(x) x[3]) |>
-  #            unlist()
-  #          , CV_b = round(RE_rse, 2)
-  #   ) |>
-  #   dplyr::rename(BROAD_STOCK_RATE = RE_mean
-  #                 , n_B = n
-  #                 , N_B = N) |>
-  #   dplyr::select(FY
-  #                 , FY_TYPE
-  #                 , HERR_TARG
-  #                 , BROAD_STOCK_RATE
-  #                 , CV_b
-  #                 , n_B
-  #                 , N_B)
+  BROAD_STOCK_RATE_TABLE = gear_only_prev$allest$C |>
+    dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
+    mutate(FY = as.numeric(sub("_.*", "", STRATA))
+           , FY_TYPE = FY_TYPE) |>
+    mutate(HERR_TARG = stringr::str_split(string = STRATA, pattern = '_') |>
+             lapply(function(x) x[3]) |>
+             unlist()
+           , CV_b = round(RE_rse, 2)
+    ) |>
+    dplyr::rename(BROAD_STOCK_RATE = RE_mean
+                  , n_B = n
+                  , N_B = N) |>
+    dplyr::select(FY
+                  , FY_TYPE
+                  , HERR_TARG
+                  , BROAD_STOCK_RATE
+                  , CV_b
+                  , n_B
+                  , N_B)
 
-
+  ## cancel out broadstock rate
+  BROAD_STOCK_RATE_TABLE <- BROAD_STOCK_RATE_TABLE %>% mutate(BROAD_STOCK_RATE = NA_real_, CV_b = NA_real_)
 
    names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
@@ -578,15 +579,15 @@ discard_herring_diagnostic_rt_change <- function(con
                                         n_obs_trips_f < 5 &
                                         n_obs_trips_p < 5 &
                                         n_obs_trips_f_a >= 5 ~ 'A' # assumed rate for Herring: CAMS_GEAR_GROUP and HERR_TARG
-                                      # , is.na(LINK1) &
-                                      #   n_obs_trips_f < 5 &
-                                      #   n_obs_trips_p < 5 &
-                                      #   n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-                                      # , is.na(LINK1) &
-                                      #   n_obs_trips_f < 5 &
-                                      #   n_obs_trips_p < 5 &
-                                      #   n_obs_trips_f_a < 5 &
-                                      #   n_obs_trips_p_a < 5 ~ 'G'
+                                      , is.na(LINK1) &
+                                        n_obs_trips_f < 5 &
+                                        n_obs_trips_p < 5 &
+                                        n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+                                      , is.na(LINK1) &
+                                        n_obs_trips_f < 5 &
+                                        n_obs_trips_p < 5 &
+                                        n_obs_trips_f_a < 5 &
+                                        n_obs_trips_p_a < 5 ~ 'G'
                                       )) # Gear only, replaces broad stock for non-GF
 
   #
@@ -602,7 +603,7 @@ discard_herring_diagnostic_rt_change <- function(con
                           , DISCARD_SOURCE == 'I' ~ CV_f
                           , DISCARD_SOURCE == 'T' ~ CV_f
                           , DISCARD_SOURCE == 'A' ~ CV_f_a
-                          #, DISCARD_SOURCE == 'G' ~ CV_b
+                          , DISCARD_SOURCE == 'G' ~ CV_b
                           #	, DISCARD_SOURCE == 'NA' ~ 'NA'
     )  # , DISCARD_SOURCE == 'B' ~ NA
     )
@@ -614,7 +615,7 @@ discard_herring_diagnostic_rt_change <- function(con
 
   strata_f = paste(stratvars, collapse = ';')
   strata_a = paste(stratvars_assumed, collapse = ';')
-  # strata_b = paste(stratvars_gear, collapse = ';')
+   strata_b = paste(stratvars_gear, collapse = ';')
 
   joined_table = joined_table %>%
     mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
@@ -622,7 +623,7 @@ discard_herring_diagnostic_rt_change <- function(con
                                    , DISCARD_SOURCE == 'I' ~ strata_f
                                    , DISCARD_SOURCE == 'T' ~ strata_f
                                    , DISCARD_SOURCE == 'A' ~ strata_a
-                                   # , DISCARD_SOURCE == 'G' ~ strata_b
+                                    , DISCARD_SOURCE == 'G' ~ strata_b
                                    , TRUE ~ NA_character_
                                    #	, DISCARD_SOURCE == 'NA' ~ 'NA'
     )
@@ -669,7 +670,6 @@ discard_herring_diagnostic_rt_change <- function(con
 
   # add N, n, and covariance ----
   # now these steps are separate functions
-   n_B <- 0
   joined_table <- joined_table |>
     add_nobs() |>
     make_strata_desc() |>
