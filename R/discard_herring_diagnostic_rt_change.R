@@ -11,7 +11,7 @@
 #'
 #' @examples
 #'
-discard_herring_diagnostic_rt_change <- function(con
+discard_herring_diagnostic <- function(con
                                        , species = species
                                        , FY = fy
                                        , herr_dat = herr_dat
@@ -457,7 +457,6 @@ discard_herring_diagnostic_rt_change <- function(con
 
   # get a table of broad stock rates using discaRd functions. Previously we used sector rollupresults (ARATE in pass2)
   # herring uses this as target vs non target level rate
-  # do not calculate target vs non target here
 
   if(nrow(bdat_cy) > 0) {
     bdat_2yrs = bind_rows(bdat_prev_cy, bdat_cy)
@@ -477,6 +476,24 @@ discard_herring_diagnostic_rt_change <- function(con
   )
 
 
+  # THIS SECTION IS REDUNDANT AS THE PREVIOUS SECTION ALREADY USES A 2 YEAR TIME WINDOW FOR BROAD STOCK
+  # Run the discaRd functions on current year broad stock: third pass ----
+  # if(nrow(bdat_cy) > 0) {
+  # gear_only_current = run_discard(bdat = bdat_cy
+  #													, ddat = ddat_focal_cy
+  #													, c_o_tab = ddat_focal
+  #													, species_itis = species_itis
+  #													, stratvars = stratvars[1:3]  # FY, FY_TYPE, HERR_TARG
+  #)
+  #BROAD_STOCK_RATE_CUR <-  gear_only_current$allest$C$RE_mean
+  #CV_b_cur <- round(gear_only_current$allest$C$RE_rse, 2)
+  #} else {
+  #  BROAD_STOCK_RATE_CUR <-  NA_real_
+  #  CV_b_cur <- NA_real_
+  #}
+
+  #SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
+  # HERR_TARG <- gear_only_prev$allest$C$STRATA
 
   BROAD_STOCK_RATE_TABLE = gear_only_prev$allest$C |>
     dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
@@ -497,11 +514,29 @@ discard_herring_diagnostic_rt_change <- function(con
                   , CV_b
                   , n_B
                   , N_B)
-
-  ## cancel out broadstock rate
   BROAD_STOCK_RATE_TABLE <- BROAD_STOCK_RATE_TABLE %>% mutate(BROAD_STOCK_RATE = NA_real_, CV_b = NA_real_)
 
-   names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
+
+  #
+  # HERR_TARG = stringr::str_split(gear_only_prev$allest$C$STRATA, pattern = '_') %>%
+  #   lapply(., function(x) x[3]) %>%
+  #   unlist()
+  #
+  # #CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
+  #
+  # # make broad stock rate table ----
+  # FY_BST = as.numeric(sub("_.*", "", gear_only_prev$allest$C$STRATA))
+  #
+  # BROAD_STOCK_RATE <-  gear_only_prev$allest$C$RE_mean
+  #
+  # CV_b <- round(gear_only_prev$allest$C$RE_rse, 2)
+  #
+  # BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
+
+  # BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
+  # BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
+
+  names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
   #
   # join full and assumed strata tables ----
@@ -519,7 +554,7 @@ discard_herring_diagnostic_rt_change <- function(con
     dplyr::rename(STRATA_ASSUMED = STRATA) %>%
     dplyr::mutate(HERR_TARG = as.character(HERR_TARG)) %>%
     left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-    #left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'HERR_TARG')) %>%
+    left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'HERR_TARG')) %>%
     mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate (target,gear, HMA)
                                  , n_obs_trips_f < 5 &
                                    n_obs_trips_p >=5 ~ final_rate  # in season transition (target, gear, HMA)
@@ -528,7 +563,7 @@ discard_herring_diagnostic_rt_change <- function(con
                                    n_obs_trips_p_a > 5 ~ trans_rate_a  #in season gear, HMA transition
     )
     ) %>%
-    #mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
+    mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
     mutate(SPECIES_ITIS_EVAL = species_itis
            , COMNAME_EVAL = species$ITIS_NAME[i]
            , FISHING_YEAR = FY
@@ -587,8 +622,7 @@ discard_herring_diagnostic_rt_change <- function(con
                                         n_obs_trips_f < 5 &
                                         n_obs_trips_p < 5 &
                                         n_obs_trips_f_a < 5 &
-                                        n_obs_trips_p_a < 5 ~ 'G'
-                                      )) # Gear only, replaces broad stock for non-GF
+                                        n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
   #
   # make sure CV type matches DISCARD SOURCE ----
@@ -610,12 +644,12 @@ discard_herring_diagnostic_rt_change <- function(con
 
   # Make note of the stratification variables used according to discard source ----
 
-  # stratvars_gear = c(#"SPECIES_STOCK", #AWA
-  #   "FY", "FY_TYPE", "HERR_TARG")
+  stratvars_gear = c(#"SPECIES_STOCK", #AWA
+    "FY", "FY_TYPE", "HERR_TARG")
 
   strata_f = paste(stratvars, collapse = ';')
   strata_a = paste(stratvars_assumed, collapse = ';')
-   strata_b = paste(stratvars_gear, collapse = ';')
+  strata_b = paste(stratvars_gear, collapse = ';')
 
   joined_table = joined_table %>%
     mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
@@ -623,7 +657,7 @@ discard_herring_diagnostic_rt_change <- function(con
                                    , DISCARD_SOURCE == 'I' ~ strata_f
                                    , DISCARD_SOURCE == 'T' ~ strata_f
                                    , DISCARD_SOURCE == 'A' ~ strata_a
-                                    , DISCARD_SOURCE == 'G' ~ strata_b
+                                   , DISCARD_SOURCE == 'G' ~ strata_b
                                    , TRUE ~ NA_character_
                                    #	, DISCARD_SOURCE == 'NA' ~ 'NA'
     )
@@ -654,7 +688,10 @@ discard_herring_diagnostic_rt_change <- function(con
 
     )
 
-
+  ## AWA modify non-target purse seine so we are not estimating discards in HMA 2(set to zero), menhaden fishery estimates not supported
+  joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISCARDS, FULL_STRATA == '0_2_120',0)) %>%
+    mutate(COAL_RATE = replace(COAL_RATE, FULL_STRATA == '0_2_120',0)) %>%
+    mutate(DISCARD = replace(DISCARD, FULL_STRATA == '0_2_120',0))
 
   # force remove duplicates
   # add element for non-estimated discard gears
