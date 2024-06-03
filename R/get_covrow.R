@@ -147,7 +147,7 @@ get_covrow <- function(joined_table){
 
   joined_table <- joined_table %>%
     left_join(., mysdsum, by = 'STRATA_USED_DESC') %>%
-    mutate(covrow = sqrt(var) * sdsum)
+    mutate(covrow = sqrt(var) * sdsum.y)
 
   joined_table
 
