@@ -712,7 +712,7 @@ discard_herring_diagnostic_rt_change <- function(con
     make_strata_desc() |>
     get_covrow() |>
     mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
-                              , NA ~ covrow))
+                              , TRUE ~ covrow))
 
   # output objects ----
   dest_obj = joined_table %>%
