@@ -595,7 +595,7 @@ scallop_subroutine <- function(FY = 2019
       make_strata_desc() |>
       get_covrow() |>
       mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
-                                , NA ~ covrow))
+                                , TRUE ~ covrow))
 
 
     # make sure the fishing year file contains ONLY trips in that scallop fishing year ----
