@@ -705,7 +705,7 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
 		  make_strata_desc() |>
 		  get_covrow() |>
 		  mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
-		                            , NA ~ covrow))
+		                            , TRUE ~ covrow))
 
 # output an fst file -----
 
