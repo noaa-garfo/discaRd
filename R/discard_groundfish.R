@@ -672,7 +672,7 @@ discard_groundfish <- function(con
       make_strata_desc() |>
       get_covrow() |>
       mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
-                                , NA ~ covrow))
+                                , TRUE ~ covrow))
 
     # joined_table <- get_covrow(joined_table = joined_table)
 
@@ -1360,7 +1360,7 @@ discard_groundfish <- function(con
         make_strata_desc() |>
         get_covrow() |>
         mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
-                                  , NA ~ covrow))
+                                  , TRUE ~ covrow))
       # joined_table = get_covrow(joined_table)
 
       # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
