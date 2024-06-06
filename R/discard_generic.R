@@ -60,13 +60,17 @@ discard_generic <- function(con = con_maps
 
 	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-	  ncores <- min(length(unique(species$ITIS_TSN)), 8)
+	  ncores <- dplyr::case_when(
+	    config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 3, parallel::detectCores() -1),
+	    TRUE ~ min(length(unique(species$ITIS_TSN)), 8, parallel::detectCores() -1)
+	  )
+
 	  cl3 <- makeCluster(ncores, outfile = "")
 	  registerDoParallel(cl3, cores = ncores)
 
 	  foreach(
 	    i = 1:length(species$ITIS_TSN),
-	    .export = c("pw"),
+	    .export = c("pw", "database"),
 	    .noexport = "con",
 	    .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
 	  ) %op% {
@@ -84,8 +88,8 @@ discard_generic <- function(con = con_maps
 		  pw <- con_run$pw
 		}
 
-		keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
-		con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+		keyring::keyring_unlock(keyring = 'apsd', password = pw)
+		con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
 		# species_nespp3 = species$NESPP3[i]
 		#species_itis = species$ITIS_TSN[i]
