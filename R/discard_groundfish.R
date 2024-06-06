@@ -57,13 +57,17 @@ discard_groundfish <- function(con
 
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-  ncores <- min(length(unique(species$ITIS_TSN)), 13)
+  ncores <- dplyr::case_when(
+    config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 5, parallel::detectCores() -1),
+    TRUE ~ min(length(unique(species$ITIS_TSN)), 13, parallel::detectCores() -1)
+  )
+
   cl <- makeCluster(ncores)
   registerDoParallel(cl, cores = ncores)
 
   foreach(
     i = 1:length(species$ITIS_TSN),
-    .export = c("pw"),
+    .export = c("pw", "database"),
     .noexport = "con",
     .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
@@ -77,8 +81,9 @@ discard_groundfish <- function(con
       pw <- con_run$pw
     }
 
-    keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
-    con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+    keyring::keyring_unlock(keyring = 'apsd', password = pw)
+
+    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
     t1 = Sys.time()
 
@@ -811,8 +816,11 @@ discard_groundfish <- function(con
                         , 'TRIPCATEGORY'
                         , 'ACCESSAREA')
 
+      ncores <- dplyr::case_when(
+        config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 3, parallel::detectCores() -1),
+        TRUE ~ min(length(unique(species$ITIS_TSN)), 13, parallel::detectCores() -1)
+      )
 
-      ncores <- length(unique(species$ITIS_TSN))
       cl2 <- makeCluster(ncores)
       registerDoParallel(cl2, cores = ncores)
 
@@ -820,7 +828,7 @@ discard_groundfish <- function(con
 
       foreach(
         i = 1:length(species$ITIS_TSN),
-        .export = c("pw"),
+        .export = c("pw", "database"),
         .noexport = "con",
         .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
       ) %op% {
@@ -833,8 +841,8 @@ discard_groundfish <- function(con
         }
 
         options(keyring_file_lock_timeout = 100000)
-        keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
-        con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+        keyring::keyring_unlock(keyring = 'apsd', password = pw)
+        con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
       t1 = Sys.time()
 
@@ -1394,7 +1402,7 @@ discard_groundfish <- function(con
 
     # for(species_itis %in% c('172909', '172746')){
 
-    con <- apsdFuns::roracle_login("apsd_ma", key_service = "maps")
+    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
     for(i in 1:length(scal_gf_species$ITIS_TSN)){
 

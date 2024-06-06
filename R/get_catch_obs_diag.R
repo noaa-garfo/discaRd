@@ -287,7 +287,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 }
 
 
-get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 2022){
+get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_year = 2022){
 
   t1 = Sys.time()
 

@@ -21,10 +21,10 @@ options(scipen = 999)
 # unlock keyring
 config_run <- readRDS(here::here("configRun.Rds"))
 pw <- config_run$pw
-keyring::keyring_unlock(keyring = 'apsd_ma', password = pw)
+keyring::keyring_unlock(keyring = 'apsd', password = pw)
 
 # connect to MAPS
-con_maps = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'maps')
+con_maps = apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
@@ -344,7 +344,7 @@ MAPS::indexAllTables(con_maps, tables = "CAMS_DISCARD_ALL_YEARS")
 
 # devtools::load_all('~/PROJECTS/MAPS/')
 
-con_cams = apsdFuns::roracle_login(key_name = 'apsd_ma', key_service = 'cams_garfo')
+con_cams = apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'cams_garfo')
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
