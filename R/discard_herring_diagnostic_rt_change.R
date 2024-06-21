@@ -573,56 +573,56 @@ discard_herring_diagnostic_rt_change <- function(con
   # add discard source ----
   #
 
-  # joined_table = joined_table %>%
-  # 		mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-  # 																			, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-  # 																			, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f >= 5 ~ 'I'
-  # 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f < 5 &
-  # 																			n_obs_trips_p >=5 ~ 'T'
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f < 5 &
-  # 																			n_obs_trips_p < 5 &
-  # 																			n_obs_trips_f_a >= 5 ~ 'A'
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f < 5 &
-  # 																			n_obs_trips_p < 5 &
-  # 																			n_obs_trips_f_a <= 5 &
-  # 																			n_obs_trips_p_a >= 5 ~ 'G'
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f < 5 &
-  # 																			n_obs_trips_p < 5 &
-  # 																			n_obs_trips_f_a < 5 &
-  # 																			n_obs_trips_p_a < 5 ~ 'B'))
+  joined_table = joined_table %>%
+  		mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+  																			, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+  																			, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+  																		, is.na(LINK1) &
+  																			n_obs_trips_f >= 5 ~ 'I'
+  																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+  																		, is.na(LINK1) &
+  																			n_obs_trips_f < 5 &
+  																			n_obs_trips_p >=5 ~ 'T'
+  																		, is.na(LINK1) &
+  																			n_obs_trips_f < 5 &
+  																			n_obs_trips_p < 5 &
+  																			n_obs_trips_f_a >= 5 ~ 'A'
+  																		, is.na(LINK1) &
+  																			n_obs_trips_f < 5 &
+  																			n_obs_trips_p < 5 &
+  																			n_obs_trips_f_a <= 5 &
+  																			n_obs_trips_p_a >= 5 ~ 'G'
+  																		, is.na(LINK1) &
+  																			n_obs_trips_f < 5 &
+  																			n_obs_trips_p < 5 &
+  																			n_obs_trips_f_a < 5 &
+  																			n_obs_trips_p_a < 5 ~ 'B'))
 
   # should likely replace the above with this to match other modules
 
-  joined_table = joined_table %>%
-    mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0  ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-                                      , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-                                      , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-                                      , is.na(LINK1) &
-                                        n_obs_trips_f >= 5 ~ 'I'
-                                      # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-                                      , is.na(LINK1) &
-                                        n_obs_trips_f < 5 &
-                                        n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-                                      , is.na(LINK1) &
-                                        n_obs_trips_f < 5 &
-                                        n_obs_trips_p < 5 &
-                                        n_obs_trips_f_a >= 5 ~ 'A' # assumed rate for Herring: CAMS_GEAR_GROUP and HERR_TARG
-                                      , is.na(LINK1) &
-                                        n_obs_trips_f < 5 &
-                                        n_obs_trips_p < 5 &
-                                        n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-                                      , is.na(LINK1) &
-                                        n_obs_trips_f < 5 &
-                                        n_obs_trips_p < 5 &
-                                        n_obs_trips_f_a < 5 &
-                                        n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
+  # joined_table = joined_table %>%
+  #   mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0  ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
+  #                                     , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
+  #                                     , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
+  #                                     , is.na(LINK1) &
+  #                                       n_obs_trips_f >= 5 ~ 'I'
+  #                                     # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
+  #                                     , is.na(LINK1) &
+  #                                       n_obs_trips_f < 5 &
+  #                                       n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
+  #                                     , is.na(LINK1) &
+  #                                       n_obs_trips_f < 5 &
+  #                                       n_obs_trips_p < 5 &
+  #                                       n_obs_trips_f_a >= 5 ~ 'A' # assumed rate for Herring: CAMS_GEAR_GROUP and HERR_TARG
+  #                                     , is.na(LINK1) &
+  #                                       n_obs_trips_f < 5 &
+  #                                       n_obs_trips_p < 5 &
+  #                                       n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
+  #                                     , is.na(LINK1) &
+  #                                       n_obs_trips_f < 5 &
+  #                                       n_obs_trips_p < 5 &
+  #                                       n_obs_trips_f_a < 5 &
+  #                                       n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
   #
   # make sure CV type matches DISCARD SOURCE ----
@@ -649,7 +649,7 @@ discard_herring_diagnostic_rt_change <- function(con
 
   strata_f = paste(stratvars, collapse = ';')
   strata_a = paste(stratvars_assumed, collapse = ';')
-  strata_b = paste(stratvars_gear, collapse = ';')
+  # strata_b = paste(stratvars_gear, collapse = ';')
 
   joined_table = joined_table %>%
     mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
@@ -657,7 +657,7 @@ discard_herring_diagnostic_rt_change <- function(con
                                    , DISCARD_SOURCE == 'I' ~ strata_f
                                    , DISCARD_SOURCE == 'T' ~ strata_f
                                    , DISCARD_SOURCE == 'A' ~ strata_a
-                                   , DISCARD_SOURCE == 'G' ~ strata_b
+                                   , DISCARD_SOURCE == 'G' ~ strata_a
                                    , TRUE ~ NA_character_
                                    #	, DISCARD_SOURCE == 'NA' ~ 'NA'
     )
