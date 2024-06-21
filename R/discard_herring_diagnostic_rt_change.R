@@ -637,7 +637,7 @@ discard_herring_diagnostic_rt_change <- function(con
                           , DISCARD_SOURCE == 'I' ~ CV_f
                           , DISCARD_SOURCE == 'T' ~ CV_f
                           , DISCARD_SOURCE == 'A' ~ CV_f_a
-                          , DISCARD_SOURCE == 'G' ~ CV_b
+                          , DISCARD_SOURCE == 'G' ~ CV_f_a
                           #	, DISCARD_SOURCE == 'NA' ~ 'NA'
     )  # , DISCARD_SOURCE == 'B' ~ NA
     )
