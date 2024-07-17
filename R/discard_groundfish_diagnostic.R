@@ -672,6 +672,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   	emjoin$COAL_RATE[mrem_idx] = 0
   	emjoin$DISCARD[mrem_idx] = 0
   	emjoin$CV[mrem_idx] = NA
+  	emjoin$covrow[mrem_idx] = NA
 
   }
 
@@ -1386,7 +1387,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
   															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
-  															 ,TRUE ~ CV))
+  															 ,TRUE ~ CV)) |>
+  	  mutate(covrow = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
+  	                            ,TRUE ~ covrow))
 
 
 
