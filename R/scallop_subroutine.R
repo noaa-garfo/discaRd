@@ -36,16 +36,6 @@ scallop_subroutine <- function(FY = 2019
   scal_trips = non_gf_dat %>%
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
-  # stratvars_scalgf = c("SCAL_YEAR"
-  #                      , 'SPECIES_STOCK'
-  #                      ,'CAMS_GEAR_GROUP'
-  #                      , 'MESH_CAT'
-  #                      , 'TRIPCATEGORY'
-  #                      , 'ACCESSAREA'
-  #                      , 'SCALLOP_AREA'
-  #                      )
-
-  # scal_gf_species = species[species$SPECIES_ITIS %in% c('172909', '172746'),]
 
   # NEED TO LOOP OVER TWO YEARS EACH TIME BEACUSE OF MISMATCH IN GROUNDFISH/SCALLOP YEAR.. E.G. GF YEAR 2018 NEEDS SCAL YEAR 2018 AND 2019..
   # THIS NEEDS TO BE DONE HERE BECAUSE THE TABLE SUBSTITUTION IS THE NEXT CHUNK...
@@ -131,6 +121,14 @@ scallop_subroutine <- function(FY = 2019
       select(-AREA_NAME) %>%
       filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
+
+    # swap underscores for hyphens where compound stocks exist ----
+    STOCK_AREAS  = STOCK_AREAS |>
+      mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
+      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+
+    CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
+      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
     # Observer codes to be removed
     OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
@@ -495,33 +493,7 @@ scallop_subroutine <- function(FY = 2019
     # < 5 and < 5 in season, but >= 5 sector rolled up rate (in season) gets get sector rolled up rate
     # <5, <5,  and <5 gets broad stock rate
 
-    # joined_table = joined_table %>%
-    # 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-    # 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-    # 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-    # 																		, is.na(LINK1) &
-    # 																			n_obs_trips_f >= 5 ~ 'I'
-    # 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-    # 																		, is.na(LINK1) &
-    # 																			n_obs_trips_f < 5 &
-    # 																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-    # 																		, is.na(LINK1) &
-    # 																			n_obs_trips_f < 5 &
-    # 																			n_obs_trips_p < 5 &
-    # 																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-    # 																		, is.na(LINK1) &
-    # 																			n_obs_trips_f < 5 &
-    # 																			n_obs_trips_p < 5 &
-    # 																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-    # 																		, is.na(LINK1) &
-    # 																			n_obs_trips_f < 5 &
-    # 																			n_obs_trips_p < 5 &
-    # 																			n_obs_trips_f_a < 5 &
-    # 																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
-    #
-
-
-    #
+     #
     # make sure CV type matches DISCARD SOURCE}
     #
 
@@ -570,10 +542,7 @@ scallop_subroutine <- function(FY = 2019
 
     joined_table = joined_table %>%
       mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) # %>%
-    # mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
-    # 												, DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
-    # )
-    # Sys.umask('775')
+
 
     joined_table <- joined_table |>
       dplyr::distinct()%>%
@@ -607,6 +576,18 @@ scallop_subroutine <- function(FY = 2019
     # force remove duplicates ----
     joined_table <- joined_table |>
       dplyr::distinct()
+
+
+    # replace hyphens with underscores to match the rest of CAMS ----
+
+    joined_table = joined_table |>
+      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+      mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+      mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+      mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+      mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+      mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+      mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
 
     outfile = file.path(scal_trip_dir, paste0('discard_est_', species_itis, '_scal_trips_SCAL', yy,'.fst'))
 
