@@ -97,33 +97,11 @@ discard_groundfish <- function(con
 
     allocated = ifelse(species_itis %in% c(172933, 630979, 171341, 172746), F, T)
 
-
-    #---#
-
-
     # add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ----
 
     gf_dat = gf_dat %>%
       mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
                                      , TRUE ~ 0))
-
-    # if(FALSE) {
-    #   non_gf_dat |>
-    #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-    #                   SPECIES_ITIS == '172873') |>
-    #     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-    #                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE))
-    #
-    #   gf_dat |>
-    #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-    #                   SPECIES_ITIS == '172873') |>
-    #     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-    #                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-    #                      discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
-    # }
-    # non_gf_dat = non_gf_dat %>%
-    # 	mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-    # 																 , NA ~ 0))
 
     # Support table import by species ----
 
@@ -144,8 +122,7 @@ discard_groundfish <- function(con
       mutate(AREA = as.character(AREA)
              , SPECIES_STOCK = AREA_NAME) %>%
       ungroup()
-    # %>%
-    #   dplyr::select(SPECIES_STOCK, AREA)
+
 
     # Mortality table
     # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
@@ -154,10 +131,16 @@ discard_groundfish <- function(con
              , GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
       dplyr::select(-AREA_NAME) %>%
-      # mutate(CAREA = as.character(STAT_AREA)) %>%
-      # dplyr::filter(NESPP3 == species_nespp3) %>%
       dplyr::filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
+
+    # swap underscores for hyphens where compound stocks exist ----
+    STOCK_AREAS  = STOCK_AREAS |>
+      mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
+      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+
+    CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
+      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
 
     # Observer codes to be removed
@@ -165,8 +148,6 @@ discard_groundfish <- function(con
       dplyr::filter(ITIS_TSN == species_itis) %>%
       distinct(OBS_CODES)
 
-
-    # logr::log_print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
     # make tables ----
     ddat_focal <- gf_dat %>%
@@ -186,18 +167,6 @@ discard_groundfish <- function(con
       dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
       relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
       discaRd::assign_strata(., stratvars = stratvars)
-    # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-    # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-    #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
-
-    # if(FALSE) {
-    #   ddat_focal |>
-    #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-    #                   SPECIES_ITIS == '172873') |>
-    #     dplyr::summarise(discard_total = sum(DISCARD, na.rm = TRUE),
-    #                      discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-    #                      discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE))
-    # }
 
     ddat_prev <- gf_dat %>%
       dplyr::filter(GF_YEAR == FY-1) %>%   ## time element is here!!
@@ -228,18 +197,6 @@ discard_groundfish <- function(con
     # Observed trips with NO obs hauls can be treated the same here. The assignment of DISCARD source happens at the end and contains the correct filtration criteria.
 
     ddat_focal_gf <- summarise_single_discard_row(data = ddat_focal, itis_tsn = species_itis)
-
-    # if(FALSE) {
-    #   ddat_focal_gf |>
-    #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-    #                   ITIS_TSN == '172873') |>
-    #     dplyr::summarise(
-    #       discard_total = sum(DISCARD, na.rm = TRUE),
-    #       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-    #       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
-    #       discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
-    #     )
-    # }
 
     # and join to the unobserved trips ----
 
@@ -500,34 +457,6 @@ discard_groundfish <- function(con
                     # , CAMS_GEAR_GROUP
                     , BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
-    # BROAD_STOCK_RATE_TABLE = list()
-    #
-    # kk = 1
-    #
-    # ustocks = bdat_gf$SPECIES_STOCK %>% unique()
-    #
-    # for(k in ustocks){
-    #   BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_gf
-    #                                                       , ddat_focal_sp = ddat_focal_gf
-    #                                                       , ddat_focal = ddat_focal
-    #                                                       , species_itis = species_itis
-    #                                                       , stratvars = stratvars[1:3]
-    #                                                       # , aidx = 1
-    #                                                       , stock = k
-    #   )
-    #   kk = kk + 1
-    # }
-    #
-    # BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE)%>%
-    #   mutate(FY = FY, FY_TYPE = FY_TYPE)
-    #
-    # rm(kk, k)
-
-    #
-    # BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>%
-    #  	group_by(SPECIES_STOCK) %>%
-    #  	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
-
     # make names specific to the sector rollup pass
 
     names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
@@ -576,41 +505,6 @@ discard_groundfish <- function(con
     # <5, <5,  and <5 gets broad stock rate
 
     joined_table = discaRd::assign_discard_source(joined_table, GF = 1)
-    #
-    # joined_table %>%
-    # mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-    #                                   , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-    #                                   , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-    #                                   , is.na(LINK1) &
-    #                                     n_obs_trips_f >= 5 ~ 'I'
-    #                                   # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-    #                                   , is.na(LINK1) &
-    #                                     n_obs_trips_f < 5 &
-    #                                     n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
-    #                                   , is.na(LINK1) &
-    #                                     n_obs_trips_f < 5 &
-    #                                     n_obs_trips_p < 5 &
-    #                                     n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
-    #                                   , is.na(LINK1) &
-    #                                     n_obs_trips_f < 5 &
-    #                                     n_obs_trips_p < 5 &
-    #                                     n_obs_trips_f_a < 5 &
-    #                                     n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
-    #                                   , is.na(LINK1) &
-    #                                     n_obs_trips_f < 5 &
-    #                                     n_obs_trips_p < 5 &
-    #                                     n_obs_trips_f_a < 5 &
-    #                                     n_obs_trips_p_a < 5 ~ 'B'  # Broad stock is only for GF now
-    # )
-    # )
-
-
-
-    #
-    # make sure CV type matches DISCARD SOURCE ----
-    #
-
-    # obs trips get 0, broad stock rate is NA
 
 
     joined_table <- joined_table |>
@@ -658,16 +552,6 @@ discard_groundfish <- function(con
                               , DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
 
       )
-
-    # if(FALSE) { # run this if looking manually
-    # joined_table %>%
-    # 	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>%
-    # 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>%
-    # 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>%
-    # 	dplyr::select(-1) %>%
-    # 	colSums(na.rm = T) %>%
-    # 	round()
-    # }
 
 
     # add N, n, and covariance ----
@@ -731,17 +615,9 @@ discard_groundfish <- function(con
     }
 
 
-    # emjoin %>% group_by(DISCARD_SOURCE, NMFS_DISCARD_SOURCE) %>% dplyr::summarise(sum(DISCARD_MOD, na.rm = T))
-
-
     #-------------------------------#
     # save trip by trip info to .fst file ----
     #-------------------------------#
-
-    # saveRDS(joined_table, file = paste0('/home/bgaluardi/PROJECTS/discaRd/CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_gftrips_only.RDS')
-    # Sys.umask('660')
-
-    # Sys.umask('775')
 
     # force remove duplicates
     emjoin <- emjoin |>
@@ -753,17 +629,17 @@ discard_groundfish <- function(con
       mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
                             ,TRUE ~ CV))
 
-    # if(FALSE) {
-    #   emjoin |>
-    #     dplyr::filter(CAMSID == '250512_20221231220000_25051222122709',
-    #                   ITIS_TSN == '172873') |>
-    #     dplyr::summarise(
-    #       discard_total = sum(DISCARD, na.rm = TRUE),
-    #       discard_prorate_total = sum(DISCARD_PRORATE, na.rm = TRUE),
-    #       discard_obs_total = sum(OBS_DISCARD, na.rm = TRUE),
-    #       discard_eval_total = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE)
-    #     )
-    # }
+
+    # replace hyphens with underscores to match the rest of CAMS ----
+
+    emjoin = emjoin |>
+      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+      mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+      mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+      mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+      mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+      mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+      mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
 
 
     # add N, n, and covariance ----
@@ -877,8 +753,7 @@ discard_groundfish <- function(con
         mutate(AREA = as.character(AREA)
                , SPECIES_STOCK = AREA_NAME) %>%
         ungroup()
-      # %>%
-      #   dplyr::select(SPECIES_STOCK, AREA)
+
 
       # Mortality table
       CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
@@ -890,16 +765,16 @@ discard_groundfish <- function(con
         # dplyr::filter(NESPP3 == species_nespp3) %>%
         dplyr::filter(ITIS_TSN == species_itis) %>%
         dplyr::select(-ITIS_TSN)
-      # %>%
-      #   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
 
-      #---------#
-      # haddock example trips with full strata either in year_t or year _t-1
-      #---------#
+      # swap underscores for hyphens where compound stocks exist ----
+      STOCK_AREAS  = STOCK_AREAS |>
+        mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
+        mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
-      # logr::log_print(paste0("Getting in-season rates for ", species_itis, " ", FY))
+      CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
+        mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
-      # make tables
+         # make tables
       ddat_focal <- non_gf_dat %>%
         dplyr::filter(GF_YEAR == FY) %>%   ## time element is here!!
         dplyr::filter(AREA %in% STOCK_AREAS$AREA) %>%
@@ -1204,24 +1079,6 @@ discard_groundfish <- function(con
                       , N_B = N) |>
         dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
-      # FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
-      #
-      # SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-      #   gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
-      #
-      # CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-      #   gsub("^([^_]+)_", "", .)%>%
-      #   gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
-      #
-      # BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
-      #
-      # CV_b <- round(gear_only$allest$C$RE_rse, 2)
-      #
-      # BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
-      #
-      # BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-      # BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
-
 
       names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
@@ -1269,32 +1126,7 @@ discard_groundfish <- function(con
 
       joined_table = discaRd::assign_discard_source(joined_table, GF = 0)
 
-      # joined_table %>%
-      # mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-      #                                   , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-      #                                   , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f >= 5 ~ 'I'
-      #                                   # , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p < 5 &
-      #                                     n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p < 5 &
-      #                                     n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-      #                                   , is.na(LINK1) &
-      #                                     n_obs_trips_f < 5 &
-      #                                     n_obs_trips_p < 5 &
-      #                                     n_obs_trips_f_a < 5 &
-      #                                     n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
-
-      #
       # make sure CV type matches DISCARD SOURCE}
       #
 
@@ -1369,11 +1201,19 @@ discard_groundfish <- function(con
         get_covrow() |>
         mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
                                   , TRUE ~ covrow))
-      # joined_table = get_covrow(joined_table)
 
-      # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
-      # Sys.umask('660')
-      # Sys.umask('775')
+
+      # swap hyphens for underscores to match trhe rest of CAMS..----
+
+      joined_table = joined_table |>
+        mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+        mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+        mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+        mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+        mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+        mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+        mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
+
 
       outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
 
@@ -1400,7 +1240,6 @@ discard_groundfish <- function(con
     scal_gf_species = species %>%
       dplyr::filter(ITIS_TSN %in% c('172909', '172746'))
 
-    # for(species_itis %in% c('172909', '172746')){
 
     con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 

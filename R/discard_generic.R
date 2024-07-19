@@ -134,6 +134,14 @@ discard_generic <- function(con = con_maps
 			filter(ITIS_TSN == species_itis) %>%
 			dplyr::select(-ITIS_TSN)
 
+		# swap underscores for hyphens where compound stocks exist ----
+		STOCK_AREAS  = STOCK_AREAS |>
+		  mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
+		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+
+		CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
+		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+
 		# Observer codes to be removed
 		OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
 			collect() %>%
@@ -531,26 +539,6 @@ discard_generic <- function(con = con_maps
 		                , N_B = N) |>
 		  dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
-		#
-		# FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
-		#
-		# SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-		#   gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
-		#
-		# CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-		#   gsub("^([^_]+)_", "", .)%>%
-		#   gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
-		#
-		# BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
-		#
-		# CV_b <- round(gear_only$allest$C$RE_rse, 2)
-
-		# BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
-		#
-		# BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-		# BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
-		#
-
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
 		#--------------------------------------------------------------------------#
@@ -591,36 +579,6 @@ discard_generic <- function(con = con_maps
 		#
 
 		joined_table = assign_discard_source(joined_table, GF = 0)
-		#
-		# %>%
-		# 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-		# 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-		# 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f >= 5 ~ 'I'
-		# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a < 5 &
-		# 																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
-
-		#
-		# Make sure CV type matches DISCARD SOURCE ----
-		#
-
-		# obs trips get 0, broad stock rate is NA
 
 
 
@@ -695,7 +653,16 @@ discard_generic <- function(con = con_maps
 		  mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
 		                            , TRUE ~ covrow))
 
-		# joined_table = get_covrow(joined_table)
+		# replace hyphens with underscores to match the rest of CAMS ----
+
+		joined_table = joined_table |>
+		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+		  mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+		  mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+		  mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+		  mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
 
 		outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
 

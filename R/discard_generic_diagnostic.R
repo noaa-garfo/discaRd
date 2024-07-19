@@ -133,11 +133,6 @@ discard_generic_diagnostic <- function(con = con_maps
 ) {
 
 
-	# if(!dir.exists(save_dir)) {
-	# 	dir.create(save_dir, recursive = TRUE)
-	# 	system(paste("chmod 770 -R", save_dir))
-	# }
-
 
   FY_TYPE = species$RUN_ID[1]
 
@@ -169,8 +164,6 @@ discard_generic_diagnostic <- function(con = con_maps
 
 		print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
 
-		# species_nespp3 = species$NESPP3[i]
-		#species_itis = species$ITIS_TSN[i]
 
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
@@ -180,64 +173,13 @@ discard_generic_diagnostic <- function(con = con_maps
 		all_dat = all_dat %>%
 			mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
 																		 , TRUE ~ 0))
+		# swap underscores for hyphens where compound stocks exist ----
+		STOCK_AREAS  = STOCK_AREAS |>
+		  mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
+		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
-		# #--------------------------------------------------------------------------#
-		# #-  Support table import by species ------
-		#
-		# # GEAR TABLE
-		# CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
-		# 	collect() %>%
-		# 	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
-		# 	filter(ITIS_TSN == species_itis) %>%
-		# 	dplyr::select(-NESPP3, -ITIS_TSN)
-		#
-		# # Stat areas table
-		# # unique stat areas for stock ID if needed
-		# STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
-		# 	filter(ITIS_TSN == species_itis) %>%
-		# 	collect() %>%
-		# 	group_by(AREA_NAME, ITIS_TSN) %>%
-		# 	distinct(AREA) %>%
-		# 	mutate(AREA = as.character(AREA)
-		# 				 , SPECIES_STOCK = AREA_NAME) %>%
-		# 	ungroup()
-		#
-		#
-		# if(species$ITIS_TSN == '079718'){
-		#
-		# 	STOCK_AREAS = tbl(con, sql("
-		# 		select ITIS_TSN
-		# 		, AREA
-		# 		, case when area > 599 then 'MA'
-		# 		when area like '53%' then 'SNE'
-		# 		when area >= 520 and area <599 and area not like '53%'  then 'GB'
-		# 		when area < 520 then 'GOM'
-		# 		end as AREA_NAME
-		# 		, case when area > 599 then 'MA'
-		# 		when area like '53%' then 'SNE'
-		# 		when area >= 520 and area <599 and area not like '53%'  then 'GB'
-		# 		when area < 520 then 'GOM'
-		# 		end as SPECIES_STOCK
-		# 	  from CFG_STATAREA_STOCK
-		# 		where ITIS_TSN = '079718'")) %>%
-		# 		collect() %>%
-		# 		group_by(AREA_NAME, ITIS_TSN) %>%
-		# 		distinct(AREA) %>%
-		# 		mutate(AREA = as.character(AREA)
-		# 					 , SPECIES_STOCK = AREA_NAME) %>%
-		# 		ungroup()
-		#
-		# }
-		#
-		# # Mortality table
-		# CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-		# 	collect() %>%
-		# 	mutate(SPECIES_STOCK = AREA_NAME
-		# 				 , GEARCODE = CAMS_GEAR_GROUP
-		# 				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-		# 	select(-AREA_NAME) %>%
-		# 	filter(ITIS_TSN == species_itis) %>%
-		# 	dplyr::select(-ITIS_TSN)
+		CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
+		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
 		# Observer codes to be removed
 		OBS_REMOVE = tbl(con, sql("select * from CAMS_GARFO.CFG_OBSERVER_CODES"))  %>%
@@ -637,25 +579,6 @@ discard_generic_diagnostic <- function(con = con_maps
 		  dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
 
-		# FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
-		#
-		# SPECIES_STOCK <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-		#   gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
-		#
-		# CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-		#   gsub("^([^_]+)_", "", .)%>%
-		#   gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
-		#
-		# BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
-		#
-		# CV_b <- round(gear_only$allest$C$RE_rse, 2)
-		#
-		# BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
-		#
-		# BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-		# BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
-
-
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
 		#--------------------------------------------------------------------------#
@@ -696,32 +619,7 @@ discard_generic_diagnostic <- function(con = con_maps
 		#
 
 		joined_table = assign_discard_source(joined_table, GF = 0)
-		#
-		# %>%
-		# 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-		# 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-		# 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f >= 5 ~ 'I'
-		# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a >= 5 ~ 'GM' # Gear and Mesh, replaces assumed for non-GF
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_p_a >= 5 ~ 'G' # Gear only, replaces broad stock for non-GF
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a < 5 &
-		# 																			n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
-		#
-		# #
+
 		# Make sure CV type matches DISCARD SOURCE ----
 		#
 
@@ -797,13 +695,17 @@ discard_generic_diagnostic <- function(con = con_maps
 		  mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
 		                            , TRUE ~ covrow))
 
-		# joined_table = get_covrow(joined_table)
+		# replace hyphens with underscores to match the rest of CAMS ----
 
-		# outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_trips', FY,'.fst'))
+		joined_table = joined_table |>
+		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+		  mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+		  mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+		  mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+		  mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
 
-		# fst::write_fst(x = joined_table, path = outfile)
-		#
-		# system(paste("chmod 770", outfile))
 
 		t2 = Sys.time()
 
