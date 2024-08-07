@@ -35,11 +35,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
 															 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
 															 ) {
 
-  # if(!dir.exists(save_dir)) {
-  #   dir.create(save_dir, recursive = TRUE)
-  #   system(paste("chmod 770 -R", save_dir))
-  # }
-
   FY_TYPE = species$RUN_ID[1]
 
   ## ----loop through the sector trips for each stock, eval = T-----------------------------------------------------------------------
@@ -91,37 +86,13 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   # Support table import by species ----
 
-  # # GEAR TABLE
-  # CAMS_GEAR_STRATA = ROracle::dbGetQuery(con, 'select * from CFG_GEARCODE_STRATA') %>%
-  #   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
-  #   # dplyr::filter(NESPP3 == species_nespp3) %>%
-  # 	dplyr::filter(ITIS_TSN == species_itis) %>%
-  #   dplyr::select(-NESPP3, -ITIS_TSN)
-  #
-  # # Stat areas table
-  # # unique stat areas for stock ID if needed
-  # STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
-  #   # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-  # 	dplyr::filter(ITIS_TSN == species_itis) %>%
-  #   group_by(AREA_NAME, ITIS_TSN) %>%
-  #   distinct(AREA) %>%
-  #   mutate(AREA = as.character(AREA)
-  #          , SPECIES_STOCK = AREA_NAME) %>%
-  #   ungroup()
-  # # %>%
-  # #   dplyr::select(SPECIES_STOCK, AREA)
-  #
-  # # Mortality table
-  # # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
-  # CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
-  #   mutate(SPECIES_STOCK = AREA_NAME
-  #          , GEARCODE = CAMS_GEAR_GROUP
-  #   			 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-  #   dplyr::select(-AREA_NAME) %>%
-  #   # mutate(CAREA = as.character(STAT_AREA)) %>%
-  #   # dplyr::filter(NESPP3 == species_nespp3) %>%
-  # 	dplyr::filter(ITIS_TSN == species_itis) %>%
-  #   dplyr::select(-ITIS_TSN)
+  # swap underscores for hyphens where compound stocks exist ----
+  STOCK_AREAS  = STOCK_AREAS |>
+    mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
+    mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+
+  CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
+    mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
 
   # Observer codes to be removed
@@ -150,9 +121,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
-  # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-  #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
   ddat_prev <- gf_dat %>%
@@ -172,11 +140,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
   	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
-
-  # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-  #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
-
 
 
   # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
@@ -447,35 +410,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
                    , BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
 
-
-  # BROAD_STOCK_RATE_TABLE = list()
-  #
-  # kk = 1
-  #
-  # ustocks = bdat_gf$SPECIES_STOCK %>% unique()
-  #
-  # for(k in ustocks){
-  # 	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_gf
-  # 											 , ddat_focal_sp = ddat_focal_gf
-  # 											 , ddat_focal = ddat_focal
-  # 											 , species_itis = species_itis
-  # 											 , stratvars = stratvars[1:3]
-  # 											 # , aidx = 1
-  # 											 , stock = k
-  # 											 )
-  # 	kk = kk + 1
-  # }
-  #
-  # BROAD_STOCK_RATE_TABLE = do.call(rbind, BROAD_STOCK_RATE_TABLE) %>%
-  #   mutate(FY = FY, FY_TYPE = FY_TYPE)
-  #
-  # rm(kk, k)
-
-  #
-  # BROAD_STOCK_RATE_TABLE = d_focal_pass2$res %>%
-  #  	group_by(SPECIES_STOCK) %>%
-  #  	dplyr::summarise(BROAD_STOCK_RATE = mean(ARATE)) # mean rate is max rate.. they are all the same within STOCK, as they should be
-
   # make names specific to the sector rollup pass
 
   names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
@@ -525,36 +459,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   joined_table = assign_discard_source(joined_table, GF = 1)
 
-  # %>%
-  # 	mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-  # 																		, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-  # 																		, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f >= 5 ~ 'I'
-  # 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f < 5 &
-  # 																			n_obs_trips_p >=5 ~ 'T' # T only applies to full in-season strata
-  # 																		, is.na(LINK1) &
-  # 																		  n_obs_trips_f < 5 &
-  # 																		  n_obs_trips_p < 5 &
-  # 																		  n_obs_trips_f_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh
-  # 																		, is.na(LINK1) &
-  # 																		  n_obs_trips_f < 5 &
-  # 																		  n_obs_trips_p < 5 &
-  # 																		  n_obs_trips_f_a < 5 &
-  # 																		  n_obs_trips_p_a >= 5 ~ 'A' # Assumed means Sector, Gear, Mesh, transition rate
-  # 																		, is.na(LINK1) &
-  # 																			n_obs_trips_f < 5 &
-  # 																			n_obs_trips_p < 5 &
-  # 																			n_obs_trips_f_a < 5 &
-  # 																			n_obs_trips_p_a < 5 ~ 'B'
-  # 				)
-  # 	)
-  #
-
-
-  #
+   #
   # make sure CV type matches DISCARD SOURCE ----
   #
 
@@ -613,17 +518,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
     get_covrow() |>
     mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
                                               , TRUE ~ covrow))
-  # joined_table = get_covrow(joined_table)
-
-  # if(FALSE) { # run this if looking manually
-  # joined_table %>%
-  # 	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>%
-  # 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>%
-  # 	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>%
-  # 	dplyr::select(-1) %>%
-  # 	colSums(na.rm = T) %>%
-  # 	round()
-  # }
 
 
   #-------------------------------#
@@ -672,6 +566,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   	emjoin$COAL_RATE[mrem_idx] = 0
   	emjoin$DISCARD[mrem_idx] = 0
   	emjoin$CV[mrem_idx] = NA
+  	emjoin$covrow[mrem_idx] = NA
 
   }
 
@@ -683,6 +578,18 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # force remove duplicates
   emjoin <- emjoin |>
     dplyr::distinct()
+
+  # replace the hyphens from above with underscores to match the rest of CAMS... ----
+
+  emjoin <- emjoin |>
+    mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+    mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+    mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+    mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+    mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+    mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+    mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
+
 
   # outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_gftrips_only', FY,'.fst'))
   #
@@ -741,46 +648,8 @@ discard_groundfish_diagnostic <- function(con = con_maps
   																 , TRUE ~ 0))
 
   #---#
-  # Support table import by species
+  # Support table import by species (done above)
 
-  # GEAR TABLE
-  # CAMS_GEAR_STRATA = ROracle::dbGetQuery(con, 'select * from CFG_GEARCODE_STRATA') %>%
-  #   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
-  #   # dplyr::filter(NESPP3 == species_nespp3) %>%
-  # 	dplyr::filter(ITIS_TSN == species_itis) %>%
-  #   dplyr::select(-NESPP3, -ITIS_TSN)
-  #
-  # # Stat areas table
-  # # unique stat areas for stock ID if needed
-  # STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
-  #   # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-  # 	dplyr::filter(ITIS_TSN == species_itis) %>%
-  #   group_by(AREA_NAME, ITIS_TSN) %>%
-  #   distinct(AREA) %>%
-  #   mutate(AREA = as.character(AREA)
-  #          , SPECIES_STOCK = AREA_NAME) %>%
-  #   ungroup()
-  # # %>%
-  # #   dplyr::select(SPECIES_STOCK, AREA)
-  #
-  # # Mortality table
-  # CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
-  #   mutate(SPECIES_STOCK = AREA_NAME
-  #          , GEARCODE = CAMS_GEAR_GROUP
-  #   			 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-  #   dplyr::select(-AREA_NAME) %>%
-  #   # mutate(CAREA = as.character(STAT_AREA)) %>%
-  #   # dplyr::filter(NESPP3 == species_nespp3) %>%
-  # 	dplyr::filter(ITIS_TSN == species_itis) %>%
-  #   dplyr::select(-ITIS_TSN)
-  # %>%
-  #   dplyr::rename(DISC_MORT_RATIO = Discard_Mortality_Ratio)
-
-  #---------#
-  # haddock example trips with full strata either in year_t or year _t-1
-  #---------#
-
-  # logr::log_print(paste0("Getting in-season rates for ", species_itis, " ", FY))
 
   # make tables
   ddat_focal <- non_gf_dat %>%
@@ -1202,17 +1071,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
   strata_a = paste(stratvars_assumed, collapse = ';')
   strata_b = paste(stratvars_gear, collapse = ';')
 
-  joined_table = joined_table %>%
-  	mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
-  												, DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
-  												, DISCARD_SOURCE == 'I' ~ strata_f
-  												, DISCARD_SOURCE == 'T' ~ strata_f
-  												, DISCARD_SOURCE == 'GM' ~ strata_a
-  												, DISCARD_SOURCE == 'G' ~ strata_b
-                          , TRUE ~ NA_character_
-  												)
-  				 )
-
 
   #
   # get the discard for each trip using COAL_RATE}
@@ -1242,15 +1100,18 @@ discard_groundfish_diagnostic <- function(con = con_maps
   joined_table <- joined_table |>
     dplyr::distinct()
 
-   # saveRDS(joined_table, file = paste0(here::here('CAMS/MODULES/GROUNDFISH/OUTPUT/discard_est_', species_itis, '_non_gftrips.RDS'))
-  # Sys.umask('660')
-  # Sys.umask('775')
 
-  # outfile = file.path(save_dir, paste0('discard_est_', species_itis, '_non_gftrips', FY,'.fst'))
-  #
-  # fst::write_fst(x = joined_table, path = outfile)
+  joined_table = joined_table %>%
+    mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
+                                   , DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
+                                   , DISCARD_SOURCE == 'I' ~ strata_f
+                                   , DISCARD_SOURCE == 'T' ~ strata_f
+                                   , DISCARD_SOURCE == 'GM' ~ strata_a
+                                   , DISCARD_SOURCE == 'G' ~ strata_b
+                                   , TRUE ~ NA_character_
+    )
+    )
 
-  # system(paste("chmod 770 ", outfile))
 
   t2 = Sys.time()
 
@@ -1366,8 +1227,16 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 
  # rename the t1 object with subbed in scallop trips to joined table. this will overwrite the object created outside the scallop loop ----
+# replace hyphens with underscores to match the rest of CAMS ----
 
-  		joined_table = t1
+  		joined_table = t1 |>
+  		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
+  		  mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+  		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+  		  mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
+  		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
+  		  mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
+  		  mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
 
   }
 
@@ -1386,7 +1255,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0
   															 ,TRUE ~ DISCARD))%>%
   		mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
-  															 ,TRUE ~ CV))
+  															 ,TRUE ~ CV)) |>
+  	  mutate(covrow = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
+  	                            ,TRUE ~ covrow))
 
 
 
