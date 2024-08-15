@@ -1087,6 +1087,17 @@ discard_groundfish_diagnostic <- function(con = con_maps
   	)
 
 
+  joined_table = joined_table %>%
+    mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
+                                   , DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
+                                   , DISCARD_SOURCE == 'I' ~ strata_f
+                                   , DISCARD_SOURCE == 'T' ~ strata_f
+                                   , DISCARD_SOURCE == 'GM' ~ strata_a
+                                   , DISCARD_SOURCE == 'G' ~ strata_b
+                                   , TRUE ~ NA_character_
+    )
+    )
+
   # add N, n, and covariance ----
   joined_table <- joined_table |>
     add_nobs() |>
@@ -1099,18 +1110,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
   # force remove duplicates
   joined_table <- joined_table |>
     dplyr::distinct()
-
-
-  joined_table = joined_table %>%
-    mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
-                                   , DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
-                                   , DISCARD_SOURCE == 'I' ~ strata_f
-                                   , DISCARD_SOURCE == 'T' ~ strata_f
-                                   , DISCARD_SOURCE == 'GM' ~ strata_a
-                                   , DISCARD_SOURCE == 'G' ~ strata_b
-                                   , TRUE ~ NA_character_
-    )
-    )
 
 
   t2 = Sys.time()
