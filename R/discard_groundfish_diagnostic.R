@@ -1086,20 +1086,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   	)
 
-
-  # add N, n, and covariance ----
-  joined_table <- joined_table |>
-    add_nobs() |>
-    make_strata_desc() |>
-    get_covrow() |>
-    mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
-                              , TRUE ~ covrow))
   # joined_table = get_covrow(joined_table)
-
-  # force remove duplicates
-  joined_table <- joined_table |>
-    dplyr::distinct()
-
 
   joined_table = joined_table %>%
     mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
@@ -1111,6 +1098,18 @@ discard_groundfish_diagnostic <- function(con = con_maps
                                    , TRUE ~ NA_character_
     )
     )
+
+  # force remove duplicates
+  joined_table <- joined_table |>
+    dplyr::distinct()
+
+  # add N, n, and covariance ----
+  joined_table <- joined_table |>
+    add_nobs() |>
+    make_strata_desc() |>
+    get_covrow() |>
+    mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
+                              , TRUE ~ covrow))
 
 
   t2 = Sys.time()
@@ -1206,14 +1205,14 @@ discard_groundfish_diagnostic <- function(con = con_maps
   		# t1[t1idx, ] = t2[t2idx, didx]
 
   		#### Replace indexing with rbind (7/27/23) -----
-
-  		t1 = t1 %>%
-  		  filter(substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
+      #### NA handling was dropping any trip with no activity code!! need to keep those.. ----
+  		t3 = t1 %>%
+  		  filter(is.na(ACTIVITY_CODE_1) | substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
   		  bind_rows(t2)
 
 
   		# force remove duplicates
-  		t1 <- t1 |>
+  		t3 <- t3 |>
   		  dplyr::distinct()
 
 # --- Overwrite the original non-gf with the new version including scallop replacement ----
@@ -1229,7 +1228,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
  # rename the t1 object with subbed in scallop trips to joined table. this will overwrite the object created outside the scallop loop ----
 # replace hyphens with underscores to match the rest of CAMS ----
 
-  		joined_table = t1 |>
+  		joined_table = t3 |>
   		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
   		  mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
   		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
