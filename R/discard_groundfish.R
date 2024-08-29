@@ -1316,23 +1316,21 @@ discard_groundfish <- function(con
 
       # swap the scallop estimated trips into the groundfish records ----
       #### Replace indexing with rbind (7/27/23) -----
+      #### NA handling was dropping any trip with no activity code!! need to keep those.. ----
+      t3 = t1 %>%
+        filter(is.na(ACTIVITY_CODE_1) | substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
+        bind_rows(t2)
 
-
-      # t1[t1idx, ] = t2[t2idx, didx]
-
-      t1 = t1 %>%
-        filter(substr(ACTIVITY_CODE_1,1,3) != 'SES') %>%
-        bind_rows(., t2)
 
       # force remove duplicates
-      t1 <- t1 |>
+      t3 <- t3 |>
         dplyr::distinct()
 
       # add N, n, and covariance ----
       # t1 = get_covrow(t1)
 
       # --- Overwrite the original non-gf with the new version including scallop replacement ----
-      write_fst(x = t1, path = gf_files)
+      write_fst(x = t3, path = gf_files)
 
       system(paste("chmod 770 ", gf_files))
 
