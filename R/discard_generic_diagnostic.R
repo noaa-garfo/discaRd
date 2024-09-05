@@ -140,6 +140,10 @@ discard_generic_diagnostic <- function(con = con_maps
     FY_TYPE = 'CALENDAR'
   }
 
+  if(FY >= 2018 & FY_TYPE == 'MARCH'){
+    FY_TYPE = 'APRIL'
+  }
+
   dr = get_date_range(FY, FY_TYPE)
   end_date = dr[2]
   start_date = dr[1]

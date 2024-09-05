@@ -68,7 +68,9 @@ scallop_subroutine <- function(FY = 2019
                        , 'SCALLOP_AREA'
                        )
 
-  FY_TYPE = 'APRIL'
+  if(FY >= 2018 & FY_TYPE == 'MARCH'){
+    FY_TYPE = 'APRIL'
+  }
 # get date ranges for current and previous fishing year ----
   # Can't run discard for a future year.. this prevents that
   end_fy = ifelse(year(Sys.Date()) == FY, 0, 1)
@@ -104,7 +106,7 @@ scallop_subroutine <- function(FY = 2019
     # Stat areas table
     # unique stat areas for stock ID if needed
     STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
-      filter(ITIS_TSN == species_itis) %>%
+      filter(ITIS_TSN == species_itis) %>% dplyr::filter(FY_START <=FY & FY_END >=FY) %>%
       collect() %>%
       group_by(AREA_NAME, ITIS_TSN) %>%
       distinct(AREA) %>%

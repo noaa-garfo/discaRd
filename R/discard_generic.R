@@ -39,6 +39,10 @@ discard_generic <- function(con = con_maps
 		FY_TYPE = 'CALENDAR'
 	}
 
+	if(FY >= 2018 & FY_TYPE == 'MARCH'){
+	  FY_TYPE = 'APRIL'
+	}
+
 	dr = get_date_range(FY, FY_TYPE)
 	end_date = dr[2]
 	start_date = dr[1]
@@ -116,7 +120,7 @@ discard_generic <- function(con = con_maps
 		# Stat areas table
 		# unique stat areas for stock ID if needed
 		STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
-			filter(ITIS_TSN == species_itis) %>%
+			filter(ITIS_TSN == species_itis) %>% dplyr::filter(FY_START <=FY & FY_END >=FY) %>%
 			collect() %>%
 			group_by(AREA_NAME, ITIS_TSN) %>%
 			distinct(AREA) %>%
