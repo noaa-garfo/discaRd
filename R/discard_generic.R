@@ -43,7 +43,19 @@ discard_generic <- function(con = con_maps
 	  FY_TYPE = 'APRIL'
 	}
 
+
 	dr = get_date_range(FY, FY_TYPE)
+	end_date = dr[2]
+	start_date = dr[1]
+
+	if(species$NESPP3== 446 & FY == 2022){
+	  dr = as.Date(c("2021-11-01", "2022-12-31"))
+	}
+
+	if(species$NESPP3== 800 & FY == 2017){
+	  dr = as.Date(c("2017-03-01", "2018-03-31"))
+	}
+
 	end_date = dr[2]
 	start_date = dr[1]
 

@@ -116,7 +116,7 @@ discard_groundfish <- function(con
     # unique stat areas for stock ID if needed
     STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
       # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-      dplyr::filter(ITIS_TSN == species_itis) %>% dplyr::filter(FY_START <=FY & FY_END >=FY) %>%
+      dplyr::filter(ITIS_TSN == species_itis) %>% dplyr::filter(FY_START <= FY & FY_END >= FY) %>%
       group_by(AREA_NAME, ITIS_TSN) %>%
       distinct(AREA) %>%
       mutate(AREA = as.character(AREA)
