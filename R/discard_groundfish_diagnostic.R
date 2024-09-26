@@ -1086,8 +1086,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   	)
 
-  # joined_table = get_covrow(joined_table)
-
   joined_table = joined_table %>%
     mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' & LINK3_OBS == 1 ~ ''
                                    , DISCARD_SOURCE == 'O' & LINK3_OBS == 0 ~ strata_f
@@ -1099,10 +1097,6 @@ discard_groundfish_diagnostic <- function(con = con_maps
     )
     )
 
-  # force remove duplicates
-  joined_table <- joined_table |>
-    dplyr::distinct()
-
   # add N, n, and covariance ----
   joined_table <- joined_table |>
     add_nobs() |>
@@ -1110,7 +1104,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
     get_covrow() |>
     mutate(covrow = case_when(DISCARD_SOURCE =='N' ~ NA_real_
                               , TRUE ~ covrow))
+  # joined_table = get_covrow(joined_table)
 
+  # force remove duplicates
+  joined_table <- joined_table |>
+    dplyr::distinct()
 
   t2 = Sys.time()
 
