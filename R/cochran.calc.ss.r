@@ -21,7 +21,7 @@ cochran.calc.ss = function(df, n_trips, n_obs, CV_targ = NA){
 
   n = n_obs
 
-	if(n_trips<n){warning('Warning...Total trips less than observed trips')}
+	# if(n_trips<n){warning('Warning...Total trips less than observed trips')}
 	r = sum(df$BYCATCH)/sum(df$KALL)
 	df['DN'] = df$BYCATCH/n
 	df['KN'] = df$KALL/n
