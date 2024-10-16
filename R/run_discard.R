@@ -59,14 +59,24 @@ run_discard <- function(bdat
 	)
 
 	# discard rates by strata
-	dest_strata = allest$C %>% summarise(STRATA = STRATA
+	dest_strata = allest$C %>% dplyr::mutate(STRATA = STRATA
 																			 , N = N
 																			 , n = n
 																			 , orate = round(n/N, 2)
 																			 , drate = RE_mean
 																			 , KALL = K, disc_est = round(D)
 																			 , CV = round(RE_rse, 2)
-	)
+	) |>
+	  dplyr::select(
+	    STRATA
+	    , N
+	    , n
+	    , orate
+	    , drate
+	    , KALL
+	    , disc_est
+	    , CV
+	  )
 
 	# plug in estimated rates to the unobserved
 	ddat_rate = ddat_focal
