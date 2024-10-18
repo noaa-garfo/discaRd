@@ -251,23 +251,43 @@ scallop_subroutine <- function(FY = 2019
     )
 
     # summarize each result for convenience ----
-    dest_strata_p = d_prev$allest$C %>% summarise(STRATA = STRATA
+    dest_strata_p = d_prev$allest$C %>% mutate(STRATA = STRATA
                                                   , N = N
                                                   , n = n
                                                   , orate = round(n/N, 2)
                                                   , drate = RE_mean
                                                   , KALL = K, disc_est = round(D)
                                                   , CV = round(RE_rse, 2)
-    )
+    ) |>
+      dplyr::select(
+        STRATA
+        , N
+        , n
+        , orate
+        , drate
+        , KALL
+        , disc_est
+        , CV
+      )
 
-    dest_strata_f = d_focal$allest$C %>% summarise(STRATA = STRATA
+    dest_strata_f = d_focal$allest$C %>% mutate(STRATA = STRATA
                                                    , N = N
                                                    , n = n
                                                    , orate = round(n/N, 2)
                                                    , drate = RE_mean
                                                    , KALL = K, disc_est = round(D)
                                                    , CV = round(RE_rse, 2)
-    )
+    ) |>
+      dplyr::select(
+        STRATA
+        , N
+        , n
+        , orate
+        , drate
+        , KALL
+        , disc_est
+        , CV
+      )
 
     # substitute transition rates where needed ----
 
@@ -348,23 +368,43 @@ scallop_subroutine <- function(FY = 2019
     )
 
     ### summarize each result for convenience ----
-    dest_strata_p_pass2 = d_prev_pass2$allest$C %>% summarise(STRATA = STRATA
+    dest_strata_p_pass2 = d_prev_pass2$allest$C %>% mutate(STRATA = STRATA
                                                               , N = N
                                                               , n = n
                                                               , orate = round(n/N, 2)
                                                               , drate = RE_mean
                                                               , KALL = K, disc_est = round(D)
                                                               , CV = round(RE_rse, 2)
-    )
+    )|>
+      dplyr::select(
+        STRATA
+        , N
+        , n
+        , orate
+        , drate
+        , KALL
+        , disc_est
+        , CV
+      )
 
-    dest_strata_f_pass2 = d_focal_pass2$allest$C %>% summarise(STRATA = STRATA
+    dest_strata_f_pass2 = d_focal_pass2$allest$C %>% mutate(STRATA = STRATA
                                                                , N = N
                                                                , n = n
                                                                , orate = round(n/N, 2)
                                                                , drate = RE_mean
                                                                , KALL = K, disc_est = round(D)
                                                                , CV = round(RE_rse, 2)
-    )
+    )|>
+      dplyr::select(
+        STRATA
+        , N
+        , n
+        , orate
+        , drate
+        , KALL
+        , disc_est
+        , CV
+      )
 
     ### substitute transition rates where needed ----
 
