@@ -1,8 +1,8 @@
 Package: discaRd
 Type: Package
 Title: Cochran bycatch estimation
-Version: 2.2.0
-Date: 2024-09-26
+Version: 2.2.1
+Date: 2024-10-16
 Author: Benjamin Galuardi, Daniel Linden, Brant McAfee, Daniel J. Hocking, Kristopher Winiarski
 Maintainer: Benjamin Galuardi <benjamin.galuardi@noaa.gov>
 Description: functions for calculating Cochran bycatch estimator and CV. Version 2.0 has functionality to run within Catch Accounting and Monitoring System (CAMS)
@@ -32,5 +32,5 @@ Suggests:
 NeedsCompilation: no
 ByteCompile: yes
 LazyData: FALSE
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr
