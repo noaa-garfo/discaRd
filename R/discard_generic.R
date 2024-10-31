@@ -35,13 +35,13 @@ discard_generic <- function(con = con_maps
 
 	FY_TYPE = species$RUN_ID[1]
 
-	if(FY >= 2022 & FY_TYPE == 'NOVEMBER'){
-		FY_TYPE = 'CALENDAR'
-	}
-
 	dr = get_date_range(FY, FY_TYPE)
 	end_date = dr[2]
 	start_date = dr[1]
+
+	if(FY >= 2022 & FY_TYPE == 'NOVEMBER'){
+	  FY_TYPE = 'CALENDAR'
+	}
 
 	# Stratification variables
 
