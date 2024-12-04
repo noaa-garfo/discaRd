@@ -11,7 +11,7 @@
 #' @examples
 make_mrem_table <- function(con){
 
-  mrem = tbl(acon, sql("
+  mrem = tbl(con, sql("
 with cams_landings as (
 SELECT
     l.CAMSID,
