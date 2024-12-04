@@ -15,6 +15,7 @@
 #' @param CAMS_GEAR_STRATA  support table sourced from Oracle
 #' @param STOCK_AREAS support table sourced from Oracle
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
+#' @param OBS_REMOVE support table sourced from Oracle
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @author Benjamin Galuardi
@@ -33,6 +34,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 															 , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
 															 , STOCK_AREAS = STOCK_AREAS
 															 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+															 , OBS_REMOVE = OBS_REMOVE
 															 ) {
 
   FY_TYPE = species$RUN_ID[1]
@@ -96,9 +98,11 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
 
   # Observer codes to be removed
-  OBS_REMOVE = ROracle::dbGetQuery(con, "select * from CAMS_GARFO.CFG_OBSERVER_CODES")  %>%
-  	dplyr::filter(ITIS_TSN == species_itis) %>%
-  	distinct(OBS_CODES)
+  OBS_REMOVE = OBS_REMOVE
+
+    # ROracle::dbGetQuery(con, "select * from CAMS_GARFO.CFG_OBSERVER_CODES")  %>%
+  	# dplyr::filter(ITIS_TSN == species_itis) %>%
+  	# distinct(OBS_CODES)
 
 
   # logr::log_print(paste0("Getting in-season rates for ", species_itis, " ", FY))
@@ -117,8 +121,8 @@ discard_groundfish_diagnostic <- function(con = con_maps
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
               ) %>%
-  	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+  	dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y, -ITIS_TSN.y) %>%
+  	dplyr::rename(ITIS_TSN = 'ITIS_TSN.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
   	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
   	assign_strata(., stratvars = stratvars)
 
@@ -136,10 +140,10 @@ discard_groundfish_diagnostic <- function(con = con_maps
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
               ) %>%
-  	dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-  	dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-  	relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-  	assign_strata(., stratvars = stratvars)
+    dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y, -ITIS_TSN.y) %>%
+    dplyr::rename(ITIS_TSN = 'ITIS_TSN.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+    relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+    assign_strata(., stratvars = stratvars)
 
 
   # need to slice the first record for each observed trip.. these trips are multi rowed while unobs trips are single row..
