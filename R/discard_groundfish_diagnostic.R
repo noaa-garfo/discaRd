@@ -547,6 +547,10 @@ discard_groundfish_diagnostic <- function(con = con_maps
   			 ") %>%
   	      as_tibble()
 
+  joined_table = joined_table |>
+    dplyr::select(-VTRSERNO.y) |>
+    dplyr::rename(VTRSERNO = 'VTRSERNO.x')
+
   emjoin = joined_table %>%
   	left_join(., em_tab, by = c('VTRSERNO', 'SPECIES_ITIS_EVAL')) %>%
   	mutate(DISCARD = case_when(is.na(NMFS_DISCARD_SOURCE) ~ DISCARD
