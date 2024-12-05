@@ -129,6 +129,7 @@ discard_generic_diagnostic <- function(con = con_maps
 														, CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
 														, STOCK_AREAS = STOCK_AREAS
 														, CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+														, OBS_REMOVE = OBS_REMOVE
 
 ) {
 
@@ -183,10 +184,12 @@ discard_generic_diagnostic <- function(con = con_maps
 		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
 
 		# Observer codes to be removed
-		OBS_REMOVE = tbl(con, sql("select * from CAMS_GARFO.CFG_OBSERVER_CODES"))  %>%
-			collect() %>%
-			filter(ITIS_TSN == species_itis) %>%
-			distinct(OBS_CODES)
+		# OBS_REMOVE = tbl(con, sql("select * from CAMS_GARFO.CFG_OBSERVER_CODES"))  %>%
+		# 	collect() %>%
+		# 	filter(ITIS_TSN == species_itis) %>%
+		# 	distinct(OBS_CODES)
+
+		OBS_REMOVE = OBS_REMOVE
 
 		#--------------------------------------------------------------------------------#
 		# make tables ----
@@ -205,11 +208,10 @@ discard_generic_diagnostic <- function(con = con_maps
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
 			) %>%
-			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
-			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
-										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-			assign_strata(., stratvars)
+		  dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y, -ITIS_TSN.y) %>%
+		  dplyr::rename(ITIS_TSN = 'ITIS_TSN.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+		  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+		  assign_strata(., stratvars = stratvars)
 
 
 		# DATE RANGE FOR PREVIOUS YEAR ----
@@ -233,11 +235,10 @@ discard_generic_diagnostic <- function(con = con_maps
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
 			) %>%
-			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
-			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
-										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
-			assign_strata(., stratvars)
+		  dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y, -ITIS_TSN.y) %>%
+		  dplyr::rename(ITIS_TSN = 'ITIS_TSN.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+		  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+		  assign_strata(., stratvars = stratvars)
 
 
 
