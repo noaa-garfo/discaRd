@@ -17,118 +17,19 @@
 #' @export
 #'
 #' @examples
-#'
-#' 		#--------------------------------------------------------------------------#
-#'
-#' # you can also use odbc, or connect via server using keyring or other method
-#'
-#' library(discaRd)
-#'
-#' con <- ROracle::dbConnect(
-#' 	drv = ROracle::Oracle(),
-#' 	username = uid,
-#' 	password = pwd,
-#' 	dbname = "NERO.world"
-#' )
-#'
-#' # define species of interest
-#'
-#' ## ----get obs and catch data from oracle ----
-#' # you need to get enough years to cover the current (focal) and previous fishing year. This is for transitions rate determination
-#'
-#' start_year = 2017
-#' end_year = year(today())
-#'
-#' dat = get_catch_obs(con, start_year, end_year)
-#' gf_dat = dat$gf_dat
-#' non_gf_dat = dat$non_gf_dat
-#' all_dat = dat$all_dat
-#' rm(dat)
-#' gc()
-#'
-#' # get calendar year species list ----
-#'
-#' species <- tbl(con, sql("
-#'   select *
-#'   from CFG_DISCARD_RUNID
-#'   ")) %>%
-#' 	filter(RUN_ID == 'CALENDAR') %>%
-#' 	collect() %>%
-#' 	group_by(ITIS_TSN) %>%
-#' 	slice(1) %>%
-#' 	ungroup()
-#'
-#' # get one species for testing (black sea bass)
-#' species = species %>%
-#' 	filter(NESPP3 == 335)
-#'
-#' # GEAR TABLE
-#' CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
-#' 	collect() %>%
-#' 	dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
-#' 	filter(ITIS_TSN == species$ITIS_TSN) %>%
-#' 	dplyr::select(-NESPP3, -ITIS_TSN)
-#'
-#' # Stock (Estimation) areas table ----
-#' STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
-#' 	collect() %>%
-#' 	filter(ITIS_TSN == species$ITIS_TSN) %>%
-#' 	group_by(AREA_NAME, ITIS_TSN) %>%
-#' 	distinct(AREA) %>%
-#' 	mutate(AREA = as.character(AREA)
-#' 				 , SPECIES_STOCK = AREA_NAME) %>%
-#' 	ungroup()
-#'
-#' # Discard Mortality table ----
-#' CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-#' 	collect() %>%
-#' 	mutate(SPECIES_STOCK = AREA_NAME
-#' 				 , GEARCODE = CAMS_GEAR_GROUP
-#' 				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-#' 	select(-AREA_NAME) %>%
-#' 	filter(ITIS_TSN == species$ITIS_TSN) %>%
-#' 	dplyr::select(-ITIS_TSN)
-#'
-#' # Now, modify anything you wish to test in the support tables! For example, here is an example for scallop estiamtion areas. CAMS do not match the previous assessment and were worth investigating. CAMS ended up doing a good job in this case, regardless of the area splits.
-#'
-#'
-#' if(species$ITIS_TSN == '079718'){
-#'
-#' 	STOCK_AREAS = tbl(con, sql("
-#' 				select ITIS_TSN
-#' 				, AREA
-#' 				, case when area > 599 then 'MA'
-#' 				when area like '53%' then 'SNE'
-#' 				when area >= 520 and area <599 and area not like '53%'  then 'GB'
-#' 				when area < 520 then 'GOM'
-#' 				end as AREA_NAME
-#' 				, case when area > 599 then 'MA'
-#' 				when area like '53%' then 'SNE'
-#' 				when area >= 520 and area <599 and area not like '53%'  then 'GB'
-#' 				when area < 520 then 'GOM'
-#' 				end as SPECIES_STOCK
-#' 			  from CFG_STATAREA_STOCK
-#' 				where ITIS_TSN = '079718'")) %>%
-#' 		collect() %>%
-#' 		group_by(AREA_NAME, ITIS_TSN) %>%
-#' 		distinct(AREA) %>%
-#' 		mutate(AREA = as.character(AREA)
-#' 					 , SPECIES_STOCK = AREA_NAME) %>%
-#' 		ungroup()
-#'
 #' }
 
 
 discard_generic_nbr_diagnostic <- function(con = con_maps
 														, species = species
 														, FY = fy
-														#, FY_TYPE = c('Calendar','March','April','May','November')
 														, all_dat = all_dat
-														, return_table = T
-														, return_summary = F
+														, return_table = TRUE
+														, return_summary = FALSE
 														, CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
 														, STOCK_AREAS = STOCK_AREAS
 														, CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+														, run_parallel = TRUE
 
 ) {
 
@@ -140,10 +41,6 @@ discard_generic_nbr_diagnostic <- function(con = con_maps
   dr = get_date_range(FY, FY_TYPE)
   end_date = dr[2]
   start_date = dr[1]
-
-  if(FY >= 2022 & FY_TYPE == 'NOVEMBER'){
-    FY_TYPE = 'CALENDAR'
-  }
 
 	# Stratification variables
 
@@ -161,13 +58,32 @@ discard_generic_nbr_diagnostic <- function(con = con_maps
 
 	#for(i in 1:length(species$ITIS_TSN)){
 
+	`%op%` <- if (run_parallel) `%dopar%` else `%do%`
+
+	ncores <- dplyr::case_when(
+	  config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 8, parallel::detectCores() -1),
+	  TRUE ~ min(length(unique(species$ITIS_TSN)), 12, parallel::detectCores() -1)
+	)
+
+	cl_nbr <- makeCluster(ncores, outfile = "")
+	registerDoParallel(cl_nbr, cores = ncores)
+
+	dest_obj <- foreach(
+	  i = 1:length(species$ITIS_TSN)
+	  , .combine = rbind
+	  , .multicombine = TRUE
+	  , .export = c("pw", "database")
+	  , .noexport = "con"
+	  , .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
+	) %op% {
+
 		t1 = Sys.time()
 
 	#	print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
 
 
-		species_itis <- as.character(species$ITIS_TSN)[1]
-		species_itis_srce = as.character(as.numeric(species$ITIS_TSN))[1]
+		species_itis <- as.character(species$ITIS_TSN)[i]
+		species_itis_srce = as.character(as.numeric(species$ITIS_TSN))[i]
 
 		# add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ----
 
@@ -713,16 +629,22 @@ discard_generic_nbr_diagnostic <- function(con = con_maps
 		print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
 
 
-	dest_obj = joined_table %>%
+		joined_table <- joined_table %>%
 		group_by(ITIS_TSN, YEAR, SPECIES_STOCK, GEARCODE, MESH_CAT, TRIPCATEGORY, ACCESSAREA) %>%
 		dplyr::summarise(DISCARD = round(sum(DISCARD, na.rm = TRUE), 2),
 		                 VARIANCE = round(sum(var, na.rm = TRUE), 2),
 		                 CV = round(sum(var, na.rm = TRUE)^2 / sum(DISCARD, na.rm = T), 2)
 		)
 
-	if(return_table == T & return_summary == F){return(joined_table)}
-	if (return_table == F & return_summary == T) {return(dest_obj)}
-	if (return_table == T & return_summary == T) {return(list(trips_discard = joined_table, discard_summary = dest_obj))}
-	if(return_table == F & return_summary == F) {(print("What did you do all that work for?"))}
+	return(joined_table)
+
+	} # end foreach loop
+
+	# if(return_table == T & return_summary == F){return(joined_table)}
+	# if (return_table == F & return_summary == T) {return(dest_obj)}
+	# if (return_table == T & return_summary == T) {return(list(trips_discard = joined_table, discard_summary = dest_obj))}
+	# if(return_table == F & return_summary == F) {(print("What did you do all that work for?"))}
+	#
+	return(dest_obj)
 
 }
