@@ -631,6 +631,52 @@ discard_generic_nbr <- function(species = species
                        CV = round(sum(var, na.rm = TRUE)^2 / sum(DISCARD, na.rm = T), 2)
       )
 
+    joined_table <- joined_table |>
+      dplyr::select(
+        YEAR
+        , ITIS_TSN
+        , SPECIES_STOCK
+        , GEARCODE
+        , MESH_CAT
+        , TRIPCATEGORY
+        , ACCESSAREA
+        , DISCARD
+        , VARIANCE
+        , CV
+      ) |>
+      dplyr::mutate(
+        DISCARD = dplyr::case_when(
+          is.nan(DISCARD) ~ NA_real_,
+          DISCARD %in% c(Inf, -Inf) ~ NA_real_,
+          TRUE ~ DISCARD
+        ),
+        VARIANCE = dplyr::case_when(
+          is.nan(VARIANCE) ~ NA_real_,
+          VARIANCE %in% c(Inf, -Inf) ~ NA_real_,
+          TRUE ~ VARIANCE
+        ),
+        CV = dplyr::case_when(
+          is.nan(CV) ~ NA_real_,
+          CV %in% c(Inf, -Inf) ~ NA_real_,
+          TRUE ~ CV
+        )
+      ) |>
+      as.data.frame()
+
+    joined_table <- joined_table |>
+      dplyr::mutate(
+        keep = dplyr::case_when(
+          (DISCARD == 0 | is.na(DISCARD)) &
+            (VARIANCE == 0 | is.na(VARIANCE)) &
+            (CV == 0 | is.na(CV)) ~ 0L,
+          TRUE ~ 1L
+        )
+      )
+
+    joined_table <- joined_table |>
+      dplyr::filter(keep == 1) |>
+      dplyr::select(-keep)
+
     return(joined_table)
 
   } # end foreach loop
