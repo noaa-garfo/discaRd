@@ -6,7 +6,6 @@
 Support tables in this version are function variables. This allows them to be modified and run for diagnostic testing. This function can output a summary of discard information by strata, including number of trips used, variance, CV, discard amount, and KALL. It can also output a table, by subtrip, with all information. This table can be summarized afterward as well. If testing several scenarios, it is recommended to only output the summary rather than the full subtrip table as each output is 1-2GB.}
 \usage{
 discard_generic_nbr(
-  con = con_maps,
   species = species,
   FY = fy,
   all_dat = all_dat,
@@ -17,8 +16,6 @@ discard_generic_nbr(
 )
 }
 \arguments{
-\item{con}{Oracle connection}
-
 \item{species}{data frame of species for evaluation. Can be a dataframe of multiple species or single row (preferred for testing)}
 
 \item{FY}{fishing year for evaluation}
