@@ -71,7 +71,7 @@ discard_generic_nbr <- function(species = species
     i = 1:length(species$ITIS_TSN)
     , .combine = rbind
     , .multicombine = TRUE
-    # , .export = c("pw", "database")
+    , .export = c("pw", "database")
     # , .noexport = "con"
     , .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
