@@ -122,9 +122,9 @@ discard_generic_nbr <- function(species = species
                 , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
-      dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
+      dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
                     GEARCODE = 'GEARCODE.x') %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+      relocate('SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
       assign_strata(., stratvars)
 
 
@@ -150,9 +150,9 @@ discard_generic_nbr <- function(species = species
                 , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
-      dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
+      dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
                     GEARCODE = 'GEARCODE.x') %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
+      relocate('SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
       assign_strata(., stratvars)
 
 
@@ -635,6 +635,9 @@ discard_generic_nbr <- function(species = species
     return(joined_table)
 
   } # end foreach loop
+
+  stopCluster(cl_nbr)
+  unregister()
 
   return(dest_obj)
 
