@@ -12,7 +12,8 @@ discard_generic_nbr(
   CAMS_GEAR_STRATA = CAMS_GEAR_STRATA,
   STOCK_AREAS = STOCK_AREAS,
   CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK,
-  run_parallel = TRUE
+  run_parallel = TRUE,
+  n_cores = 20
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ discard_generic_nbr(
 \item{CAMS_DISCARD_MORTALITY_STOCK}{support table sourced from Oracle}
 
 \item{run_parallel}{logical whether to run in parallel (TRUE) or sequential (FALSE). Default TRUE.}
+
+\item{n_cores}{ingeger number of cores to try if running in parallel}
 
 \item{name}{discard_generic_nbr}
 

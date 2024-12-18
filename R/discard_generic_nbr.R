@@ -13,6 +13,7 @@
 #' @param STOCK_AREAS support table sourced from Oracle
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
 #' @param run_parallel logical whether to run in parallel (TRUE) or sequential (FALSE). Default TRUE.
+#' @param n_cores ingeger number of cores to try if running in parallel
 #' @author Benjamin Galuardi, Kris Winiarski, Daniel Hocking
 #' @export
 #'
@@ -30,6 +31,7 @@ discard_generic_nbr <- function(species = species
                                 , STOCK_AREAS = STOCK_AREAS
                                 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
                                 , run_parallel = TRUE
+                                , n_cores = 20
 ) {
 
 
@@ -59,10 +61,7 @@ discard_generic_nbr <- function(species = species
 
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
-  ncores <- dplyr::case_when(
-    config_run$load$type_run == "preprod" ~ min(length(unique(species$ITIS_TSN)), 8, parallel::detectCores() -1),
-    TRUE ~ min(length(unique(species$ITIS_TSN)), 12, parallel::detectCores() -1)
-  )
+  ncores <- min(length(unique(species$ITIS_TSN)), n_cores, parallel::detectCores() -1)
 
   cl_nbr <- makeCluster(ncores, outfile = "")
   registerDoParallel(cl_nbr, cores = ncores)
