@@ -4,7 +4,6 @@
 #' The original function pushed .fst files directly to the Wind server at GARFO. This version does not do that and only produces local results.
 #'
 #' @param name discard_generic_nbr
-#' @param con Oracle connection
 #' @param species data frame of species for evaluation. Can be a dataframe of multiple species or single row (preferred for testing)
 #' @param FY fishing year for evaluation
 #' @param all_dat input data sourced from CAMS_OBS_CATCH
@@ -24,8 +23,7 @@
 #' }
 
 
-discard_generic_nbr <- function(con = con_maps
-                                , species = species
+discard_generic_nbr <- function(species = species
                                 , FY = fy
                                 , all_dat = all_dat
                                 , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
@@ -73,14 +71,14 @@ discard_generic_nbr <- function(con = con_maps
     i = 1:length(species$ITIS_TSN)
     , .combine = rbind
     , .multicombine = TRUE
-    , .export = c("pw", "database")
-    , .noexport = "con"
+    # , .export = c("pw", "database")
+    # , .noexport = "con"
     , .packages = c("discaRd", "dplyr", "MAPS", "DBI", "ROracle", "apsdFuns", "keyring", "fst")
   ) %op% {
 
-    t1 = Sys.time()
-
-    #	print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
+    options(keyring_file_lock_timeout = 100000)
+    keyring::keyring_unlock(keyring = 'apsd', password = pw)
+    con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
 
     species_itis <- as.character(species$ITIS_TSN)[i]
     species_itis_srce = as.character(as.numeric(species$ITIS_TSN))[i]
@@ -88,8 +86,10 @@ discard_generic_nbr <- function(con = con_maps
     # add OBS_DISCARD column. Previously, this was done within the run_discard() step. 2/2/23 BG ----
 
     all_dat = all_dat %>%
-      mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
-                                     , TRUE ~ 0))
+      mutate(OBS_DISCARD = case_when(
+        SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
+        , TRUE ~ 0))
+
     # swap underscores for hyphens where compound stocks exist ----
     STOCK_AREAS  = STOCK_AREAS |>
       mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
@@ -623,10 +623,7 @@ discard_generic_nbr <- function(con = con_maps
       mutate(STRATA_ASSUMED = str_replace(STRATA_ASSUMED, '-', '_')) |>
       mutate(FULL_STRATA = str_replace(FULL_STRATA, '-', '_'))
 
-
-    t2 = Sys.time()
-
-    print(paste('RUNTIME: ', round(difftime(t2, t1, units = "mins"),2), ' MINUTES',  sep = ''))
+    rs <- ROracle::dbDisconnect(con)
 
     joined_table <- joined_table %>%
       group_by(ITIS_TSN, YEAR, SPECIES_STOCK, GEARCODE, MESH_CAT, TRIPCATEGORY, ACCESSAREA) %>%
