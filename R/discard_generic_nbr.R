@@ -3,7 +3,7 @@
 #'
 #' The original function pushed .fst files directly to the Wind server at GARFO. This version does not do that and only produces local results.
 #'
-#'
+#' @param name discard_generic_nbr
 #' @param con Oracle connection
 #' @param species data frame of species for evaluation. Can be a dataframe of multiple species or single row (preferred for testing)
 #' @param FY fishing year for evaluation
@@ -13,10 +13,14 @@
 #' @param CAMS_GEAR_STRATA  support table sourced from Oracle
 #' @param STOCK_AREAS support table sourced from Oracle
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
-#' @author Benjamin Galuardi
+#' @param run_parallel logical whether to run in parallel (TRUE) or sequential (FALSE). Default TRUE.
+#' @author Benjamin Galuardi, Kris Winiarski, Daniel Hocking
 #' @export
 #'
 #' @examples
+#' \dontrun {
+#' discard_generic_nbr()
+#' }
 #' }
 
 
@@ -24,8 +28,6 @@ discard_generic_nbr <- function(con = con_maps
                                 , species = species
                                 , FY = fy
                                 , all_dat = all_dat
-                                , return_table = TRUE
-                                , return_summary = FALSE
                                 , CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
                                 , STOCK_AREAS = STOCK_AREAS
                                 , CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
@@ -637,11 +639,6 @@ discard_generic_nbr <- function(con = con_maps
 
   } # end foreach loop
 
-  # if(return_table == T & return_summary == F){return(joined_table)}
-  # if (return_table == F & return_summary == T) {return(dest_obj)}
-  # if (return_table == T & return_summary == T) {return(list(trips_discard = joined_table, discard_summary = dest_obj))}
-  # if(return_table == F & return_summary == F) {(print("What did you do all that work for?"))}
-  #
   return(dest_obj)
 
 }
