@@ -160,6 +160,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
                                     , PROGRAM == '1S' ~ 'CAI'
                                     , PROGRAM == '2S' ~ 'CAII'
                                     , PROGRAM == 'NG' ~ 'NGOM'
+                                    , PROGRAM == 'NY' ~ 'NYB'
                                     , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
     )
     ) %>%
