@@ -107,7 +107,7 @@ discard_groundfish <- function(con
 
     # GEAR TABLE
     CAMS_GEAR_STRATA = ROracle::dbGetQuery(con, 'select * from CFG_GEARCODE_STRATA') %>%
-      dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+      dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
       # dplyr::filter(NESPP3 == species_nespp3) %>%
       dplyr::filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-NESPP3, -ITIS_TSN)
@@ -746,7 +746,7 @@ discard_groundfish <- function(con
 
       # GEAR TABLE
       CAMS_GEAR_STRATA = ROracle::dbGetQuery(con, 'select * from CFG_GEARCODE_STRATA') %>%
-        dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+        dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
         # dplyr::filter(NESPP3 == species_nespp3) %>%
         dplyr::filter(ITIS_TSN == species_itis) %>%
         dplyr::select(-NESPP3, -ITIS_TSN)
