@@ -97,7 +97,7 @@ scallop_subroutine <- function(FY = 2019
     # GEAR TABLE
     CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
       collect() %>%
-      dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+      dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
       filter(ITIS_TSN == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
       dplyr::select(-NESPP3, -ITIS_TSN)
 
