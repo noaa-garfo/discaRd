@@ -67,7 +67,7 @@ discard_herring_diagnostic <- function(con
     CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
     # tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
     #   collect() %>%
-    #   dplyr::rename(GEARCODE = VTR_GEAR_CODE) %>%
+    #   dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
     #   filter(ITIS_TSN == species_itis) %>%
     #   dplyr::select(-NESPP3, -ITIS_TSN) #%>%
     # #mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))

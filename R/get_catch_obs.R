@@ -79,12 +79,13 @@ import_query = paste0("  with obs_cams as (
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
 	, exempt_7130
+	, s.scallop_area
 	, NVL(sum(discard),0) as discard
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_OBS_CATCH c
-	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130 from CAMS_SUBTRIP) s
+	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130, scallop_area from CAMS_SUBTRIP) s
 	on c.CAMS_SUBTRIP = s.CAMS_SUBTRIP
 
 	where year >=", start_year , "
@@ -135,6 +136,7 @@ import_query = paste0("  with obs_cams as (
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
 	, exempt_7130
+	, scallop_area
 	order by vtrserno asc
     )
 
@@ -152,18 +154,6 @@ c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
 
 c_o_dat2 = c_o_dat2 %>%
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
-	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN'
-																	, PROGRAM == 'NS' ~ 'NLS'
-																	, PROGRAM == 'NN' ~ 'NLSN'
-																	, PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
-																	, PROGRAM == 'NW' ~ 'NLSW'
-																	, PROGRAM == '1S' ~ 'CAI'
-																	, PROGRAM == '2S' ~ 'CAII'
-																	, PROGRAM == 'NG' ~ 'NGOM'
-																	, PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
-	)
-	) %>%
-	mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
 	mutate(DOCID_ORIG = DOCID) %>%
 	mutate(DOCID = CAMS_SUBTRIP)
 
@@ -389,6 +379,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
         , subtrip
         , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
+        , scallop_area
         from
         cams_land
   )
@@ -404,6 +395,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
   , h.area_herr
   , b.herring as herr_targ
+  , h.scallop_area
   from obs_cams cos
   left join area_herr h
   on (h.cams_subtrip = cos.cams_subtrip)
@@ -423,17 +415,6 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 
 	c_o_dat2 = c_o_dat2 %>%
 		mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
-		mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN'
-																		, PROGRAM == 'NS' ~ 'NLS'
-																		, PROGRAM == 'NN' ~ 'NLSN'
-																		, PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
-																		, PROGRAM == 'NW' ~ 'NLSW'
-																		, PROGRAM == '1S' ~ 'CAI'
-																		, PROGRAM == '2S' ~ 'CAII'
-																		, PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
-		)
-		) %>%
-		mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
 		mutate(DOCID = CAMS_SUBTRIP)
 
 	# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..

@@ -88,7 +88,7 @@ species = species \%>\%
 # GEAR TABLE
 CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) \%>\%
 	collect() \%>\%
-	dplyr::rename(GEARCODE = VTR_GEAR_CODE) \%>\%
+	dplyr::rename(GEARCODE = SECGEAR_MAPPED) \%>\%
 	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
 	dplyr::select(-NESPP3, -ITIS_TSN)
 

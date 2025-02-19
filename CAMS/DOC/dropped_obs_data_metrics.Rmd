@@ -528,7 +528,7 @@ tbl(con_maps, sql("select * from cams_obs_catch_test where link1 = '230202103D30
 --where link3 not in (select distinct(link3) from cams_obs_catch where year < 2022)
 
 , trips as (select j.*
-, NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+, NVL(g.SECGEAR_MAPPED, 'G_OTH') as SECGEAR_MAPPED
 from join_1 j
 left join (
       select distinct(NEGEAR) as VTR_NEGEAR
@@ -545,7 +545,7 @@ left join (
 
 , obs as (
       select a.*
-            , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+            , NVL(g.SECGEAR_MAPPED, 'G_OTH') as SECGEAR_MAPPED
             , i.ITIS_TSN
 --            , i.ITIS_GROUP1
         from OBS1 a

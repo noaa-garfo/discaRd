@@ -1,31 +1,31 @@
  /*
- 
+
  cams obs catch table that preserves ALL LINK1
  aims to solve the issue of dropped link1 when there are multiple LINK1/VTR
- 
+
  old method was to use min(link1)
- 
- new method creates a new matchign table that has 
+
+ new method creates a new matchign table that has
  link1
  link3
  camsid
  min_link1
- 
- min_link1 is a reference for matching in later steps. doing it this way preserves ALL link1 and link3 designations. 
+
+ min_link1 is a reference for matching in later steps. doing it this way preserves ALL link1 and link3 designations.
  the most important part is preseveing link3 which are then matched to subtrips.
- 
+
  min_link1 is carried through
- 
+
  ben galuardi
  6/22/22
- 
+
  */
- 
- 
+
+
 drop table cams_obs_catch_test
-/ 
- create table cams_obs_catch_test as 
- 
+/
+ create table cams_obs_catch_test as
+
  with obs1 as (
 select a.*
     from (
@@ -43,7 +43,7 @@ select a.*
             , substr(nespp4, 1, 3) as NESPP3
             , SUM(case when catdisp = 0 then o.livewt else 0 end) as discard
             , SUM(case when catdisp = 1 then o.livewt else 0 end) as obs_haul_kept
-        
+
             from (
 			    select * from maps.cams_obdbs_2017
                 union all
@@ -56,16 +56,16 @@ select a.*
                 select * from maps.cams_obdbs_2021
             )
             o
-            
-         
+
+
           group by  o.link3
             , link1
             , vtrserno
             , o.month
             , o.obsrflag
-            , o.area 
+            , o.area
             , o.geartype
-            , o.negear 
+            , o.negear
             , round(o.meshsize, 0)
             , o.meshgroup
             , substr(nespp4, 1, 3)
@@ -87,7 +87,7 @@ group by link3
             , discard
             , obs_haul_kept
 )
-, link3_match as ( 
+, link3_match as (
    select m.camsid
     , min(obs_link1) as min_link1
     , count(distinct(obs_link1)) OVER(PARTITION BY CAMSID) as n_obslink1
@@ -106,29 +106,29 @@ group by link3
                  from
                  obdbs.asmhau@NOVA
                  where link3 is not null
-             )  o 
+             )  o
     on m.obs_link1 = o.link1
      group by m.camsid
     , m.obs_link1
     , o.link1
     , o.link3
     , m.obs_vtr
-    
+
     order by n_obslink1 desc
 )
 , obstrp_ext as (
- select distinct(link1) link1 
+ select distinct(link1) link1
  from obdbs.obtrp@NOVA
  where tripext in ('C','X')
- 
+
   union all
- 
- select distinct(link1) link1 
+
+ select distinct(link1) link1
  from obdbs.asmtrp@NOVA
  where tripext in ('C','X')
 
 )
-,trips as (  
+,trips as (
        select d.permit
         , d.camsid
         , d.year
@@ -142,7 +142,7 @@ group by link3
         , d.camsid || '_' || d.subtrip as cams_subtrip
         , d.geartype
         , d.negear
-        , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+        , NVL(g.SECGEAR_MAPPED, 'G_OTH') as SECGEAR_MAPPED
         , NVL(d.mesh_cat, 'na') as meshgroup
         , d.area
         , round(sum(d.LIVLB)) as subtrip_kall
@@ -162,12 +162,12 @@ group by link3
     , count(distinct(area)) over(partition by min_link1) as narea_link1 -- count how many VTR areas for each link1
     from MAPS.CAMS_LANDINGS d
     left join (  --adds observer link field
-         select * 
+         select *
          from link3_match
         ) o
-       
-    on  o.camsid = d.camsid 
-    
+
+    on  o.camsid = d.camsid
+
     left join (
       select distinct(NEGEAR) as VTR_NEGEAR
        , SECGEAR_MAPPED
@@ -175,24 +175,24 @@ group by link3
       where NEGEAR is not null
      ) g
      on d.NEGEAR = g.VTR_NEGEAR
-    
+
     WHERE d.year >= 2017 -- reduces the table size.. we aren't going back in time too far for discards
-    
-    group by 
+
+    group by
         d.permit
         , d.year
         , d.month
         , d.date_trip
         , case when d.month in (1,2,3,4,5,6) then 1
              when d.month in (7,8,9,10,11,12) then 2
-             end 
+             end
         , d.camsid
         , d.docid
         , d.vtrserno
         , d.camsid || '_' || d.subtrip
         , d.geartype
         , d.negear
-        , NVL(g.SECGEAR_MAPPED, 'OTH')
+        , NVL(g.SECGEAR_MAPPED, 'G_OTH')
         , NVL(d.mesh_cat, 'na')
         , d.area
         , d.sectid
@@ -214,7 +214,7 @@ group by link3
 
 , obs as (
       select a.*
-            , NVL(g.SECGEAR_MAPPED, 'OTH') as SECGEAR_MAPPED
+            , NVL(g.SECGEAR_MAPPED, 'G_OTH') as SECGEAR_MAPPED
             , i.ITIS_TSN
             , m.min_link1
 --            , i.ITIS_GROUP1
@@ -223,16 +223,16 @@ group by link3
             select distinct(NEGEAR) as OBS_NEGEAR
             , SECGEAR_MAPPED
             from maps.STG_OBS_VTR_GEARMAP
-            where NEGEAR is not null          
+            where NEGEAR is not null
           ) g
           on a.OBS_GEAR = g.OBS_NEGEAR
-          
+
          left join(select * from maps.CFG_NESPP3_ITIS ) i  --where SRCE_ITIS_STAT = 'valid'
          on a.NESPP3 = i.DLR_NESPP3
-         
+
          left join (select * from link3_match) m
          on a.link1 = m.link1
-         
+
       )
 
 , trips_0 as (
@@ -254,14 +254,14 @@ group by link3
      from trips t
      left join (select * from obs ) o
      on (t.min_link1 = o.min_link1)
- 
+
     where (t.min_LINK1 is null or t.nvtr_link1 = 0)   -- this will capture clam trips with no vtr
 
 )
 
 -- trips with single link1 (one subtrip)
-, trips_1 
- as (  
+, trips_1
+ as (
   select t.*
   , o.vtrserno as obsvtr
     , o.link1 as obs_link1
@@ -276,9 +276,9 @@ d
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
-    from ( 
+    from (
      select t.*
-     from trips t 
+     from trips t
 
    ) t
       left join (select * from obs ) o
@@ -288,7 +288,7 @@ d
   and t.vtrserno is not null
 
 )
-, trips_2_area_1 as ( 
+, trips_2_area_1 as (
 
    select t.*
   , o.vtrserno as obsvtr
@@ -303,9 +303,9 @@ d
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
-    from ( 
+    from (
      select t.*
-     from trips t 
+     from trips t
    ) t
       left join (select * from obs ) o
   on (o.min_link1 = t.min_link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup)  -- don't use area when narea = 1
@@ -316,7 +316,7 @@ d
 
 )
 
-, trips_2_area_2 as ( 
+, trips_2_area_2 as (
 
    select t.*
   , o.vtrserno as obsvtr
@@ -331,9 +331,9 @@ d
     , o.obs_gear as obs_gear
     , o.obs_mesh as obs_mesh
     , NVL(o.meshgroup, 'none') as obs_meshgroup
-    from ( 
+    from (
      select t.*
-     from trips t 
+     from trips t
    ) t
       left join (select * from obs ) o
         on (o.min_link1 = t.min_link1 AND o.SECGEAR_MAPPED = t.SECGEAR_MAPPED AND o.meshgroup = t.meshgroup AND o.OBS_AREA = t.AREA) -- use area when narea >1
@@ -344,8 +344,8 @@ d
 
 )
 
-, obs_catch as 
-( 
+, obs_catch as
+(
     select * from trips_0
     union all
     select * from trips_1
@@ -355,20 +355,20 @@ d
     select * from trips_2_area_2
 )
 
-, obs_catch_2 as 
-( 
+, obs_catch_2 as
+(
 
 /* add OBS KALL amounts, prorated discard and find duped subtrips */
 
      select a.*
-    , count(distinct(a.cams_subtrip)) OVER(PARTITION BY a.link3) as n_subtrips_link3  -- finds duped link3.. 
+    , count(distinct(a.cams_subtrip)) OVER(PARTITION BY a.link3) as n_subtrips_link3  -- finds duped link3..
     , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_haul_kall_trip
     , round(SUM(case when a.obsrflag = 0 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as obs_nohaul_kall_trip
-    --, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip)) 
+    --, round(SUM(a.obs_haul_kept)  OVER(PARTITION BY a.cams_subtrip))
     , round(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip)) as OBS_KALL  -- will be the same as obs_haul_kall_trip
-    , SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+    , SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) /
        NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0) as prorate
-    , round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) / 
+    , round((SUM(a.obs_haul_kept) OVER(PARTITION BY a.cams_subtrip) /
      NULLIF(SUM(case when a.obsrflag = 1 then a.obs_haul_kept else 0 end) OVER(PARTITION BY a.cams_subtrip),0)*a.discard), 2) as discard_prorate
     from obs_catch a
 )
@@ -402,9 +402,9 @@ select ACCESSAREA
 ,OBS_AREA
 ,OBS_GEAR
 , case when n_subtrips_link3 > 1 THEN OBS_HAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_HAUL_KALL_TRIP end as OBS_HAUL_KALL_TRIP
-, case when n_subtrips_link3 > 1 THEN OBS_HAUL_KEPT/n_subtrips_link3 ELSE OBS_HAUL_KEPT end as OBS_HAUL_KEPT 
-, case when n_subtrips_link3 > 1 THEN OBS_NOHAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_NOHAUL_KALL_TRIP end as OBS_NOHAUL_KALL_TRIP  
-, case when n_subtrips_link3 > 1 THEN OBS_KALL/n_subtrips_link3 ELSE OBS_KALL end as OBS_KALL  
+, case when n_subtrips_link3 > 1 THEN OBS_HAUL_KEPT/n_subtrips_link3 ELSE OBS_HAUL_KEPT end as OBS_HAUL_KEPT
+, case when n_subtrips_link3 > 1 THEN OBS_NOHAUL_KALL_TRIP/n_subtrips_link3 ELSE OBS_NOHAUL_KALL_TRIP end as OBS_NOHAUL_KALL_TRIP
+, case when n_subtrips_link3 > 1 THEN OBS_KALL/n_subtrips_link3 ELSE OBS_KALL end as OBS_KALL
 ,OBS_LINK1
 ,OBS_MESH
 ,OBS_MESHGROUP
@@ -430,9 +430,9 @@ CREATE INDEX itisidx ON CAMS_OBS_CATCH_TEST(ITIS_TSN)
 commit
 
 /
- 
- 
- -- test new/old cams_obs_catch with susan  snoops 
+
+
+ -- test new/old cams_obs_catch with susan  snoops
 
 select sum(OBS_HAUL_KEPT) OBS_HAUL_KEPT
 , link3
@@ -459,7 +459,7 @@ group by link3
 --    and camsid = '330489_20170314030000_4970264'   -- camsid with 3 link3 and tons of hauls
 
 
--- 
+--
 -- select obs_vtr
 ----, permit
 --, obs_link1
@@ -470,8 +470,8 @@ group by link3
 --from (
 --    select l.*
 --    from link3_match l, obstrp_ext o
---    where l.obs_vtr is not null        
---    AND l.OBS_LINK1 in o.link1       
+--    where l.obs_vtr is not null
+--    AND l.OBS_LINK1 in o.link1
 ----    and l.camsid = '330920_20170717170000_5001206' -- one of susans examples
 --    and camsid = '330489_20170314030000_4970264'  -- camsid with 3 link3 and tons of hauls
 --)
