@@ -59,6 +59,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, MESH_CAT
 	, SECTID
   , GF
+  , s.scallop_area
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-SAC%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-NAC%' then 'COMMON_POOL'
@@ -79,7 +80,6 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
 	, exempt_7130
-	, scallop_area
 	, NVL(sum(discard),0) as discard
 	, NVL(sum(discard_prorate),0) as discard_prorate
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
@@ -112,6 +112,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, MESH_CAT
 	, SECTID
   , GF
+  , s.scallop_area
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-SAC%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-NAC%' then 'COMMON_POOL'
@@ -247,7 +248,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
   # Add MREM adjustment View
   mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-										from CAMS_GARFO.cams_alloc_gf_mrem')
+										from CAMS_GARFO.CAMS_alloc_gf_mrem')
 
   # make the MREM KALL adjustment
   gf_dat = gf_dat %>%
@@ -380,7 +381,7 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
         , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
         , scallop_area
-        from cams_garfo.cams_land
+        from CAMS_GARFO.CAMS_land
   )
 
  -- , cams_herr as(
@@ -401,7 +402,7 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   --left join cams_herr ch
   --on (ch.cams_subtrip = cos.cams_subtrip)
 
-  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_garfo.cams_fishery_group c ) b
+  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b
   on (cos.cams_subtrip = b.cams_subtrip)
 
 
