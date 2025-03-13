@@ -112,11 +112,30 @@ discard_groundfish <- function(con
       dplyr::filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-NESPP3, -ITIS_TSN)
 
+    #Convert fishing year to a start and end date
+    library(zoo)
+
+    DATE <- as.Date(as.yearmon(FY, "%Y %m"))
+
+    FY_START <- case_when(FY_TYPE %in% c('APRIL')~ DATE%m+% months(3),
+                          FY_TYPE %in% c('GROUNDFISH')~ DATE%m+% months(4),
+                         ## FY_TYPE %in% c('MARCH')~ DATE%m+% months(2),
+                         ## FY_TYPE %in% c('MAY')~ DATE%m+% months(4),
+                         ## FY_TYPE %in% c('NOVEMBER')~ DATE%m-% months(2),
+                          TRUE~DATE)
+
+    FY_END<- case_when(FY_TYPE %in% c('APRIL')~ DATE%m+% months(14),
+                       FY_TYPE %in% c('GROUNDFISH')~ DATE%m+% months(15),
+                     #  FY_TYPE %in% c('MARCH')~ DATE%m+% months(13),
+                     #  FY_TYPE %in% c('MAY')~ DATE%m+% months(15),
+                      # FY_TYPE %in% c('NOVEMBER')~ DATE%m+% months(9),
+                       TRUE~DATE%m+% months(11))
+
     # Stat areas table
     # unique stat areas for stock ID if needed
-    STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
-      # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
-      dplyr::filter(ITIS_TSN == species_itis) %>% dplyr::filter(FY_START <= FY & FY_END >= FY) %>%
+    STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
+      filter(ITIS_TSN == species_itis) %>% collect() %>% filter(case_when(DATE_END %in% c(NA)~ FY_START >=DATE_START,
+                                                                          !DATE_END %in% c(NA)~ FY_START >=DATE_START & FY_END <= DATE_END))  %>%
       group_by(AREA_NAME, ITIS_TSN) %>%
       distinct(AREA) %>%
       mutate(AREA = as.character(AREA)
