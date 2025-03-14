@@ -129,32 +129,12 @@ discard_generic <- function(con = con_maps
 			filter(ITIS_TSN == species_itis) %>%
 			dplyr::select(-NESPP3, -ITIS_TSN)
 
-		#Convert fishing year to a start and end date
-		library(zoo)
-
-		DATE <- as.Date(as.yearmon(FY, "%Y %m"))
-
-		FY_START <- case_when(FY_TYPE %in% c('APRIL')~ DATE%m+% months(3),
-		                         #  FY_TYPE %in% c('GROUNDFISH')~ DATE%m+% months(4),
-		                           FY_TYPE %in% c('MARCH')~ DATE%m+% months(2),
-		                           FY_TYPE %in% c('MAY')~ DATE%m+% months(4),
-		                           FY_TYPE %in% c('NOVEMBER')~ DATE%m-% months(2),
-		                           TRUE~DATE)
-
-		FY_END<- case_when(FY_TYPE %in% c('APRIL')~ DATE%m+% months(14),
-		                       # FY_TYPE %in% c('GROUNDFISH')~ DATE%m+% months(15),
-		                        FY_TYPE %in% c('MARCH')~ DATE%m+% months(13),
-		                        FY_TYPE %in% c('MAY')~ DATE%m+% months(15),
-		                        FY_TYPE %in% c('NOVEMBER')~ DATE%m+% months(9),
-		                        TRUE~DATE%m+% months(11))
-
 		# Stat areas table
 		# unique stat areas for stock ID if needed
 		STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
-			filter(ITIS_TSN == species_itis) %>% collect() %>% filter(case_when(DATE_END %in% c(NA)~ FY_START >=DATE_START,
-			                                                                    !DATE_END %in% c(NA)~ FY_START >=DATE_START & FY_END <= DATE_END))  %>%
-			                                           group_by(AREA_NAME, ITIS_TSN) %>%
-			distinct(AREA) %>%
+			filter(ITIS_TSN == species_itis) %>% collect() %>%
+			group_by(AREA_NAME, ITIS_TSN, DATE_START, DATE_END) %>%
+			#distinct(AREA) %>%
 			mutate(AREA = as.character(AREA)
 						 , SPECIES_STOCK = AREA_NAME) %>%
 			ungroup()
@@ -195,7 +175,9 @@ discard_generic <- function(con = con_maps
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
 			) %>%
-			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
+			left_join(., y = STOCK_AREAS, by = join_by('AREA'=='AREA', between('DATE_TRIP',
+			                                                                 'DATE_START',
+			                                                                 'DATE_END'))) %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
@@ -223,7 +205,9 @@ discard_generic <- function(con = con_maps
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
 			) %>%
-			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
+		  left_join(., y = STOCK_AREAS, by = join_by('AREA'=='AREA', between('DATE_TRIP',
+		                                                                     'DATE_START',
+		                                                                     'DATE_END'))) %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
