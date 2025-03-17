@@ -214,7 +214,9 @@ discard_generic_diagnostic <- function(con = con_maps
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
 			) %>%
-			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
+		  left_join(., y = STOCK_AREAS, by = join_by('AREA'=='AREA', between('DATE_TRIP',
+		                                                                     'DATE_START',
+		                                                                     'DATE_END'))) %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
@@ -242,7 +244,9 @@ discard_generic_diagnostic <- function(con = con_maps
 						 ,SEADAYS = 0
 						 # , NESPP3 = NESPP3_FINAL
 			) %>%
-			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
+		  left_join(., y = STOCK_AREAS, by = join_by('AREA'=='AREA', between('DATE_TRIP',
+		                                                                     'DATE_START',
+		                                                                     'DATE_END'))) %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
