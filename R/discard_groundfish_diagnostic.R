@@ -112,7 +112,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
     mutate(LIVE_POUNDS = SUBTRIP_KALL
            ,SEADAYS = 0
   	  		 ) %>%
-     left_join(., y = STOCK_AREAS, by = 'AREA') %>%
+    left_join(., y = STOCK_AREAS, by = join_by('AREA'=='AREA', between('DATE_TRIP',
+                                                                       'DATE_START',
+                                                                       'DATE_END'))) %>%
      left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
@@ -131,7 +133,9 @@ discard_groundfish_diagnostic <- function(con = con_maps
     mutate(LIVE_POUNDS = SUBTRIP_KALL
            ,SEADAYS = 0
   	  		 ) %>%
-     left_join(., y = STOCK_AREAS, by = 'AREA') %>%
+    left_join(., y = STOCK_AREAS, by = join_by('AREA'=='AREA', between('DATE_TRIP',
+                                                                       'DATE_START',
+                                                                       'DATE_END'))) %>%
      left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
               , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
