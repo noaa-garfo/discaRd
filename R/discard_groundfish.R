@@ -119,8 +119,10 @@ discard_groundfish <- function(con
       group_by(AREA_NAME, ITIS_TSN, DATE_START, DATE_END) %>%
       #distinct(AREA) %>%
       mutate(AREA = as.character(AREA)
-             , SPECIES_STOCK = AREA_NAME) %>%
+             , SPECIES_STOCK = AREA_NAME)  %>%
       ungroup()
+
+    STOCK_AREAS$DATE_END <- coalesce(STOCK_AREAS$DATE_END, lubridate::today() + 1)
 
 
     # Mortality table

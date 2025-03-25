@@ -139,6 +139,8 @@ discard_generic <- function(con = con_maps
 						 , SPECIES_STOCK = AREA_NAME) %>%
 			ungroup()
 
+		STOCK_AREAS$DATE_END <- coalesce(STOCK_AREAS$DATE_END, lubridate::today() + 1)
+
 		# Mortality table
 		CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
 			collect() %>%
