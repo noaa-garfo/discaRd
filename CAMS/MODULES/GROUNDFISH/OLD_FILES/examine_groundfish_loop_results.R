@@ -62,7 +62,7 @@ hadd = readRDS('discard_est_164744.RDS')
 
 hadd %>% 
 	filter(substr(ACTIVITY_CODE_1, 1, 3) == 'NMS' &
-									SPECIES_STOCK == 'EGB') %>% 
+									SPECIES_ESTIMATION_REGION == 'EGB') %>% 
 	group_by(DISCARD_SOURCE) %>% 
 	dplyr::summarise(
 										OBS_DISCARD = sum(OBS_DISCARD, na.rm = T),
@@ -72,7 +72,7 @@ hadd %>%
 # look by STRATA
 hadd %>% 
 	filter(substr(ACTIVITY_CODE_1, 1, 3) == 'NMS' &
-				 	SPECIES_STOCK == 'EGB') %>% 
+				 	SPECIES_ESTIMATION_REGION == 'EGB') %>% 
 	group_by(STRATA) %>% 
 	dplyr::summarise(
 		OBS_DISCARD = sum(OBS_DISCARD, na.rm = T),

@@ -41,7 +41,7 @@ discard_groundfish <- function(con
 
   stratvars = c('FY'
                 , 'FY_TYPE'
-                , 'SPECIES_STOCK'
+                , 'SPECIES_ESTIMATION_REGION'
                  # , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
                  , 'CAMS_GEAR_GROUP'
                  , 'MESH_CAT'
@@ -115,32 +115,32 @@ discard_groundfish <- function(con
     # Stat areas table
     # unique stat areas for stock ID if needed
     STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
-      # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+      # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
       dplyr::filter(ITIS_TSN == species_itis) %>%
-      group_by(AREA_NAME, ITIS_TSN) %>%
+      group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
       distinct(AREA) %>%
       mutate(AREA = as.character(AREA)
-             , SPECIES_STOCK = AREA_NAME) %>%
+             , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
       ungroup()
 
 
     # Mortality table
     # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
     CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
-      mutate(SPECIES_STOCK = AREA_NAME
+      mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
              , GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-      dplyr::select(-AREA_NAME) %>%
+      dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
       dplyr::filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
 
     # swap underscores for hyphens where compound stocks exist ----
     STOCK_AREAS  = STOCK_AREAS |>
-      mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
-      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-')) |>
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
     CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
-      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
 
     # Observer codes to be removed
@@ -161,11 +161,11 @@ discard_groundfish <- function(con
       left_join(., y = STOCK_AREAS, by = 'AREA') %>%
       left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
       left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-                , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+                , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
       dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
       discaRd::assign_strata(., stratvars = stratvars)
 
     ddat_prev <- gf_dat %>%
@@ -179,16 +179,16 @@ discard_groundfish <- function(con
       left_join(., y = STOCK_AREAS, by = 'AREA') %>%
       left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
       left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-                , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+                , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
       dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
       discaRd::assign_strata(., stratvars = stratvars)
 
     # 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
     # 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-    #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+    #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 
@@ -343,7 +343,7 @@ discard_groundfish <- function(con
 
     stratvars_assumed = c("FY"
                           ,"FY_TYPE"
-                          ,"SPECIES_STOCK"
+                          ,"SPECIES_ESTIMATION_REGION"
                           , "CAMS_GEAR_GROUP"
                           # , "GEARCODE"
                           , "MESH_CAT"
@@ -438,7 +438,7 @@ discard_groundfish <- function(con
                               , ddat_focal = ddat_focal_gf
                               , c_o_tab = ddat_focal
                               , species_itis = species_itis
-                              , stratvars = stratvars[1:3]  #  FY, FY_TYPE, "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+                              , stratvars = stratvars[1:3]  #  FY, FY_TYPE, "SPECIES_ESTIMATION_REGION"   "CAMS_GEAR_GROUP"
     )
 
 
@@ -446,7 +446,7 @@ discard_groundfish <- function(con
       dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
       mutate(FY = as.numeric(sub("_.*", "", STRATA))
              , FY_TYPE = FY_TYPE) |>
-      mutate(SPECIES_STOCK = gsub("^([^_]+)_", "", STRATA)  |>
+      mutate(SPECIES_ESTIMATION_REGION = gsub("^([^_]+)_", "", STRATA)  |>
                gsub(pattern = "^([^_]+)_", replacement = "")  |>
                sub(pattern ="_.*", replacement ="")
              # , CAMS_GEAR_GROUP = gsub("^([^_]+)_", "", STRATA)  %>%
@@ -457,7 +457,7 @@ discard_groundfish <- function(con
       dplyr::rename(BROAD_STOCK_RATE = RE_mean
                     , n_B = n
                     , N_B = N) |>
-      dplyr::select(FY, FY_TYPE, SPECIES_STOCK
+      dplyr::select(FY, FY_TYPE, SPECIES_ESTIMATION_REGION
                     # , CAMS_GEAR_GROUP
                     , BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
@@ -479,7 +479,7 @@ discard_groundfish <- function(con
       # dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
       dplyr::rename(STRATA_ASSUMED = STRATA) %>%
       left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-      left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK')) %>%
+      left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION')) %>%
       mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
                                    , n_obs_trips_f < 5 &
                                      n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -641,8 +641,8 @@ discard_groundfish <- function(con
     # replace hyphens with underscores to match the rest of CAMS ----
 
     emjoin = emjoin |>
-      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
-      mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
       mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
       mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
       mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
@@ -694,7 +694,7 @@ discard_groundfish <- function(con
     # -------------------------------------------------------------------#
     stratvars_nongf = c('FY'
                         , 'FY_TYPE'
-                        , 'SPECIES_STOCK'
+                        , 'SPECIES_ESTIMATION_REGION'
                         ,'CAMS_GEAR_GROUP'
                         , 'MESH_CAT'
                         , 'TRIPCATEGORY'
@@ -754,21 +754,21 @@ discard_groundfish <- function(con
       # Stat areas table
       # unique stat areas for stock ID if needed
       STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
-        # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+        # dplyr::filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
         dplyr::filter(ITIS_TSN == species_itis) %>%
-        group_by(AREA_NAME, ITIS_TSN) %>%
+        group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
         distinct(AREA) %>%
         mutate(AREA = as.character(AREA)
-               , SPECIES_STOCK = AREA_NAME) %>%
+               , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
         ungroup()
 
 
       # Mortality table
       CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
-        mutate(SPECIES_STOCK = AREA_NAME
+        mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
                , GEARCODE = CAMS_GEAR_GROUP
                , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-        dplyr::select(-AREA_NAME) %>%
+        dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
         # mutate(CAREA = as.character(STAT_AREA)) %>%
         # dplyr::filter(NESPP3 == species_nespp3) %>%
         dplyr::filter(ITIS_TSN == species_itis) %>%
@@ -776,11 +776,11 @@ discard_groundfish <- function(con
 
       # swap underscores for hyphens where compound stocks exist ----
       STOCK_AREAS  = STOCK_AREAS |>
-        mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
-        mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+        mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-')) |>
+        mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
       CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
-        mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+        mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
          # make tables
       ddat_focal <- non_gf_dat %>%
@@ -794,11 +794,11 @@ discard_groundfish <- function(con
         left_join(., y = STOCK_AREAS, by = 'AREA') %>%
         left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
         left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-                  , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+                  , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
         ) %>%
         dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
         dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-        relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+        relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
         discaRd::assign_strata(., stratvars = stratvars_nongf)
 
       ddat_prev <- non_gf_dat %>%
@@ -812,11 +812,11 @@ discard_groundfish <- function(con
         left_join(., y = STOCK_AREAS, by = 'AREA') %>%
         left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
         left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-                  , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+                  , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
         ) %>%
         dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
         dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-        relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+        relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
         discaRd::assign_strata(., stratvars = stratvars_nongf)
 
 
@@ -972,7 +972,7 @@ discard_groundfish <- function(con
 
       stratvars_assumed = c("FY"
                             , "FY_TYPE"
-                            , "SPECIES_STOCK"
+                            , "SPECIES_ESTIMATION_REGION"
                             , "CAMS_GEAR_GROUP"
                             , "MESH_CAT")
 
@@ -1069,7 +1069,7 @@ discard_groundfish <- function(con
                                , ddat_focal = ddat_non_gf_2yr
                                , c_o_tab = ddat_2yr
                                , species_itis = species_itis
-                               , stratvars = stratvars_nongf[1:4]  #  FY, FY_TYPE, "SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+                               , stratvars = stratvars_nongf[1:4]  #  FY, FY_TYPE, "SPECIES_ESTIMATION_REGION"   "CAMS_GEAR_GROUP"
       )
 
       # broad rate table ----
@@ -1078,7 +1078,7 @@ discard_groundfish <- function(con
         dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
         mutate(FY = as.numeric(sub("_.*", "", STRATA))
                , FY_TYPE = FY_TYPE) |>
-        mutate(SPECIES_STOCK = gsub("^([^_]+)_", "", STRATA)  |>
+        mutate(SPECIES_ESTIMATION_REGION = gsub("^([^_]+)_", "", STRATA)  |>
                  gsub(pattern = "^([^_]+)_", replacement = "")  |>
                  sub(pattern ="_.*", replacement ="")
                , CAMS_GEAR_GROUP = gsub("^([^_]+)_", "", STRATA)  |>
@@ -1089,7 +1089,7 @@ discard_groundfish <- function(con
         dplyr::rename(BROAD_STOCK_RATE = RE_mean
                       , n_B = n
                       , N_B = N) |>
-        dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
+        dplyr::select(FY, FY_TYPE, SPECIES_ESTIMATION_REGION, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
 
       names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
@@ -1107,7 +1107,7 @@ discard_groundfish <- function(con
         # dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
         dplyr::rename(STRATA_ASSUMED = STRATA) %>%
         left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-        left_join(.,  y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK', 'CAMS_GEAR_GROUP')) %>%
+        left_join(.,  y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')) %>%
         mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
                                      , n_obs_trips_f < 5 &
                                        n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -1160,7 +1160,7 @@ discard_groundfish <- function(con
 
       stratvars_gear = c("FY"
                          ,"FY_TYPE"
-                         ,"SPECIES_STOCK"
+                         ,"SPECIES_ESTIMATION_REGION"
                          , "CAMS_GEAR_GROUP")
 
       strata_f = paste(stratvars_nongf, collapse = ';')
@@ -1218,8 +1218,8 @@ discard_groundfish <- function(con
       # swap hyphens for underscores to match trhe rest of CAMS..----
 
       joined_table = joined_table |>
-        mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
-        mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+        mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
+        mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
         mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
         mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
         mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>

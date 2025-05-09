@@ -53,7 +53,7 @@ disc = tbl(con, sql("
   disc %>% 
   filter(
     GF == 0 &
-      SPECIES_STOCK == 'GBGOM' &
+      SPECIES_ESTIMATION_REGION == 'GBGOM' &
       CAMS_GEAR_GROUP == '050' &
       MESH_CAT == 'LM' &
       TRIPCATEGORY == 'all' & 
@@ -73,7 +73,7 @@ disc = tbl(con, sql("
 disc %>%
   filter(
     GF == 0 &
-      SPECIES_STOCK == 'GBGOM' &
+      SPECIES_ESTIMATION_REGION == 'GBGOM' &
       CAMS_GEAR_GROUP == '050' &
       MESH_CAT == 'LM' &
       TRIPCATEGORY == 'all' & 
@@ -140,7 +140,7 @@ arates2 = tbl(con, sql("select a.FY
   , a.mesh_cat
   , a.GF
   , a.cams_gear_group
-  , a.species_stock
+  , a.species_estimation_region
   , count(distinct a.camsid)
   , a.cams_discard_rate
   , b.accessarea
@@ -167,7 +167,7 @@ arates2 = tbl(con, sql("select a.FY
   , a.GF
     , a.mesh_cat
   , a.cams_gear_group
-  , a.species_stock
+  , a.species_estimation_region
   , a.link1
   , b.camsid||'_'||b.subtrip 
   order by discard_source desc"
@@ -177,7 +177,7 @@ arates2 = tbl(con, sql("select a.FY
 arates2 %>% 
   filter(
     # GF == 0 &
-      # SPECIES_STOCK == 'GOM' &
+      # SPECIES_ESTIMATION_REGION == 'GOM' &
       CAMS_GEAR_GROUP == '010' &
       # is.na(MESH_CAT)  &
       # !is.na(SECTID) &

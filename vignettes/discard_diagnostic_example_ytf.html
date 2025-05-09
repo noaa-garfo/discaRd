@@ -183,19 +183,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>STOCK_AREAS <span class="ot">=</span> <span class="fu">tbl</span>(con, <span class="fu">sql</span>(<span class="st">'select * from CFG_STATAREA_STOCK'</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ITIS_TSN <span class="sc">==</span> species<span class="sc">$</span>ITIS_TSN) <span class="sc">%&gt;%</span></span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(AREA_NAME, ITIS_TSN) <span class="sc">%&gt;%</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(SPECIES_ESTIMATION_REGION, ITIS_TSN) <span class="sc">%&gt;%</span></span>
 <span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(AREA) <span class="sc">%&gt;%</span></span>
 <span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">AREA =</span> <span class="fu">as.character</span>(AREA)</span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>         , <span class="at">SPECIES_STOCK =</span> AREA_NAME) <span class="sc">%&gt;%</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>         , <span class="at">SPECIES_STOCK =</span> SPECIES_ESTIMATION_REGION) <span class="sc">%&gt;%</span></span>
 <span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span>
 <span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="do">### Discard Mortality table ----</span></span>
 <span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>CAMS_DISCARD_MORTALITY_STOCK <span class="ot">=</span> <span class="fu">tbl</span>(con, <span class="fu">sql</span>(<span class="st">"select * from CFG_DISCARD_MORTALITY_STOCK"</span>))  <span class="sc">%&gt;%</span></span>
 <span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SPECIES_STOCK =</span> AREA_NAME</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SPECIES_STOCK =</span> SPECIES_ESTIMATION_REGION</span>
 <span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>         , <span class="at">GEARCODE =</span> CAMS_GEAR_GROUP</span>
 <span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>         , <span class="at">CAMS_GEAR_GROUP =</span> <span class="fu">as.character</span>(CAMS_GEAR_GROUP)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>AREA_NAME) <span class="sc">%&gt;%</span></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>SPECIES_ESTIMATION_REGION) <span class="sc">%&gt;%</span></span>
 <span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ITIS_TSN <span class="sc">==</span> species<span class="sc">$</span>ITIS_TSN) <span class="sc">%&gt;%</span></span>
 <span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>ITIS_TSN)</span>
 <span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a></span>

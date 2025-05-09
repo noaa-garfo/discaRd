@@ -312,7 +312,7 @@ run_discard <- function(bdat
 #' @param ddat_focal_sp table of observed trips for discard year
 #' @param ddat_focal matched table of observed and commerical trips
 #' @param species_itis species of interest using SPECIES_ITIS code
-#' @param stratvars stratification variables desired: should only be SPECIES_STOCK; ususally the first of a strinf of stratification variables
+#' @param stratvars stratification variables desired: should only be SPECIES_ESTIMATION_REGION; ususally the first of a strinf of stratification variables
 #' @param stock specific stock (name) to run
 #'
 #' @return a list of:
@@ -323,7 +323,7 @@ run_discard <- function(bdat
 #' @export
 #'
 #' @examples
-#' stratvars_scalgf = c("SPECIES_STOCK"
+#' stratvars_scalgf = c("SPECIES_ESTIMATION_REGION"
 #' , "CAMS_GEAR_GROUP"
 #' , "MESHGROUP"
 #' , "TRIPCATEGORY"
@@ -335,7 +335,7 @@ run_discard <- function(bdat
 
 #' kk = 1
 
-#' ustocks = bdat_scal$SPECIES_STOCK %>% unique()
+#' ustocks = bdat_scal$SPECIES_ESTIMATION_REGION %>% unique()
 
 #' for(k in ustocks){
 #'	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
@@ -355,11 +355,11 @@ run_discard <- function(bdat
 get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM'){
 
   btmp = 	bdat %>%
-    filter(SPECIES_STOCK == stock)
+    filter(SPECIES_ESTIMATION_REGION == stock)
   dstmp = ddat_focal_sp %>%
-    filter(SPECIES_STOCK == stock)
+    filter(SPECIES_ESTIMATION_REGION == stock)
   dtmp = 	ddat_focal %>%
-    filter(SPECIES_STOCK == stock)
+    filter(SPECIES_ESTIMATION_REGION == stock)
 
   d_broad_stock = run_discard(bdat = btmp
                               , ddat = dstmp
@@ -369,7 +369,7 @@ get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, s
                               , aidx = 1  # this makes sure this isn't used..
   )
 
-  data.frame(SPECIES_STOCK = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
+  data.frame(SPECIES_ESTIMATION_REGION = stock, BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
              , CV_b = d_broad_stock$allest$CVTOT
              , n_B = d_broad_stock$allest$tout$n
              , N_B = d_broad_stock$allest$tout$N
@@ -396,11 +396,11 @@ get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, s
 get_broad_stock_gear_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM'){
 
   btmp = 	bdat %>%
-    filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
+    filter(SPECIES_ESTIMATION_REGION == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
   dstmp = ddat_focal_sp %>%
-    filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
+    filter(SPECIES_ESTIMATION_REGION == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
   dtmp = 	ddat_focal %>%
-    filter(SPECIES_STOCK == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
+    filter(SPECIES_ESTIMATION_REGION == ustocks[k] & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP[i])
 
   d_broad_stock = run_discard(bdat = btmp
                               , ddat = dstmp
@@ -410,7 +410,7 @@ get_broad_stock_gear_rate = function(bdat, ddat_focal_sp, ddat_focal, species_it
                               , aidx = 1  # this makes sure this isn't used..
   )
 
-  data.frame(SPECIES_STOCK = ustocks[k], CAMS_GEAR_GROUP=CAMS_GEAR_GROUP[i], BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
+  data.frame(SPECIES_ESTIMATION_REGION = ustocks[k], CAMS_GEAR_GROUP=CAMS_GEAR_GROUP[i], BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
              , CV_b = d_broad_stock$allest$CVTOT
   )
 
@@ -453,7 +453,7 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 		outlist <- lapply(res, function(x) {
 			# x = fst::read_fst(jj)
 			x %>%
-				mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>%
+				mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_ESTIMATION_REGION)) %>%
 				dplyr::select(-SPECIES_ITIS) %>%
 				# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 				dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
@@ -510,7 +510,7 @@ parse_upload_discard <- function(con = bcon, filepath = '~/PROJECTS/discaRd/CAMS
 					, CV_G
 					, DISC_MORT_RATIO
 					, CAMS_DISCARD
-					, SPECIES_STOCK
+					, SPECIES_ESTIMATION_REGION
 					, GEARCODE
 					, NEGEAR
 					, GEARTYPE

@@ -31,7 +31,7 @@
 #'
 #' # Take a look
 #' joined_table %>%
-#' 	dplyr::select(starts_with('N_') | starts_with('n_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_STOCK | MESH_CAT | TRIPCATEGORY | ACCESSAREA) %>%
+#' 	dplyr::select(starts_with('N_') | starts_with('n_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_ESTIMATION_REGION | MESH_CAT | TRIPCATEGORY | ACCESSAREA) %>%
 #' 	distinct() %>%
 #' 	View()
 #'
@@ -172,7 +172,7 @@ get_covrow <- function(joined_table){
 # Take a look
 # joined_table_gf %>%
 # 	ungroup() %>%
-# 	dplyr::select(starts_with('N_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_STOCK | MESH_CAT | TRIPCATEGORY | ACCESSAREA) %>%
+# 	dplyr::select(starts_with('N_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_ESTIMATION_REGION | MESH_CAT | TRIPCATEGORY | ACCESSAREA) %>%
 # 	distinct() %>%
 # 	View()
 
@@ -195,7 +195,7 @@ get_covrow <- function(joined_table){
 # 	mutate( VAR_RATE_STRATA = (CV*COAL_RATE)^2
 # 					, VAR_RATE_TRIP = ((CV*COAL_RATE)^2)/N_USED) %>%
 # 	filter(DISCARD_SOURCE == 'I') %>%
-# 	group_by( SPECIES_STOCK
+# 	group_by( SPECIES_ESTIMATION_REGION
 # 						, CAMS_GEAR_GROUP
 # 						, MESH_CAT
 # 						, SECTID
