@@ -66,10 +66,10 @@ parse_discard_diag <- function(joined_table
         # lazy_dt() |> # doesn't work with paste in mutate
         dplyr::ungroup() |>
         dplyr::mutate(
-          GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)
+          GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_ESTIMATION_REGION)
           , SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
         ) %>%
-        # dplyr::select(COMMON_NAME, SPECIES_STOCK, GF_STOCK_DEF, SUBTRIP)
+        # dplyr::select(COMMON_NAME, SPECIES_ESTIMATION_REGION, GF_STOCK_DEF, SUBTRIP)
         dplyr::select(-SPECIES_ITIS, -ITIS_TSN) %>%
         # dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
         dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
@@ -149,7 +149,7 @@ parse_discard_diag <- function(joined_table
           , CAMS_DISCARD_VARIANCE
           , N_UNOBSERVED
           , N_OBSERVED
-          , SPECIES_STOCK
+          , SPECIES_ESTIMATION_REGION
           , SECGEAR_MAPPED
           , NEGEAR
           , CAMS_GEAR_GROUP

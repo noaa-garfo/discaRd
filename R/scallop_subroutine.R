@@ -60,7 +60,7 @@ scallop_subroutine <- function(FY = 2019
 
   stratvars_scalgf = c('FY'
                        , 'FY_TYPE'
-                       , 'SPECIES_STOCK'
+                       , 'SPECIES_ESTIMATION_REGION'
                        , 'CAMS_GEAR_GROUP'
                        , 'MESH_CAT'
                        , 'TRIPCATEGORY'
@@ -106,26 +106,26 @@ scallop_subroutine <- function(FY = 2019
     STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
       filter(ITIS_TSN == species_itis) %>%
       collect() %>%
-      group_by(AREA_NAME, ITIS_TSN) %>%
+      group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
       distinct(AREA) %>%
       mutate(AREA = as.character(AREA)
-             , SPECIES_STOCK = AREA_NAME) %>%
+             , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
       ungroup()
 
     # Mortality table
     CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
       collect() %>%
-      mutate(SPECIES_STOCK = AREA_NAME
+      mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
              , GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-      select(-AREA_NAME) %>%
+      select(-SPECIES_ESTIMATION_REGION) %>%
       filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
 
     # swap underscores for hyphens where compound stocks exist ----
     STOCK_AREAS  = STOCK_AREAS |>
-      mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
-      mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-')) |>
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
     CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
       mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
@@ -622,7 +622,7 @@ scallop_subroutine <- function(FY = 2019
 
     joined_table = joined_table |>
       mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
-      mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+      mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
       mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
       mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
       mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
