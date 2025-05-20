@@ -128,7 +128,7 @@ scallop_subroutine_diag <- function(FY = 2019
       mutate(SPECIES_STOCK = SPECIES_ESTIMATION_REGION
              , GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-      select(-SPECIES_ESTIMATION_REGION) %>%
+      #select(-SPECIES_ESTIMATION_REGION) %>%
       filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
 
