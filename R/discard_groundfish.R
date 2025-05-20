@@ -130,7 +130,7 @@ discard_groundfish <- function(con
       mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
              , GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-      dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
+      #dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
       dplyr::filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
 
@@ -768,7 +768,7 @@ discard_groundfish <- function(con
         mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
                , GEARCODE = CAMS_GEAR_GROUP
                , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-        dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
+        #dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
         # mutate(CAREA = as.character(STAT_AREA)) %>%
         # dplyr::filter(NESPP3 == species_nespp3) %>%
         dplyr::filter(ITIS_TSN == species_itis) %>%
