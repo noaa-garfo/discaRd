@@ -212,10 +212,15 @@ discard_groundfish <- function(con
 
     # if using the combined catch/obs table, which seems necessary for groundfish. need to roll your own table to use with run_discard function
     # DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
+    fishdisp_exclude = c(6,7,32,33,34,35,36,37,38,39,90,98) |>
+      stringr::str_pad(3, side = 'left', pad = 0)
 
     bdat_gf = ddat_focal %>%
       dplyr::filter(!is.na(LINK1)) %>%
-      dplyr::filter(FISHDISP != '090') %>%
+      # 	dplyr::filter(FISHDISP != '090') %>%
+      #   dplyr::filter(FISHDISP != '032') %>%
+      #   dplyr::filter(FISHDISP != '098') %>%
+      dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
       dplyr::filter(LINK3_OBS == 1) %>%
       dplyr::filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
       dplyr::filter(EM != 'MREM' | is.na(EM)) %>%
@@ -229,9 +234,13 @@ discard_groundfish <- function(con
     ddat_prev_gf <- summarise_single_discard_row(data = ddat_prev, itis_tsn = species_itis)
 
     # previous year observer data needed..
+
     bdat_prev_gf = ddat_prev %>%
       dplyr::filter(!is.na(LINK1)) %>%
-      dplyr::filter(FISHDISP != '090') %>%
+      # 	dplyr::filter(FISHDISP != '090') %>%
+      #   dplyr::filter(FISHDISP != '032') %>%
+      #   dplyr::filter(FISHDISP != '098') %>%
+      dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
       dplyr::filter(LINK3_OBS == 1) %>%
       dplyr::filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
       dplyr::filter(EM != 'MREM' | is.na(EM)) %>%
@@ -846,9 +855,13 @@ discard_groundfish <- function(con
 
       bdat_non_gf = ddat_focal %>%
         dplyr::filter(!is.na(LINK1)) %>%
-        dplyr::filter(FISHDISP != '090') %>%
+        # 	dplyr::filter(FISHDISP != '090') %>%
+        #   dplyr::filter(FISHDISP != '032') %>%
+        #   dplyr::filter(FISHDISP != '098') %>%
+        dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
         dplyr::filter(LINK3_OBS == 1) %>%
         dplyr::filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
+        dplyr::filter(EM != 'MREM' | is.na(EM)) %>%
         mutate(DISCARD_PRORATE = DISCARD
                , OBS_AREA = AREA
                , OBS_HAUL_KALL_TRIP = OBS_KALL
@@ -869,11 +882,16 @@ discard_groundfish <- function(con
 
 
       # previous year observer data needed..
+
       bdat_prev_non_gf = ddat_prev %>%
         dplyr::filter(!is.na(LINK1)) %>%
-        dplyr::filter(FISHDISP != '090') %>%
+        # 	dplyr::filter(FISHDISP != '090') %>%
+        #   dplyr::filter(FISHDISP != '032') %>%
+        #   dplyr::filter(FISHDISP != '098') %>%
+        dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
         dplyr::filter(LINK3_OBS == 1) %>%
         dplyr::filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
+        dplyr::filter(EM != 'MREM' | is.na(EM)) %>%
         mutate(DISCARD_PRORATE = DISCARD
                , OBS_AREA = AREA
                , OBS_HAUL_KALL_TRIP = OBS_KALL
