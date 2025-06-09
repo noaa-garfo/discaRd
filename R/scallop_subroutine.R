@@ -196,9 +196,13 @@ scallop_subroutine <- function(FY = 2019
     # if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
     # DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
 
+    fishdisp_exclude = c(6,7,32,33,34,35,36,37,38,39,90,98) |>
+      stringr::str_pad(3, side = 'left', pad = 0)
+
     bdat_scal = ddat_focal %>%
       filter(!is.na(LINK1)) %>%
-      filter(FISHDISP != '090') %>%
+      # filter(FISHDISP != '090') %>%
+      dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
       filter(LINK3_OBS == 1) %>%
       filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
       mutate(OBS_AREA = AREA
@@ -222,7 +226,8 @@ scallop_subroutine <- function(FY = 2019
     # previous year observer data needed..
     bdat_prev_scal = ddat_prev %>%
       filter(!is.na(LINK1)) %>%
-      filter(FISHDISP != '090') %>%
+      # filter(FISHDISP != '090') %>%
+      dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
       filter(LINK3_OBS == 1) %>%
       filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
       mutate( OBS_AREA = AREA
