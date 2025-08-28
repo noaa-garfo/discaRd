@@ -5,7 +5,7 @@
 #' @param species_itis species of interest using SPECIES ITIS code
 #' @param stratvars Stratification variables. These must be columns available in `bdat`. Not case sensitive.
 #'
-#' @return a tibble with LINK1, CAMS_SUBTRIP, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by CAMS_SUBTRIP (subtrip). BYCATCH is the observed discard of the species of interest.
+#' @return a tibble with LINK1, CAMSID, SUBTRIP, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by subtrip. BYCATCH is the observed discard of the species of interest.
 #'
 #' This table is used in `discaRd`
 #'
