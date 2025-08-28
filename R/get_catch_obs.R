@@ -41,7 +41,8 @@ import_query = paste0("  with obs_cams as (
   , PERMIT
   , AREA
 	, vtrserno
-	, c.CAMS_SUBTRIP
+	, c.camsid
+	, c.subtrip
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -50,7 +51,6 @@ import_query = paste0("  with obs_cams as (
 	, offwatch_haul
 	, fishdisp
 	, docid
-	, c.CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -85,8 +85,8 @@ import_query = paste0("  with obs_cams as (
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_OBS_CATCH c
-	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130, scallop_area from CAMS_SUBTRIP) s
-	on c.CAMS_SUBTRIP = s.CAMS_SUBTRIP
+	left join (select distinct camsid, subtrip, exempt_7130, scallop_area from CAMS_SUBTRIP) s
+	on c.camsid = s.camsid and c.subtrip = s.subtrip
 
 	where year >=", start_year , "
 	and year <= ", end_year , "
@@ -95,7 +95,8 @@ import_query = paste0("  with obs_cams as (
   , AREA
   , PERMIT
 	, vtrserno
-	, c.CAMS_SUBTRIP
+	, c.camsid
+	, c.subtrip
 	, link1
 	, source
 	, offwatch_link1
@@ -106,7 +107,7 @@ import_query = paste0("  with obs_cams as (
 	, docid
 	, nespp3
   , itis_tsn
-    , SECGEAR_MAPPED
+  , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
 	, MESH_CAT
@@ -123,10 +124,8 @@ import_query = paste0("  with obs_cams as (
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
-  , c.CAMSID
   , month
   , date_trip
-	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -149,13 +148,13 @@ import_query = paste0("  with obs_cams as (
 )
 
 
-c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
+c_o_dat <- ROracle::dbGetQuery(con, import_query)
 
 
-c_o_dat2 = c_o_dat2 %>%
+c_o_dat = c_o_dat %>%
 	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
 	mutate(DOCID_ORIG = DOCID) %>%
-	mutate(DOCID = CAMS_SUBTRIP)
+	mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
 # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
@@ -165,7 +164,7 @@ c_o_dat2 = c_o_dat2 %>%
 
 # 8/17/22 this may not be needed anymore..
 
-link3_na = c_o_dat2 %>%
+link3_na = c_o_dat %>%
 	filter(!is.na(LINK1) & is.na(LINK3))
 
 
@@ -188,26 +187,25 @@ link3_na = link3_na %>%
 				 , PRORATE = NA)
 
 # this was dropping full trips...
-# tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
+# tidx = c_o_dat$CAMSID %in% link3_na$CAMSID
 
 
 # 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
 
-tidx = which(!is.na(c_o_dat2$LINK1) & is.na(c_o_dat2$LINK3))
+tidx = which(!is.na(c_o_dat$LINK1) & is.na(c_o_dat$LINK3))
 
-c_o_dat2 = c_o_dat2[-tidx,]
+c_o_dat = c_o_dat[-tidx,]
 
-# c_o_dat2 = c_o_dat2[tidx == F,]
+# c_o_dat = c_o_dat[tidx == F,]
 
-c_o_dat2 = c_o_dat2 %>%
+c_o_dat = c_o_dat %>%
 	bind_rows(link3_na)
 
 }
 # continue the data import
 
-
-state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
-fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
+state_trips = c_o_dat %>% filter(FED_OR_STATE == 'STATE')
+fed_trips = c_o_dat %>% filter(FED_OR_STATE == 'FED')
 
 fed_trips = fed_trips %>%
 	mutate(ROWID = dplyr::row_number()) %>%
@@ -246,14 +244,16 @@ gf_dat = fed_trips%>%
 
 
 # Add MREM adjustment View
-mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+mrem = ROracle::dbGetQuery(con, 'select distinct CAMSID, SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
 										from cams_alloc_gf_mrem')
+mrem <- mrem |>
+  mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
 # make the MREM KALL adjustment
 gf_dat = gf_dat %>%
 	left_join(x = .
 						, y = mrem
-						, by = 'CAMS_SUBTRIP') %>%
+						, by = 'DOCID') %>%
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
 																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
 				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
@@ -264,7 +264,7 @@ gf_dat = gf_dat %>%
 all_dat = non_gf_dat %>%
 	bind_rows(., gf_dat)
 
-rm(c_o_dat2, fed_trips, state_trips)
+rm(c_o_dat, fed_trips, state_trips)
 
 gc()
 t2 = Sys.time()
@@ -291,7 +291,8 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   , PERMIT
   , AREA
 	, vtrserno
-	, CAMS_SUBTRIP
+	, camsid
+	, subtrip
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -300,7 +301,6 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 	, offwatch_haul
 	, fishdisp
 	, docid
-	, CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -332,11 +332,11 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
   and YEAR <= ", end_year, "
 
 		group by year
-
   , AREA
   , PERMIT
 	, vtrserno
-	, CAMS_SUBTRIP
+	, camsid
+	, subtrip
 	, link1
 	, source
 	, offwatch_link1
@@ -358,10 +358,8 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
-  , CAMSID
   , month
   , date_trip
-	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -377,53 +375,38 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
         select distinct
         camsid
         , subtrip
-        , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
         , scallop_area
         from
         cams_land
   )
 
- -- , cams_herr as(
---	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
---	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
---	  from cams_landings cl
---  )
-
   select
    cos.*
-  -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
   , h.area_herr
   , b.herring as herr_targ
   , h.scallop_area
   from obs_cams cos
   left join area_herr h
-  on (h.cams_subtrip = cos.cams_subtrip)
-
-  --left join cams_herr ch
-  --on (ch.cams_subtrip = cos.cams_subtrip)
-
-  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b
-  on (cos.cams_subtrip = b.cams_subtrip)
-
-
+	on h.camsid = cos.camsid and h.subtrip = cos.subtrip
+  left join (select * from cams_fishery_group) b
+  on cos.camsid = b.camsid and cos.subtrip=b.subtrip
 "
 	)
 
+	c_o_dat <- ROracle::dbGetQuery(con, import_query)
 
-	c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
-
-	c_o_dat2 = c_o_dat2 %>%
+	c_o_dat = c_o_dat %>%
 		mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
-		mutate(DOCID = CAMS_SUBTRIP)
+		mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
-	# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+	# NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
 	# 4/13/22
 	# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future
 
-	link3_na = c_o_dat2 %>%
+	link3_na = c_o_dat %>%
 		filter(!is.na(LINK1) & is.na(LINK3))
 
 
@@ -446,26 +429,26 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 						 , PRORATE = NA)
 
 		# this was dropping full trips...
-		# tidx = c_o_dat2$CAMSID %in% link3_na$CAMSID
+		# tidx = c_o_dat$CAMSID %in% link3_na$CAMSID
 
 
 		# 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
 
-		tidx = which(!is.na(c_o_dat2$LINK1) & is.na(c_o_dat2$LINK3))
+		tidx = which(!is.na(c_o_dat$LINK1) & is.na(c_o_dat$LINK3))
 
-		c_o_dat2 = c_o_dat2[-tidx,]
+		c_o_dat = c_o_dat[-tidx,]
 
-		# c_o_dat2 = c_o_dat2[tidx == F,]
+		# c_o_dat = c_o_dat[tidx == F,]
 
-		c_o_dat2 = c_o_dat2 %>%
+		c_o_dat = c_o_dat %>%
 			bind_rows(link3_na)
 
 	}
 	# continue the data import
 
 
-	state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
-	fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
+	state_trips = c_o_dat %>% filter(FED_OR_STATE == 'STATE')
+	fed_trips = c_o_dat %>% filter(FED_OR_STATE == 'FED')
 
 	fed_trips = fed_trips %>%
 		mutate(ROWID = 1:nrow(fed_trips)) %>%
@@ -493,7 +476,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 		fed_trips %>%
 		filter(ROWID %!in% remove_id$ROWID)
 
-	c_o_dat2 = fed_trips %>%
+	c_o_dat = fed_trips %>%
 		#	filter(GF == 0) %>%
 		bind_rows(., state_trips)
 	# %>%
@@ -509,7 +492,7 @@ get_catch_obs_herring <- function(con = con_maps, start_year = 2017, end_year = 
 
 	print(paste0("Took ", round(difftime(t2, t1, units = 'mins'), 2) , ' minutes'))
 
-	return(all_dat = c_o_dat2)
+	return(all_dat = c_o_dat)
 
 }
 
