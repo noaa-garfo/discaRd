@@ -18,34 +18,22 @@
 run_discard <- function(bdat
 												, ddat_focal
 												, c_o_tab = c_o_dat2
-												# , year = 2019
-												# , species_nespp3 = '802'
 												, species_itis = '164712'  # cod
 												, stratvars = c('GEARTYPE','meshgroup','region','halfofyear')
 												, aidx = c(1,2)
-){ #, strata = paste(GEARTYPE, MESHGROUP, AREA, sep = '_')
+){
 
 	stratvars = toupper(stratvars)
 
 	ddat_focal = assign_strata(ddat_focal, stratvars = stratvars)
 	c_o_tab = assign_strata(c_o_tab, stratvars = stratvars)
 
-	# bdat = make_bdat_cams(obstab, species_nespp3 = species_nespp3)
 	bdat_focal = make_bdat_focal(bdat
-															 # , year = year
-															 # , species_nespp3 = species_nespp3
 															 , species_itis = species_itis
 															 , stratvars = stratvars
 	)
-	# obs_discard = get_obs_disc_vals(c_o_tab
-	# 																# , species_nespp3 = species_nespp3
-	# 																, species_itis = species_itis
-	# 																# , year = year
-	# 																# , stratvars = stratvars
-	# )
-	assumed_discard = make_assumed_rate(bdat
-																			# , year = year
-																			, stratvars = stratvars[aidx]
+
+	assumed_discard = make_assumed_rate(bdat, stratvars = stratvars[aidx]
 	)
 
 	# Get complete strata
@@ -84,13 +72,6 @@ run_discard <- function(bdat
 	ddat_rate$CV = dest_strata$CV[match(ddat_rate$STRATA, dest_strata$STRATA)]
 
 
-	# substitute assumed rate where we can
-	# assumed_discard = assumed_discard %>%
-	# 	mutate(STRATA = paste(GEARTYPE, MESHGROUP, sep = '_'))
-	# # mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
-
-
-
 	ddat_rate <- ddat_rate %>%
 		mutate(STRATA_ASSUMED = eval(parse(text = stratvars[aidx[1]])))
 
@@ -104,41 +85,22 @@ run_discard <- function(bdat
 
 	}
 
-
 	ddat_rate = ddat_rate %>%
-		# mutate(STRATA_ASSUMED = paste(GEARTYPE, MESHGROUP, sep = '_')) %>%
-		# mutate(STRATA = paste(NEGEAR, MESHGROUP, sep = '_'))
 		mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA))
 
-	# ddat_rate$ARATE_IDX[is.na(ddat_rate$ARATE_IDX)] = 0
 	ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
-
 
 	# incorporate teh assumed rate into the calculated discard rates
 	ddat_rate <- ddat_rate %>%
 		mutate(CRATE = coalesce(DISC_RATE, ARATE)) %>%
 		mutate(CRATE = tidyr::replace_na(CRATE, 0))
 
-
 	# merge observed discards with estimated discards
-	# Use the observer tables created, NOT the merged trips/obs table..
-	# match on VTRSERNO?
-	# now matching on CAMS_SUBTRIP..
+	# Use the observer tables created, NOT the merged trips/obs table.
+	# now matching on CAMSID_SUBTRIP.
 
-	# out_tab = obs_discard %>%
-	# 	ungroup() %>%
-	# 	mutate(OBS_DISCARD = DISCARD) %>%
-	# 	dplyr::select(CAMS_SUBTRIP, OBS_DISCARD) %>% # dont need these VTRSERNO, CAMSID, 10/03/22 BG
-	# 	# right_join(x = ., y = ddat_rate, by = c('VTRSERNO', 'CAMSID')) %>%   # need to drop a column or it gets DISCARD.x
-	# 	right_join(x = ., y = ddat_rate, by = c('CAMS_SUBTRIP')) %>%   # changed 10/3/22 BG
-	# 	mutate(OBS_DISCARD = ifelse(is.na(OBS_DISCARD) & !is.na(LINK1), 0,  OBS_DISCARD)) %>%
-	# 	mutate(EST_DISCARD = CRATE*LIVE_POUNDS) %>%
-	# 	mutate(DISCARD = if_else(!is.na(OBS_DISCARD), OBS_DISCARD, EST_DISCARD)
-	# 	)
-
-	list(species = species_itis #species_nespp3
+	list(species = species_itis
 			 , allest = allest
-			 # , res = out_tab
 	)
 
 }
