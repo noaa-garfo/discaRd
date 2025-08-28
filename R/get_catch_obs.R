@@ -156,7 +156,7 @@ c_o_dat = c_o_dat %>%
 	mutate(DOCID_ORIG = DOCID) %>%
 	mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
-# NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+# NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
 # 4/13/22
@@ -253,7 +253,7 @@ mrem <- mrem |>
 gf_dat = gf_dat %>%
 	left_join(x = .
 						, y = mrem
-						, by = 'DOCID') %>%
+						, by = c(CAMSID, SUBTRIP)) %>%
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
 																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
 				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
