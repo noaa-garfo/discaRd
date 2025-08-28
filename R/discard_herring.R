@@ -45,9 +45,6 @@ discard_herring <- function(con
 
 		print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
 
-		# species_nespp3 = species$NESPP3[i]
-		#species_itis = species$ITIS_TSN[i]
-
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
 
@@ -65,8 +62,7 @@ discard_herring <- function(con
 			collect() %>%
 			dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
 			filter(ITIS_TSN == species_itis) %>%
-			dplyr::select(-NESPP3, -ITIS_TSN) #%>%
-			#mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
+			dplyr::select(-NESPP3, -ITIS_TSN)
 
 
 		# Stat areas table
@@ -96,7 +92,6 @@ discard_herring <- function(con
 			filter(ITIS_TSN == species_itis) %>%
 			distinct(OBS_CODES)
 
-		#--------------------------------------------------------------------------------#
 		# make tables ----
 		ddat_focal <- all_dat %>%
 			filter(YEAR == FY) %>%   ## time element is here!!
@@ -105,7 +100,6 @@ discard_herring <- function(con
 		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
-						 # , NESPP3 = NESPP3_FINAL
 			) %>%
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
@@ -132,7 +126,6 @@ discard_herring <- function(con
 		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
-						 # , NESPP3 = NESPP3_FINAL
 			) %>%
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
@@ -197,8 +190,6 @@ discard_herring <- function(con
 		d_prev = run_discard(bdat = bdat_prev_cy
 												 , ddat = ddat_prev_cy
 												 , c_o_tab = ddat_prev
-												 # , year = 2018
-												 # , species_nespp3 = species_nespp3
 												 , species_itis = species_itis
 												 , stratvars = stratvars
 												 , aidx = c(1:length(stratvars))
@@ -209,9 +200,6 @@ discard_herring <- function(con
 		  d_focal = run_discard(bdat = bdat_cy
 		                        , ddat = ddat_focal_cy
 		                        , c_o_tab = ddat_focal
-		                        # , year = 2019
-		                        # , species_nespp3 = '081' # haddock...
-		                        # , species_nespp3 = species_nespp3  #'081' #cod...
 		                        , species_itis = species_itis
 		                        , stratvars = stratvars
 		                        , aidx = c(1:length(stratvars))  # this makes sure this isn't used..
@@ -307,7 +295,6 @@ discard_herring <- function(con
 
 		if(exists("d_focal")) {
 		  full_strata_table = trans_rate_df_full %>%
-		    # right_join(., y = d_focal$res, by = 'STRATA') %>%
 		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
@@ -317,7 +304,6 @@ discard_herring <- function(con
 		    dplyr::rename(FULL_STRATA = STRATA)
 		} else {
 		  full_strata_table = trans_rate_df_full %>%
-		    # right_join(., y = d_prev$res, by = 'STRATA') %>%
 		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
@@ -327,16 +313,12 @@ discard_herring <- function(con
 		    dplyr::rename(FULL_STRATA = STRATA)
 		}
 
-		#
 		# Target/non-target and gear stratification: second pass ----
-		#
-
 
 		stratvars_assumed = c("FY"
 		                      , "FY_TYPE"
 		                      , "HERR_TARG"
-													, "CAMS_GEAR_GROUP") #AWA
-		#, "MESH_CAT")
+													, "CAMS_GEAR_GROUP")
 
 
 		### All tables in previous run can be re-used with diff stratification
@@ -345,11 +327,8 @@ discard_herring <- function(con
 		d_prev_pass2 = run_discard(bdat = bdat_prev_cy
 															 , ddat = ddat_prev_cy
 															 , c_o_tab = ddat_prev
-															 # , year = 2018
-															 # , species_nespp3 = species_nespp3
 															 , species_itis = species_itis
 															 , stratvars = stratvars_assumed
-															 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
 															 , aidx = c(1)  # this creates an unstratified broad stock rate
 		)
 
@@ -359,12 +338,8 @@ discard_herring <- function(con
 		  d_focal_pass2 = run_discard(bdat = bdat_cy
 		                              , ddat = ddat_focal_cy
 		                              , c_o_tab = ddat_focal
-		                              # , year = 2019
-		                              # , species_nespp3 = '081' # haddock...
-		                              # , species_nespp3 = species_nespp3  #'081' #cod...
 		                              , species_itis = species_itis
 		                              , stratvars = stratvars_assumed
-		                              # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
 		                              , aidx = c(1)  # this creates an unstratified broad stock rate
 		  )
 
@@ -449,7 +424,7 @@ discard_herring <- function(con
 		trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
 
 
-		# get a table of broad stock rates using discaRd functions. Previously we used sector rollupresults (ARATE in pass2)
+		# get a table of broad stock rates using discaRd functions. Previously we used sector rollup results (ARATE in pass2)
 		# herring uses this as target vs non target level rate
 
 		if(nrow(bdat_cy) > 0) {
@@ -469,25 +444,6 @@ discard_herring <- function(con
 													 , stratvars = stratvars[1:3]  # FY, FY_TYPE, AREA_TARG
 		)
 
-
-		# THIS SECTION IS REDUNDANT AS THE PREVIOUS SECTION ALREADY USES A 2 YEAR TIME WINDOW FOR BROAD STOCK
-		# Run the discaRd functions on current year broad stock: third pass ----
-		# if(nrow(bdat_cy) > 0) {
-		# gear_only_current = run_discard(bdat = bdat_cy
-		#													, ddat = ddat_focal_cy
-		#													, c_o_tab = ddat_focal
-		#													, species_itis = species_itis
-		#													, stratvars = stratvars[1:3]  # FY, FY_TYPE, HERR_TARG
-		#)
-		#BROAD_STOCK_RATE_CUR <-  gear_only_current$allest$C$RE_mean
-		#CV_b_cur <- round(gear_only_current$allest$C$RE_rse, 2)
-		#} else {
-		#  BROAD_STOCK_RATE_CUR <-  NA_real_
-		#  CV_b_cur <- NA_real_
-		#}
-
-		#SPECIES_STOCK <-sub("_.*", "", gear_only$allest$C$STRATA)
-		# HERR_TARG <- gear_only_prev$allest$C$STRATA
 
 		BROAD_STOCK_RATE_TABLE = gear_only_prev$allest$C |>
 		  dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
@@ -510,31 +466,9 @@ discard_herring <- function(con
 		                , N_B)
 
 
-		#
-		# HERR_TARG = stringr::str_split(gear_only_prev$allest$C$STRATA, pattern = '_') %>%
-		#   lapply(., function(x) x[3]) %>%
-		#   unlist()
-		#
-		# #CAMS_GEAR_GROUP <- sub(".*?_", "", gear_only$allest$C$STRATA)
-		#
-		# # make broad stock rate table ----
-		# FY_BST = as.numeric(sub("_.*", "", gear_only_prev$allest$C$STRATA))
-		#
-		# BROAD_STOCK_RATE <-  gear_only_prev$allest$C$RE_mean
-		#
-		# CV_b <- round(gear_only_prev$allest$C$RE_rse, 2)
-		#
-		# BROAD_STOCK_RATE_TABLE <- data.frame(FY = FY_BST, FY_TYPE = FY_TYPE, cbind(HERR_TARG, BROAD_STOCK_RATE, CV_b))
-
-		# BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
-		# BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
-
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
-		#
 		# join full and assumed strata tables ----
-		#
-		# print(paste0("Constructing output table for ", species_itis, " ", FY))
 
 		joined_table = assign_strata(full_strata_table, stratvars_assumed)
 
@@ -562,36 +496,7 @@ discard_herring <- function(con
 						 , FISHING_YEAR = FY
 						 , FY_TYPE = FY_TYPE)
 
-		#
 		# add discard source ----
-		#
-
-		# joined_table = joined_table %>%
-		# 		mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
-		# 																			, !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'I'  # observed with at least one obs haul
-		# 																			, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f >= 5 ~ 'I'
-		# 																		# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p >=5 ~ 'T'
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a >= 5 ~ 'A'
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a <= 5 &
-		# 																			n_obs_trips_p_a >= 5 ~ 'G'
-		# 																		, is.na(LINK1) &
-		# 																			n_obs_trips_f < 5 &
-		# 																			n_obs_trips_p < 5 &
-		# 																			n_obs_trips_f_a < 5 &
-		# 																			n_obs_trips_p_a < 5 ~ 'B'))
-
-# should likely replace the above with this to match other modules
 
 		joined_table = joined_table %>%
 			mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0  ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
@@ -599,7 +504,6 @@ discard_herring <- function(con
 																				, !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
 																				, is.na(LINK1) &
 																					n_obs_trips_f >= 5 ~ 'I'
-																				# , is.na(LINK1) & COAL_RATE == previous_season_rate ~ 'P'
 																				, is.na(LINK1) &
 																					n_obs_trips_f < 5 &
 																					n_obs_trips_p >=5 ~ 'T' # this only applies to in-season full strata
@@ -617,11 +521,8 @@ discard_herring <- function(con
 																					n_obs_trips_f_a < 5 &
 																					n_obs_trips_p_a < 5 ~ 'G')) # Gear only, replaces broad stock for non-GF
 
-		#
 		# make sure CV type matches DISCARD SOURCE ----
-		#
-
-		# obs trips get 0, broad stock rate is NA
+	# obs trips get 0, broad stock rate is NA
 
 
 
@@ -631,14 +532,12 @@ discard_herring <- function(con
 														, DISCARD_SOURCE == 'T' ~ CV_f
 														, DISCARD_SOURCE == 'A' ~ CV_f_a
 														, DISCARD_SOURCE == 'G' ~ CV_b
-														#	, DISCARD_SOURCE == 'NA' ~ 'NA'
-			)  # , DISCARD_SOURCE == 'B' ~ NA
+			)
 			)
 
 		# Make note of the stratification variables used according to discard source ----
 
-		stratvars_gear = c(#"SPECIES_STOCK", #AWA
-			"FY", "FY_TYPE", "HERR_TARG")
+		stratvars_gear = c("FY", "FY_TYPE", "HERR_TARG")
 
 		strata_f = paste(stratvars, collapse = ';')
 		strata_a = paste(stratvars_assumed, collapse = ';')
@@ -652,25 +551,10 @@ discard_herring <- function(con
 																		 , DISCARD_SOURCE == 'A' ~ strata_a
 																		 , DISCARD_SOURCE == 'G' ~ strata_b
 																		 , TRUE ~ NA_character_
-																		 #	, DISCARD_SOURCE == 'NA' ~ 'NA'
 			)
 			)
 
 
-		#
-		# get the discard for each trip using COAL_RATE}
-		#
-
-		# discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio.
-		# the KALLs should be small..
-
-
-# joined_table = joined_table %>%
-# 	mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) %>%
-# 	mutate(DISCARD = ifelse(DISCARD_SOURCE == 'O', DISC_MORT_RATIO*OBS_DISCARD # observed with at least one obs haul
-# 														 , DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS) # all other cases
-#
-# 	)
 
 # get the final discard amount from estimation, observation and discard mortality ----
 
@@ -714,8 +598,6 @@ joined_table = joined_table %>% mutate(ESTIMATE_DISCARDS = replace(ESTIMATE_DISC
 		fst::write_fst(x = joined_table, path = outfile)
 
 		system(paste("chmod 770", outfile))
-
-		# system(paste("chmod 770 -R ", save_dir))
 
 		t2 = Sys.time()
 
