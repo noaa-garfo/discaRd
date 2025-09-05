@@ -253,7 +253,7 @@ mrem <- mrem |>
 gf_dat = gf_dat %>%
 	left_join(x = .
 						, y = mrem
-						, by = c(CAMSID, SUBTRIP)) %>%
+						, by = join_by(CAMSID, SUBTRIP)) %>%
 	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
 																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
 				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
