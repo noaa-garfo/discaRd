@@ -54,7 +54,7 @@ for(iloop in 1:nrow(sidx)){
 
   ntable = joined_table %>%
     dplyr::group_by_at(vars(all_of(cidx))) %>%
-    dplyr::mutate(DOCID= paste(CAMSID, SUBTRIP, sep = "_"))
+    dplyr::mutate(DOCID = paste(CAMSID, SUBTRIP, sep = "_")) |>
     dplyr::summarize(N = n_distinct(DOCID[is.na(LINK1)])  # This is number of unobs subtrips in strata in year_t
                      ) %>%
     dplyr::rename({{N_name}} := N
