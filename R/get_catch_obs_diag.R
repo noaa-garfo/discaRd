@@ -41,7 +41,8 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
   , PERMIT
   , AREA
 	, vtrserno
-	, c.CAMS_SUBTRIP
+	, c.camsid
+	, c.subtrip
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -50,7 +51,6 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, offwatch_haul
 	, fishdisp
 	, docid
-	, c.CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -85,8 +85,8 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_GARFO.CAMS_OBS_CATCH c
-	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130, scallop_area from CAMS_GARFO.CAMS_SUBTRIP) s
-	on c.CAMS_SUBTRIP = s.CAMS_SUBTRIP
+	left join (select distinct camsid, subtrip, exempt_7130, scallop_area from CAMS_GARFO.CAMS_SUBTRIP) s
+	on c.camsid = s.camsid and c.subtrip = s.subtrip
 
 	where year >=", start_year , "
 	and year <= ", end_year , "
@@ -95,7 +95,8 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
   , AREA
   , PERMIT
 	, vtrserno
-	, c.CAMS_SUBTRIP
+	, c.camsid
+	, c.subtrip
 	, link1
 	, source
 	, offwatch_link1
@@ -124,10 +125,8 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
-  , c.CAMSID
   , month
   , date_trip
-	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -156,9 +155,9 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
   c_o_dat2 = c_o_dat2 %>%
     mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
     mutate(DOCID_ORIG = DOCID) %>%
-    mutate(DOCID = CAMS_SUBTRIP)
+    mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
-  # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+  # NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
   # 4/13/22
@@ -247,14 +246,14 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
 
   # Add MREM adjustment View
-  mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+  mrem = ROracle::dbGetQuery(con, 'select distinct CAMSID, SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
 										from CAMS_GARFO.CAMS_alloc_gf_mrem')
 
   # make the MREM KALL adjustment
   gf_dat = gf_dat %>%
     left_join(x = .
               , y = mrem
-              , by = 'CAMS_SUBTRIP') %>%
+              , by = c(CAMSID, SUBTRIP)) %>%
     mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
                                     , is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
            ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
@@ -292,7 +291,8 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   , PERMIT
   , AREA
 	, vtrserno
-	, CAMS_SUBTRIP
+	, CAMSID
+	, SUBTRIP
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -301,7 +301,6 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
 	, offwatch_haul
 	, fishdisp
 	, docid
-	, CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -337,7 +336,8 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   , AREA
   , PERMIT
 	, vtrserno
-	, CAMS_SUBTRIP
+	, CAMSID
+	, SUBTRIP
 	, link1
 	, source
 	, offwatch_link1
@@ -359,10 +359,8 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
-  , CAMSID
   , month
   , date_trip
-	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -378,32 +376,21 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
         select distinct
         camsid
         , subtrip
-        , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
         , scallop_area
         from CAMS_GARFO.CAMS_land
   )
 
- -- , cams_herr as(
---	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
---	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
---	  from cams_landings cl
---  )
-
-  select
+ select
    cos.*
-  -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
   , h.area_herr
   , b.herring as herr_targ
   from obs_cams cos
   left join area_herr h
-  on (h.cams_subtrip = cos.cams_subtrip)
+  on (h.camsid = cos.camsid and h.subtrip = cos.subtrip)
 
-  --left join cams_herr ch
-  --on (ch.cams_subtrip = cos.cams_subtrip)
-
-  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_fishery_group c ) b
-  on (cos.cams_subtrip = b.cams_subtrip)
+  left join (select c.*, from cams_fishery_group c ) b
+  on (cos.camsid = b.camsid and cos.subtrip = b.subtrip)
 
 
 "
@@ -413,9 +400,9 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
 
   c_o_dat2 = c_o_dat2 %>%
-    mutate(DOCID = CAMS_SUBTRIP)
+    mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
-  # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+  # NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
   # 4/13/22
