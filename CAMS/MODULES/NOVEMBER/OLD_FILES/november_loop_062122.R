@@ -1,7 +1,7 @@
 
 # Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						  , 'TRIPCATEGORY'
@@ -36,22 +36,22 @@ CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from MAPS.CAMS_GEARCODE_STRATA'
 # Stat areas table  
 # unique stat areas for stock ID if needed
 STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
-  # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+  # filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
-  group_by(AREA_NAME) %>% 
+  group_by(SPECIES_ESTIMATION_REGION) %>% 
   distinct(STAT_AREA) %>%
   mutate(AREA = as.character(STAT_AREA)
-         , SPECIES_STOCK = AREA_NAME) %>% 
+         , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>% 
   ungroup() #%>% 
-  #dplyr::select(SPECIES_STOCK, AREA)
+  #dplyr::select(SPECIES_ESTIMATION_REGION, AREA)
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
-  mutate(SPECIES_STOCK = AREA_NAME
+  mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
          , GEARCODE = CAMS_GEAR_GROUP) %>%
-  select(-AREA_NAME) %>%
+  select(-SPECIES_ESTIMATION_REGION) %>%
    mutate(CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(SPECIES_ITIS == species_itis_srce)
@@ -69,12 +69,12 @@ ddat_focal <- all_dat %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
 		dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS.x', NESPP3 = 'NESPP3.x',
 	              GEARCODE = 'GEARCODE.x') %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 ddat_prev <- all_dat %>% 
@@ -86,12 +86,12 @@ ddat_prev <- all_dat %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
 	dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS.x', NESPP3 = 'NESPP3.x',
 	              GEARCODE = 'GEARCODE.x') %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 
@@ -246,7 +246,7 @@ trans_rate_df = trans_rate_df %>%
 #
 # print(paste0("Getting rates across sectors for ", species_itis, " ", FY)) 
  
-stratvars_assumed = c("SPECIES_STOCK"
+stratvars_assumed = c("SPECIES_ESTIMATION_REGION"
 											, "CAMS_GEAR_GROUP"
 											, "MESHGROUP")
 
@@ -341,13 +341,13 @@ mnk = run_discard( bdat = bdat_2yrs
 			, ddat_focal = ddat_cy_2yr
 			, c_o_tab = ddat_2yr
 			, species_itis = species_itis
-			, stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+			, stratvars = stratvars[1:2]  #"SPECIES_ESTIMATION_REGION"   "CAMS_GEAR_GROUP"
 			)
 
 # rate table
 mnk$allest$C
 
-SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
+SPECIES_ESTIMATION_REGION <-sub("_.*", "", mnk$allest$C$STRATA)  
 
 CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
 
@@ -355,7 +355,7 @@ BROAD_STOCK_RATE <-  mnk$allest$C$RE_mean
 
 CV_b <- round(mnk$allest$C$RE_rse, 2)
 
-BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
+BROAD_STOCK_RATE_TABLE <- as.data.frame(cbind(SPECIES_ESTIMATION_REGION, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b))
 
 BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE <- as.numeric(BROAD_STOCK_RATE_TABLE$BROAD_STOCK_RATE)
 BROAD_STOCK_RATE_TABLE$CV_b <- as.numeric(BROAD_STOCK_RATE_TABLE$CV_b)
@@ -372,7 +372,7 @@ joined_table = assign_strata(full_strata_table, stratvars_assumed) %>%
 	dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
 	dplyr::rename(STRATA_ASSUMED = STRATA) %>% 
 	left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>% 
-	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_STOCK','CAMS_GEAR_GROUP')) %>% 
+	left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP')) %>% 
 	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
 															 , n_obs_trips_f < 5 & 
 															 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -440,7 +440,7 @@ joined_table = joined_table %>%
 
 # Make note of the stratification variables used according to discard source
 
-stratvars_gear = c("SPECIES_STOCK"
+stratvars_gear = c("SPECIES_ESTIMATION_REGION"
 											, "CAMS_GEAR_GROUP")
 
 strata_f = paste(stratvars, collapse = ';')

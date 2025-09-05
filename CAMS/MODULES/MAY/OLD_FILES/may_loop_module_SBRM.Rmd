@@ -264,7 +264,7 @@ c_o_dat2 <- non_gf_dat
 
 # Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						#	, 'HALFOFYEAR'
@@ -305,15 +305,15 @@ CAMS_GEAR_STRATA$CAMS_GEAR_GROUP <- as.character(CAMS_GEAR_STRATA$CAMS_GEAR_GROU
 # # Stat areas table  
 # unique stat areas for stock ID if needed
 STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
-  # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+  # filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>%
-  group_by(AREA_NAME) %>%
+  group_by(SPECIES_ESTIMATION_REGION) %>%
   distinct(STAT_AREA) %>%
   mutate(AREA = as.character(STAT_AREA)
-         , SPECIES_STOCK = AREA_NAME) %>%
+         , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
   ungroup() #%>%
-  #dplyr::select(SPECIES_STOCK, AREA)
+  #dplyr::select(SPECIES_ESTIMATION_REGION, AREA)
 
 #Used Alewife stratificatino in support tables
 
@@ -324,9 +324,9 @@ STOCK_AREAS$STAT_AREA<- as.character(STOCK_AREAS$STAT_AREA)
 # #Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
-  mutate(SPECIES_STOCK = AREA_NAME
+  mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
          , GEARCODE = CAMS_GEAR_GROUP) %>%
-  select(-AREA_NAME) %>%
+  select(-SPECIES_ESTIMATION_REGION) %>%
    mutate(CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
   # filter(NESPP3 == species_nespp3) %>%
 	filter(SPECIES_ITIS == species_itis_srce) %>%
@@ -351,11 +351,11 @@ ddat_focal <- c_o_dat2 %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 ddat_prev <- c_o_dat2 %>% 
@@ -367,11 +367,11 @@ ddat_prev <- c_o_dat2 %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
 	dplyr::select(-SPECIES_ITIS.y, -GEARCODE.y) %>% 
 	dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS.x', GEARCODE = 'GEARCODE.x') %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 
@@ -499,7 +499,7 @@ trans_rate_df = dest_strata_f %>%
  # m_data <- d_focal$res %>% filter(!is.na(LINK1))
  # 
  # mod <- glm(OBS_DISCARD ~ offset(log(m_data$OBS_KALL+1))+
- #             SPECIES_STOCK +
+ #             SPECIES_ESTIMATION_REGION +
  #             CAMS_GEAR_GROUP +
  #             MESHGROUP + 
  #             HALFOFYEAR + 
@@ -566,7 +566,7 @@ trans_rate_df = dest_strata_f %>%
  #add subtrip kall after CV
  
  cy_discard_example = final_table %>%
-#	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+#	mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_ESTIMATION_REGION)) %>% 
 	dplyr::rename('DISCARD_RATE' = 'FINAL_RATE'
 								,'N_OBS_TRIPS_F' = 'n_obs_trips'
 								,'STRATA_FULL' = 'STRATA'
@@ -692,7 +692,7 @@ dbWriteTable(bcon, name = 'CAMS_DISCARD_EXAMPLE_CY_BLACKSEABASS_19', value = cy_
                 ,DISCARD = "NUMBER"
                  ,CV = "NUMBER"
                ,SUBTRIP_KALL = "NUMBER"
-                 ,SPECIES_STOCK = "VARCHAR2(30)"
+                 ,SPECIES_ESTIMATION_REGION = "VARCHAR2(30)"
                   ,CAMS_GEAR_GROUP = "VARCHAR2(30)"
                   ,MESH_GROUP = "VARCHAR2(30)"
                  ,HALFOFYEAR = "NUMBER"

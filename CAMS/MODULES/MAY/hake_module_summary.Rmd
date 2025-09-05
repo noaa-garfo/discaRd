@@ -35,14 +35,14 @@ Exploration of discard estimates from may year module developed for hake
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 ```
 
-	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
+	- SPECIES_ESTIMATION_REGION is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
@@ -53,11 +53,11 @@ stratvars = c('SPECIES_STOCK'
 ```{r, echo = T, eval = F}
 # Assumed Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP') 
 ```	
 
-4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
 
 7. A transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 
@@ -78,7 +78,7 @@ stratvars = c('SPECIES_STOCK'
 			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
 ```
 
-By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
+By assigning `SPECIES_ESTIMATION_REGION` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
 
 Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~X seconds to process on the server.
 
@@ -371,11 +371,11 @@ strat_final %>%
 ```{r plot 1, echo = F, fig.cap = "Total Discard Estimates by Species, Stock and Discard Source" , fig.height = 8, fig.width = 12}
 db_final %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	group_by(SPECIES, SPECIES_ITIS, DISCARD_SOURCE,SPECIES_ESTIMATION_REGION) %>% 
 	dplyr::summarise(DSUM = sum(DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
-	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	geom_bar(aes(x = SPECIES_ESTIMATION_REGION, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
  facet_wrap(~SPECIES, scales = 'free')+
 	theme_light()
 ```

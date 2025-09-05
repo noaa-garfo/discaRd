@@ -70,19 +70,19 @@ discard_herring <- function(con
 		STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
 			filter(ITIS_TSN == species_itis) %>%
 			collect() %>%
-			group_by(AREA_NAME, ITIS_TSN) %>%
+			group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
 			distinct(AREA) %>%
 			mutate(AREA = as.character(AREA)
-						 , SPECIES_STOCK = AREA_NAME) %>%
+						 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
 			ungroup()
 
 		# Mortality table
 		CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
 			collect() %>%
-			mutate(SPECIES_STOCK = AREA_NAME
+			mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
 						 , GEARCODE = CAMS_GEAR_GROUP
 						 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-			select(-AREA_NAME) %>%
+			#select(-SPECIES_ESTIMATION_REGION) %>%
 			filter(ITIS_TSN == species_itis) %>%
 			dplyr::select(-ITIS_TSN)
 
@@ -104,12 +104,12 @@ discard_herring <- function(con
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+								, by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
 			) %>%
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
 			assign_strata(., stratvars = stratvars)
 
 		# DATE RANGE FOR PREVIOUS YEAR ----
@@ -130,12 +130,12 @@ discard_herring <- function(con
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+								, by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
 			) %>%
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
 			assign_strata(., stratvars = stratvars)
 
 
@@ -537,7 +537,7 @@ discard_herring <- function(con
 
 		# Make note of the stratification variables used according to discard source ----
 
-		stratvars_gear = c("FY", "FY_TYPE", "HERR_TARG")
+    stratvars_gear = c("FY", "FY_TYPE", "HERR_TARG")
 
 		strata_f = paste(stratvars, collapse = ';')
 		strata_a = paste(stratvars_assumed, collapse = ';')
