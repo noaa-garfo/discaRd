@@ -6,8 +6,6 @@
 #' @param all_dat Data frame of trips built from CAMS_OBS_CATCH and control script routine
 #' @param save_dir Directory to save (and load saved) results
 #' @param run_parallel option to run species discard calculations in parallel
-#'
-# #' @param FY_TYPE Type of fishing year. This determines the time element for the trips used in discard estimation. Herring, Groundfish, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @author Benjamin Galuardi
 #' @export
@@ -18,7 +16,6 @@
 discard_generic <- function(con = con_maps
 														 , species = species
 														 , FY = fy
-														 #, FY_TYPE = c('Calendar','March','April','May','November')
 														 , all_dat = all_dat
 														 , save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 														 , run_parallel = FALSE
@@ -31,7 +28,6 @@ discard_generic <- function(con = con_maps
 		dir.create(save_dir, recursive = TRUE)
 		system(paste("chmod 770 -R", save_dir))
 	}
-
 
 	FY_TYPE = species$RUN_ID[1]
 
@@ -53,11 +49,6 @@ discard_generic <- function(con = con_maps
 								, 'TRIPCATEGORY'
 								, 'ACCESSAREA')
 
-
-	# Begin loop
-
-	# for(i in 1:length(species$ITIS_TSN)){
-
 	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
 	  ncores <- dplyr::case_when(
@@ -77,9 +68,6 @@ discard_generic <- function(con = con_maps
 
 		t1 = Sys.time()
 
-		# print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
-
-		# setDTthreads(threads = 5)
 		options(keyring_file_lock_timeout = 100000)
 
 		# keyring unlock
@@ -90,9 +78,6 @@ discard_generic <- function(con = con_maps
 
 		keyring::keyring_unlock(keyring = 'apsd', password = pw)
 		con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
-
-		# species_nespp3 = species$NESPP3[i]
-		#species_itis = species$ITIS_TSN[i]
 
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
