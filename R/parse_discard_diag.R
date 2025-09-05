@@ -32,7 +32,13 @@ parse_discard_diag <- function(joined_table
      outlist <- joined_table %>%
         # lazy_dt() |> # doesn't work with paste in mutate
         dplyr::ungroup() |>
-        dplyr::mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>%
+        dplyr::mutate(
+          GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_ESTIMATION_REGION)
+          , SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
+        ) %>%
+        
+
+
         dplyr::select(-SPECIES_ITIS, -ITIS_TSN) %>%
         dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
                       , 'CAMS_DISCARD_RATE' = 'COAL_RATE'
@@ -106,7 +112,7 @@ parse_discard_diag <- function(joined_table
           , CAMS_DISCARD_VARIANCE
           , N_UNOBSERVED
           , N_OBSERVED
-          , SPECIES_STOCK
+          , SPECIES_ESTIMATION_REGION
           , SECGEAR_MAPPED
           , NEGEAR
           , CAMS_GEAR_GROUP

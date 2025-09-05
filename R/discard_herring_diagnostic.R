@@ -61,6 +61,7 @@ discard_herring_diagnostic <- function(con
     # unique stat areas for stock ID if needed
     STOCK_AREAS =  STOCK_AREAS
 
+
     # Mortality table
     CAMS_DISCARD_MORTALITY_STOCK =  CAMS_DISCARD_MORTALITY_STOCK
 
@@ -82,12 +83,12 @@ discard_herring_diagnostic <- function(con
       left_join(., y = STOCK_AREAS, by = 'AREA') %>%
       left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
       left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-                , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+                , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
       dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
                     GEARCODE = 'GEARCODE.x') %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
       assign_strata(., stratvars = stratvars)
 
     # DATE RANGE FOR PREVIOUS YEAR ----
@@ -108,12 +109,12 @@ discard_herring_diagnostic <- function(con
       left_join(., y = STOCK_AREAS, by = 'AREA') %>%
       left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
       left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-                , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+                , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
       dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
                     GEARCODE = 'GEARCODE.x') %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
+      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
       assign_strata(., stratvars = stratvars)
 
 
@@ -514,7 +515,7 @@ discard_herring_diagnostic <- function(con
 
     # Make note of the stratification variables used according to discard source ----
 
-    stratvars_gear = c(#"SPECIES_STOCK", #AWA
+    stratvars_gear = c(#"SPECIES_ESTIMATION_REGION", #AWA
       "FY", "FY_TYPE", "HERR_TARG")
 
     strata_f = paste(stratvars, collapse = ';')
@@ -580,7 +581,7 @@ discard_herring_diagnostic <- function(con
                , STRATA_USED
                , STRATA_USED_DESC
                , DISCARD_SOURCE
-               , SPECIES_STOCK
+               , SPECIES_ESTIMATION_REGION
                , HERR_TARG
                , AREA_HERR
                , CAMS_GEAR_GROUP

@@ -367,7 +367,7 @@ rm(fed_trips, state_trips)
 
 # Stratification variables
 
-stratvars = c(#'SPECIES_STOCK'
+stratvars = c(#'SPECIES_ESTIMATION_REGION'
               'HERR_FLAG' # target vs non target herring
               ,'HERR_AREA' # herring management area
               ,'CAMS_GEAR_GROUP')# gear 
@@ -409,22 +409,22 @@ mutate_all(function(x) ifelse(str_detect(x, '^0_'), 'other', x))
 # Stat areas table  
 # unique stat areas for stock ID if needed
 STOCK_AREAS = tbl(con_maps, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
-  # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+  # filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
 	dplyr::filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
-  group_by(AREA_NAME) %>% 
+  group_by(SPECIES_ESTIMATION_REGION) %>% 
   distinct(STAT_AREA) %>%
   mutate(AREA = as.character(STAT_AREA)
-         , SPECIES_STOCK = AREA_NAME) %>% 
+         , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>% 
   ungroup() #%>% 
-  #dplyr::select(SPECIES_STOCK, AREA)
+  #dplyr::select(SPECIES_ESTIMATION_REGION, AREA)
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
-  mutate(SPECIES_STOCK = AREA_NAME
+  mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
          , GEARCODE = CAMS_GEAR_GROUP) %>%
-  select(-AREA_NAME) %>%
+  select(-SPECIES_ESTIMATION_REGION) %>%
    mutate(CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(ITIS_TSN == species_itis_srce)
@@ -448,12 +448,12 @@ ddat_focal <- alldat %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
 	dplyr::select(-GEARCODE.y) %>% 
 		dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 	              GEARCODE = 'GEARCODE.x') %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 ddat_prev <- alldat %>% 
@@ -465,12 +465,12 @@ ddat_prev <- alldat %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
 	dplyr::select( -GEARCODE.y) %>% 
 	dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 	              GEARCODE = 'GEARCODE.x') %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 
@@ -726,7 +726,7 @@ ddat_2yr = bind_rows(ddat_prev, ddat_focal)
 #			, ddat_focal = ddat_cy_2yr
 #			, c_o_tab = ddat_2yr
 #			, species_itis = species_itis
-#			, stratvars = stratvars[1]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP" #AWA just target vs non target
+#			, stratvars = stratvars[1]  #"SPECIES_ESTIMATION_REGION"   "CAMS_GEAR_GROUP" #AWA just target vs non target
 #			)
 
 # rate table
@@ -749,7 +749,7 @@ mnk_current = run_discard(bdat = bdat_cy
 											 , stratvars = stratvars[1]
 											 )
 
-#SPECIES_STOCK <-sub("_.*", "", mnk$allest$C$STRATA)  
+#SPECIES_ESTIMATION_REGION <-sub("_.*", "", mnk$allest$C$STRATA)  
 HERR_FLAG <- mnk_prev$allest$C$STRATA
 
 #CAMS_GEAR_GROUP <- sub(".*?_", "", mnk$allest$C$STRATA) 
@@ -854,7 +854,7 @@ joined_table = joined_table %>%
 
 # Make note of the stratification variables used according to discard source
 
-stratvars_gear = c(#"SPECIES_STOCK", #AWA 
+stratvars_gear = c(#"SPECIES_ESTIMATION_REGION", #AWA 
                     "HERR_FLAG")
 
 strata_f = paste(stratvars, collapse = ';')
@@ -888,9 +888,9 @@ joined_table = joined_table %>%
 				 )
 
 joined_table %>% 
-	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>% 
+	group_by(SPECIES_ESTIMATION_REGION, DISCARD_SOURCE) %>% 
 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>% 
-	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>% 
+	pivot_wider(names_from = 'SPECIES_ESTIMATION_REGION', values_from = 'DISCARD_EST') %>% 
 	dplyr::select(-1) %>% 
 	colSums(na.rm = T) %>% 
 	round()
@@ -916,7 +916,7 @@ joined_table %>%
  #add subtrip kall after CV
  
  	cy_discard_example <- joined_table %>% 
-		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_STOCK)) %>% 
+		mutate(GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_ESTIMATION_REGION)) %>% 
 		dplyr::select(-SPECIES_ITIS) %>%
 		# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>%
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
@@ -956,7 +956,7 @@ joined_table %>%
 		DISC_MORT_RATIO,
 		DISCARD,
 		CV,
-		SPECIES_STOCK,
+		SPECIES_ESTIMATION_REGION,
 		CAMS_GEAR_GROUP,
 		MESHGROUP,
 		SECTID,
@@ -997,7 +997,7 @@ joined_table %>%
 
 dbWriteTable(con_maps, name = 'CAMS_DISCARD_ATLANTICHERRING_CY_19', value = cy_discard_example, overwrite = T)
 
-#cy_discard_example %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_STOCK) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
+#cy_discard_example %>% filter(FED_OR_STATE == 'STATE') %>% group_by(DISCARD_SOURCE, CAMS_GEAR_GROUP, SPECIES_ESTIMATION_REGION) %>% dplyr::summarise(D = sum(DISCARD), K = sum(SUBTRIP_KALL), Drate = mean(CAMS_DISCARD_RATE), Dmort = mean(DISC_MORT_RATIO)) %>% arrange(desc(D))%>% top_n(10) %>% dplyr::mutate(across(where(is.numeric), round, 4))%>%
 #		DT::datatable(caption = 'Discard rates by Strata for Atlantic Herring')
 
 
