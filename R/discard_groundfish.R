@@ -1202,7 +1202,7 @@ discard_groundfish <- function(con
 
       # drop an CAMS Subtrip in scallop run
       t1 = t1 |>
-        filter(CAMSID %!in% t2$CAMSID && SUBTRIP %!in% t2$SUBTRIP)
+        filter(CAMSID %!in% t2$CAMSID & SUBTRIP %!in% t2$SUBTRIP)
 
       # and now replace
       t3 = t1 %>%
