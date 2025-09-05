@@ -703,7 +703,6 @@ discard_groundfish <- function(con
       CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
         mutate(GEARCODE = CAMS_GEAR_GROUP
                , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-        dplyr::select(-AREA_NAME) %>%
         dplyr::filter(ITIS_TSN == species_itis) %>%
         dplyr::select(-ITIS_TSN)
 
