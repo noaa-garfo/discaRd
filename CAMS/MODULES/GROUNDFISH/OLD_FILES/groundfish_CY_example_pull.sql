@@ -28,7 +28,7 @@ with gf as (
 
 select round(sum(discard)) as cams_discard
     , g.common_name
-    , s.area_name as species_stock
+    , s.species_estimation_region as species_estimation_region
     , c.negear
 from gf g
 
@@ -53,8 +53,8 @@ AND GF = 1
 AND TRIP_TYPE = 'FED'  
 
 group by  g.common_name
-    , s.area_name
+    , s.species_estimation_region
     , c.negear
 
-order by common_name, species_stock
+order by common_name, species_estimation_region
 /

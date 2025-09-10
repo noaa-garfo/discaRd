@@ -7,11 +7,11 @@
 get_broad_stock_gear_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM', CAMS_GEAR_GROUP = '0'){ 	
 	
 	btmp = 	bdat %>%
-		filter(SPECIES_STOCK == stock & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP)
+		filter(SPECIES_ESTIMATION_REGION == stock & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP)
 	dstmp = ddat_focal_sp %>%
-		filter(SPECIES_STOCK == stock & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP)
+		filter(SPECIES_ESTIMATION_REGION == stock & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP)
 	dtmp = 	ddat_focal %>%
-		filter(SPECIES_STOCK == stock & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP)
+		filter(SPECIES_ESTIMATION_REGION == stock & CAMS_GEAR_GROUP == CAMS_GEAR_GROUP)
 	
 	d_broad_stock = run_discard(bdat = btmp
 															, ddat = dstmp
@@ -24,7 +24,7 @@ get_broad_stock_gear_rate = function(bdat, ddat_focal_sp, ddat_focal, species_it
 	
 	print(d_broad_stock$allest$C)
 	
-	data.frame(SPECIES_STOCK = stock
+	data.frame(SPECIES_ESTIMATION_REGION = stock
 						 , CAMS_GEAR_GROUP = CAMS_GEAR_GROUP
 						 , BROAD_STOCK_RATE = d_broad_stock$allest$rTOT
 						 , CV_b = d_broad_stock$allest$CVTOT
@@ -42,7 +42,7 @@ BROAD_STOCK_RATE_TABLE = list()
 
 kk = 1
 
-ustocks = bdat_cy$SPECIES_STOCK %>% unique()
+ustocks = bdat_cy$SPECIES_ESTIMATION_REGION %>% unique()
 
 UGEARS = bdat_cy$CAMS_GEAR_GROUP %>% unique()
 
@@ -87,7 +87,7 @@ mnk2 = run_discard( bdat = bdat_2yrs
 			, ddat_focal = ddat_cy_2yr %>% filter(FED_OR_STATE != 'STATE')
 			, c_o_tab = ddat_2yr %>% filter(FED_OR_STATE != 'STATE')
 			, species_itis = species_itis
-			, stratvars = stratvars[1:2]  #"SPECIES_STOCK"   "CAMS_GEAR_GROUP"
+			, stratvars = stratvars[1:2]  #"SPECIES_ESTIMATION_REGION"   "CAMS_GEAR_GROUP"
 			)
 
 # rate table
