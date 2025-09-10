@@ -94,7 +94,7 @@ GF module:
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
-stratvars = c( 'SPECIES_STOCK'
+stratvars = c( 'SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               , 'SECTID'
@@ -104,7 +104,7 @@ stratvars = c( 'SPECIES_STOCK'
               , "XLRG_GILLNET_EXEMPTION")
 ```
 By Species:
-	- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+	- SPECIES_ESTIMATION_REGION is taken from CAMS support table `CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- SECTID comes from a CAMS matching table (`MATCH_MULT_SECTID`)
@@ -119,13 +119,13 @@ By Species:
 ```{r, echo = T, eval = F}
 # Assumed Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
               ,'MESHGROUP'
 							,'SECTOR_TYPE') 
 ```	
 
-6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
+6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_ESTIMATION_REGION`
 
 7. For each *pass*, a transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 
@@ -161,14 +161,14 @@ stratvars = c('SPECIES_STOCK'
 ```{r, echo = T, eval = F}
 # Full (First Pass) Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 ```
 
-	- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+	- SPECIES_ESTIMATION_REGION is taken from CAMS support table `CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
@@ -177,13 +177,13 @@ stratvars = c('SPECIES_STOCK'
 4. Run first pass of `discaRd` for full startififcation
 	- there are sub-passes for year t and year t-1
 	
-5. Run a second pass using a coarsened stratification : 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+5. Run a second pass using a coarsened stratification : 'SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
 
 	
 ```{r, echo = T, eval = F}
 # Second Pass Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
               ,'MESHGROUP')
 
@@ -195,7 +195,7 @@ stratvars = c('SPECIES_STOCK'
 ```{r, echo = T, eval = F}
 # Third PAss Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP')
 
 ```	
@@ -242,14 +242,14 @@ Non GF module:
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 ```
 By Species:
-	- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+	- SPECIES_ESTIMATION_REGION is taken from CAMS support table `CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- SECTID comes from a CAMS matching table (`MATCH_MULT_SECTID`)
@@ -260,13 +260,13 @@ By Species:
 ```{r, echo = T, eval = F}
 # Assumed Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP'
               ,'MESHGROUP')
 
 ```	
 
-4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+4. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, the stratification is coarsened to 'SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
 
 7. A transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 

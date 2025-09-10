@@ -35,7 +35,7 @@ with gf as (
 
 select round(sum(discard)) as cams_discard
     , g.common_name
-    , max(s.area_name) as species_stock
+    , max(s.species_estimation_region) as species_estimation_region
     , c.negear
     , c.mesh_cat
     , c.SECTID
@@ -62,12 +62,12 @@ on (c.CAMSID = g.CAMSID AND c.VTRSERNO = g.VTRSERNO)  -- this gets many other tr
 WHERE g.common_name = 'OCEAN POUT'
 
 group by  g.common_name
-    , s.area_name
+    , s.species_estimation_region
     , c.negear
     , c.mesh_cat
     , c.SECTID
 
-order by common_name , species_stock
+order by common_name , species_estimation_region
 /
 
 grant select on cams_catch to apsd
