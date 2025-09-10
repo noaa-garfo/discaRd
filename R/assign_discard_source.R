@@ -11,6 +11,7 @@
 assign_discard_source <- function(jtable, GF = 1){
 if(GF ==1){
 jtable = jtable %>%
+  mutate(CAMSID_SUBTRIP = paste(CAMSID,SUBTRIP,sep = "_")) |>
   mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
                                     , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'O'  # observed with at least one obs haul
                                     , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..
@@ -40,7 +41,7 @@ jtable = jtable %>%
 tab1 = jtable %>%
   filter(!is.na(LINK1) & LINK3_OBS == 0 & DISCARD_SOURCE == 'I')
 
-tab1_cams_subtrip = unique(tab1$CAMS_SUBTRIP)
+tab1_cams_subtrip = unique(tab1$CAMSID_SUBTRIP)
 
 tab1 = tab1 %>%
   mutate(DISCARD_SOURCE = case_when(  n_obs_trips_f >= 5 ~ 'I'
@@ -61,7 +62,7 @@ tab1 = tab1 %>%
   )
 
 tab2 = jtable %>%
-  filter(CAMS_SUBTRIP %!in% tab1_cams_subtrip)
+  filter(CAMSID_SUBTRIP %!in% tab1_cams_subtrip)
 
 tab2 = tab2 %>%
   bind_rows(., tab1)
@@ -97,7 +98,7 @@ if(GF == 0) {
   tab1 = jtable %>%
     filter(!is.na(LINK1) & LINK3_OBS == 0 & DISCARD_SOURCE == 'I')
 
-  tab1_cams_subtrip = unique(tab1$CAMS_SUBTRIP)
+  tab1_cams_subtrip = unique(tab1$CAMSID_SUBTRIP)
 
   tab1 = tab1 %>%
   mutate(DISCARD_SOURCE = case_when(  n_obs_trips_f >= 5 ~ 'I'
@@ -117,7 +118,7 @@ if(GF == 0) {
     )
 
   tab2 = jtable %>%
-    filter(CAMS_SUBTRIP %!in% tab1_cams_subtrip)
+    filter(CAMSID_SUBTRIP %!in% tab1_cams_subtrip)
 
   tab2 = tab2 %>%
     bind_rows(., tab1)
@@ -127,14 +128,3 @@ if(GF == 0) {
 tab2
 
 }
-
-
-# ttab = assign_discard_source(joined_table, GF = 1)
-# ttab %>%
-#   filter(CAMSID == '310439_20190710224900_31043919071012') %>%
-#   dplyr::select(LINK1, DISCARD_SOURCE, DISCARD, LINK3_OBS, n_obs_trips_f)
-#
-#
-# ttab %>% filter(!is.na(LINK1) & LINK3_OBS == 0) %>%
-#   group_by(DISCARD_SOURCE, n_obs_trips_f, n_obs_trips_p, n_obs_trips_f_a, n_obs_trips_p_a) %>%
-#   dplyr::summarise(n_distinct(CAMS_SUBTRIP))

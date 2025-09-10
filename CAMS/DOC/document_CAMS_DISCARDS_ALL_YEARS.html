@@ -3175,7 +3175,7 @@ column)</p></li>
 </ol>
 <pre class="r"><code># FULL Stratification variables
 
-stratvars = c( &#39;SPECIES_STOCK&#39;
+stratvars = c( &#39;SPECIES_ESTIMATION_REGION&#39;
               , &#39;CAMS_GEAR_GROUP&#39;
               , &#39;MESHGROUP&#39;
               , &#39;SECTID&#39;
@@ -3183,7 +3183,7 @@ stratvars = c( &#39;SPECIES_STOCK&#39;
               , &quot;REDFISH_EXEMPTION&quot;
               , &quot;SNE_SMALLMESH_EXEMPTION&quot;
               , &quot;XLRG_GILLNET_EXEMPTION&quot;)</code></pre>
-<p>By Species: - SPECIES_STOCK is taken from CAMS support table
+<p>By Species: - SPECIES_ESTIMATION_REGION is taken from CAMS support table
 <code>CAMS_STATAREA_STOCK</code> - CAMS_GEAR_GROUP is derived from a
 support table (<code>CAMS_GEARCODE_STRATA</code>) - MESHGROUP is
 hardcoded for all trips according to decisions made by the mesh subgroup
@@ -3205,7 +3205,7 @@ rates rolled up for all Sectors
 </ol>
 <pre class="r"><code># Assumed Stratification variables
 
-stratvars = c(&#39;SPECIES_STOCK&#39;
+stratvars = c(&#39;SPECIES_ESTIMATION_REGION&#39;
               ,&#39;CAMS_GEAR_GROUP&#39;
               ,&#39;MESHGROUP&#39;
                             ,&#39;SECTOR_TYPE&#39;) </code></pre>
@@ -3213,7 +3213,7 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
 <li><p>The discaRd functions allow for an assumed rate to be calculated.
 This assumed rate is relative to the stratification used in the
 functions. Here, we utilize this feature to generate a broad stock rate.
-the stratification here is simply <code>SPECIES_STOCK</code></p></li>
+the stratification here is simply <code>SPECIES_ESTIMATION_REGION</code></p></li>
 <li><p>For each <em>pass</em>, a transition rate is calculated between
 year t and year t-1. This rate determines how much, if any, information
 is used from previous years.</p></li>
@@ -3266,12 +3266,12 @@ Trips</h3>
 </ol>
 <pre class="r"><code># Full (First Pass) Stratification variables
 
-stratvars = c(&#39;SPECIES_STOCK&#39;
+stratvars = c(&#39;SPECIES_ESTIMATION_REGION&#39;
               ,&#39;CAMS_GEAR_GROUP&#39;
                             , &#39;MESHGROUP&#39;
                           , &#39;TRIPCATEGORY&#39;
                           , &#39;ACCESSAREA&#39;)</code></pre>
-<pre><code>- SPECIES_STOCK is taken from CAMS support table `CAMS_STATAREA_STOCK`
+<pre><code>- SPECIES_ESTIMATION_REGION is taken from CAMS support table `CAMS_STATAREA_STOCK`
 - CAMS_GEAR_GROUP is derived from a support table (`CAMS_GEARCODE_STRATA`)
 - MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 - TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
@@ -3282,11 +3282,11 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
 <li>there are sub-passes for year t and year t-1</li>
 </ul></li>
 <li>Run a second pass using a coarsened stratification :
-‘SPECIES_STOCK’, ‘CAMS_GEAR_GROUP’ and ‘MESHGROUP’.</li>
+‘SPECIES_ESTIMATION_REGION’, ‘CAMS_GEAR_GROUP’ and ‘MESHGROUP’.</li>
 </ol>
 <pre class="r"><code># Second Pass Stratification variables
 
-stratvars = c(&#39;SPECIES_STOCK&#39;
+stratvars = c(&#39;SPECIES_ESTIMATION_REGION&#39;
               ,&#39;CAMS_GEAR_GROUP&#39;
               ,&#39;MESHGROUP&#39;)</code></pre>
 <ol start="6" style="list-style-type: decimal">
@@ -3294,7 +3294,7 @@ stratvars = c(&#39;SPECIES_STOCK&#39;
 </ol>
 <pre class="r"><code># Third PAss Stratification variables
 
-stratvars = c(&#39;SPECIES_STOCK&#39;
+stratvars = c(&#39;SPECIES_ESTIMATION_REGION&#39;
               ,&#39;CAMS_GEAR_GROUP&#39;)</code></pre>
 <ol start="7" style="list-style-type: decimal">
 <li><p>Trips/Gear strata that are unobserved after these steps are not
@@ -3352,12 +3352,12 @@ Figure 2. CAMS_DISCARD_ALL_YEARS table lineage
 </ol>
 <pre class="r"><code># FULL Stratification variables
 
-stratvars = c(&#39;SPECIES_STOCK&#39;
+stratvars = c(&#39;SPECIES_ESTIMATION_REGION&#39;
               ,&#39;CAMS_GEAR_GROUP&#39;
                             , &#39;MESHGROUP&#39;
                           , &#39;TRIPCATEGORY&#39;
                           , &#39;ACCESSAREA&#39;)</code></pre>
-<p>By Species: - SPECIES_STOCK is taken from CAMS support table
+<p>By Species: - SPECIES_ESTIMATION_REGION is taken from CAMS support table
 <code>CAMS_STATAREA_STOCK</code> - CAMS_GEAR_GROUP is derived from a
 support table (<code>CAMS_GEARCODE_STRATA</code>) - MESHGROUP is
 hardcoded for all trips according to decisions made by the mesh subgroup
@@ -3371,13 +3371,13 @@ hardcoded for all trips according to decisions made by the mesh subgroup
 </ol>
 <pre class="r"><code># Assumed Stratification variables
 
-stratvars = c(&#39;SPECIES_STOCK&#39;
+stratvars = c(&#39;SPECIES_ESTIMATION_REGION&#39;
               , &#39;CAMS_GEAR_GROUP&#39;
               ,&#39;MESHGROUP&#39;)</code></pre>
 <ol start="4" style="list-style-type: decimal">
 <li><p>The discaRd functions allow for an assumed rate to be calculated.
 This assumed rate is relative to the stratification used in the
-functions. Here, the stratification is coarsened to ‘SPECIES_STOCK’,
+functions. Here, the stratification is coarsened to ‘SPECIES_ESTIMATION_REGION’,
 ‘CAMS_GEAR_GROUP’ and ‘MESHGROUP’.</p></li>
 <li><p>A transition rate is calculated between year t and year t-1. This
 rate determines how much, if any, information is used from previous
@@ -3663,7 +3663,7 @@ Coefficient of variaiton for discard estimate
 </tr>
 <tr>
 <td style="text-align:left;">
-SPECIES_STOCK
+SPECIES_ESTIMATION_REGION
 </td>
 <td style="text-align:left;">
 Stock of species as defined in support table

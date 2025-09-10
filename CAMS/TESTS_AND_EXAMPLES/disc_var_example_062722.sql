@@ -23,7 +23,7 @@ select  species_itis
 , strata_full
 , CAMS_GEAR_GROUP
 , MESHGROUP
-, SPECIES_STOCK
+, SPECIES_ESTIMATION_REGION
 , disc_mort_ratio
 --, GF
 from maps.cams_discard_all_years a
@@ -34,7 +34,7 @@ and species_itis = 160617
 and fed_or_state = 'FED'
 group by strata_full, species_itis, COMMON_NAME, CAMS_GEAR_GROUP, disc_mort_ratio
 , MESHGROUP
-, SPECIES_STOCK --, GF
+, SPECIES_ESTIMATION_REGION --, GF
 order by CAMS_GEAR_GROUP
 ;
 
