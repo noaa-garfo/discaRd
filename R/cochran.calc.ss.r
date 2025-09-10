@@ -14,11 +14,6 @@
 #'
 cochran.calc.ss = function(df, n_trips, n_obs, CV_targ = NA){
 
-
-  # n  =  nrow(df)
-  #
-  # n  =  n_distinct(df$CAMS_SUBTRIP)
-
   n = n_obs
 
 	# if(n_trips<n){warning('Warning...Total trips less than observed trips')}
