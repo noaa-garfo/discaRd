@@ -34,7 +34,7 @@ get_covrow_bg <- function(joined_table){
 
 		ntable = joined_table %>%
 			group_by_at(vars((cidx))) %>%
-			dplyr::summarize(N = n_distinct(CAMS_SUBTRIP)
+			dplyr::summarize(N = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))
 											 , n = n_distinct(LINK1)) %>%
 			dplyr::rename({{N_name}} := N
 										, {{n_name}} := n)

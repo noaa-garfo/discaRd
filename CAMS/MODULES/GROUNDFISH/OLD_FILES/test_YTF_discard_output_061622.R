@@ -30,7 +30,7 @@ t1 = tbl(con_maps, sql("
 	  select * from CAMS_DISCARD_YELLOWTAILFLD_2021
 	)
 	where SPECIES_ITIS = 172909
-	-- and species_stock = 'GB'
+	-- and species_estimation_region = 'GB'
 	-- and cams_gear_group = '132'
 	and year in (2020)
 	group by discard_source, tripcategory, scallop_area, fy, year

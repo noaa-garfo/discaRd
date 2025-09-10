@@ -88,7 +88,7 @@ species = species \%>\%
 # GEAR TABLE
 CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) \%>\%
 	collect() \%>\%
-	dplyr::rename(GEARCODE = VTR_GEAR_CODE) \%>\%
+	dplyr::rename(GEARCODE = SECGEAR_MAPPED) \%>\%
 	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
 	dplyr::select(-NESPP3, -ITIS_TSN)
 
@@ -96,19 +96,19 @@ CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) \%>\%
 STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) \%>\%
 	collect() \%>\%
 	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
-	group_by(AREA_NAME, ITIS_TSN) \%>\%
+	group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) \%>\%
 	distinct(AREA) \%>\%
 	mutate(AREA = as.character(AREA)
-				 , SPECIES_STOCK = AREA_NAME) \%>\%
+				 , SPECIES_STOCK = SPECIES_ESTIMATION_REGION) \%>\%
 	ungroup()
 
 # Discard Mortality table ----
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  \%>\%
 	collect() \%>\%
-	mutate(SPECIES_STOCK = AREA_NAME
+	mutate(SPECIES_STOCK = SPECIES_ESTIMATION_REGION
 				 , GEARCODE = CAMS_GEAR_GROUP
 				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) \%>\%
-	select(-AREA_NAME) \%>\%
+	select(-SPECIES_ESTIMATION_REGION) \%>\%
 	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
 	dplyr::select(-ITIS_TSN)
 
@@ -124,7 +124,7 @@ if(species$ITIS_TSN == '079718'){
 				when area like '53\%' then 'SNE'
 				when area >= 520 and area <599 and area not like '53\%'  then 'GB'
 				when area < 520 then 'GOM'
-				end as AREA_NAME
+				end as SPECIES_ESTIMATION_REGION
 				, case when area > 599 then 'MA'
 				when area like '53\%' then 'SNE'
 				when area >= 520 and area <599 and area not like '53\%'  then 'GB'
@@ -133,10 +133,10 @@ if(species$ITIS_TSN == '079718'){
 			  from CFG_STATAREA_STOCK
 				where ITIS_TSN = '079718'")) \%>\%
 		collect() \%>\%
-		group_by(AREA_NAME, ITIS_TSN) \%>\%
+		group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) \%>\%
 		distinct(AREA) \%>\%
 		mutate(AREA = as.character(AREA)
-					 , SPECIES_STOCK = AREA_NAME) \%>\%
+					 , SPECIES_STOCK = SPECIES_ESTIMATION_REGION) \%>\%
 		ungroup()
 
 }

@@ -75,7 +75,7 @@ match_stockid <- function(bcon, species_itis){
  
  t2 %>% 
  	left_join(., stock_dmis, by = 'AREA') %>% 
- 	mutate(CAMS_STOCK_AREA = paste(COMMON_NAME, AREA_NAME, sep = '_')) %>% 
+ 	mutate(CAMS_STOCK_AREA = paste(COMMON_NAME, SPECIES_ESTIMATION_REGION, sep = '_')) %>% 
  	dplyr::rename('DMIS_STOCK_ID' = STOCK_ID
  								, 'SPECIES_ITIS' = 'SPECIES_ITIS.x') %>% 
  	dplyr::select(-SPECIES_ITIS.y)
@@ -120,8 +120,8 @@ t3 = tbl(bcon, sql("select *
 									 "
 									 )) %>% 
 	left_join(., t2, by = c('AREA' = 'STAT_AREA')) %>% 
-	filter(!is.na(AREA_NAME)) %>% 
-	group_by(AREA_NAME) %>% 
+	filter(!is.na(SPECIES_ESTIMATION_REGION)) %>% 
+	group_by(SPECIES_ESTIMATION_REGION) %>% 
 	dplyr::summarise(KALL_CAMS = sum(LIVLB, na.rm = T))
 
     # collect()
@@ -130,13 +130,13 @@ t3 = tbl(bcon, sql("select *
  	left_join(., t2, by= c('AREA' = 'STAT_AREA')) %>%
  	left_join(., stock_dmis, by = c('AREA' = 'AREA')) %>% 
  	filter(!is.na(STOCK_ID.y)) %>%   # don't use STOCK_ID.x... species specific stock to attribute catch 
- 	group_by(STOCK_ID.y, AREA_NAME) %>%
+ 	group_by(STOCK_ID.y, SPECIES_ESTIMATION_REGION) %>%
  	# head() %>% 
  	dplyr::summarise(KALL_DMIS = round(sum(POUNDS, na.rm = T))) %>%
- 	left_join(., t3, by = 'AREA_NAME') %>% 
+ 	left_join(., t3, by = 'SPECIES_ESTIMATION_REGION') %>% 
  	collect() %>% 
  	mutate(SPECIES_ITIS = species_itis) %>% 
- 	dplyr::rename('STOCK_ID_DMIS' = 'STOCK_ID.y', 'STOCK_ID_CAMS' = 'AREA_NAME')
+ 	dplyr::rename('STOCK_ID_DMIS' = 'STOCK_ID.y', 'STOCK_ID_CAMS' = 'SPECIES_ESTIMATION_REGION')
  
 }
 

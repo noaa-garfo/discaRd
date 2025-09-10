@@ -853,13 +853,13 @@ ROracle::dbCommit(con_maps)
 
 ROracle::dbGetQuery(con_maps, "
 	select round(sum(cams_discard)) as total_discard
-	, species_stock
+	, species_estimation_region
 	, COMMON_NAME
 	, species_itis
 	, FY
 	, GF
 	from MAPS.CAMS_DISCARD_ALL_YEARS
-	group by species_itis, fy, species_stock, GF, COMMON_NAME
+	group by species_itis, fy, species_estimation_region, GF, COMMON_NAME
 	order by COMMON_NAME
 	"
 )
@@ -915,13 +915,13 @@ ROracle::dbCommit(con_cams)
 
 ROracle::dbGetQuery(con_cams, "
 	select round(sum(cams_discard)) as total_discard
-	, species_stock
+	, species_estimation_region
 	, COMMON_NAME
 	, species_itis
 	, FY
 	, GF
 	from CAMS_GARFO.CAMS_DISCARD_ALL_YEARS
-	group by species_itis, fy, species_stock, GF, COMMON_NAME
+	group by species_itis, fy, species_estimation_region, GF, COMMON_NAME
 	order by COMMON_NAME
 	"
 )

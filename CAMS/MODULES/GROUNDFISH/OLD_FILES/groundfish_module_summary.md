@@ -20,7 +20,7 @@ This means a full accounting of groundfish discards occurs in several steps.
 ``` r
 # FULL Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
               # , 'CAREA'
@@ -50,14 +50,14 @@ stratvars = c('SPECIES_STOCK'
 ``` r
 # Assumed Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
                             , 'SECTOR_TYPE'
               ) 
 ```
 
-1.  The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
+1.  The discaRd functions allow for an assumed rate to be calculated. This assumed rate is realtive to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_ESTIMATION_REGION`
 
 2.  For each *pass*, a transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years.
 
@@ -85,7 +85,7 @@ stratvars = c('SPECIES_STOCK'
             # COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates    
 ```
 
-By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries.
+By assigning `SPECIES_ESTIMATION_REGION` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries.
 
 Once the full table (CAMS\_OBS\_CATCH) is loaded, each species takes ~12 seconds to process on the server.
 
@@ -181,7 +181,7 @@ Output tables are produced for each species. These can easily be recombined. An 
 ``` r
 db_example %>% 
     group_by(COMNAME_EVAL
-                     , SPECIES_STOCK) %>% 
+                     , SPECIES_ESTIMATION_REGION) %>% 
     dplyr::summarise(nvtr = n_distinct(VTRSERNO)
                                      , KALL = sum(SUBTRIP_KALL, na.rm = T)
                                      , DISCARD = round(sum(DISCARD, na.rm = T))) %>% 
@@ -22849,9 +22849,9 @@ joined_table = joined_table %>%
                  )
 
 joined_table %>%
-    group_by(SPECIES_STOCK, DISCARD_SOURCE) %>%
+    group_by(SPECIES_ESTIMATION_REGION, DISCARD_SOURCE) %>%
     dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>%
-    pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>%
+    pivot_wider(names_from = 'SPECIES_ESTIMATION_REGION', values_from = 'DISCARD_EST') %>%
     dplyr::select(-1) %>%
     colSums(na.rm = T)
 ```

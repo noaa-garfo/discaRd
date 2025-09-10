@@ -37,7 +37,7 @@ get.cochran.ss.by.strat <- function(bydat
                      , allk = allk[1]
                      , d = sum(BYCATCH)
                      , n_orig = n_distinct(LINK1)
-                     , n = n_distinct(CAMS_SUBTRIP)
+                     , n = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))
                      , k = sum(KALL)
                      # , avg_seadays = mean(SEADAYS, na.rm=T)
     )
@@ -119,7 +119,7 @@ get.cochran.ss.by.strat <- function(bydat
 
     C = bydat %>%
       dplyr::group_by(STRATA) %>%
-      mutate(n_obs = n_distinct(CAMS_SUBTRIP)) %>%
+      mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) %>%
       group_modify(~ cochran.calc.ss(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) %>%
       ungroup()
     # dplyr::group_modify(.f = cochran.calc.ss(., l_N = .$N[1], l_CVtarg = targCV))
