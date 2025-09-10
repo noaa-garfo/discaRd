@@ -6,8 +6,6 @@
 #' @param all_dat Data frame of trips built from CAMS_OBS_CATCH and control script routine
 #' @param save_dir Directory to save (and load saved) results
 #' @param run_parallel option to run species discard calculations in parallel
-#'
-# #' @param FY_TYPE Type of fishing year. This determines the time element for the trips used in discard estimation. Herring, Groundfish, and scallop trips for groundfish are separate functions,
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @author Benjamin Galuardi
 #' @export
@@ -18,7 +16,6 @@
 discard_generic <- function(con = con_maps
 														 , species = species
 														 , FY = fy
-														 #, FY_TYPE = c('Calendar','March','April','May','November')
 														 , all_dat = all_dat
 														 , save_dir = file.path(getOption("maps.discardsPath"), "calendar")
 														 , run_parallel = FALSE
@@ -31,7 +28,6 @@ discard_generic <- function(con = con_maps
 		dir.create(save_dir, recursive = TRUE)
 		system(paste("chmod 770 -R", save_dir))
 	}
-
 
 	FY_TYPE = species$RUN_ID[1]
 
@@ -47,16 +43,11 @@ discard_generic <- function(con = con_maps
 
 	stratvars = c('FY'
               	, 'FY_TYPE'
-              	,'SPECIES_STOCK'
+              	,'SPECIES_ESTIMATION_REGION'
 								,'CAMS_GEAR_GROUP'
 								, 'MESH_CAT'
 								, 'TRIPCATEGORY'
 								, 'ACCESSAREA')
-
-
-	# Begin loop
-
-	# for(i in 1:length(species$ITIS_TSN)){
 
 	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
@@ -77,9 +68,6 @@ discard_generic <- function(con = con_maps
 
 		t1 = Sys.time()
 
-		# print(paste0('Running ', species$ITIS_NAME[i], " for Fishing Year ", FY))
-
-		# setDTthreads(threads = 5)
 		options(keyring_file_lock_timeout = 100000)
 
 		# keyring unlock
@@ -90,9 +78,6 @@ discard_generic <- function(con = con_maps
 
 		keyring::keyring_unlock(keyring = 'apsd', password = pw)
 		con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = database, schema = 'maps')
-
-		# species_nespp3 = species$NESPP3[i]
-		#species_itis = species$ITIS_TSN[i]
 
 		species_itis <- as.character(species$ITIS_TSN[i])
 		species_itis_srce = as.character(as.numeric(species$ITIS_TSN[i]))
@@ -118,29 +103,26 @@ discard_generic <- function(con = con_maps
 		STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
 			filter(ITIS_TSN == species_itis) %>%
 			collect() %>%
-			group_by(AREA_NAME, ITIS_TSN) %>%
+			group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
 			distinct(AREA) %>%
-			mutate(AREA = as.character(AREA)
-						 , SPECIES_STOCK = AREA_NAME) %>%
+			mutate(AREA = as.character(AREA)) %>%
 			ungroup()
 
 		# Mortality table
 		CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
 			collect() %>%
-			mutate(SPECIES_STOCK = AREA_NAME
-						 , GEARCODE = CAMS_GEAR_GROUP
+			mutate(GEARCODE = CAMS_GEAR_GROUP
 						 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-			select(-AREA_NAME) %>%
 			filter(ITIS_TSN == species_itis) %>%
 			dplyr::select(-ITIS_TSN)
 
 		# swap underscores for hyphens where compound stocks exist ----
 		STOCK_AREAS  = STOCK_AREAS |>
-		  mutate(AREA_NAME = str_replace(AREA_NAME, '_', '-')) |>
-		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+		  mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-')) |>
+		  mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
 		CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK |>
-		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '_', '-'))
+		  mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
 		# Observer codes to be removed
 		OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
@@ -158,17 +140,16 @@ discard_generic <- function(con = con_maps
 		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
-						 # , NESPP3 = NESPP3_FINAL
 			) %>%
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+								, by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
 			) %>%
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
 			assign_strata(., stratvars)
 
 
@@ -186,17 +167,16 @@ discard_generic <- function(con = con_maps
 		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
-						 # , NESPP3 = NESPP3_FINAL
 			) %>%
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-								, by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+								, by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
 			) %>%
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
-			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
+			relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')%>%
 			assign_strata(., stratvars)
 
 
@@ -213,10 +193,13 @@ discard_generic <- function(con = con_maps
 
 		# if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
 		# DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
+		fishdisp_exclude = c(39,90,98) |>
+		  stringr::str_pad(3, side = 'left', pad = 0)
 
 		bdat_cy = ddat_focal %>%
 			filter(!is.na(LINK1)) %>%
-			filter(FISHDISP != '090') %>%
+			# filter(FISHDISP != '090') %>%
+		  dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
 			filter(LINK3_OBS == 1) %>%
 			filter(SOURCE != 'ASM') %>%
 			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES)
@@ -239,7 +222,8 @@ discard_generic <- function(con = con_maps
 		# previous year observer data needed..
 		bdat_prev_cy = ddat_prev %>%
 			filter(!is.na(LINK1)) %>%
-			filter(FISHDISP != '090') %>%
+		  # filter(FISHDISP != '090') %>%
+		  dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
 			filter(LINK3_OBS == 1) %>%
 			filter(SOURCE != 'ASM') %>%
 			filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
@@ -252,8 +236,6 @@ discard_generic <- function(con = con_maps
 		d_prev = run_discard(bdat = bdat_prev_cy
 												 , ddat = ddat_prev_cy
 												 , c_o_tab = ddat_prev
-												 # , year = 2018
-												 # , species_nespp3 = species_nespp3
 												 , species_itis = species_itis
 												 , stratvars = stratvars
 												 , aidx = c(1:length(stratvars))
@@ -264,9 +246,6 @@ discard_generic <- function(con = con_maps
 		d_focal = run_discard(bdat = bdat_cy
 													, ddat = ddat_focal_cy
 													, c_o_tab = ddat_focal
-													# , year = 2019
-													# , species_nespp3 = '081' # haddock...
-													# , species_nespp3 = species_nespp3  #'081' #cod...
 													, species_itis = species_itis
 													, stratvars = stratvars
 													, aidx = c(1:length(stratvars))  # this makes sure this isn't used..
@@ -381,7 +360,6 @@ discard_generic <- function(con = con_maps
 
 		if(exists("d_focal")) {
 		full_strata_table = trans_rate_df_full %>%
-			# right_join(., y = d_focal$res, by = 'STRATA') %>%
 			right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 			as_tibble() %>%
 			mutate(SPECIES_ITIS_EVAL = species_itis
@@ -391,7 +369,6 @@ discard_generic <- function(con = con_maps
 			dplyr::rename(FULL_STRATA = STRATA)
 		} else {
 		  full_strata_table = trans_rate_df_full %>%
-		    # right_join(., y = d_prev$res, by = 'STRATA') %>%
 		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
@@ -405,7 +382,7 @@ discard_generic <- function(con = con_maps
 
 		stratvars_assumed = c("FY"
 		                      ,"FY_TYPE"
-		                      ,"SPECIES_STOCK"
+		                      ,"SPECIES_ESTIMATION_REGION"
 													, "CAMS_GEAR_GROUP"
 													, "MESH_CAT")
 
@@ -416,11 +393,8 @@ discard_generic <- function(con = con_maps
 		d_prev_pass2 = run_discard(bdat = bdat_prev_cy
 															 , ddat = ddat_prev_cy
 															 , c_o_tab = ddat_prev
-															 # , year = 2018
-															 # , species_nespp3 = species_nespp3
 															 , species_itis = species_itis
 															 , stratvars = stratvars_assumed
-															 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
 															 , aidx = c(1)  # this creates an unstratified broad stock rate
 		)
 
@@ -430,12 +404,8 @@ discard_generic <- function(con = con_maps
 		d_focal_pass2 = run_discard(bdat = bdat_cy
 																, ddat = ddat_focal_cy
 																, c_o_tab = ddat_focal
-																# , year = 2019
-																# , species_nespp3 = '081' # haddock...
-																# , species_nespp3 = species_nespp3  #'081' #cod...
 																, species_itis = species_itis
 																, stratvars = stratvars_assumed
-																# , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
 																, aidx = c(1)  # this creates an unstratified broad stock rate
 		)
 
@@ -557,7 +527,7 @@ discard_generic <- function(con = con_maps
 											 , ddat_focal = ddat_cy_2yr
 											 , c_o_tab = ddat_2yr
 											 , species_itis = species_itis
-											 , stratvars = stratvars[1:4]  #"FY","FY_TYPE", "SPECIES_STOCK", "CAMS_GEAR_GROUP"
+											 , stratvars = stratvars[1:4]  #"FY","FY_TYPE", "SPECIES_ESTIMATION_REGION", "CAMS_GEAR_GROUP"
 		)
 
 		# broad rate table ----
@@ -566,7 +536,7 @@ discard_generic <- function(con = con_maps
 		  dplyr::select(STRATA, N, n, RE_mean, RE_rse) |>
 		  mutate(FY = as.numeric(sub("_.*", "", STRATA))
 		         , FY_TYPE = FY_TYPE) |>
-		  mutate(SPECIES_STOCK = gsub("^([^_]+)_", "", STRATA)  |>
+		  mutate(SPECIES_ESTIMATION_REGION = gsub("^([^_]+)_", "", STRATA)  |>
 		           gsub(pattern = "^([^_]+)_", replacement = "")  |>
 		           sub(pattern ="_.*", replacement ="")
 		         , CAMS_GEAR_GROUP = gsub("^([^_]+)_", "", STRATA)  |>
@@ -577,7 +547,7 @@ discard_generic <- function(con = con_maps
 		  dplyr::rename(BROAD_STOCK_RATE = RE_mean
 		                , n_B = n
 		                , N_B = N) |>
-		  dplyr::select(FY, FY_TYPE, SPECIES_STOCK, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
+		  dplyr::select(FY, FY_TYPE, SPECIES_ESTIMATION_REGION, CAMS_GEAR_GROUP, BROAD_STOCK_RATE, CV_b, n_B, N_B)
 
 		names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
@@ -595,7 +565,7 @@ discard_generic <- function(con = con_maps
 		joined_table = joined_table %>%
 			dplyr::rename(STRATA_ASSUMED = STRATA) %>%
 			left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_STOCK','CAMS_GEAR_GROUP')) %>%
+			left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP')) %>%
 			mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
 																	 , n_obs_trips_f < 5 &
 																	 	n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
@@ -636,7 +606,7 @@ discard_generic <- function(con = con_maps
 
 		stratvars_gear = c("FY"
 		                   , "FY_TYPE"
-		                   , "SPECIES_STOCK"
+		                   , "SPECIES_ESTIMATION_REGION"
 											 , "CAMS_GEAR_GROUP")
 
 		strata_f = paste(stratvars, collapse = ';')
@@ -696,8 +666,8 @@ discard_generic <- function(con = con_maps
 		# replace hyphens with underscores to match the rest of CAMS ----
 
 		joined_table = joined_table |>
-		  mutate(SPECIES_STOCK = str_replace(SPECIES_STOCK, '-', '_')) |>
-		  mutate(AREA_NAME = str_replace(AREA_NAME, '-', '_')) |>
+		  mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
+		  mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '-', '_')) |>
 		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
 		  mutate(STRATA_USED = str_replace(STRATA_USED, '-', '_')) |>
 		  mutate(STRATA_USED_DESC = str_replace(STRATA_USED_DESC, '-', '_')) |>
