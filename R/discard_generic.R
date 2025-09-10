@@ -105,17 +105,14 @@ discard_generic <- function(con = con_maps
 			collect() %>%
 			group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
 			distinct(AREA) %>%
-			mutate(AREA = as.character(AREA)
-						 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
+			mutate(AREA = as.character(AREA)) %>%
 			ungroup()
 
 		# Mortality table
 		CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
 			collect() %>%
-			mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
-						 , GEARCODE = CAMS_GEAR_GROUP
+			mutate(GEARCODE = CAMS_GEAR_GROUP
 						 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-			#select(-SPECIES_ESTIMATION_REGION) %>%
 			filter(ITIS_TSN == species_itis) %>%
 			dplyr::select(-ITIS_TSN)
 
@@ -143,7 +140,6 @@ discard_generic <- function(con = con_maps
 		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
-						 # , NESPP3 = NESPP3_FINAL
 			) %>%
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
@@ -171,7 +167,6 @@ discard_generic <- function(con = con_maps
 		         , FY = FY) %>%
 			mutate(LIVE_POUNDS = SUBTRIP_KALL
 						 ,SEADAYS = 0
-						 # , NESPP3 = NESPP3_FINAL
 			) %>%
 			left_join(., y = STOCK_AREAS, by = 'AREA') %>%
 			left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
@@ -237,8 +232,6 @@ discard_generic <- function(con = con_maps
 		d_prev = run_discard(bdat = bdat_prev_cy
 												 , ddat = ddat_prev_cy
 												 , c_o_tab = ddat_prev
-												 # , year = 2018
-												 # , species_nespp3 = species_nespp3
 												 , species_itis = species_itis
 												 , stratvars = stratvars
 												 , aidx = c(1:length(stratvars))
@@ -249,9 +242,6 @@ discard_generic <- function(con = con_maps
 		d_focal = run_discard(bdat = bdat_cy
 													, ddat = ddat_focal_cy
 													, c_o_tab = ddat_focal
-													# , year = 2019
-													# , species_nespp3 = '081' # haddock...
-													# , species_nespp3 = species_nespp3  #'081' #cod...
 													, species_itis = species_itis
 													, stratvars = stratvars
 													, aidx = c(1:length(stratvars))  # this makes sure this isn't used..
@@ -366,7 +356,6 @@ discard_generic <- function(con = con_maps
 
 		if(exists("d_focal")) {
 		full_strata_table = trans_rate_df_full %>%
-			# right_join(., y = d_focal$res, by = 'STRATA') %>%
 			right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 			as_tibble() %>%
 			mutate(SPECIES_ITIS_EVAL = species_itis
@@ -376,7 +365,6 @@ discard_generic <- function(con = con_maps
 			dplyr::rename(FULL_STRATA = STRATA)
 		} else {
 		  full_strata_table = trans_rate_df_full %>%
-		    # right_join(., y = d_prev$res, by = 'STRATA') %>%
 		  	right_join(., y = ddat_focal_cy, by = 'STRATA') %>%
 		    as_tibble() %>%
 		    mutate(SPECIES_ITIS_EVAL = species_itis
@@ -401,11 +389,8 @@ discard_generic <- function(con = con_maps
 		d_prev_pass2 = run_discard(bdat = bdat_prev_cy
 															 , ddat = ddat_prev_cy
 															 , c_o_tab = ddat_prev
-															 # , year = 2018
-															 # , species_nespp3 = species_nespp3
 															 , species_itis = species_itis
 															 , stratvars = stratvars_assumed
-															 # , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
 															 , aidx = c(1)  # this creates an unstratified broad stock rate
 		)
 
@@ -415,12 +400,8 @@ discard_generic <- function(con = con_maps
 		d_focal_pass2 = run_discard(bdat = bdat_cy
 																, ddat = ddat_focal_cy
 																, c_o_tab = ddat_focal
-																# , year = 2019
-																# , species_nespp3 = '081' # haddock...
-																# , species_nespp3 = species_nespp3  #'081' #cod...
 																, species_itis = species_itis
 																, stratvars = stratvars_assumed
-																# , aidx = c(1:length(stratvars_assumed))  # this makes sure this isn't used..
 																, aidx = c(1)  # this creates an unstratified broad stock rate
 		)
 
