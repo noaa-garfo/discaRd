@@ -129,6 +129,7 @@ discard_generic_diagnostic <- function(con = con_maps
 														, CAMS_GEAR_STRATA = CAMS_GEAR_STRATA
 														, STOCK_AREAS = STOCK_AREAS
 														, CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+														, OBS_REMOVE = OBS_REMOVE
 
 ) {
 
@@ -183,10 +184,12 @@ discard_generic_diagnostic <- function(con = con_maps
 		  mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
 		# Observer codes to be removed
-		OBS_REMOVE = tbl(con, sql("select * from CAMS_GARFO.CFG_OBSERVER_CODES"))  %>%
-			collect() %>%
-			filter(ITIS_TSN == species_itis) %>%
-			distinct(OBS_CODES)
+		# OBS_REMOVE = tbl(con, sql("select * from CAMS_GARFO.CFG_OBSERVER_CODES"))  %>%
+		# 	collect() %>%
+		# 	filter(ITIS_TSN == species_itis) %>%
+		# 	distinct(OBS_CODES)
+
+		OBS_REMOVE = OBS_REMOVE
 
 		#--------------------------------------------------------------------------------#
 		# make tables ----
@@ -205,6 +208,7 @@ discard_generic_diagnostic <- function(con = con_maps
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
 			) %>%
+
 			dplyr::select(-GEARCODE.y, -NESPP3.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
@@ -233,6 +237,7 @@ discard_generic_diagnostic <- function(con = con_maps
 			left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
 								, by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
 			) %>%
+
 			dplyr::select(-NESPP3.y, -GEARCODE.y) %>%
 			dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
 										GEARCODE = 'GEARCODE.x') %>%
