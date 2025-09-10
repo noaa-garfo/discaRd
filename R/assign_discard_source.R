@@ -70,6 +70,7 @@ tab2 = tab2 %>%
 
 if(GF == 0) {
   jtable = jtable %>%
+    mutate(CAMSID_SUBTRIP = paste(CAMSID,SUBTRIP,sep = "_")) |>
     mutate(DISCARD_SOURCE = case_when(!is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 0 ~ 'O'  # observed with at least one obs haul and no offwatch hauls on trip
                                       , !is.na(LINK1) & LINK3_OBS == 1 & OFFWATCH_LINK1 == 1 ~ 'O'  # observed with at least one obs haul
                                       , !is.na(LINK1) & LINK3_OBS == 0 ~ 'I'  # observed but no obs hauls..

@@ -113,20 +113,16 @@ discard_groundfish <- function(con
     STOCK_AREAS = ROracle::dbGetQuery(con, 'select * from CFG_STATAREA_STOCK') %>%
       dplyr::filter(ITIS_TSN == species_itis) %>%
       group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
-
       distinct(AREA) %>%
-      mutate(AREA = as.character(AREA)
-             , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>%
+      mutate(AREA = as.character(AREA)) %>%
       ungroup()
 
 
     # Mortality table
     # TODO: This can become MAPS:::cfg_discard_mortality_stock once added to the config load
     CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
-      mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
-             , GEARCODE = CAMS_GEAR_GROUP
+      mutate(GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-      #dplyr::select(-SPECIES_ESTIMATION_REGION) %>%
       dplyr::filter(ITIS_TSN == species_itis) %>%
       dplyr::select(-ITIS_TSN)
 
@@ -160,7 +156,7 @@ discard_groundfish <- function(con
                 , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) %>%
       dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-      dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+      dplyr::rename(GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x, DOCID = DOCID.x) %>%
       relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
       discaRd::assign_strata(., stratvars = stratvars)
 
@@ -707,7 +703,6 @@ discard_groundfish <- function(con
       CAMS_DISCARD_MORTALITY_STOCK = ROracle::dbGetQuery(con, "select * from CFG_DISCARD_MORTALITY_STOCK")  %>%
         mutate(GEARCODE = CAMS_GEAR_GROUP
                , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-        dplyr::select(-AREA_NAME) %>%
         dplyr::filter(ITIS_TSN == species_itis) %>%
         dplyr::select(-ITIS_TSN)
 
@@ -1207,7 +1202,7 @@ discard_groundfish <- function(con
 
       # drop an CAMS Subtrip in scallop run
       t1 = t1 |>
-        filter(CAMSID %!in% t2$CAMSID && SUBTRIP %!in% t2$SUBTRIP)
+        filter(CAMSID %!in% t2$CAMSID & SUBTRIP %!in% t2$SUBTRIP)
 
       # and now replace
       t3 = t1 %>%

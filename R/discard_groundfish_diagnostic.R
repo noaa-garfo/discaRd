@@ -863,7 +863,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   names(trans_rate_df_pass2) = paste0(names(trans_rate_df_pass2), '_a')
 
-  
+
   # join full and assumed strata tables
   joined_table = assign_strata(full_strata_table, stratvars_assumed)
 
@@ -1024,7 +1024,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   		# drop an CAMS Subtrip in scallop run
   		t1 = t1 |>
-  		  filter(CAMSID %!in% t2$CAMSID && SUBTRIP %!in% t2$SUBTRIP)
+  		  filter(CAMSID %!in% t2$CAMSID & SUBTRIP %!in% t2$SUBTRIP)
 
   		# and now replace
   		t3 = t1 %>%
