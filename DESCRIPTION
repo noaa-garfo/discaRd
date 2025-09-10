@@ -24,14 +24,16 @@ Depends:
 	fst,
 	glue
 Suggests:
-	tree,
-	rpart,
-	gbm,
-	ggplot2,
-	MAPS
+    tree,
+    rpart,
+    gbm,
+    ggplot2,
+    MAPS,
+    testthat (>= 3.0.0)
 NeedsCompilation: no
 ByteCompile: yes
 Encoding: UTF-8
 LazyData: FALSE
 RoxygenNote: 7.3.1
 VignetteBuilder: knitr
+Config/testthat/edition: 3

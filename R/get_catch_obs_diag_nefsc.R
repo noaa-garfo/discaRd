@@ -1,9 +1,10 @@
 
-#' Get Catch OBS data
+#' Get Catch OBS data at NEFSC
 #'
 #' @param con database connection
 #' @param start_year start year (calendar year)
 #' @param end_year end year (calendar year)
+#' @param mrem_table table of MREM KALL adjustment. If workgng from NEFSC, this must be created by the NEFSC user
 #'
 #' @return a list with the elements needed for discard estimation:
 #' * gf_dat : a data frame of groundfish only trips. This is used only in \link{discard_groundfish.R}
@@ -13,7 +14,7 @@
 #'
 #' @examples
 #' # Main example
-#' dat = get_catch_obs(con_maps, 2021, 2022)
+#' dat = get_catch_obs(con_maps, 2021, 2022, )
 #' gf_dat = dat$gf_dat
 #' non_gf_dat = dat$non_gf_dat
 #' all_dat = dat$all_dat
@@ -28,7 +29,7 @@
 #' rm(dat)
 #' gc()
 #'
-get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 2022){
+get_catch_obs_diag_nefsc <- function(con = con_maps, start_year = 2017, end_year = 2022, mrem_table = mrem_table){
 
   t1 = Sys.time()
 
@@ -41,8 +42,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
   , PERMIT
   , AREA
 	, vtrserno
-	, c.camsid
-	, c.subtrip
+	, c.CAMS_SUBTRIP
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -51,6 +51,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, offwatch_haul
 	, fishdisp
 	, docid
+	, c.CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -59,7 +60,6 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, MESH_CAT
 	, SECTID
   , GF
-  , s.scallop_area
 , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-SAC%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-NAC%' then 'COMMON_POOL'
@@ -85,8 +85,8 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_GARFO.CAMS_OBS_CATCH c
-	left join (select distinct camsid, subtrip, exempt_7130, scallop_area from CAMS_GARFO.CAMS_SUBTRIP) s
-	on c.camsid = s.camsid and c.subtrip = s.subtrip
+	left join (select distinct camsid||'_'||subtrip as cams_subtrip, exempt_7130 from CAMS_GARFO.CAMS_SUBTRIP) s
+	on c.CAMS_SUBTRIP = s.CAMS_SUBTRIP
 
 	where year >=", start_year , "
 	and year <= ", end_year , "
@@ -95,8 +95,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
   , AREA
   , PERMIT
 	, vtrserno
-	, c.camsid
-	, c.subtrip
+	, c.CAMS_SUBTRIP
 	, link1
 	, source
 	, offwatch_link1
@@ -113,7 +112,6 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, MESH_CAT
 	, SECTID
   , GF
-  , s.scallop_area
   , case when activity_code_1 like 'NMS-COM%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-SAC%' then 'COMMON_POOL'
 	   when activity_code_1 like 'MNK-NAC%' then 'COMMON_POOL'
@@ -125,8 +123,10 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
+  , c.CAMSID
   , month
   , date_trip
+	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -136,7 +136,6 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, sne_smallmesh_exemption
 	, xlrg_gillnet_exemption
 	, exempt_7130
-	, scallop_area
 	order by vtrserno asc
     )
 
@@ -154,10 +153,22 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
   c_o_dat2 = c_o_dat2 %>%
     mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
+    mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN'
+                                    , PROGRAM == 'NS' ~ 'NLS'
+                                    , PROGRAM == 'NN' ~ 'NLSN'
+                                    , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
+                                    , PROGRAM == 'NW' ~ 'NLSW'
+                                    , PROGRAM == '1S' ~ 'CAI'
+                                    , PROGRAM == '2S' ~ 'CAII'
+                                    , PROGRAM == 'NG' ~ 'NGOM'
+                                    , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
+    )
+    ) %>%
+    mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
     mutate(DOCID_ORIG = DOCID) %>%
-    mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
+    mutate(DOCID = CAMS_SUBTRIP)
 
-  # NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+  # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
   # 4/13/22
@@ -246,14 +257,16 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
 
   # Add MREM adjustment View
-  mrem = ROracle::dbGetQuery(con, 'select distinct CAMSID, SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-										from CAMS_GARFO.CAMS_alloc_gf_mrem')
+#   mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+# 										from CAMS_GARFO.cams_alloc_gf_mrem')
+
+  mrem = mrem_table
 
   # make the MREM KALL adjustment
   gf_dat = gf_dat %>%
     left_join(x = .
               , y = mrem
-              , by = c(CAMSID, SUBTRIP)) %>%
+              , by = 'CAMS_SUBTRIP') %>%
     mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
                                     , is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
            ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
@@ -291,8 +304,7 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   , PERMIT
   , AREA
 	, vtrserno
-	, CAMSID
-	, SUBTRIP
+	, CAMS_SUBTRIP
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -301,6 +313,7 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
 	, offwatch_haul
 	, fishdisp
 	, docid
+	, CAMSID
 	, nespp3
   , itis_tsn as SPECIES_ITIS
   , SECGEAR_MAPPED as GEARCODE
@@ -336,8 +349,7 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   , AREA
   , PERMIT
 	, vtrserno
-	, CAMSID
-	, SUBTRIP
+	, CAMS_SUBTRIP
 	, link1
 	, source
 	, offwatch_link1
@@ -359,8 +371,10 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
 			 else 'non_GF' end
   , case when PERMIT = '000000' then 'STATE'
        else 'FED' end
+  , CAMSID
   , month
   , date_trip
+	-- , halfofyear
 	, tripcategory
 	, accessarea
 	, activity_code_1
@@ -376,21 +390,31 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
         select distinct
         camsid
         , subtrip
+        , (camsid||'_'||subtrip) cams_subtrip
         , area_herr
-        , scallop_area
-        from CAMS_GARFO.CAMS_land
+        from cams_garfo.cams_land
   )
 
- select
+ -- , cams_herr as(
+--	  select distinct (cl.camsid||'_'||cl.subtrip) cams_subtrip
+--	  ,case when itis_tsn = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
+--	  from cams_landings cl
+--  )
+
+  select
    cos.*
+  -- , case when cos.species_itis = '161722' then 'HERR_TRIP' else 'NON_HERR_TRIP' end herr_targ
   , h.area_herr
   , b.herring as herr_targ
   from obs_cams cos
   left join area_herr h
-  on (h.camsid = cos.camsid and h.subtrip = cos.subtrip)
+  on (h.cams_subtrip = cos.cams_subtrip)
 
-  left join (select c.*, from cams_fishery_group c ) b
-  on (cos.camsid = b.camsid and cos.subtrip = b.subtrip)
+  --left join cams_herr ch
+  --on (ch.cams_subtrip = cos.cams_subtrip)
+
+  left join (select c.*, (c.camsid||'_'||c.subtrip) cams_subtrip from cams_garfo.cams_fishery_group c ) b
+  on (cos.cams_subtrip = b.cams_subtrip)
 
 
 "
@@ -400,9 +424,21 @@ get_catch_obs_herring_diag <- function(con = con_maps, start_year = 2017, end_ye
   c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
 
   c_o_dat2 = c_o_dat2 %>%
-    mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
+    mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
+    mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' & PROGRAM == 'OP' ~ 'OPEN'
+                                    , PROGRAM == 'NS' ~ 'NLS'
+                                    , PROGRAM == 'NN' ~ 'NLSN'
+                                    , PROGRAM == 'NH' ~ 'NLSS'  # includes the NLS south Deep
+                                    , PROGRAM == 'NW' ~ 'NLSW'
+                                    , PROGRAM == '1S' ~ 'CAI'
+                                    , PROGRAM == '2S' ~ 'CAII'
+                                    , PROGRAM %in% c('MA', 'ET', 'EF', 'HC', 'DM') ~ 'MAA'
+    )
+    ) %>%
+    mutate(SCALLOP_AREA = case_when(substr(ACTIVITY_CODE_1,1,3) == 'SES' ~ dplyr::coalesce(SCALLOP_AREA, 'OPEN'))) %>%
+    mutate(DOCID = CAMS_SUBTRIP)
 
-  # NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
+  # NOTE: CAMS_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
   # 4/13/22
