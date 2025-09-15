@@ -56,7 +56,7 @@ discard_generic <- function(con = con_maps
 	    TRUE ~ min(length(unique(species$ITIS_TSN)), 8, parallel::detectCores() -1)
 	  )
 
-	  cl3 <- makeCluster(ncores, outfile = "")
+	  cl3 <- makePSOCKcluster(ncores, outfile = "")
 	  registerDoParallel(cl3, cores = ncores)
 
 	  foreach(
