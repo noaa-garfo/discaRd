@@ -49,6 +49,9 @@ discard_generic <- function(con = con_maps
 								, 'TRIPCATEGORY'
 								, 'ACCESSAREA')
 
+	fishdisp_exclude = c(39,90,98) |>
+	  stringr::str_pad(3, side = 'left', pad = 0)
+
 	  `%op%` <- if (run_parallel) `%dopar%` else `%do%`
 
 	  ncores <- dplyr::case_when(
@@ -193,8 +196,8 @@ discard_generic <- function(con = con_maps
 
 		# if using the combined catch/obs table, which seems necessary for groundfish.. need to roll your own table to use with run_discard function
 		# DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
-		fishdisp_exclude = c(39,90,98) |>
-		  stringr::str_pad(3, side = 'left', pad = 0)
+		# fishdisp_exclude = c(39,90,98) |>
+		#   stringr::str_pad(3, side = 'left', pad = 0)
 
 		bdat_cy = ddat_focal %>%
 			filter(!is.na(LINK1)) %>%
