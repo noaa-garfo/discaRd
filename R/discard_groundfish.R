@@ -52,6 +52,9 @@ discard_groundfish <- function(con
                  , "EXEMPT_7130"
   )
 
+  fishdisp_exclude = c(39,90,98) |>
+    stringr::str_pad(3, side = 'left', pad = 0)
+
   # add a second SECTORID for Common pool/all others
 
   `%op%` <- if (run_parallel) `%dopar%` else `%do%`
@@ -194,8 +197,8 @@ discard_groundfish <- function(con
 
     # if using the combined catch/obs table, which seems necessary for groundfish. need to roll your own table to use with run_discard function
     # DO NOT NEED TO FILTER SPECIES HERE. NEED TO RETAIN ALL TRIPS. THE MAKE_BDAT_FOCAL.R FUNCTION TAKES CARE OF THIS.
-    fishdisp_exclude = c(39,90,98) |>
-      stringr::str_pad(3, side = 'left', pad = 0)
+    # fishdisp_exclude = c(39,90,98) |>
+    #   stringr::str_pad(3, side = 'left', pad = 0)
 
     bdat_gf = ddat_focal %>%
       dplyr::filter(!is.na(LINK1)) %>%
