@@ -1,4 +1,3 @@
-
 #' add_nobs
 #' add number of observed subtrips according to the `DISCARD_SOURCE` used
 #' `n` is number of obsereved subtrips used. This may cross fishing years in the case of Assumed (A) or transition rates (T). Gear only rates use two years of information so `n` for those is across two years (\year_{t} and \year_{t-1})
@@ -18,9 +17,6 @@ sidx = joined_table %>%
   dplyr::select(STRATA_USED, DISCARD_SOURCE) %>%
   dplyr::filter(!is.na(STRATA_USED)) |>
   distinct()
-
-
-# addone = function(x,y){x+y}
 
 joined_table =  joined_table |>
   mutate(n_obs_trips_p  = as.integer(n_obs_trips_p )
@@ -46,32 +42,6 @@ joined_table =  joined_table |>
   ), .after = FULL_STRATA
   )
 
-
-    # joined_table |>
-    # assign_discard_source(GF = 0) |>
-  # group_by(DISCARD_SOURCE,FED_OR_STATE)  |>
-  #   filter(DISCARD_SOURCE == 'GM' & n_obs_trips_f_a  >= 5) |>
-  #   # filter(n_obs_trips_f_a < 5 ) |>
-  #   # filter(is.na(n_USED)) |>
-  #   dplyr::select(n_obs_trips_f_a, n_obs_trips_p_a, CAMS_GEAR_GROUP, MESH_CAT, n_USED, n_GM2) |>   #
-  #   distinct()
-  #
-  # # dplyr::summarise(max(n_USED, na.rm = T))
-  #
-  #
-  # filter(DISCARD_SOURCE == 'GM') |>
-  #   # filter(n_obs_trips_f_a < 5 ) |>
-  #   filter(is.na(n_USED)) |>
-  #   group_by(FED_OR_STATE) |>
-  #   dplyr::select(n_obs_trips_f_a, n_obs_trips_p_a, CAMS_GEAR_GROUP, MESH_CAT, n_USED, n_GM2) |>  distinct()
-  # #
-  #
-  #
-  #   dplyr::select(n_USED, CAMS_GEAR_GROUP, MESH_CAT) |>
-  #   distinct()
-
-
-
 # Use the individual columns to group and tally unobs suntrips (N)
 
 for(iloop in 1:nrow(sidx)){
@@ -81,19 +51,13 @@ for(iloop in 1:nrow(sidx)){
   dtype = sidx$DISCARD_SOURCE[iloop]
 
   N_name = paste('N', dtype, sep = '_')
-  # n_name = paste('n', dtype, sep = '_')
 
-  # STRATA_USED_DESC = c(joined_table[1,cidx])
-
-  # N = number of total subtrips in strata
-  # n = total observed subtrips in strata
   ntable = joined_table %>%
     dplyr::group_by_at(vars(all_of(cidx))) %>%
-    dplyr::summarize(N = n_distinct(CAMS_SUBTRIP[is.na(LINK1)])  # This is number of unobs subtrips in strata in year_t
-                     # , n = n_distinct(CAMS_SUBTRIP[!is.na(LINK1) & LINK3_OBS > 0])
+    dplyr::mutate(DOCID = paste(CAMSID, SUBTRIP, sep = "_")) |>
+    dplyr::summarize(N = n_distinct(DOCID[is.na(LINK1)])  # This is number of unobs subtrips in strata in year_t
                      ) %>%
     dplyr::rename({{N_name}} := N
-                  # , {{n_name}} := n
                   )
 
   joined_table = joined_table %>%
@@ -134,22 +98,7 @@ joined_table = joined_table %>%
                                    , DISCARD_SOURCE == 'EM' ~ NA_integer_
                                    , TRUE ~ NA_integer_
   )
-  # , n_USED = dplyr::case_when(DISCARD_SOURCE == 'I' ~ n_I
-  #                             , DISCARD_SOURCE == 'T' ~ n_I
-  #                             , DISCARD_SOURCE == 'GM' ~ n_GM
-  #                             , DISCARD_SOURCE == 'G' ~ n_G
-  #                             , DISCARD_SOURCE == 'B' ~ n_B
-  #                             , DISCARD_SOURCE == 'A' ~ n_A
-  #                             , DISCARD_SOURCE == 'DELTA' ~ NA_integer_ # n_DELTA
-  #                             , DISCARD_SOURCE == 'EM' ~ NA_integer_
-  #                             , TRUE ~ NA_integer_
-  # ) #n_EM
   )
-
-
-# add Legaults covrow ----
-# joined_table <- make_strata_desc(joined_table) # put this in the discard_generic, groundfish and herring functions and in diganostics
-
 
 joined_table
 

@@ -10,18 +10,18 @@
 #' @examples
 assign_strata <- function(dat, stratvars){
 	stratvars = toupper(stratvars)
-	
-	dat <- dat %>% 
+
+	dat <- dat |>
 		mutate(STRATA = eval(parse(text = stratvars[1])))
-	
+
 	if(length(stratvars) >1 ){
-		
+
 		for(i in 2:length(stratvars)){
-			
-			dat <- dat %>% 
+
+			dat <- dat |>
 				mutate(STRATA = paste(STRATA, eval(parse(text = stratvars[i])), sep = '_'))
 		}
-		
+
 	}
 	dat
 }

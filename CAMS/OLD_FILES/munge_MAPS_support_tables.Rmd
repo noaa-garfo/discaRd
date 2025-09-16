@@ -98,7 +98,7 @@ stat_df <- expand.grid(
   # nespp4 = nespp4,
   stat_area = areas,
   definition = defs,
-  area_name = NA
+  species_estimation_region = NA
 )
 # is it listed in the spreadsheet?
 stat_df$listed <- 0
@@ -114,12 +114,12 @@ for (i in 1:nrow(t_areas)){
   # spp <- as.character(t_areas[i,c("nespp4_output")])
 
   for (j in 1:length(definitions)){
-    area_name <- as.character(t_areas[i,definitions[j]])
+    species_estimation_region <- as.character(t_areas[i,definitions[j]])
     
     stat_df[which(stat_df$species==spp &
               stat_df$definition==defs[j] &
               stat_df$stat_area %in% l_to_v(t_areas[i,area_names[j]])
-              ),"area_name"] <- area_name
+              ),"species_estimation_region"] <- species_estimation_region
 
     stat_df[which(stat_df$species==spp &
               stat_df$definition==defs[j] &
@@ -129,7 +129,7 @@ for (i in 1:nrow(t_areas)){
     #     stat_df[which(stat_df$nespp4 == spp &
     #           stat_df$definition == defs[j] &
     #           stat_df$stat_area %in% l_to_v(t_areas[i,area_names[j]])
-    #           ),"area_name"] <- area_name
+    #           ),"species_estimation_region"] <- species_estimation_region
     # 
     # stat_df[which(stat_df$nespp4 == spp &
     #           stat_df$definition == defs[j] &
@@ -139,7 +139,7 @@ for (i in 1:nrow(t_areas)){
 }
 
 stat_df <- stat_df[stat_df$listed==1,]
-#stat_df$area_name[which(is.na(stat_df$area_name))] <- "UNIT"
+#stat_df$species_estimation_region[which(is.na(stat_df$species_estimation_region))] <- "UNIT"
 
 # add NESPP4 back in
 
@@ -194,7 +194,7 @@ if(nrow(stat_df1)==0){
     select(species,stat_area) %>%
     mutate(Id = stat_area,
            definition = def,
-           area_name = NA)
+           species_estimation_region = NA)
 }
 if(nrow(stat_df1)==0) break
 
@@ -203,7 +203,7 @@ if(!def.exists){
   p[[defn]] <- NULL
 } else {
 
-p[[defn]] <- ggplot(merged) + geom_sf(aes(fill=factor(area_name))) + theme_minimal() +
+p[[defn]] <- ggplot(merged) + geom_sf(aes(fill=factor(species_estimation_region))) + theme_minimal() +
   geom_sf(data=EEZ,color=rgb(0,0,0,0.2),lwd=2) +
   #scale_fill_brewer(palette = "Set1") + 
   scale_fill_manual(values = cbp1) +

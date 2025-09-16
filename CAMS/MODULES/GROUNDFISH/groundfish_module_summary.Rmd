@@ -42,7 +42,7 @@ This means a full accounting of groundfish discards occurs in several steps.
 ```{r, echo = T, eval = F}
 # FULL Stratification variables
 
-stratvars = c( 'SPECIES_STOCK'
+stratvars = c( 'SPECIES_ESTIMATION_REGION'
 							# , 'GEARCODE'  # this is the SECGEAR_MAPPED variable
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
@@ -54,7 +54,7 @@ stratvars = c( 'SPECIES_STOCK'
               )
 ```
 
-	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
+	- SPECIES_ESTIMATION_REGION is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- SECTID comes from a CAMS matching table (`MAPS.MATCH_MULT_SECTID`)
@@ -69,14 +69,14 @@ stratvars = c( 'SPECIES_STOCK'
 ```{r, echo = T, eval = F}
 # Assumed Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP'
               , 'MESHGROUP'
 							, 'SECTOR_TYPE'
               ) 
 ```	
 
-6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_STOCK`
+6. The discaRd functions allow for an assumed rate to be calculated. This assumed rate is relative to the stratification used in the functions. Here, we utilize this feature to generate a broad stock rate. the stratification here is simply `SPECIES_ESTIMATION_REGION`
 
 7. For each *pass*, a transition rate is calculated between year t and year t-1. This rate determines how much, if any, information is used from previous years. 
 
@@ -113,7 +113,7 @@ groundfish estimates from non-groundfish trips are as follows:
 			# COAL_RATE is the final discard rate used. It is 'coalesced' from the (I), (A) and (B) rates 	 
 ```
 
-By assigning `SPECIES_STOCK` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
+By assigning `SPECIES_ESTIMATION_REGION` as a stratification variable, the computation time is reduced. Each subtrip may only occur in a single statistical area so it should never cross stock boundaries. 
 
 Once the full table (CAMS_OBS_CATCH) is loaded, each species takes ~12 seconds to process on the server. non-groundfish trips take ~1-2 minutes as there are many more trips and table rows. 
 
@@ -218,7 +218,7 @@ db_example = tbl(con_maps, sql("
 # 	group_by(SPECIES_ITIS, DISCARD_SOURCE, STRATA_FULL, STRATA_ASSUMED) %>% 
 # 	slice(1) %>% 
 # 	ggplot()+
-# 	geom_bar(aes(x = SPECIES_STOCK, y = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+# 	geom_bar(aes(x = SPECIES_ESTIMATION_REGION, y = CAMS_DISCARD_RATE, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
 # 	facet_wrap(~COMMON_NAME, scales = 'free')+
 # 	theme_light()
 ```
@@ -226,11 +226,11 @@ db_example = tbl(con_maps, sql("
 ```{r plot 2, echo = F, fig.cap = "Discard Estimate by Stock, Species, Discard Source" , fig.height = 8, fig.width = 12}
 db_example %>% 
 	# filter(DISCARD_SOURCE != 'O') %>% 
-	group_by(ITIS_TSN, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK) %>% 
+	group_by(ITIS_TSN, COMMON_NAME, DISCARD_SOURCE,SPECIES_ESTIMATION_REGION) %>% 
 	dplyr::summarise(DSUM = sum(CAMS_DISCARD, na.rm = T)) %>% 
 	# slice(1) %>% 
 	ggplot()+
-	geom_bar(aes(x = SPECIES_STOCK, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	geom_bar(aes(x = SPECIES_ESTIMATION_REGION, y = DSUM, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
 	facet_wrap(~COMMON_NAME, scales = 'free')+
 	theme_light()
 
@@ -240,7 +240,7 @@ db_example %>%
 ```{r table 1}
 db_example %>% 
 	group_by(COMMON_NAME
-					 , SPECIES_STOCK) %>% 
+					 , SPECIES_ESTIMATION_REGION) %>% 
 	dplyr::summarise(nvtr = n_distinct(VTRSERNO)
 									 , KALL = sum(SUBTRIP_KALL, na.rm = T)
 									 , DISCARD = round(sum(CAMS_DISCARD, na.rm = T))) %>% 
@@ -281,7 +281,7 @@ match_stockid <- function(con_maps, species_itis){
  
  t2 %>% 
  	left_join(., stock_dmis, by = 'AREA') %>% 
- 	mutate(CAMS_STOCK_AREA = paste(COMMON_NAME, AREA_NAME, sep = '_')) %>% 
+ 	mutate(CAMS_STOCK_AREA = paste(COMMON_NAME, SPECIES_ESTIMATION_REGION, sep = '_')) %>% 
  	dplyr::rename('DMIS_STOCK_ID' = STOCK_ID
  								, 'ITIS_TSN' = 'ITIS_TSN.x') %>% 
  	dplyr::select(-ITIS_TSN.y)
@@ -430,8 +430,8 @@ t3 = tbl(con_maps, sql("select *
 									 "
 									 )) %>% 
 	left_join(., t2, by = c('AREA' = 'STAT_AREA')) %>% 
-	filter(!is.na(AREA_NAME)) %>% 
-	group_by(AREA_NAME) %>% 
+	filter(!is.na(SPECIES_ESTIMATION_REGION)) %>% 
+	group_by(SPECIES_ESTIMATION_REGION) %>% 
 	dplyr::summarise(KALL_CAMS = sum(LIVLB, na.rm = T))
 
     # collect()
@@ -440,13 +440,13 @@ t3 = tbl(con_maps, sql("select *
  	left_join(., t2, by= c('AREA' = 'STAT_AREA')) %>%
  	left_join(., stock_dmis, by = c('AREA' = 'AREA')) %>% 
  	filter(!is.na(STOCK_ID.y)) %>%   # don't use STOCK_ID.x... species specific stock to attribute catch 
- 	group_by(STOCK_ID.y, AREA_NAME) %>%
+ 	group_by(STOCK_ID.y, SPECIES_ESTIMATION_REGION) %>%
  	# head() %>% 
  	dplyr::summarise(KALL_DMIS = round(sum(POUNDS, na.rm = T))) %>%
- 	left_join(., t3, by = 'AREA_NAME') %>% 
+ 	left_join(., t3, by = 'SPECIES_ESTIMATION_REGION') %>% 
  	collect() %>% 
  	mutate(SPECIES_ITIS = species_itis) %>% 
- 	dplyr::rename('STOCK_ID_DMIS' = 'STOCK_ID.y', 'STOCK_ID_CAMS' = 'AREA_NAME')
+ 	dplyr::rename('STOCK_ID_DMIS' = 'STOCK_ID.y', 'STOCK_ID_CAMS' = 'SPECIES_ESTIMATION_REGION')
  
 }
 
@@ -535,14 +535,14 @@ bind_cols(res_cams_gear %>% dplyr::select(1,2), (res_cams_gear %>% dplyr::select
 ```{r, echo = T, eval = F}
 # Full (First Pass) Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               ,'CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 						  , 'TRIPCATEGORY'
 						  , 'ACCESSAREA')
 ```
 
-	- SPECIES_STOCK is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
+	- SPECIES_ESTIMATION_REGION is taken from CAMS support table `MAPS.CAMS_STATAREA_STOCK`
 	- CAMS_GEAR_GROUP is derived from a support table (`MAPS.CAMS_GEARCODE_STRATA`)
 	- MESHGROUP is hardcoded for all trips according to decisions made by the mesh subgroup (see summary when available)
 	- TRIPCATEGORY is specific to scallop trips and indicates Limited Access or General Category Fleets
@@ -551,13 +551,13 @@ stratvars = c('SPECIES_STOCK'
 4. Run first pass of `discaRd` for full stratification
 	- there are sub-passes for year t and year t-1
 	
-5. Run a second pass using a coarsened stratification : 'SPECIES_STOCK', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
+5. Run a second pass using a coarsened stratification : 'SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP' and 'MESHGROUP'.
 
 	
 ```{r, echo = T, eval = F}
 # Second Pass Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP',
               ,'MESHGROUP')
 
@@ -569,7 +569,7 @@ stratvars = c('SPECIES_STOCK'
 ```{r, echo = T, eval = F}
 # Third PAss Stratification variables
 
-stratvars = c('SPECIES_STOCK'
+stratvars = c('SPECIES_ESTIMATION_REGION'
               , 'CAMS_GEAR_GROUP',
               ,'MESHGROUP')
 
@@ -607,7 +607,7 @@ non_gf = tbl(con_maps, sql("
     select ITIS_TSN,
     COMMON_NAME, 
     DISCARD_SOURCE,
-    SPECIES_STOCK
+    SPECIES_ESTIMATION_REGION
     , sum(CAMS_DISCARD) as CAMS_DISCARD
     from MAPS.CAMS_DISCARD_ALL_YEARS
      where GF = 0
@@ -627,14 +627,14 @@ non_gf = tbl(con_maps, sql("
     '164744', 
     '630979'
     )
-     group by ITIS_TSN, COMMON_NAME, DISCARD_SOURCE,SPECIES_STOCK
+     group by ITIS_TSN, COMMON_NAME, DISCARD_SOURCE,SPECIES_ESTIMATION_REGION
      
 
 ")) %>% 
 	collect()
 
 	ggplot(non_gf)+
-	geom_bar(aes(x = SPECIES_STOCK, y = CAMS_DISCARD, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
+	geom_bar(aes(x = SPECIES_ESTIMATION_REGION, y = CAMS_DISCARD, fill = DISCARD_SOURCE), stat = 'identity', position = 'dodge')+
 	facet_wrap(~COMMON_NAME, scales = 'free')+
 	theme_light()
 
@@ -645,7 +645,7 @@ non_gf = tbl(con_maps, sql("
 	
 	non_gf = tbl(con_maps, sql("
 
-    select COMMON_NAME, SPECIES_STOCK, FED_OR_STATE
+    select COMMON_NAME, SPECIES_ESTIMATION_REGION, FED_OR_STATE
     , sum(CAMS_DISCARD) as CAMS_DISCARD
     , sum(subtrip_kall) as KALL
     , count(distinct(VTRSERNO)) as N_VTR
@@ -667,7 +667,7 @@ non_gf = tbl(con_maps, sql("
     '164744', 
     '630979'
     )
-     group by COMMON_NAME,SPECIES_STOCK, FED_OR_STATE
+     group by COMMON_NAME,SPECIES_ESTIMATION_REGION, FED_OR_STATE
 
 ")) %>% 
 		collect()	
@@ -683,7 +683,7 @@ non_gf = tbl(con_maps, sql("
 	
 	scal_trips = tbl(con_maps, sql("
 
-    select COMMON_NAME, SPECIES_STOCK, SCALLOP_AREA, FY
+    select COMMON_NAME, SPECIES_ESTIMATION_REGION, SCALLOP_AREA, FY
     , sum(CAMS_DISCARD) as CAMS_DISCARD
     , sum(subtrip_kall) as KALL
     , count(distinct(CAMS_SUBTRIP)) as N_SUBTRIPS
@@ -707,7 +707,7 @@ non_gf = tbl(con_maps, sql("
     '164744', 
     '630979'
     )
-     group by COMMON_NAME,SPECIES_STOCK, SCALLOP_AREA, FY
+     group by COMMON_NAME,SPECIES_ESTIMATION_REGION, SCALLOP_AREA, FY
 
 ")) %>% 
 		collect()	
