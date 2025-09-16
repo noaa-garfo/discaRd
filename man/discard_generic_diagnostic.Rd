@@ -14,7 +14,8 @@ discard_generic_diagnostic(
   return_summary = F,
   CAMS_GEAR_STRATA = CAMS_GEAR_STRATA,
   STOCK_AREAS = STOCK_AREAS,
-  CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+  CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK,
+  OBS_REMOVE = OBS_REMOVE
 )
 }
 \arguments{
@@ -99,13 +100,13 @@ STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) \%>\%
 	group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) \%>\%
 	distinct(AREA) \%>\%
 	mutate(AREA = as.character(AREA)
-				 , SPECIES_STOCK = SPECIES_ESTIMATION_REGION) \%>\%
+				 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) \%>\%
 	ungroup()
 
 # Discard Mortality table ----
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  \%>\%
 	collect() \%>\%
-	mutate(SPECIES_STOCK = SPECIES_ESTIMATION_REGION
+	mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
 				 , GEARCODE = CAMS_GEAR_GROUP
 				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) \%>\%
 	select(-SPECIES_ESTIMATION_REGION) \%>\%
@@ -129,14 +130,14 @@ if(species$ITIS_TSN == '079718'){
 				when area like '53\%' then 'SNE'
 				when area >= 520 and area <599 and area not like '53\%'  then 'GB'
 				when area < 520 then 'GOM'
-				end as SPECIES_STOCK
+				end as SPECIES_ESTIMATION_REGION
 			  from CFG_STATAREA_STOCK
 				where ITIS_TSN = '079718'")) \%>\%
 		collect() \%>\%
 		group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) \%>\%
 		distinct(AREA) \%>\%
 		mutate(AREA = as.character(AREA)
-					 , SPECIES_STOCK = SPECIES_ESTIMATION_REGION) \%>\%
+					 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) \%>\%
 		ungroup()
 
 }

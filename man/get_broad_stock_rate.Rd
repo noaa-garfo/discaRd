@@ -3,7 +3,7 @@
 \name{get_broad_stock_rate}
 \alias{get_broad_stock_rate}
 \title{Get Broad Stock Rate
-This function is a special case of \link{run_discard}. When sotck is used as a startification variable, it is not starightforward to get a broad stock rate, with a CV. This function simply subsets a larger dataset by stock component before running run_discard.
+This function is a special case of \link{run_discard}. When stock is used as a stratification variable, it is not straightforward to get a broad stock rate, with a CV. This function simply subsets a larger dataset by stock component before running run_discard.
 The advantage of having this as a function is it may easily be run in a loop.}
 \usage{
 get_broad_stock_rate(
@@ -20,27 +20,27 @@ get_broad_stock_rate(
 
 \item{ddat_focal_sp}{table of observed trips for discard year}
 
-\item{ddat_focal}{matched table of observed and commerical trips}
+\item{ddat_focal}{matched table of observed and commercial trips}
 
 \item{species_itis}{species of interest using SPECIES_ITIS code}
 
-\item{stratvars}{stratification variables desired: should only be SPECIES_STOCK; ususally the first of a strinf of stratification variables}
+\item{stratvars}{stratification variables desired: should only be SPECIES_STOCK; usually the first of a string of stratification variables}
 
 \item{stock}{specific stock (name) to run}
 }
 \value{
-a list of: 
-1) Species stock 
-2) discaRd rate 
+a list of:
+1) Species stock
+2) discaRd rate
 3) CV
 }
 \description{
 Get Broad Stock Rate
-This function is a special case of \link{run_discard}. When sotck is used as a startification variable, it is not starightforward to get a broad stock rate, with a CV. This function simply subsets a larger dataset by stock component before running run_discard.
+This function is a special case of \link{run_discard}. When stock is used as a stratification variable, it is not straightforward to get a broad stock rate, with a CV. This function simply subsets a larger dataset by stock component before running run_discard.
 The advantage of having this as a function is it may easily be run in a loop.
 }
 \examples{
-stratvars_scalgf = c("SPECIES_STOCK"
+stratvars_scalgf = c("SPECIES_ESTIMATION_REGION"
 , "CAMS_GEAR_GROUP" 
 , "MESHGROUP"     
 , "TRIPCATEGORY" 
@@ -50,14 +50,14 @@ stratvars_scalgf = c("SPECIES_STOCK"
 
 BROAD_STOCK_RATE_TABLE = list()
 kk = 1
-ustocks = bdat_scal$SPECIES_STOCK \%>\% unique()
+ustocks = bdat_scal$SPECIES_ESTIMATION_REGION \%>\% unique()
 for(k in ustocks){
 BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
 																										, ddat_focal_sp = ddat_focal_scal
 																										, ddat_focal = ddat_focal
 																										, species_itis = species_itis
-																										, stratvars = stratvars_scalgf[1]																	
-																										, stock = k 
+																										, stratvars = stratvars_scalgf[1]
+																										, stock = k
 )
 kk = kk+1
 }
