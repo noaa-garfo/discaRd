@@ -21,7 +21,7 @@ make_bdat_focal(
 \item{year}{Year where discard estimate is needed}
 }
 \value{
-a tibble with LINK1, CAMS_SUBTRIP, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by CAMS_SUBTRIP (subtrip). BYCATCH is the observed discard of the species of interest.
+a tibble with LINK1, CAMSID, SUBTRIP, STRATA, KALL, BYCATCH. Kept all (KALL) is rolled up by subtrip. BYCATCH is the observed discard of the species of interest.
 
 This table is used in `discaRd`
 

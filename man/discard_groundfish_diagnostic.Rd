@@ -14,7 +14,8 @@ discard_groundfish_diagnostic(
   return_summary = F,
   CAMS_GEAR_STRATA = CAMS_GEAR_STRATA,
   STOCK_AREAS = STOCK_AREAS,
-  CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK
+  CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK,
+  OBS_REMOVE = OBS_REMOVE
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ discard_groundfish_diagnostic(
 \item{STOCK_AREAS}{support table sourced from Oracle}
 
 \item{CAMS_DISCARD_MORTALITY_STOCK}{support table sourced from Oracle}
+
+\item{OBS_REMOVE}{support table sourced from Oracle}
 }
 \value{
 nothing currently, writes out to fst files (add oracle?)
@@ -50,7 +53,6 @@ When running windowpane or yellowtail flounders, this function will save .fst fi
 }
 \examples{
 see vignette
-
 
 }
 \author{

@@ -42,7 +42,7 @@ Ntable = get_covrow(joined_table)
 
 # Take a look
 joined_table \%>\%
-	dplyr::select(starts_with('N_') | starts_with('n_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_STOCK | MESH_CAT | TRIPCATEGORY | ACCESSAREA) \%>\%
+	dplyr::select(starts_with('N_') | starts_with('n_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_ESTIMATION_REGION | MESH_CAT | TRIPCATEGORY | ACCESSAREA) \%>\%
 	distinct() \%>\%
 	View()
 
