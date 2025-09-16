@@ -8,12 +8,10 @@
 *.Rdata
 *.rdat
 *.Rdat
-
 AWA_discaRd.Rproj
 bens_discarRd_prj.Rproj
-
 configRun.toml
 configRunCron.toml
 discard_est_164499_trips2019.fst
-
 log/
+configRunCron.toml

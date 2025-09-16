@@ -125,10 +125,10 @@ stock_discard_2019 = stock_nespp3 %>%
 species_nespp3 = '269'  # pollock
 
 # define species stock if needed
-# species_stock = 'GOM'  # GOM cod
+# species_estimation_region = 'GOM'  # GOM cod
 
 # if using a unit stock, make this NULL!!
-# species_stock = NA  # all unit stocks
+# species_estimation_region = NA  # all unit stocks
 
 ```
 
@@ -210,7 +210,7 @@ with obs_cams as (
 , regions as (
 
 select STAT_AREA 
-    , AREA_NAME as REGION
+    , SPECIES_ESTIMATION_REGION as REGION
     from APSD.CAMS_STATAREA_STOCK
     where NESPP3 = ", species_nespp3, "
 )
@@ -274,34 +274,34 @@ from apsd.CAMS_DISCARD_MORTALITY_STOCK"))
 ```{r get Stock Stat Areas and mortality }
 # unique stat areas for stock ID if needed
 
-# if(!is.na(species_stock)){ 
+# if(!is.na(species_estimation_region)){ 
 # 
 # STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
-#   filter(NESPP3 == species_nespp3 & AREA_NAME == species_stock) %>% # 
+#   filter(NESPP3 == species_nespp3 & SPECIES_ESTIMATION_REGION == species_estimation_region) %>% # 
 #   distinct(STAT_AREA) %>% 
 #   collect()
 # 
 # } else{
   
   STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
-  filter(NESPP3 == species_nespp3) %>% # & AREA_NAME == species_stock
+  filter(NESPP3 == species_nespp3) %>% # & SPECIES_ESTIMATION_REGION == species_estimation_region
   collect() %>% 
     group_by(STAT_AREA) %>% 
     mutate(STAT_AREA = as.character(STAT_AREA)) %>% 
-  dplyr::select(AREA_NAME, STAT_AREA) %>% 
-  dplyr::rename(AREA = STAT_AREA, STOCK_AREA = AREA_NAME)
+  dplyr::select(SPECIES_ESTIMATION_REGION, STAT_AREA) %>% 
+  dplyr::rename(AREA = STAT_AREA, STOCK_AREA = SPECIES_ESTIMATION_REGION)
   
   
 # }
 
 CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
   collect() %>% 
-  mutate(STOCK_AREA = AREA_NAME) %>% 
+  mutate(STOCK_AREA = SPECIES_ESTIMATION_REGION) %>% 
   filter(NESPP3 == species_nespp3) ## don't reallt want this here... 
 
 # account for unit stocks.. 
 CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
-  # mutate(SPECIES_STOCK = ifelse(is.na(species_stock), 'UNIT', species_stock)) %>% 
+  # mutate(SPECIES_ESTIMATION_REGION = ifelse(is.na(species_estimation_region), 'UNIT', species_estimation_region)) %>% 
   group_by(CAMS_GEAR_GROUP, STOCK_AREA, NESPP3, COMMON_NAME, SPECIES_ITIS) %>% 
   dplyr::summarise(DISC_MORT_RATIO = max(Discard_Mortality_Ratio)) %>% 
   ungroup()
@@ -325,12 +325,12 @@ ddat_focal <- c_o_dat2 %>%
          ,SEADAYS = 0
 	  		 , NESPP3 = NESPP3_FINAL
 	  		 , AREA = as.character(CAREA)
-	  		 # , SPECIES_STOCK = ifelse(is.na(species_stock), 'UNIT', species_stock) # account for unit stocks.. 
+	  		 # , SPECIES_ESTIMATION_REGION = ifelse(is.na(species_estimation_region), 'UNIT', species_estimation_region) # account for unit stocks.. 
 	  		 ) %>% 
   left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% dplyr::select(-NESPP3)
             , by = c('STOCK_AREA', 'CAMS_GEAR_GROUP')) %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','STOCK_AREA', 'CAMS_GEAR_GROUP','DISC_MORT_RATIO') #'SPECIES_STOCK',
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','STOCK_AREA', 'CAMS_GEAR_GROUP','DISC_MORT_RATIO') #'SPECIES_ESTIMATION_REGION',
 
 # ddat_focal <- c_o_dat2 %>% 
 #   filter(GF_YEAR == FY) %>%   ## time element is here!!
@@ -342,7 +342,7 @@ ddat_focal <- c_o_dat2 %>%
 # 	  		 , NESPP3 = NESPP3_FINAL) %>% 
 #   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% 
 #               dplyr::select(-NESPP3) %>% 
-#               mutate(REGION = SPECIES_STOCK)
+#               mutate(REGION = SPECIES_ESTIMATION_REGION)
 #             , by = c('REGION', 'CAMS_GEAR_GROUP')
 #             ) %>% 
 #   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','REGION','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
@@ -358,7 +358,7 @@ ddat_prev <- c_o_dat2 %>%
          ,SEADAYS = 0
 	  		 , NESPP3 = NESPP3_FINAL
 	  		 , AREA = as.character(CAREA)
-	  		 # , SPECIES_STOCK = ifelse(is.na(species_stock), 'UNIT', species_stock) # account for unit stocks.. 
+	  		 # , SPECIES_ESTIMATION_REGION = ifelse(is.na(species_estimation_region), 'UNIT', species_estimation_region) # account for unit stocks.. 
 	  		 ) %>% 
   left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% dplyr::select(-NESPP3)

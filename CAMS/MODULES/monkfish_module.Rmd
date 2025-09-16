@@ -64,10 +64,10 @@ source('cams_discard_functions.R')
 species_nespp3 = '012'  # monkfish
 
 # define species stock if needed
-# species_stock = 'GOM'  # GOM cod
+# species_estimation_region = 'GOM'  # GOM cod
 
 # if using a unit stock, make this NULL!!
-species_stock = NA  # all unit stocks
+species_estimation_region = NA  # all unit stocks
 
 FY <- 2018
 
@@ -92,14 +92,14 @@ from apsd.CAMS_DISCARD_MORTALITY_STOCK"))
 
 # unique stat areas for stock ID if needed
 STOCK_AREAS = CAMS_STATAREA_STOCK %>% 
-  filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+  filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
   distinct(STAT_AREA) %>% 
   collect()
 
 CAMS_DISCARD_MORTALITY_STOCK = CAMS_DISCARD_MORTALITY_STOCK %>% 
   collect() %>% 
-  mutate(SPECIES_STOCK = AREA_NAME) %>% 
-  select(-AREA_NAME) %>% 
+  mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>% 
+  select(-SPECIES_ESTIMATION_REGION) %>% 
   filter(NESPP3 == species_nespp3) ## don't reallt want this here... 
 ```
 
@@ -167,7 +167,7 @@ with obs_cams as (
 , regions as (
 
 select STAT_AREA 
-    , AREA_NAME as REGION
+    , SPECIES_ESTIMATION_REGION as REGION
     from APSD.CAMS_STATAREA_STOCK
     where NESPP3 = ", species_nespp3, "
 )
@@ -227,7 +227,7 @@ ddat_focal <- c_o_dat2 %>%
 	  		 , NESPP3 = NESPP3_FINAL) %>% 
   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% 
               dplyr::select(-NESPP3) %>% 
-              mutate(REGION = SPECIES_STOCK)
+              mutate(REGION = SPECIES_ESTIMATION_REGION)
             , by = c('REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','REGION','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')
@@ -243,7 +243,7 @@ ddat_prev <- c_o_dat2 %>%
 	  		 , NESPP3 = NESPP3_FINAL) %>% 
   left_join(., y = CAMS_DISCARD_MORTALITY_STOCK %>% 
               dplyr::select(-NESPP3) %>% 
-              mutate(REGION = SPECIES_STOCK)
+              mutate(REGION = SPECIES_ESTIMATION_REGION)
             , by = c('REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
   relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','REGION','CAMS_GEAR_GROUP','Discard_Mortality_Ratio')

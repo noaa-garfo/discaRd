@@ -39,7 +39,7 @@ incols = c(
 
 
 tmp[, incols] %>% 		
-	# mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_STOCK)) %>% 
+	# mutate(GF_STOCK_DEF = paste0(COMNAME_EVAL, '-', SPECIES_ESTIMATION_REGION)) %>% 
 	# dplyr::select(-COMMON_NAME, -SPECIES_ITIS) %>% 
 	dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
 								, 'CAMS_DISCARD_RATE' = 'COAL_RATE'

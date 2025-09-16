@@ -200,7 +200,7 @@ c_o_dat2 <- tbl(bcon, sql(
 stratvars = c('CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
 							, 'AREA'
-							, 'SPECIES_STOCK'
+							, 'SPECIES_ESTIMATION_REGION'
 							, 'HALFOFYEAR'
 							, 'STOCK'
 							, 'REGION')
@@ -230,22 +230,22 @@ CAMS_GEAR_STRATA = tbl(bcon, sql('  select * from MAPS.CAMS_GEARCODE_STRATA')) %
 # Stat areas table  
 # unique stat areas for stock ID if needed
 STOCK_AREAS = tbl(bcon, sql('select * from MAPS.CAMS_STATAREA_STOCK')) %>%
-  # filter(NESPP3 == species_nespp3) %>%  # removed  & AREA_NAME == species_stock
+  # filter(NESPP3 == species_nespp3) %>%  # removed  & SPECIES_ESTIMATION_REGION == species_estimation_region
 	filter(SPECIES_ITIS == species_itis) %>%
     collect() %>% 
-  group_by(AREA_NAME) %>% 
+  group_by(SPECIES_ESTIMATION_REGION) %>% 
   distinct(STAT_AREA) %>%
   mutate(AREA = as.character(STAT_AREA)
-         , SPECIES_STOCK = AREA_NAME) %>% 
+         , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) %>% 
   ungroup() %>% 
-  dplyr::select(SPECIES_STOCK, AREA)
+  dplyr::select(SPECIES_ESTIMATION_REGION, AREA)
 
 # Mortality table
 CAMS_DISCARD_MORTALITY_STOCK = tbl(bcon, sql("select * from MAPS.CAMS_DISCARD_MORTALITY_STOCK"))  %>%
   collect() %>%
-  mutate(SPECIES_STOCK = AREA_NAME
+  mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
          , GEARCODE = CAMS_GEAR_GROUP) %>%
-  select(-AREA_NAME) %>%
+  select(-SPECIES_ESTIMATION_REGION) %>%
   # mutate(CAREA = as.character(STAT_AREA)) %>% 
   # filter(NESPP3 == species_nespp3) %>% 
 	filter(SPECIES_ITIS == species_itis) %>%
@@ -263,9 +263,9 @@ ddat_focal <- c_o_dat2 %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>% 
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 ddat_prev <- c_o_dat2 %>% 
@@ -277,9 +277,9 @@ ddat_prev <- c_o_dat2 %>%
    left_join(., y = STOCK_AREAS, by = 'AREA') %>% 
    left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>% 
    left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
-            , by = c('SPECIES_STOCK', 'CAMS_GEAR_GROUP')
+            , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
             ) %>%  
-  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_STOCK','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
+  relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
 
@@ -467,7 +467,7 @@ print(paste(species_itis, ' RAN IN ', t2-t1, ' SECONDS',  sep = ''))
 
 stratvars = c('CAMS_GEAR_GROUP'
 							, 'MESHGROUP'
-							, 'SPECIES_STOCK'
+							, 'SPECIES_ESTIMATION_REGION'
 							, 'HALFOFYEAR'
 							, 'STOCK'
 							, 'REGION')
@@ -476,7 +476,7 @@ stratvars = c('CAMS_GEAR_GROUP'
 
 # create a small bdat
 bdat_mod <- bdat_cy %>% 
-  mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
+  mutate(REGION = SPECIES_ESTIMATION_REGION) %>%  # make sure the variables are inthe table and substitutions won't be needed..
   assign_strata(., stratvars = stratvars) %>% 
   filter(
   OBS_KALL > 0,
@@ -490,7 +490,7 @@ bdat_mod <- bdat_cy %>%
          , stratvars
          , CAMS_GEAR_GROUP
 				 , MESHGROUP
-				 , SPECIES_STOCK
+				 , SPECIES_ESTIMATION_REGION
 				 , HALFOFYEAR
 				 , STOCK
 				 , REGION
@@ -514,7 +514,7 @@ mod <- glm(DISCARD ~ offset(log(OBS_KALL)) +
 ddat_discards = d_focal
 
 ddat_pred <- ddat_discards$res %>% 
-    mutate(REGION = SPECIES_STOCK) %>%  # make sure the variables are inthe table and substitutions won't be needed..
+    mutate(REGION = SPECIES_ESTIMATION_REGION) %>%  # make sure the variables are inthe table and substitutions won't be needed..
   assign_strata(., stratvars) %>% 
   filter(
     #STRATA %in% bdat_spp_mod$STRATA,  #only for full factorial

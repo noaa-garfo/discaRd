@@ -312,15 +312,15 @@ joined_table = joined_table %>%
 				 )
 
 joined_table %>%
-	group_by(SPECIES_STOCK, DISCARD_SOURCE) %>%
+	group_by(SPECIES_ESTIMATION_REGION, DISCARD_SOURCE) %>%
 	dplyr::summarise(DISCARD_EST = sum(DISCARD)) %>%
-	pivot_wider(names_from = 'SPECIES_STOCK', values_from = 'DISCARD_EST') %>%
+	pivot_wider(names_from = 'SPECIES_ESTIMATION_REGION', values_from = 'DISCARD_EST') %>%
 	dplyr::select(-1) %>%
 	colSums(na.rm = T)
 
 ```
 
-|         SPECIES_STOCK     |        Discard|
+|         SPECIES_ESTIMATION_REGION     |        Discard|
 |:-------------|---------:|
 |EGB           |  25,841|
 |GOM           | 150,784|

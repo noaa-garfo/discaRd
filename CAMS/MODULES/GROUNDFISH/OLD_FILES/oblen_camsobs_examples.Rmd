@@ -87,7 +87,7 @@ library(DT)
 
 oblen %>% 
 	# group_by(COMMON_NAME
-	# 				 , SPECIES_STOCK) %>% 
+	# 				 , SPECIES_ESTIMATION_REGION) %>% 
 	# dplyr::summarise(nvtr = n_distinct(VTRSERNO)
 	# 								 , KALL = sum(SUBTRIP_KALL, na.rm = T)
 	# 								 , DISCARD = round(sum(CAMS_DISCARD, na.rm = T))) %>% 
