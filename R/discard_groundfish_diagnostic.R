@@ -16,6 +16,7 @@
 #' @param STOCK_AREAS support table sourced from Oracle
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
 #' @param OBS_REMOVE support table sourced from Oracle
+#' @param test_schema schema used for the diagnostic. For NEFSC, this will be `CAMS_GARFO`. For GARFO, this could be `CAMS_GARFO` on DB01P but should be `MAPS` is using CAMSDB
 #'
 #' @return nothing currently, writes out to fst files (add oracle?)
 #' @author Benjamin Galuardi
@@ -25,6 +26,7 @@
 #' see vignette
 #'
 discard_groundfish_diagnostic <- function(con = con_maps
+                                          , test_schema = 'CAMS_GARFO'
 															 , species = species
 															 , FY = fy
 															 , gf_dat = gf_dat
@@ -498,7 +500,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   logr::log_print(paste0('Adding EM values for ', species$ITIS_NAME[i], ' Groundfish Trips ', FY))
 
 
-  em_tab = ROracle::dbGetQuery(conn = con, statement = "
+  em_tab = ROracle::dbGetQuery(conn = con, statement = paste0("
   			 select  ITIS_TSN as SPECIES_ITIS_EVAL
   			 , EM_COMPARISON
   			 , VTR_DISCARD
@@ -508,13 +510,14 @@ discard_groundfish_diagnostic <- function(con = con_maps
   			 , NMFS_DISCARD_SOURCE
   			 , VTRSERNO
   			 from
-  			 CAMS_GARFO.CAMS_GF_EM_DELTA_VTR_DISCARD
-  			 ") %>%
+  			 ", test_schema, ".CAMS_GF_EM_DELTA_VTR_DISCARD
+  			 ")
+           )%>%
   	      as_tibble()
 
-  joined_table = joined_table |>
-    dplyr::select(-VTRSERNO.y) |>
-    dplyr::rename(VTRSERNO = 'VTRSERNO.x')
+  # joined_table = joined_table |>
+  #   dplyr::select(-VTRSERNO.y) |>
+  #   dplyr::rename(VTRSERNO = 'VTRSERNO.x')
 
   emjoin = joined_table %>%
   	left_join(., em_tab, by = c('VTRSERNO', 'SPECIES_ITIS_EVAL')) %>%
@@ -1014,6 +1017,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
     scallop_subroutine_diag(FY = FY
     									 , con = con
+    									 , test_schema = test_schema
                        , scal_gf_species = scal_gf_species[i, ]
                        , non_gf_dat = non_gf_dat
                        , scal_trip_dir = file.path(save_dir, "scallop_groundfish")
@@ -1053,7 +1057,8 @@ discard_groundfish_diagnostic <- function(con = con_maps
 
   		# drop an CAMS Subtrip in scallop run
   		t1 = t1 |>
-  		  filter(CAMSID %!in% t2$CAMSID & SUBTRIP %!in% t2$SUBTRIP)
+  		  # filter(CAMSID %!in% t2$CAMSID & SUBTRIP %!in% t2$SUBTRIP)
+  		filter(CAMS_SUBTRIP %!in% t2$CAMS_SUBTRIP)
 
   		# and now replace
   		t3 = t1 %>%
