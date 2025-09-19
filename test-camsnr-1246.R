@@ -6,12 +6,10 @@ options(scipen = 999)
 
 # connection ----
 
-
-keyring::keyring_unlock(keyring = 'apsd')
+keyring::keyring_unlock(keyring = 'apsd', password = readr::read_file('~/pw.txt'))
+# con_maps = apsdFuns::roracle_login(key_name = 'apsd', key_service = 'DB01P')
 
 ## table CAMS_GARFO.CAMS_alloc_gf_mrem not found on DB01P
-# need to use MAPS schema on either DB01P or CAMSDB
-# CAMS_GARFO on CAMSDB is dead
 
 schema = 'maps'
 key_service = 'CAMSDB'
@@ -66,9 +64,7 @@ CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CFG_GEARCODE_STRATA')) %>%
   dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stock (Estimation) areas table
-
 STOCK_AREAS = tbl(con_maps, sql('select * from CFG_STATAREA_STOCK')) %>%
-
   collect() %>%
   filter(ITIS_TSN == species$ITIS_TSN) %>%
   # mutate(AREA_NAME = SPECIES_ESTIMATION_REGION) |>
@@ -80,9 +76,7 @@ STOCK_AREAS = tbl(con_maps, sql('select * from CFG_STATAREA_STOCK')) %>%
   ungroup()
 
 # Discard Mortality table
-
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-
   collect() %>%
   mutate(#SPECIES_STOCK = SPECIES_ESTIMATION_REGION
           GEARCODE = CAMS_GEAR_GROUP
@@ -102,7 +96,6 @@ FY = 2025
 
 discard_wp = discard_groundfish_diagnostic(con = con_maps
                                            , test_schema = 'MAPS'
-
                                                       , FY = FY
                                                       , species = species
                                                       , gf_dat = gf_dat
@@ -159,9 +152,7 @@ STOCK_AREAS = tbl(con_maps, sql('select * from CFG_STATAREA_STOCK')) %>%
   ungroup()
 
 # Discard Mortality table
-
 CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-
   collect() %>%
   mutate(#SPECIES_STOCK = SPECIES_ESTIMATION_REGION
     GEARCODE = CAMS_GEAR_GROUP
@@ -204,7 +195,8 @@ discard_yt$trips_discard |>
                    , discard = sum(CAMS_DISCARD, na.rm = T)/2204.62262)
 
 # cod example ----
-species <- tbl(con, sql("
+
+species <- tbl(con_maps, sql("
   select *
   from CFG_DISCARD_RUNID
   ")) %>%
@@ -217,14 +209,13 @@ species <- tbl(con, sql("
 
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
+CAMS_GEAR_STRATA = tbl(con_maps, sql('  select * from CFG_GEARCODE_STRATA')) %>%
   collect() %>%
   dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
   filter(ITIS_TSN == species$ITIS_TSN) %>%
   dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stock (Estimation) areas table
-
 STOCK_AREAS = tbl(con_maps, sql('select * from CFG_STATAREA_STOCK')) %>%
   collect() %>%
   filter(ITIS_TSN == species$ITIS_TSN) %>%
@@ -252,12 +243,10 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con_maps, sql("select * from CFG_DISCARD_MORT
 OBS_REMOVE = ROracle::dbGetQuery(con_maps, "select * from CFG_OBSERVER_CODES")  %>%
   dplyr::filter(ITIS_TSN == species$ITIS_TSN) %>%
   distinct(OBS_CODES)
-
 FY = 2025
 
-# run groundfish diagnostic for cod with standard info
-
-discard_cod = discard_groundfish_diagnostic(con = con
+discardcod = discard_groundfish_diagnostic(con = con_maps
+                                           , test_schema = 'MAPS'
                                            , FY = FY
                                            , species = species
                                            , gf_dat = gf_dat
@@ -275,24 +264,18 @@ discardcod$trips_discard = discardcod$trips_discard |>
 
 # unique trips in the set
 
-discard_cod$trips_discard = discard_cod$trips_discard |>
-  parse_discard_diag()
-
-# unique trips in the set ----
-
-discard_cod$trips_discard |>
+discardcod$trips_discard |>
   dplyr::summarise(ntrips = n_distinct(CAMSID)
                    , KALL = sum(SUBTRIP_KALL)/2204.62262
                    , discard = sum(CAMS_DISCARD, na.rm = T)/2204.62262)
 
-
-
-# summarise all three ----
-discard_cod$trips_discard |>
-  rbind(discard_wp$trips_discard) |>
+# summary----
+discardcod$trips_discard |>
   rbind(discard_yt$trips_discard) |>
+  rbind(discard_wp$trips_discard) |>
   group_by(COMMON_NAME) |>
   dplyr::summarise(ntrips = n_distinct(CAMSID)
                    , KALL = sum(SUBTRIP_KALL)/2204.62262
                    , discard = sum(CAMS_DISCARD, na.rm = T)/2204.62262)
+
 
