@@ -6,6 +6,7 @@
 \usage{
 discard_groundfish_diagnostic(
   con = con_maps,
+  test_schema = "CAMS_GARFO",
   species = species,
   FY = fy,
   gf_dat = gf_dat,
@@ -20,6 +21,8 @@ discard_groundfish_diagnostic(
 }
 \arguments{
 \item{con}{Oracle connection}
+
+\item{test_schema}{schema used for the diagnostic. For NEFSC, this will be `CAMS_GARFO`. For GARFO, this could be `CAMS_GARFO` on DB01P but should be `MAPS` is using CAMSDB}
 
 \item{species}{data frame of species for evaluation. Can be a dataframe of multiple species or single row (preferred for testing)}
 
