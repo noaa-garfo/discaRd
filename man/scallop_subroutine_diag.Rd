@@ -8,6 +8,7 @@ This function oeprates identically to otehr discard modules but is only relevant
 scallop_subroutine_diag(
   FY = 2019,
   con = con_maps,
+  test_schema = "CAMS_GARFO",
   scal_gf_species,
   non_gf_dat = non_gf_dat,
   scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")

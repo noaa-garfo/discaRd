@@ -12,7 +12,9 @@
 #' @param return_summary  logical, should a summary (very not large) be returned?
 #' @param CAMS_GEAR_STRATA  support table sourced from Oracle
 #' @param STOCK_AREAS support table sourced from Oracle
+#' @param OBS_REMOVE
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
+#'
 #' @author Benjamin Galuardi
 #' @export
 #'
