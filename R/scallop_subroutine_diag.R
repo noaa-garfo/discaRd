@@ -15,6 +15,7 @@
 #' @examples
 scallop_subroutine_diag <- function(FY = 2019
                                , con = con_maps
+                               , test_schema = 'CAMS_GARFO'
                                , scal_gf_species
                                , non_gf_dat = non_gf_dat
                                , scal_trip_dir = file.path(getOption("maps.discardsPath"), "scallop_groundfish")
@@ -105,7 +106,7 @@ scallop_subroutine_diag <- function(FY = 2019
     # Support table import by species ----
 
     # GEAR TABLE
-    CAMS_GEAR_STRATA = tbl(con, sql('  select * from cams_garfo.CFG_GEARCODE_STRATA')) %>%
+    CAMS_GEAR_STRATA = tbl(con, sql(paste0('select * from ', test_schema,'.CFG_GEARCODE_STRATA'))) %>%
       collect() %>%
       dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
       filter(ITIS_TSN == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
@@ -113,7 +114,7 @@ scallop_subroutine_diag <- function(FY = 2019
 
     # Stat areas table
     # unique stat areas for stock ID if needed
-    STOCK_AREAS = tbl(con, sql('select * from cams_garfo.CFG_STATAREA_STOCK')) %>%
+    STOCK_AREAS = tbl(con, sql(paste0('select * from ', test_schema,'.CFG_STATAREA_STOCK'))) %>%
       filter(ITIS_TSN == species_itis) %>%
       collect() %>%
       group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
@@ -122,7 +123,7 @@ scallop_subroutine_diag <- function(FY = 2019
       ungroup()
 
     # Mortality table
-    CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from cams_garfo.CFG_DISCARD_MORTALITY_STOCK"))  %>%
+    CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql(paste0('select * from ', test_schema,'.CFG_DISCARD_MORTALITY_STOCK')))  %>%
       collect() %>%
       mutate(GEARCODE = CAMS_GEAR_GROUP
              , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
@@ -130,7 +131,7 @@ scallop_subroutine_diag <- function(FY = 2019
       dplyr::select(-ITIS_TSN)
 
     # Observer codes to be removed
-    OBS_REMOVE = tbl(con, sql("select * from cams_garfo.CFG_OBSERVER_CODES"))  %>%
+    OBS_REMOVE = tbl(con, sql(paste0('select * from ', test_schema,'.CFG_OBSERVER_CODES')))  %>%
       collect() %>%
       filter(ITIS_TSN == species_itis) %>%
       distinct(OBS_CODES)
