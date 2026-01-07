@@ -3,7 +3,7 @@
 #'
 #' @param joined_table
 #'
-#' @return
+#' @return data frame with additional covariance variables
 #' @export
 #'
 #' @examples

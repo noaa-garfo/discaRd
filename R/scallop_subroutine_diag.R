@@ -1,7 +1,6 @@
 #' Groundfish discards on scallop trips
 #' This function oeprates identically to otehr discard modules but is only relevant for scallop trips, and is predicated on what groundfish fishing year is under evaluation.
 #' @author Ben Galuardi
-#' @Date 6/6/22, updated 9/21/22
 #'
 #' @param FY Groundfish Fishing year under evaluation. This value determines which scallop fishing years are run
 #' @param scal_gf_species data frame, single row, that has species_itis and common name of groundfish under evaluation (e.g. yellowtail and windowpane flounder)

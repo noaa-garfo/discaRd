@@ -20,14 +20,7 @@
 #' rm(dat)
 #' gc()
 #'
-#' # Herring example
-#' dat = get_catch_obs_herring(con_maps, 2021, 2022)
-#' gf_dat = dat$gf_dat
-#' non_gf_dat = dat$non_gf_dat
-#' all_dat = dat$all_dat
-#' rm(dat)
-#' gc()
-#'
+
 get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 2022){
 
   t1 = Sys.time()

@@ -1,6 +1,6 @@
 #' Unite by source
-#' This function gets a `STRATA_USED_DESC` for a data frame. This must be used witha specific `DISCARD_SOURCE` and `GF` grouping.
-#' @param mytable input table from discard estiamtion
+#' This function gets a `STRATA_USED_DESC` for a data frame. This must be used with a specific `DISCARD_SOURCE` and `GF` grouping.
+#' @param mytable input table from discard estimation
 #' @author Benjamin Galuardi
 #' @return table with STRATA_USED_DESC column
 #' @export

@@ -3,19 +3,19 @@
 \name{unite_by_source}
 \alias{unite_by_source}
 \title{Unite by source
-This function gets a `STRATA_USED_DESC` for a data frame. This must be used witha specific `DISCARD_SOURCE` and `GF` grouping.}
+This function gets a `STRATA_USED_DESC` for a data frame. This must be used with a specific `DISCARD_SOURCE` and `GF` grouping.}
 \usage{
 unite_by_source(mytable)
 }
 \arguments{
-\item{mytable}{input table from discard estiamtion}
+\item{mytable}{input table from discard estimation}
 }
 \value{
 table with STRATA_USED_DESC column
 }
 \description{
 Unite by source
-This function gets a `STRATA_USED_DESC` for a data frame. This must be used witha specific `DISCARD_SOURCE` and `GF` grouping.
+This function gets a `STRATA_USED_DESC` for a data frame. This must be used with a specific `DISCARD_SOURCE` and `GF` grouping.
 }
 \examples{
 

@@ -2,7 +2,8 @@
 % Please edit documentation in R/not_in.R
 \name{\%!in\%}
 \alias{\%!in\%}
-\title{notin}
+\title{notin
+the most useful function not included in base R!}
 \usage{
 x \%!in\% y
 }
@@ -11,8 +12,12 @@ x \%!in\% y
 
 \item{y:}{vector to serve as reference}
 }
+\value{
+a vector where x is 'not in' y
+}
 \description{
 notin
+the most useful function not included in base R!
 }
 \examples{
 \dontrun{

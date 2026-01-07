@@ -12,7 +12,7 @@
 #' @param return_summary  logical, should a summary (very not large) be returned?
 #' @param CAMS_GEAR_STRATA  support table sourced from Oracle
 #' @param STOCK_AREAS support table sourced from Oracle
-#' @param OBS_REMOVE
+#' @param OBS_REMOVE support table sourced from Oracle
 #' @param CAMS_DISCARD_MORTALITY_STOCK support table sourced from Oracle
 #'
 #' @author Benjamin Galuardi
@@ -90,6 +90,9 @@
 #' 	select(-SPECIES_ESTIMATION_REGION) %>%
 #' 	filter(ITIS_TSN == species$ITIS_TSN) %>%
 #' 	dplyr::select(-ITIS_TSN)
+#' 	OBS_REMOVE = ROracle::dbGetQuery(con_maps, "select * from CFG_OBSERVER_CODES")  %>%
+#' dplyr::filter(ITIS_TSN == species$ITIS_TSN) %>%
+#'  distinct(OBS_CODES)
 #'
 #' # Now, modify anything you wish to test in the support tables! For example, here is an example for scallop estiamtion areas. CAMS do not match the previous assessment and were worth investigating. CAMS ended up doing a good job in this case, regardless of the area splits.
 #'
