@@ -1,11 +1,11 @@
 #'  Build MREM KALL adjustment table
-#'make a table for yourself since ITD won't let you make a View... ----
+#' make a table for yourself since ITD won't let you make a View... ----
 #' Make MREM adjustment table on the fly
-#' This currently lives at GARFO as a VIew. Thus, it is not ported to NEFSC via TTS. NEFSC IT goons do not allow Oracle View creation so the code can't simply be shared in a normal fashion. This function is the work around. It will generate a MREM KALL adjustment table in the users worksapce. This is needed when pulling data for a CAMS discard diagnostic run.
+#' This currently lives at GARFO as a View. Thus, it is not ported to NEFSC via TTS. NEFSC IT goons do not allow Oracle View creation so the code can't simply be shared in a normal fashion. This function is the work around. It will generate a MREM KALL adjustment table in the users workspace. This is needed when pulling data for a CAMS discard diagnostic run.
 #'
 #' @param con database connection
 #'
-#' @return
+#' @return a dataframe; MREM table from Oracle
 #' @export
 #'
 #' @examples

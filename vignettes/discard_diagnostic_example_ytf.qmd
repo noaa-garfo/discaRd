@@ -6,7 +6,6 @@ format: html
 editor: visual
 ---
 
-
 # Example of discard diagnostic for yellowtail
 
 Note: this is not optimized for NEFSC use. Function modification must be made to include schema and dblink elements, e.g., `select * from CFG_DISCARD_RUNID` becomes `select * from CAMS_GARFO.CFG_DISCARD_RUNID@NOVA`

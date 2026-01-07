@@ -1,0 +1,8 @@
+removed herring specific functions
+removed herring examples ingering in some help files
+cleaned up example for nefsc diag function
+moved all files in CAMS fodler to defunct. this includes lots of old examples during production. Documentation should be checked but most likely it is redundent to keep anythign in this package
+
+ideas
+make selection columns in `get.cochran.ss.by.strat` modular. old examples don't work. there may be other uses in the future where grouping is not LINK1 etc.
+

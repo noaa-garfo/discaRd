@@ -9,6 +9,9 @@ get_covrow_bg(joined_table)
 \arguments{
 \item{joined_table}{}
 }
+\value{
+data frame with additional covariance variables
+}
 \description{
 Alt version get_covrow.R
 }

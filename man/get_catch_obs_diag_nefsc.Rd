@@ -18,7 +18,7 @@ get_catch_obs_diag_nefsc(
 
 \item{end_year}{end year (calendar year)}
 
-\item{mrem_table}{table of MREM KALL adjustment. If workgng from NEFSC, this must be created by the NEFSC user}
+\item{mrem_table}{table of MREM KALL adjustment. If working from NEFSC, this must be created by the NEFSC user}
 }
 \value{
 a list with the elements needed for discard estimation:
@@ -31,15 +31,9 @@ Get Catch OBS data at NEFSC
 }
 \examples{
 # Main example
-dat = get_catch_obs(con_maps, 2021, 2022, )
-gf_dat = dat$gf_dat
-non_gf_dat = dat$non_gf_dat
-all_dat = dat$all_dat
-rm(dat)
-gc()
-
-# Herring example
-dat = get_catch_obs_herring(con_maps, 2021, 2022)
+mrem = ROracle::dbGetQuery(con, "select distinct CAMSID||'_'|| SUBTRIP as CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+from cams_alloc_gf_mrem") # adjust for connections/schema's at NEFSC
+dat = get_catch_obs(con, 2021, 2022)
 gf_dat = dat$gf_dat
 non_gf_dat = dat$non_gf_dat
 all_dat = dat$all_dat

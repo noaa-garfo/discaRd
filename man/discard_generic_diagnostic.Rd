@@ -36,6 +36,8 @@ discard_generic_diagnostic(
 \item{STOCK_AREAS}{support table sourced from Oracle}
 
 \item{CAMS_DISCARD_MORTALITY_STOCK}{support table sourced from Oracle}
+
+\item{OBS_REMOVE}{support table sourced from Oracle}
 }
 \description{
 The original function pushed .fst files directly to the Wind server at GARFO. This version does not do that and only produces local results.
@@ -112,6 +114,9 @@ CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY
 	select(-SPECIES_ESTIMATION_REGION) \%>\%
 	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
 	dplyr::select(-ITIS_TSN)
+	OBS_REMOVE = ROracle::dbGetQuery(con_maps, "select * from CFG_OBSERVER_CODES")  \%>\%
+dplyr::filter(ITIS_TSN == species$ITIS_TSN) \%>\%
+ distinct(OBS_CODES)
 
 # Now, modify anything you wish to test in the support tables! For example, here is an example for scallop estiamtion areas. CAMS do not match the previous assessment and were worth investigating. CAMS ended up doing a good job in this case, regardless of the area splits.
 
