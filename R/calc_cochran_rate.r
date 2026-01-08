@@ -10,8 +10,28 @@
 #' @references Wiley: Sampling Techniques, 3rd Edition - William G. Cochran. (n.d.). Available from http://www.wiley.com/WileyCDA/WileyTitle/productCd-047116240X.html [accessed 1 August 2016].
 #'
 #' Wigley SE, Rago PJ, Sosebee KA, Palka DL. 2007. The Analytic Component to the Standardized Bycatch Reporting Methodology Omnibus Amendment: Sampling Design, and Estimation of Precision and Accuracy (2nd Edition). US Dep. Commer., Northeast Fish. Sci. Cent. Ref. Doc. 07-09; 156 p
-#' @examples calc_cochran_rate
+#' @examples
 #'
+# --- Step 1: Create Dummy Data ---
+# 5 observed trips
+#'test_df <- data.frame(
+#'  LINK1 = c("Trip_A", "Trip_B", "Trip_C", "Trip_D", "Trip_E"),
+#'  BYCATCH = c(10, 50, 20, 10, 0),    # Discard weight
+#'  KALL = c(100, 500, 150, 100, 200)  # Kept weight
+#')
+
+#' # --- Step 2: Run the function ---
+#' # Scenario: Total fleet size is 1000 trips, we observed 5. Target CV is 30% (0.30)
+#'result <- calc_cochran_rate(
+#'  df = test_df,
+#'  n_trips = 1000,
+#'  n_obs = nrow(test_df),
+#'  CV_targ = 0.30
+#')
+
+#' # --- Step 3: View Results ---
+#' print(result)
+
 calc_cochran_rate = function(df, n_trips, n_obs, CV_targ = NA){
 
   n = n_obs
@@ -43,7 +63,17 @@ calc_cochran_rate = function(df, n_trips, n_obs, CV_targ = NA){
 		T2 = CVD+(T1/n_trips)
 		req_samples = T1/T2
 	}
-	output = data.frame(N=n_trips,n=n,RE_mean=r,RE_var=RE_var,RE_se=RE_se,RE_rse=RE_rse,CV_TARG=CV_targ,REQ_SAMPLES=req_samples,REQ_COV=req_samples/n_trips)
+	output = data.frame(
+	  N = n_trips,
+	  n = n,
+	  RE_mean = r,
+	  RE_var = RE_var,
+	  RE_se = RE_se,
+	  RE_rse = RE_rse,
+	  CV_TARG = CV_targ,
+	  REQ_SAMPLES = req_samples,
+	  REQ_COV = req_samples / n_trips
+	)
 
 	return(output)
 }

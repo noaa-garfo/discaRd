@@ -20,8 +20,22 @@ observed sample size needed for target CV
 This function estimates the discard rate using the Cochran ratio estimator and returns the mean rate as well as estimates of uncertainty and required sample sizes for a target CV
 }
 \examples{
-calc_cochran_rate
 
+test_df <- data.frame(
+ LINK1 = c("Trip_A", "Trip_B", "Trip_C", "Trip_D", "Trip_E"),
+ BYCATCH = c(10, 50, 20, 10, 0),    # Discard weight
+ KALL = c(100, 500, 150, 100, 200)  # Kept weight
+)
+# --- Step 2: Run the function ---
+# Scenario: Total fleet size is 1000 trips, we observed 5. Target CV is 30\% (0.30)
+result <- calc_cochran_rate(
+ df = test_df,
+ n_trips = 1000,
+ n_obs = nrow(test_df),
+ CV_targ = 0.30
+)
+# --- Step 3: View Results ---
+print(result)
 }
 \references{
 Wiley: Sampling Techniques, 3rd Edition - William G. Cochran. (n.d.). Available from http://www.wiley.com/WileyCDA/WileyTitle/productCd-047116240X.html [accessed 1 August 2016].
