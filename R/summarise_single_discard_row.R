@@ -10,11 +10,11 @@
 #' @return ddat_focal dataframe
 #' @export
 #'
-#' @examples
+
 summarise_single_discard_row <- function(data, itis_tsn) {
 
-	ddat_focal_summary <- data %>%
-		dplyr::filter(!is.na(LINK1)) %>%
+	ddat_focal_summary <- data |>
+		dplyr::filter(!is.na(LINK1)) |>
 		mutate(
 			SPECIES_EVAL_DISCARD = case_when(
 				SPECIES_ITIS == itis_tsn ~ DISCARD,
@@ -22,7 +22,7 @@ summarise_single_discard_row <- function(data, itis_tsn) {
 			)
 		)
 
-	species_subtrip_link1_totals <- ddat_focal_summary %>%
+	species_subtrip_link1_totals <- ddat_focal_summary |>
 		group_by(LINK1, CAMSID, SUBTRIP, ITIS_TSN) |>
 		dplyr::summarise(
 			DISCARD = sum(SPECIES_EVAL_DISCARD, na.rm = TRUE),
@@ -33,8 +33,8 @@ summarise_single_discard_row <- function(data, itis_tsn) {
 
 	ddat_focal_summary <- ddat_focal_summary |>
 		group_by(LINK1, CAMSID, SUBTRIP, ITIS_TSN) |>
-		arrange(desc(DISCARD)) %>%
-		slice(1) %>%
+		arrange(desc(DISCARD)) |>
+		slice(1) |>
 		ungroup() |>
 		dplyr::select(
 			-DISCARD,

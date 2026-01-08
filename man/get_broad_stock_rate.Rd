@@ -50,7 +50,7 @@ stratvars_scalgf = c("SPECIES_ESTIMATION_REGION"
 
 BROAD_STOCK_RATE_TABLE = list()
 kk = 1
-ustocks = bdat_scal$SPECIES_ESTIMATION_REGION \%>\% unique()
+ustocks = bdat_scal$SPECIES_ESTIMATION_REGION |> unique()
 for(k in ustocks){
 BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
 																										, ddat_focal_sp = ddat_focal_scal

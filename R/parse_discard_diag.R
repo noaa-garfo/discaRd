@@ -10,7 +10,6 @@
 #' @return a data frame with columns corresponding to `CAMS_DISCARD_ALL_YEARS`
 #' @export
 #'
-#' @examples
 
 parse_discard_diag <- function(joined_table
                                  , FY_species = 2018
@@ -29,17 +28,17 @@ parse_discard_diag <- function(joined_table
 
   t1 = Sys.time()
 
-     outlist <- joined_table %>%
+     outlist <- joined_table |>
         # lazy_dt() |> # doesn't work with paste in mutate
         dplyr::ungroup() |>
         dplyr::mutate(
           GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_ESTIMATION_REGION)
           , SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
-        ) %>%
-        
+        ) |>
 
 
-        dplyr::select(-SPECIES_ITIS, -ITIS_TSN) %>%
+
+        dplyr::select(-SPECIES_ITIS, -ITIS_TSN) |>
         dplyr::rename('STRATA_FULL' = 'FULL_STRATA'
                       , 'CAMS_DISCARD_RATE' = 'COAL_RATE'
                       , 'CAMS_DISCARD' = 'DISCARD'
@@ -52,7 +51,7 @@ parse_discard_diag <- function(joined_table
                       , 'DISCARD_RATE_G' = 'BROAD_STOCK_RATE'
                       , 'CAMS_CV' = 'CV'
                       , 'SECGEAR_MAPPED' = 'GEARCODE'
-        ) %>%
+        ) |>
         mutate(DATE_RUN = date_run
                , FY = as.integer(FY_species)
                , CAMS_DISCARD_VARIANCE = round(covrow, 4) #
@@ -76,7 +75,7 @@ parse_discard_diag <- function(joined_table
                  DISCARD_SOURCE %in% c('N', 'R', 'EM', 'DELTA', 'O') ~ NA_integer_,
                  TRUE ~ N_UNOBSERVED
                )
-        ) %>%
+        ) |>
 
         dplyr::select(
           DATE_RUN
@@ -123,13 +122,13 @@ parse_discard_diag <- function(joined_table
 
     # adjust for DISACRD_SOURCE = N, nan and infinite values
 
-    outlist <- outlist %>%
+    outlist <- outlist |>
       dplyr::mutate(
         DISCARD_SOURCE = case_when(
           is.na(CAMS_DISCARD) ~ 'N'
           , TRUE ~ DISCARD_SOURCE
         )
-      ) %>%
+      ) |>
       dplyr::mutate(
         STRATA_USED = case_when(
           is.na(CAMS_DISCARD) ~ NA_character_
@@ -137,7 +136,7 @@ parse_discard_diag <- function(joined_table
           , STRATA_USED == 'NA' ~ NA_character_
           , TRUE ~ STRATA_USED
         )
-      ) %>%
+      ) |>
       dplyr::mutate(
         STRATA_USED_DESC = case_when(
           is.na(CAMS_DISCARD) ~ NA_character_

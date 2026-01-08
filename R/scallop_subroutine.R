@@ -11,7 +11,7 @@
 #' @return writes a .fst file for disacrd estimates on scallop trips for species under evaluation. This folder and will be referenced within the groundfish module.
 #' @export
 #'
-#' @examples
+
 scallop_subroutine <- function(FY = 2019
                                , con = con_maps
                                , scal_gf_species
@@ -28,11 +28,11 @@ scallop_subroutine <- function(FY = 2019
 
   # {r estimate discards on scallop trips for each subACL stock, purl = T, eval = T}
 
-  non_gf_dat = non_gf_dat %>%
+  non_gf_dat = non_gf_dat |>
     mutate(OBS_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE
                                    , TRUE ~ 0))
 
-  scal_trips = non_gf_dat %>%
+  scal_trips = non_gf_dat |>
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
 
@@ -52,7 +52,7 @@ scallop_subroutine <- function(FY = 2019
   }
 
 
-  scal_trips = non_gf_dat %>%
+  scal_trips = non_gf_dat |>
     filter(substr(ACTIVITY_CODE_1,1,3) == 'SES')
 
 # setup scallop strata ----
@@ -94,28 +94,28 @@ scallop_subroutine <- function(FY = 2019
     # Support table import by species ----
 
     # GEAR TABLE
-    CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) %>%
-      collect() %>%
-      dplyr::rename(GEARCODE = SECGEAR_MAPPED) %>%
-      filter(ITIS_TSN == species_itis) %>%  # use strata for the species. It should only be DRS and OTB for scallop trips
+    CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) |>
+      collect() |>
+      dplyr::rename(GEARCODE = SECGEAR_MAPPED) |>
+      filter(ITIS_TSN == species_itis) |>  # use strata for the species. It should only be DRS and OTB for scallop trips
       dplyr::select(-NESPP3, -ITIS_TSN)
 
     # Stat areas table
     # unique stat areas for stock ID if needed
-    STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) %>%
-      filter(ITIS_TSN == species_itis) %>%
-      collect() %>%
-      group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) %>%
-      distinct(AREA) %>%
-      mutate(AREA = as.character(AREA)) %>%
+    STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) |>
+      filter(ITIS_TSN == species_itis) |>
+      collect() |>
+      group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) |>
+      distinct(AREA) |>
+      mutate(AREA = as.character(AREA)) |>
       ungroup()
 
     # Mortality table
-    CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  %>%
-      collect() %>%
+    CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  |>
+      collect() |>
       mutate(GEARCODE = CAMS_GEAR_GROUP
-             , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) %>%
-      filter(ITIS_TSN == species_itis) %>%
+             , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) |>
+      filter(ITIS_TSN == species_itis) |>
       dplyr::select(-ITIS_TSN)
 
     # swap underscores for hyphens where compound stocks exist ----
@@ -126,47 +126,47 @@ scallop_subroutine <- function(FY = 2019
       mutate(SPECIES_ESTIMATION_REGION = str_replace(SPECIES_ESTIMATION_REGION, '_', '-'))
 
     # Observer codes to be removed
-    OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  %>%
-      collect() %>%
-      filter(ITIS_TSN == species_itis) %>%
+    OBS_REMOVE = tbl(con, sql("select * from CFG_OBSERVER_CODES"))  |>
+      collect() |>
+      filter(ITIS_TSN == species_itis) |>
       distinct(OBS_CODES)
 
     # make trip and obs tables ----
-    ddat_focal <- scal_trips %>%
+    ddat_focal <- scal_trips |>
       mutate(FY_TYPE = FY_TYPE
-             , FY = SCAL_YEAR) %>%
-      # filter(SCAL_YEAR == yy) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
-      filter(DATE_TRIP >= scal_start_date & DATE_TRIP <= scal_end_date) %>%
-      filter(AREA %in% STOCK_AREAS$AREA) %>%
+             , FY = SCAL_YEAR) |>
+      # filter(SCAL_YEAR == yy) |>   ## time element is here!! NOTE THE SCAL YEAR>>>
+      filter(DATE_TRIP >= scal_start_date & DATE_TRIP <= scal_end_date) |>
+      filter(AREA %in% STOCK_AREAS$AREA) |>
       mutate(LIVE_POUNDS = SUBTRIP_KALL
              ,SEADAYS = 0
-      ) %>%
-      left_join(., y = STOCK_AREAS, by = 'AREA') %>%
-      left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
-      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
+      ) |>
+      left_join(y = STOCK_AREAS, by = 'AREA') |>
+      left_join(y = CAMS_GEAR_STRATA, by = 'GEARCODE') |>
+      left_join(y = CAMS_DISCARD_MORTALITY_STOCK
                 , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
-      ) %>%
-      dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-      dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
-      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') %>%
-      assign_strata(., stratvars = stratvars_scalgf)
+      ) |>
+      dplyr::select(-GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) |>
+      dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) |>
+      relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') |>
+      assign_strata(stratvars = stratvars_scalgf)
 
-    ddat_prev <- scal_trips %>%
+    ddat_prev <- scal_trips |>
       mutate(FY_TYPE = FY_TYPE
-             , FY = SCAL_YEAR) %>%
-      # filter(SCAL_YEAR == yy-1) %>%   ## time element is here!! NOTE THE SCAL YEAR>>>
-      filter(DATE_TRIP >= scal_start_date-365 & DATE_TRIP <= scal_end_date-365) %>%
-      filter(AREA %in% STOCK_AREAS$AREA) %>%
+             , FY = SCAL_YEAR) |>
+      # filter(SCAL_YEAR == yy-1) |>   ## time element is here!! NOTE THE SCAL YEAR>>>
+      filter(DATE_TRIP >= scal_start_date-365 & DATE_TRIP <= scal_end_date-365) |>
+      filter(AREA %in% STOCK_AREAS$AREA) |>
       mutate(LIVE_POUNDS = SUBTRIP_KALL
              ,SEADAYS = 0
-      ) %>%
-      left_join(., y = STOCK_AREAS, by = 'AREA') %>%
-      left_join(., y = CAMS_GEAR_STRATA, by = 'GEARCODE') %>%
-      left_join(., y = CAMS_DISCARD_MORTALITY_STOCK
+      ) |>
+      left_join(y = STOCK_AREAS, by = 'AREA') |>
+      left_join(y = CAMS_GEAR_STRATA, by = 'GEARCODE') |>
+      left_join(y = CAMS_DISCARD_MORTALITY_STOCK
                 , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
-      ) %>%
-      dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) %>%
-      dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) %>%
+      ) |>
+      dplyr::select( -GEARCODE.y, -COMMON_NAME.y, -NESPP3.y) |>
+      dplyr::rename(SPECIES_ITIS = 'SPECIES_ITIS', GEARCODE = 'GEARCODE.x',COMMON_NAME = COMMON_NAME.x, NESPP3 = NESPP3.x) |>
       relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')
 
 
@@ -178,12 +178,12 @@ scallop_subroutine <- function(FY = 2019
 
     # and join to the unobserved trips
 
-    ddat_focal_scal = ddat_focal_scal %>%
-      union_all(ddat_focal %>%
+    ddat_focal_scal = ddat_focal_scal |>
+      union_all(ddat_focal |>
                   filter(is.na(LINK1))
-                # %>%
-                # group_by(VTRSERNO, CAMSID) %>%
-                # slice(1) %>%
+                # |>
+                # group_by(VTRSERNO, CAMSID) |>
+                # slice(1) |>
                 # ungroup()
       )
 
@@ -194,12 +194,12 @@ scallop_subroutine <- function(FY = 2019
     fishdisp_exclude = c(39,90,98) |>
       stringr::str_pad(3, side = 'left', pad = 0)
 
-    bdat_scal = ddat_focal %>%
-      filter(!is.na(LINK1)) %>%
-      # filter(FISHDISP != '090') %>%
+    bdat_scal = ddat_focal |>
+      filter(!is.na(LINK1)) |>
+      # filter(FISHDISP != '090') |>
       dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
-      filter(LINK3_OBS == 1) %>%
-      filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
+      filter(LINK3_OBS == 1) |>
+      filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) |>
       mutate(OBS_AREA = AREA
              , OBS_HAUL_KALL_TRIP = OBS_KALL
              , PRORATE = 1)
@@ -208,23 +208,23 @@ scallop_subroutine <- function(FY = 2019
     # set up trips table for previous year ----
     ddat_prev_scal <- summarise_single_discard_row(data = ddat_prev, itis_tsn = species_itis)
 
-    ddat_prev_scal = ddat_prev_scal %>%
-      union_all(ddat_prev %>%
+    ddat_prev_scal = ddat_prev_scal |>
+      union_all(ddat_prev |>
                   filter(is.na(LINK1))
-                # %>%
-                # group_by(VTRSERNO, CAMSID) %>%
-                # slice(1) %>%
+                # |>
+                # group_by(VTRSERNO, CAMSID) |>
+                # slice(1) |>
                 # ungroup()
       )
 
 
     # previous year observer data needed..
-    bdat_prev_scal = ddat_prev %>%
-      filter(!is.na(LINK1)) %>%
-      # filter(FISHDISP != '090') %>%
+    bdat_prev_scal = ddat_prev |>
+      filter(!is.na(LINK1)) |>
+      # filter(FISHDISP != '090') |>
       dplyr::filter(FISHDISP %!in% fishdisp_exclude) |>
-      filter(LINK3_OBS == 1) %>%
-      filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) %>%
+      filter(LINK3_OBS == 1) |>
+      filter(substr(LINK1, 1,3) %!in% OBS_REMOVE$OBS_CODES) |>
       mutate( OBS_AREA = AREA
               , OBS_HAUL_KALL_TRIP = OBS_KALL
               , PRORATE = 1)
@@ -251,7 +251,7 @@ scallop_subroutine <- function(FY = 2019
     )
 
     # summarize each result for convenience ----
-    dest_strata_p = d_prev$allest$C %>% mutate(STRATA = STRATA
+    dest_strata_p = d_prev$allest$C |> mutate(STRATA = STRATA
                                                   , N = N
                                                   , n = n
                                                   , orate = round(n/N, 2)
@@ -270,7 +270,7 @@ scallop_subroutine <- function(FY = 2019
         , CV
       )
 
-    dest_strata_f = d_focal$allest$C %>% mutate(STRATA = STRATA
+    dest_strata_f = d_focal$allest$C |> mutate(STRATA = STRATA
                                                    , N = N
                                                    , n = n
                                                    , orate = round(n/N, 2)
@@ -291,20 +291,20 @@ scallop_subroutine <- function(FY = 2019
 
     # substitute transition rates where needed ----
 
-    trans_rate_df = dest_strata_f %>%
-      left_join(., dest_strata_p, by = 'STRATA') %>%
+    trans_rate_df = dest_strata_f |>
+      left_join(dest_strata_p, by = 'STRATA') |>
       mutate(STRATA = STRATA
              , n_obs_trips_f = n.x
              , n_obs_trips_p = n.y
              , in_season_rate = drate.x
              , previous_season_rate = drate.y
-      ) %>%
-      mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
-      mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+      ) |>
+      mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) |>
+      mutate(trans_rate = get_trans_rate(l_observed_trips = n_obs_trips_f
                                          , l_assumed_rate = previous_season_rate
                                          , l_inseason_rate = in_season_rate
       )
-      ) %>%
+      ) |>
       dplyr::select(STRATA
                     , n_obs_trips_f
                     , n_obs_trips_p
@@ -315,7 +315,7 @@ scallop_subroutine <- function(FY = 2019
       )
 
 
-    trans_rate_df = trans_rate_df %>%
+    trans_rate_df = trans_rate_df |>
       mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate))
 
     trans_rate_df$final_rate = coalesce(trans_rate_df$final_rate, trans_rate_df$in_season_rate)
@@ -323,14 +323,14 @@ scallop_subroutine <- function(FY = 2019
 
     trans_rate_df_full = trans_rate_df
 
-    full_strata_table = trans_rate_df_full %>%
-      # right_join(., y = d_focal$res, by = 'STRATA') %>%
-      right_join(., y = ddat_focal_scal, by = 'STRATA') %>%
-      as_tibble() %>%
+    full_strata_table = trans_rate_df_full |>
+      # right_join(y = d_focal$res, by = 'STRATA') |>
+      right_join(y = ddat_focal_scal, by = 'STRATA') |>
+      as_tibble() |>
       mutate(SPECIES_ITIS_EVAL = species_itis
              , COMNAME_EVAL = scal_gf_species$ITIS_NAME
              , FISHING_YEAR = yy
-             , FY_TYPE = FY_TYPE) %>%
+             , FY_TYPE = FY_TYPE) |>
       dplyr::rename(FULL_STRATA = STRATA)
 
     # GEAR and MESh rollup (2nd pass for scallop trips)
@@ -368,7 +368,7 @@ scallop_subroutine <- function(FY = 2019
     )
 
     ### summarize each result for convenience ----
-    dest_strata_p_pass2 = d_prev_pass2$allest$C %>% mutate(STRATA = STRATA
+    dest_strata_p_pass2 = d_prev_pass2$allest$C |> mutate(STRATA = STRATA
                                                               , N = N
                                                               , n = n
                                                               , orate = round(n/N, 2)
@@ -387,7 +387,7 @@ scallop_subroutine <- function(FY = 2019
         , CV
       )
 
-    dest_strata_f_pass2 = d_focal_pass2$allest$C %>% mutate(STRATA = STRATA
+    dest_strata_f_pass2 = d_focal_pass2$allest$C |> mutate(STRATA = STRATA
                                                                , N = N
                                                                , n = n
                                                                , orate = round(n/N, 2)
@@ -408,20 +408,20 @@ scallop_subroutine <- function(FY = 2019
 
     ### substitute transition rates where needed ----
 
-    trans_rate_df_pass2 = dest_strata_f_pass2 %>%
-      left_join(., dest_strata_p_pass2, by = 'STRATA') %>%
+    trans_rate_df_pass2 = dest_strata_f_pass2 |>
+      left_join(dest_strata_p_pass2, by = 'STRATA') |>
       mutate(STRATA = STRATA
              , n_obs_trips_f = n.x
              , n_obs_trips_p = n.y
              , in_season_rate = drate.x
              , previous_season_rate = drate.y
-      ) %>%
-      mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) %>%
-      mutate(trans_rate = get.trans.rate(l_observed_trips = n_obs_trips_f
+      ) |>
+      mutate(n_obs_trips_p = coalesce(n_obs_trips_p, 0)) |>
+      mutate(trans_rate = get_trans_rate(l_observed_trips = n_obs_trips_f
                                          , l_assumed_rate = previous_season_rate
                                          , l_inseason_rate = in_season_rate
       )
-      ) %>%
+      ) |>
       dplyr::select(STRATA
                     , n_obs_trips_f
                     , n_obs_trips_p
@@ -432,7 +432,7 @@ scallop_subroutine <- function(FY = 2019
       )
 
 
-    trans_rate_df_pass2 = trans_rate_df_pass2 %>%
+    trans_rate_df_pass2 = trans_rate_df_pass2 |>
       mutate(final_rate = case_when((in_season_rate != trans_rate & !is.na(trans_rate)) ~ trans_rate))
 
     trans_rate_df_pass2$final_rate = coalesce(trans_rate_df_pass2$final_rate, trans_rate_df_pass2$in_season_rate)
@@ -473,11 +473,11 @@ scallop_subroutine <- function(FY = 2019
 
     # FY_BST = as.numeric(sub("_.*", "", gear_only$allest$C$STRATA))
     #
-    # SPECIES_ESTIMATION_REGION <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-    #   gsub("^([^_]+)_", "", .) %>% sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
+    # SPECIES_ESTIMATION_REGION <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) |>
+    #   gsub("^([^_]+)_", "", .) |> sub("_.*", "",.)  # sub("_.*", "", gear_only$allest$C$STRATA)
     #
-    # CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) %>%
-    #   gsub("^([^_]+)_", "", .)%>%
+    # CAMS_GEAR_GROUP <- gsub("^([^_]+)_", "", gear_only$allest$C$STRATA) |>
+    #   gsub("^([^_]+)_", "", .)|>
     #   gsub("^([^_]+)_", "", .) #sub(".*?_", "", gear_only$allest$C$STRATA)
     #
     # BROAD_STOCK_RATE <-  gear_only$allest$C$RE_mean
@@ -500,23 +500,23 @@ scallop_subroutine <- function(FY = 2019
     joined_table = assign_strata(full_strata_table, stratvars_assumed)
 
     if("STRATA_ASSUMED" %in% names(joined_table)) {
-      joined_table = joined_table %>%
+      joined_table = joined_table |>
         dplyr::select(-STRATA_ASSUMED)   # not using this anymore here..
     }
 
-    joined_table <- joined_table %>%
-      # dplyr::select(-STRATA_ASSUMED) %>%  # not using this anymore here..
-      dplyr::rename(STRATA_ASSUMED = STRATA) %>%
-      left_join(., y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) %>%
-      left_join(., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP')) %>%
+    joined_table <- joined_table |>
+      # dplyr::select(-STRATA_ASSUMED) |>  # not using this anymore here..
+      dplyr::rename(STRATA_ASSUMED = STRATA) |>
+      left_join(y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) |>
+      left_join(y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP')) |>
       mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
                                    , n_obs_trips_f < 5 &
                                      n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
                                    , n_obs_trips_f < 5 &
                                      n_obs_trips_p < 5 ~ trans_rate_a  # this is an final assumed rate taking transition into account
       )
-      ) %>%
-      mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) %>%
+      ) |>
+      mutate(COAL_RATE = coalesce(COAL_RATE, BROAD_STOCK_RATE)) |>
       mutate(SPECIES_ITIS_EVAL = species_itis
              , COMNAME_EVAL = scal_gf_species$ITIS_NAME
              , FISHING_YEAR = yy
@@ -541,7 +541,7 @@ scallop_subroutine <- function(FY = 2019
 
 
 
-    joined_table = joined_table %>%
+    joined_table = joined_table |>
       mutate(CV = case_when(DISCARD_SOURCE == 'O' ~ 0
                             , DISCARD_SOURCE == 'I' ~ CV_f
                             , DISCARD_SOURCE == 'T' ~ CV_f
@@ -562,7 +562,7 @@ scallop_subroutine <- function(FY = 2019
     strata_a = paste(stratvars_assumed, collapse = ';')
     strata_b = paste(stratvars_gear, collapse = ';')
 
-    joined_table = joined_table %>%
+    joined_table = joined_table |>
       mutate(STRATA_USED = case_when(DISCARD_SOURCE == 'O' ~ ''
                                      , DISCARD_SOURCE == 'I' ~ strata_f
                                      , DISCARD_SOURCE == 'T' ~ strata_f
@@ -580,18 +580,18 @@ scallop_subroutine <- function(FY = 2019
     # discard mort ratio tht are NA for odd gear types (e.g. cams gear 0) get a 1 mort ratio.
     # the KALLs should be small..
 
-    joined_table = joined_table %>%
-      mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) # %>%
+    joined_table = joined_table |>
+      mutate(DISC_MORT_RATIO = coalesce(DISC_MORT_RATIO, 1)) # |>
 
 
     joined_table <- joined_table |>
-      dplyr::distinct()%>%
+      dplyr::distinct()|>
       mutate(DISCARD_SOURCE = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 'N'
-                                        ,TRUE ~ DISCARD_SOURCE)) %>%
+                                        ,TRUE ~ DISCARD_SOURCE)) |>
       mutate(DISCARD = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ 0.0,
                                  DISCARD_SOURCE == 'O' ~ DISC_MORT_RATIO*OBS_DISCARD,
                                  DISCARD_SOURCE != 'O' ~ DISC_MORT_RATIO*COAL_RATE*LIVE_POUNDS,
-                                 TRUE ~ NA_real_))%>%
+                                 TRUE ~ NA_real_))|>
       mutate(CV = case_when(ESTIMATE_DISCARDS == 0 & DISCARD_SOURCE != 'O' ~ NA_real_
                             ,TRUE ~ CV))
 
@@ -609,7 +609,7 @@ scallop_subroutine <- function(FY = 2019
 
     # make sure the fishing year file contains ONLY trips in that scallop fishing year ----
 
-    joined_table = joined_table %>%
+    joined_table = joined_table |>
       filter(SCAL_YEAR == yy)
 
 

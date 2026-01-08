@@ -7,7 +7,7 @@
 #' @return a data frame (dat) with a `STRATA` column
 #' @export
 #'
-#' @examples
+
 assign_strata <- function(dat, stratvars){
 	stratvars = toupper(stratvars)
 

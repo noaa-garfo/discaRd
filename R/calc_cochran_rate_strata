@@ -12,9 +12,9 @@
 #' @return a list of Cochran ratio estimaes by strata, Discards, Total Discard in the fishery, Total Cv for the fishery, Required Seadays by strata
 #' @export
 #'
-#' @examples get.cochran.ss.by.strat
+#' @examples calc_cochran_rate_strata
 
-get.cochran.ss.by.strat <- function(bydat
+calc_cochran_rate_strata <- function(bydat
                                     , trips
                                     , targCV = 0.3,
                                     strata_name = "STRATA",
@@ -28,11 +28,11 @@ get.cochran.ss.by.strat <- function(bydat
   # browser()
 
 
-  byout = bydat %>%
+  byout = bydat |>
     mutate(alln = nrow(.)
            , allk = sum(KALL, na.rm = T)
-    ) %>%
-    group_by(STRATA) %>%
+    ) |>
+    group_by(STRATA) |>
     dplyr::summarise(alln = alln[1]
                      , allk = allk[1]
                      , d = sum(BYCATCH)
@@ -59,10 +59,10 @@ get.cochran.ss.by.strat <- function(bydat
   # ))
 
 
-  tout = trips %>%
+  tout = trips |>
     mutate(allN = n_distinct(CAMSID)
-           , allK = sum(LIVE_POUNDS, na.rm=T)) %>%
-    group_by(STRATA) %>%
+           , allK = sum(LIVE_POUNDS, na.rm=T)) |>
+    group_by(STRATA) |>
     dplyr::summarise( allN = allN[1]
                       , allK = allK[1]
                       , N = n_distinct(CAMSID)
@@ -74,7 +74,7 @@ get.cochran.ss.by.strat <- function(bydat
   #tout = tout[btidx,]
 
   if(!is.null(strata_complete)){
-    tout <- tout %>%
+    tout <- tout |>
       complete(STRATA = strata_complete, fill = list(N = 0, K = 0))
   }
 
@@ -117,23 +117,23 @@ get.cochran.ss.by.strat <- function(bydat
   if(nrow(bydat)>0){
     # C = ddply(bydat, "STRATA", function(x) cochran_calc_ss(x, x$N[1], targCV))
 
-    C = bydat %>%
-      dplyr::group_by(STRATA) %>%
-      mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) %>%
-      group_modify(~ cochran.calc.ss(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) %>%
+    C = bydat |>
+      dplyr::group_by(STRATA) |>
+      mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) |>
+      group_modify(~ calc_cochran_rate(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) |>
       ungroup()
-    # dplyr::group_modify(.f = cochran.calc.ss(., l_N = .$N[1], l_CVtarg = targCV))
-    # dplyr::summarise(cochran.calc.ss(., .$N[1], targCV))
+    # dplyr::group_modify(.f = calc_cochran_rate(l_N = .$N[1], l_CVtarg = targCV))
+    # dplyr::summarise(calc_cochran_rate(.$N[1], targCV))
 
-    # C = bydat %>%
-    #   dplyr::group_by(STRATA) %>%
-    #   dplyr::summarise(cochran.calc.ss(., .$N[1], targCV))
-    # group_map(~ cochran.calc.ss(.x, .$N[1], targCV) , .keep = T)
+    # C = bydat |>
+    #   dplyr::group_by(STRATA) |>
+    #   dplyr::summarise(calc_cochran_rate(.$N[1], targCV))
+    # group_map(~ calc_cochran_rate(.x, .$N[1], targCV) , .keep = T)
 
     # C$REQ_SEADAYS = C$REQ_SAMPLES*byout$avg_seadays
 
     # fill in missing strata from tout
-    C <- as.data.frame(C %>% complete(STRATA = tout$STRATA, fill=list(n=0)))
+    C <- as.data.frame(C |> complete(STRATA = tout$STRATA, fill=list(n=0)))
 
     # fill in observed trips for tout
     tout$n <- C$n

@@ -28,7 +28,7 @@
 
 #' kk = 1
 
-#' ustocks = bdat_scal$SPECIES_ESTIMATION_REGION %>% unique()
+#' ustocks = bdat_scal$SPECIES_ESTIMATION_REGION |> unique()
 
 #' for(k in ustocks){
 #'	BROAD_STOCK_RATE_TABLE[[kk]] = get_broad_stock_rate(bdat = bdat_scal
@@ -47,11 +47,11 @@
 #'
 get_broad_stock_rate = function(bdat, ddat_focal_sp, ddat_focal, species_itis, stratvars, stock = 'GOM'){
 
-	btmp = 	bdat %>%
+	btmp = 	bdat |>
 		filter(SPECIES_ESTIMATION_REGION == stock)
-	dstmp = ddat_focal_sp %>%
+	dstmp = ddat_focal_sp |>
 		filter(SPECIES_ESTIMATION_REGION == stock)
-	dtmp = 	ddat_focal %>%
+	dtmp = 	ddat_focal |>
 		filter(SPECIES_ESTIMATION_REGION == stock)
 
 	d_broad_stock = run_discard(bdat = btmp

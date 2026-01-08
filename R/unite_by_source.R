@@ -7,23 +7,23 @@
 #'
 #' @examples
 #'
-#' tab_list =joined_table %>%
-#' group_split(DISCARD_SOURCE, GF) %>%   # group_split may be deprecated in the future..
-#'   lapply(., unite_by_source)
+#' tab_list =joined_table |>
+#' group_split(DISCARD_SOURCE, GF) |>   # group_split may be deprecated in the future..
+#'   lapply(unite_by_source)
 #'
-#' joined_table = do.call(rbind, tab_list) %>%
+#' joined_table = do.call(rbind, tab_list) |>
 #'   as_tibble()
 #'
 unite_by_source = function(mytable){
-  cols_used = unlist(str_split(mytable$STRATA_USED, pattern =';')) %>%
+  cols_used = unlist(str_split(mytable$STRATA_USED, pattern =';')) |>
     unique()
 
   if(cols_used[1] == ""){
     mytable$STRATA_USED_DESC = ""
   } else {
-    mytable = mytable %>%
-      dplyr::rowwise() %>%
-      tidyr::unite(., col = 'STRATA_USED_DESC', cols_used, remove = F, sep = ';')
+    mytable = mytable |>
+      dplyr::rowwise() |>
+      tidyr::unite(col = 'STRATA_USED_DESC', cols_used, remove = F, sep = ';')
   }
 
   mytable

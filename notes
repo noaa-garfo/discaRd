@@ -1,3 +1,4 @@
+CAMSNR-1265-defunct stuff
 removed herring specific functions
 removed herring examples ingering in some help files
 cleaned up example for nefsc diag function
@@ -5,4 +6,25 @@ moved all files in CAMS fodler to defunct. this includes lots of old examples du
 
 ideas
 make selection columns in `get.cochran.ss.by.strat` modular. old examples don't work. there may be other uses in the future where grouping is not LINK1 etc.
+
+commited, pushed
+
+branched from main
+merged in CAMSNR-1265 since many files were moved/deleted. hoping this reduced merge conflicts later..
+CAMSNR-1266-modernize-code
+replaced %>% with |>
+replaced all (., ) since new pipes don't like it
+get.bydat.R isn't used for anything in current processes.
+get.weighted.cv.R isn't used for anything in current processes.
+vary.bigN.R isn't used for anything in current processes.
+varyn.R isn't used for anything in current processes.
+cochran.trans.calc.R isn't used for anything anymore
+these were used (i think) in the 2016 discard review to generate variations of the discard process
+
+I'm not interesetd in getting old functions to work. the 2016 review was 10 yrs ago.
+
+eflalo is a dataset
+make.obs.flag.dat.R isn't used for anything in production. it just adds obs levels to eflalo data
+setup.parallel isn't used for anything. but it's also not hurting anything
+
 

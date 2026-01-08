@@ -14,7 +14,7 @@
 #' 3)Complete table of commercial trips and discard amounts
 #' @export
 #'
-#' @examples
+
 run_discard <- function(bdat
 												, ddat_focal
 												, c_o_tab = c_o_dat2
@@ -39,7 +39,7 @@ run_discard <- function(bdat
 	# Get complete strata
 	strata_complete = unique(c(bdat_focal$STRATA, ddat_focal$STRATA))
 
-	allest = get.cochran.ss.by.strat(bydat = bdat_focal
+	allest = calc_cochran_rate_strata(bydat = bdat_focal
 																	 , trips = ddat_focal
 																	 , strata_name = 'STRATA'
 																	 , targCV = .3
@@ -47,7 +47,7 @@ run_discard <- function(bdat
 	)
 
 	# discard rates by strata
-	dest_strata = allest$C %>% dplyr::mutate(STRATA = STRATA
+	dest_strata = allest$C |> dplyr::mutate(STRATA = STRATA
 																			 , N = N
 																			 , n = n
 																			 , orate = round(n/N, 2)
@@ -72,27 +72,27 @@ run_discard <- function(bdat
 	ddat_rate$CV = dest_strata$CV[match(ddat_rate$STRATA, dest_strata$STRATA)]
 
 
-	ddat_rate <- ddat_rate %>%
+	ddat_rate <- ddat_rate |>
 		mutate(STRATA_ASSUMED = eval(parse(text = stratvars[aidx[1]])))
 
 	if(length(aidx) > 1 ){
 
 		for(i in 2:length(aidx)){
 
-			ddat_rate <- ddat_rate %>%
+			ddat_rate <- ddat_rate |>
 				mutate(STRATA_ASSUMED = paste(STRATA_ASSUMED, eval(parse(text = stratvars[aidx[i]])), sep = '_'))
 		}
 
 	}
 
-	ddat_rate = ddat_rate %>%
+	ddat_rate = ddat_rate |>
 		mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA))
 
 	ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
 
 	# incorporate teh assumed rate into the calculated discard rates
-	ddat_rate <- ddat_rate %>%
-		mutate(CRATE = coalesce(DISC_RATE, ARATE)) %>%
+	ddat_rate <- ddat_rate |>
+		mutate(CRATE = coalesce(DISC_RATE, ARATE)) |>
 		mutate(CRATE = tidyr::replace_na(CRATE, 0))
 
 	# merge observed discards with estimated discards

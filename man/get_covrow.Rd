@@ -41,21 +41,21 @@ joined_table = mydiscard$trips_discard
 Ntable = get_covrow(joined_table)
 
 # Take a look
-joined_table \%>\%
-	dplyr::select(starts_with('N_') | starts_with('n_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_ESTIMATION_REGION | MESH_CAT | TRIPCATEGORY | ACCESSAREA) \%>\%
-	distinct() \%>\%
+joined_table |>
+	dplyr::select(starts_with('N_') | starts_with('n_') | DISCARD_SOURCE |  CAMS_GEAR_GROUP | SPECIES_ESTIMATION_REGION | MESH_CAT | TRIPCATEGORY | ACCESSAREA) |>
+	distinct() |>
 	View()
 
 # check sums
-joined_table \%>\%
-	filter(DISCARD_SOURCE == 'I') \%>\%
-	group_by(STRATA_USED_DESC) \%>\%
+joined_table |>
+	filter(DISCARD_SOURCE == 'I') |>
+	group_by(STRATA_USED_DESC) |>
 	dplyr::summarise(trip_var_total = sum(var, na.rm = T)
 									 # , strata_var = max(VAR_RATE_STRATA, na.rm = T)
 									 , CV_STRATA = max(CV, na.rm = T)
 									 , N_USED = max(N_USED, na.rm = T)
 									 , n_used = max(n_USED, na.rm = T)
-	) \%>\%
+	) |>
 	View()
 
 
