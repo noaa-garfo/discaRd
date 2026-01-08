@@ -12,9 +12,9 @@
 #'
 #' @examples
 #'
-#' plot(get.trans.rate(l_observed_trips = 1:100, l_assumed_rate = 0.001, l_inseason_rate = .0005, ntrans = 50), typ = 'l', ylab = 'Discard rate', xlab = 'Number of in season trips')
+#' plot(get_trans_rate(l_observed_trips = 1:100, l_assumed_rate = 0.001, l_inseason_rate = .0005, ntrans = 50), typ = 'l', ylab = 'Discard rate', xlab = 'Number of in season trips')
 #'
-get.trans.rate <- function(l_observed_trips, l_assumed_rate, l_inseason_rate, ntrans = 5){
+get_trans_rate <- function(l_observed_trips, l_assumed_rate, l_inseason_rate, ntrans = 5){
 
   # scale of the negative exponential
   r.coef <- 0.7

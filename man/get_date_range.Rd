@@ -19,3 +19,8 @@ a start and end date
 Get Date Range
 get date range for particular type of fishing year
 }
+\examples{
+
+lapply(as.list(2017:2020), function(x) get_date_range(x, FY_TYPE = 'APRIL'))
+
+}

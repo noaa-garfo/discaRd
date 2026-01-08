@@ -10,9 +10,9 @@
 #' @references Wiley: Sampling Techniques, 3rd Edition - William G. Cochran. (n.d.). Available from http://www.wiley.com/WileyCDA/WileyTitle/productCd-047116240X.html [accessed 1 August 2016].
 #'
 #' Wigley SE, Rago PJ, Sosebee KA, Palka DL. 2007. The Analytic Component to the Standardized Bycatch Reporting Methodology Omnibus Amendment: Sampling Design, and Estimation of Precision and Accuracy (2nd Edition). US Dep. Commer., Northeast Fish. Sci. Cent. Ref. Doc. 07-09; 156 p
-#' @examples cochran.calc.ss
+#' @examples calc_cochran_rate
 #'
-cochran.calc.ss = function(df, n_trips, n_obs, CV_targ = NA){
+calc_cochran_rate = function(df, n_trips, n_obs, CV_targ = NA){
 
   n = n_obs
 

@@ -20,3 +20,7 @@ This function is used to get observed discard values on observed trips. These va
 This function does not need stratification. Only VTR serial number and an observed discard for desired species
 This function utilizes the DISCARD_PRORATE field in CAMS_OBS_CATCH. This value must be used for assigning observed discard to trips. It is NOT used for d/k calculations since it is pro-rated by unobserved KALL.
 }
+\examples{
+#none
+
+}

@@ -147,9 +147,9 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
   c_o_dat2 <- ROracle::dbGetQuery(con, import_query)
 
 
-  c_o_dat2 = c_o_dat2 %>%
-    mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) %>%
-    mutate(DOCID_ORIG = DOCID) %>%
+  c_o_dat2 = c_o_dat2 |>
+    mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) |>
+    mutate(DOCID_ORIG = DOCID) |>
     mutate(DOCID = paste(CAMSID,SUBTRIP, sep = "_"))
 
   # NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
@@ -160,13 +160,13 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
   # 8/17/22 this may not be needed anymore..
 
-  link3_na = c_o_dat2 %>%
+  link3_na = c_o_dat2 |>
     filter(!is.na(LINK1) & is.na(LINK3))
 
 
   # make these values 0 or NA or 'none' depending on the default for that field
   if(nrow(link3_na) > 0){
-    link3_na = link3_na %>%
+    link3_na = link3_na |>
       mutate(LINK1 = NA
              , DISCARD = NA
              , DISCARD_PRORATE = NA
@@ -194,49 +194,49 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
     # c_o_dat2 = c_o_dat2[tidx == F,]
 
-    c_o_dat2 = c_o_dat2 %>%
+    c_o_dat2 = c_o_dat2 |>
       bind_rows(link3_na)
 
   }
   # continue the data import
 
 
-  state_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'STATE')
-  fed_trips = c_o_dat2 %>% filter(FED_OR_STATE == 'FED')
+  state_trips = c_o_dat2 |> filter(FED_OR_STATE == 'STATE')
+  fed_trips = c_o_dat2 |> filter(FED_OR_STATE == 'FED')
 
-  fed_trips = fed_trips %>%
-    mutate(ROWID = 1:nrow(fed_trips)) %>%
+  fed_trips = fed_trips |>
+    mutate(ROWID = 1:nrow(fed_trips)) |>
     relocate(ROWID)
 
   # filter out link1 that are doubled on VTR
 
-  multilink = fed_trips %>%
-    filter(!is.na(LINK1)) %>%
-    group_by(VTRSERNO) %>%
-    dplyr::summarise(nlink1 = n_distinct(LINK1)) %>%
-    arrange(desc(nlink1)) %>%
+  multilink = fed_trips |>
+    filter(!is.na(LINK1)) |>
+    group_by(VTRSERNO) |>
+    dplyr::summarise(nlink1 = n_distinct(LINK1)) |>
+    arrange(desc(nlink1)) |>
     filter(nlink1>1)
 
 
-  remove_links = fed_trips %>%
-    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>%
-    dplyr::select(LINK1) %>%
+  remove_links = fed_trips |>
+    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) |>
+    dplyr::select(LINK1) |>
     distinct()
 
-  remove_id = fed_trips %>%
-    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) %>%
+  remove_id = fed_trips |>
+    filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) |>
     distinct(ROWID)
 
   fed_trips =
-    fed_trips %>%
+    fed_trips |>
     filter(ROWID %!in% remove_id$ROWID)
 
-  non_gf_dat = fed_trips %>%
-    filter(GF == 0) %>%
-    bind_rows(., state_trips) %>%
+  non_gf_dat = fed_trips |>
+    filter(GF == 0) |>
+    bind_rows(state_trips) |>
     mutate(GF = "0")
 
-  gf_dat = fed_trips%>%
+  gf_dat = fed_trips|>
     filter(GF == 1)
 
 
@@ -247,10 +247,10 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 										from cams_alloc_gf_mrem")
 
   # make the MREM KALL adjustment
-  gf_dat = gf_dat %>%
+  gf_dat = gf_dat |>
     left_join(x = .
               , y = mrem
-              , by = c(CAMSID, SUBTRIP)) %>%
+              , by = c(CAMSID, SUBTRIP)) |>
     mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
                                     , is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
            ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
@@ -258,8 +258,8 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
 
   # need this for anything not in the groundfish loop...
-  all_dat = non_gf_dat %>%
-    bind_rows(., gf_dat)
+  all_dat = non_gf_dat |>
+    bind_rows(gf_dat)
 
   rm(c_o_dat2, fed_trips, state_trips)
 

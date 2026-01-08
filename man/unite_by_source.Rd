@@ -19,11 +19,11 @@ This function gets a `STRATA_USED_DESC` for a data frame. This must be used with
 }
 \examples{
 
-tab_list =joined_table \%>\%
-group_split(DISCARD_SOURCE, GF) \%>\%   # group_split may be deprecated in the future..
-  lapply(., unite_by_source)
+tab_list =joined_table |>
+group_split(DISCARD_SOURCE, GF) |>   # group_split may be deprecated in the future..
+  lapply(unite_by_source)
 
-joined_table = do.call(rbind, tab_list) \%>\%
+joined_table = do.call(rbind, tab_list) |>
   as_tibble()
 
 }

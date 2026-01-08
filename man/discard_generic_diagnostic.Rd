@@ -77,45 +77,45 @@ gc()
 species <- tbl(con, sql("
   select *
   from CFG_DISCARD_RUNID
-  ")) \%>\%
-	filter(RUN_ID == 'CALENDAR') \%>\%
-	collect() \%>\%
-	group_by(ITIS_TSN) \%>\%
-	slice(1) \%>\%
+  ")) |>
+	filter(RUN_ID == 'CALENDAR') |>
+	collect() |>
+	group_by(ITIS_TSN) |>
+	slice(1) |>
 	ungroup()
 
 # get one species for testing (black sea bass)
-species = species \%>\%
+species = species |>
 	filter(NESPP3 == 335)
 
 # GEAR TABLE
-CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) \%>\%
-	collect() \%>\%
-	dplyr::rename(GEARCODE = SECGEAR_MAPPED) \%>\%
-	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
+CAMS_GEAR_STRATA = tbl(con, sql('  select * from CFG_GEARCODE_STRATA')) |>
+	collect() |>
+	dplyr::rename(GEARCODE = SECGEAR_MAPPED) |>
+	filter(ITIS_TSN == species$ITIS_TSN) |>
 	dplyr::select(-NESPP3, -ITIS_TSN)
 
 # Stock (Estimation) areas table ----
-STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) \%>\%
-	collect() \%>\%
-	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
-	group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) \%>\%
-	distinct(AREA) \%>\%
+STOCK_AREAS = tbl(con, sql('select * from CFG_STATAREA_STOCK')) |>
+	collect() |>
+	filter(ITIS_TSN == species$ITIS_TSN) |>
+	group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) |>
+	distinct(AREA) |>
 	mutate(AREA = as.character(AREA)
-				 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) \%>\%
+				 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) |>
 	ungroup()
 
 # Discard Mortality table ----
-CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  \%>\%
-	collect() \%>\%
+CAMS_DISCARD_MORTALITY_STOCK = tbl(con, sql("select * from CFG_DISCARD_MORTALITY_STOCK"))  |>
+	collect() |>
 	mutate(SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION
 				 , GEARCODE = CAMS_GEAR_GROUP
-				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) \%>\%
-	select(-SPECIES_ESTIMATION_REGION) \%>\%
-	filter(ITIS_TSN == species$ITIS_TSN) \%>\%
+				 , CAMS_GEAR_GROUP = as.character(CAMS_GEAR_GROUP)) |>
+	select(-SPECIES_ESTIMATION_REGION) |>
+	filter(ITIS_TSN == species$ITIS_TSN) |>
 	dplyr::select(-ITIS_TSN)
-	OBS_REMOVE = ROracle::dbGetQuery(con_maps, "select * from CFG_OBSERVER_CODES")  \%>\%
-dplyr::filter(ITIS_TSN == species$ITIS_TSN) \%>\%
+	OBS_REMOVE = ROracle::dbGetQuery(con_maps, "select * from CFG_OBSERVER_CODES")  |>
+dplyr::filter(ITIS_TSN == species$ITIS_TSN) |>
  distinct(OBS_CODES)
 
 # Now, modify anything you wish to test in the support tables! For example, here is an example for scallop estiamtion areas. CAMS do not match the previous assessment and were worth investigating. CAMS ended up doing a good job in this case, regardless of the area splits.
@@ -137,12 +137,12 @@ if(species$ITIS_TSN == '079718'){
 				when area < 520 then 'GOM'
 				end as SPECIES_ESTIMATION_REGION
 			  from CFG_STATAREA_STOCK
-				where ITIS_TSN = '079718'")) \%>\%
-		collect() \%>\%
-		group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) \%>\%
-		distinct(AREA) \%>\%
+				where ITIS_TSN = '079718'")) |>
+		collect() |>
+		group_by(SPECIES_ESTIMATION_REGION, ITIS_TSN) |>
+		distinct(AREA) |>
 		mutate(AREA = as.character(AREA)
-					 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) \%>\%
+					 , SPECIES_ESTIMATION_REGION = SPECIES_ESTIMATION_REGION) |>
 		ungroup()
 
 }

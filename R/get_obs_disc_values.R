@@ -10,16 +10,17 @@
 #' @export
 #'
 #' @examples
+#' #none
 #'
 get_obs_disc_vals <- function(c_o_tab = c_o_dat2
 															, species_itis = '164712'){
 
-	codat = c_o_tab %>%
-		filter(SPECIES_ITIS == species_itis) %>%
+	codat = c_o_tab |>
+		filter(SPECIES_ITIS == species_itis) |>
 		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD_PRORATE))
 
-	obs_discard = codat %>%
-		group_by(CAMSID, SUBTRIP) %>%
+	obs_discard = codat |>
+		group_by(CAMSID, SUBTRIP) |>
 		dplyr::summarise(DISCARD = sum(SPECIES_DISCARD, na.rm = T))
 
 	obs_discard

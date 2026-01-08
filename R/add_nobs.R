@@ -7,14 +7,14 @@
 #' @author Benjamin Galuardi
 #' @export
 #'
-#' @examples
+
 #'
 add_nobs <- function(joined_table){
 
 # Go through each STRATA_USED and split out the columns used
-sidx = joined_table %>%
-  dplyr::filter(!(DISCARD_SOURCE %in% c('O', 'R', 'N'))) %>%
-  dplyr::select(STRATA_USED, DISCARD_SOURCE) %>%
+sidx = joined_table |>
+  dplyr::filter(!(DISCARD_SOURCE %in% c('O', 'R', 'N'))) |>
+  dplyr::select(STRATA_USED, DISCARD_SOURCE) |>
   dplyr::filter(!is.na(STRATA_USED)) |>
   distinct()
 
@@ -45,23 +45,23 @@ joined_table =  joined_table |>
 # Use the individual columns to group and tally unobs suntrips (N)
 
 for(iloop in 1:nrow(sidx)){
-  svars = str_split(sidx$STRATA_USED[iloop], ';')	%>% unlist()
+  svars = str_split(sidx$STRATA_USED[iloop], ';')	|> unlist()
   cidx = sapply(1:length(svars), function(x) which(colnames(joined_table) == svars[x]))
 
   dtype = sidx$DISCARD_SOURCE[iloop]
 
   N_name = paste('N', dtype, sep = '_')
 
-  ntable = joined_table %>%
-    dplyr::group_by_at(vars(all_of(cidx))) %>%
+  ntable = joined_table |>
+    dplyr::group_by_at(vars(all_of(cidx))) |>
     dplyr::mutate(DOCID = paste(CAMSID, SUBTRIP, sep = "_")) |>
     dplyr::summarize(N = n_distinct(DOCID[is.na(LINK1)])  # This is number of unobs subtrips in strata in year_t
-                     ) %>%
+                     ) |>
     dplyr::rename({{N_name}} := N
                   )
 
-  joined_table = joined_table %>%
-    left_join(., ntable, by = svars )
+  joined_table = joined_table |>
+    left_join(ntable, by = svars )
 
 }
 
@@ -87,7 +87,7 @@ joined_table = tibble::add_column(joined_table, !!!cols[setdiff(names(cols), nam
 
 # join back to original table using STRATA_USED or DISCARD SOURCE
 
-joined_table = joined_table %>%
+joined_table = joined_table |>
   mutate(N_USED = dplyr::case_when(DISCARD_SOURCE == 'I' ~ N_I
                                    , DISCARD_SOURCE == 'T' ~ N_I
                                    , DISCARD_SOURCE == 'GM' ~ N_GM

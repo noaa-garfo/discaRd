@@ -8,7 +8,7 @@
 #' @return a dataframe; MREM table from Oracle
 #' @export
 #'
-#' @examples
+
 make_mrem_table <- function(con){
 
   mrem = tbl(con, sql("

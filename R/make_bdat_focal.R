@@ -12,7 +12,7 @@
 #' the source table (bdat) is created outside of this function in SQL. It can be quite large so it is not done functionally here. See vignette (when it's available..)
 #' @export
 #'
-#' @examples
+
 make_bdat_focal <- function(bdat
 														, species_itis = '164712' #cod
 														, stratvars = c('GEARTYPE','meshgroup','region','halfofyear')){
@@ -23,24 +23,24 @@ make_bdat_focal <- function(bdat
 
 
 
-	bdat_focal = bdat %>%
-		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD)) %>%
+	bdat_focal = bdat |>
+		mutate(SPECIES_DISCARD = case_when(SPECIES_ITIS == species_itis ~ DISCARD)) |>
 		mutate(SPECIES_DISCARD = tidyr::replace_na(SPECIES_DISCARD, 0))
 
 
 	bdat_focal = assign_strata(bdat_focal, stratvars = stratvars)
 
 
-	bdat_focal <- bdat_focal %>%
+	bdat_focal <- bdat_focal |>
 		dplyr::group_by(LINK1
 										, CAMSID
 										, SUBTRIP
 										, STRATA
-		) %>%
+		) |>
 		# be careful here... need to take the max values since they are repeated..
 		dplyr::summarise(KALL = sum(max(OBS_HAUL_KALL_TRIP, na.rm = T))# *max(PRORATE) take this part out! 4/27/22
-										 , BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) %>%
-		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) %>%
+										 , BYCATCH = sum(SPECIES_DISCARD, na.rm = T)) |>
+		mutate(KALL = tidyr::replace_na(KALL, 0), BYCATCH = tidyr::replace_na(BYCATCH, 0)) |>
 		ungroup()
 
 	bdat_focal
