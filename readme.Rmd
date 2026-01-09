@@ -16,21 +16,9 @@ The package has been substantially updated and re-purposed to carry out discard 
 
 `remotes` is the small part of `devtools` for loading remote data so either work
 
-```{r}
+```{r, eval = F}
 library(remotes)
 install_github("noaa-garfo/discaRd", auth_token = "use your auth token")
 ```
 
 ## Use
-
-<!-- To see an example vignette: -->
-
-<!-- ``` -->
-
-<!-- library(discaRd) -->
-
-<!-- vignette("eflalo_demo") -->
-
-<!-- ``` -->
-
-<!-- One of the main functions is `get.cochran.ss.by.strat()`. To see the instructions for this run `?get.cochran.ss.by.strat` in R. (NO HELP FILE FOR THIS CURRENTLY - ADDING GITHUB ISSUE) -->
