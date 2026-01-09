@@ -36,3 +36,4 @@ LazyData: FALSE
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+URL: https://noaa-garfo.github.io/discaRd/
