@@ -1,55 +1,24 @@
 ---
-output: github_document
+title: "discaRd"
+output: html_document
+date: "`r Sys.Date()`"
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+![](docs/apple-touch-icon-180x180.png)
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
-)
-```
+## an R package for calculating discard sing the Cochran ratio estimator
 
-# discaRd
+This package was originally developed as part of the GARFO discard peer review in 2016. More information on the review may be found here: <https://www.fisheries.noaa.gov/new-england-mid-atlantic/science-data/discard-methodology>
 
-<!-- badges: start -->
-<!-- badges: end -->
-
-The goal of discaRd is to ...
+The package has been substantially updated and re-purposed to carry out discard estimation for all managed species in the Greater Atlantic Region. These estimates are done on a weekly basis as part of the Catch Accounting and Monitoring System ([CAMS](https://apps-garfo.fisheries.noaa.gov/cams/)). Discard estimates are the official estimates for all users in the Region.
 
 ## Installation
 
-You can install the development version of discaRd from [GitHub](https://github.com/) with:
+`remotes` is the small part of `devtools` for loading remote data so either work
 
-``` r
-# install.packages("pak")
-pak::pak("noaa-garfo/discaRd")
+```{r, eval = F}
+library(remotes)
+install_github("noaa-garfo/discaRd", auth_token = "use your auth token")
 ```
 
-## Example
-
-This is a basic example which shows you how to solve a common problem:
-
-```{r example}
-library(discaRd)
-## basic example code
-```
-
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
+## Use
