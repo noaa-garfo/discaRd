@@ -1,7 +1,9 @@
 ---
 title: "discaRd"
-output: github_document
 date: "`r Sys.Date()`"
+output:
+  github_document:
+    html_preview: false
 ---
 
 ![](apple-touch-icon-180x180.png)
