@@ -4,7 +4,7 @@ output: html_document
 date: "`r Sys.Date()`"
 ---
 
-![](docs/apple-touch-icon-180x180.png)
+![](apple-touch-icon-180x180.png)
 
 ## an R package for calculating discard sing the Cochran ratio estimator
 
