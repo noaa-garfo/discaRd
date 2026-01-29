@@ -47,14 +47,14 @@ run_discard <- function(bdat
 	)
 
 	# discard rates by strata
-	dest_strata = allest$C |> dplyr::mutate(STRATA = STRATA
-																			 , N = N
-																			 , n = n
-																			 , orate = round(n/N, 2)
-																			 , drate = RE_mean
-																			 , KALL = K, disc_est = round(D)
-																			 , CV = round(RE_rse, 2)
-	) |>
+	dest_strata = allest$C |>
+	  dplyr::mutate(STRATA = STRATA
+											 , N = N
+											 , n = n
+											 , orate = round(n/N, 2)
+											 , drate = RE_mean
+											 , KALL = K, disc_est = round(D)
+											 , CV = round(RE_rse, 2)) |>
 	  dplyr::select(
 	    STRATA
 	    , N
@@ -67,9 +67,13 @@ run_discard <- function(bdat
 	  )
 
 	# plug in estimated rates to the unobserved
-	ddat_rate = ddat_focal
-	ddat_rate$DISC_RATE = dest_strata$drate[match(ddat_rate$STRATA, dest_strata$STRATA)]
-	ddat_rate$CV = dest_strata$CV[match(ddat_rate$STRATA, dest_strata$STRATA)]
+	# ddat_rate = ddat_focal
+	# ddat_rate$DISC_RATE = dest_strata$drate[match(ddat_rate$STRATA, dest_strata$STRATA)]
+	# ddat_rate$CV = dest_strata$CV[match(ddat_rate$STRATA, dest_strata$STRATA)]
+
+	ddat_rate <- ddat_focal |>
+	  left_join(dest_strata |> select(STRATA, drate, CV), by = "STRATA") |>
+	  rename(DISC_RATE = drate)
 
 
 	ddat_rate <- ddat_rate |>
@@ -85,10 +89,16 @@ run_discard <- function(bdat
 
 	}
 
-	ddat_rate = ddat_rate |>
-		mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA))
+	# ddat_rate = ddat_rate |>
+	# 	mutate(ARATE_IDX = match(STRATA_ASSUMED, assumed_discard$STRATA))
+	#
+	# ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
 
-	ddat_rate$ARATE = assumed_discard$dk[ddat_rate$ARATE_IDX]
+	ddat_rate <- ddat_rate |>
+	  left_join(assumed_discard |> select(STRATA, dk), by = c("STRATA_ASSUMED" = "STRATA")) |>
+	  mutate(ARATE = dk) |>
+	  select(-dk)
+
 
 	# incorporate teh assumed rate into the calculated discard rates
 	ddat_rate <- ddat_rate |>
