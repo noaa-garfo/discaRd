@@ -539,7 +539,6 @@ discard_groundfish <- function(con
     em_tab = ROracle::dbGetQuery(conn = con, statement = "
   			 select  ITIS_TSN as SPECIES_ITIS_EVAL
   			 , EM_COMPARISON
-  			 , VTR_DISCARD
   			 , EM_DISCARD
   			 , DELTA_DISCARD
   			 , NMFS_DISCARD
