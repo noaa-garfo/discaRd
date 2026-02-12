@@ -23,11 +23,11 @@
 
 get_catch_obs <- function(con = con_maps, start_year = 2017, end_year = 2022){
 
-t1 = Sys.time()
+  t1 = Sys.time()
 
-print(paste0("Pulling CAMS_OBS_CATCH data for ", start_year, "-", end_year))
+  print(paste0("Pulling CAMS_OBS_CATCH data for ", start_year, "-", end_year))
 
-import_query = paste0("  with obs_cams as (
+  import_query = paste0("  with obs_cams as (
    select year
 	, month
 	, date_trip
@@ -141,138 +141,141 @@ import_query = paste0("  with obs_cams as (
   from obs_cams o
 
 "
-)
+  )
 
 
-c_o_dat <- ROracle::dbGetQuery(con, import_query)
+  c_o_dat <- ROracle::dbGetQuery(con, import_query)
 
 
-c_o_dat = c_o_dat |>
-	mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) |>
-	mutate(DOCID_ORIG = DOCID) |>
-	mutate(DOCID = paste(CAMSID, SUBTRIP, sep = "_"))
+  c_o_dat = c_o_dat |>
+    dplyr::mutate(PROGRAM = substr(ACTIVITY_CODE_1, 9, 10)) |>
+    dplyr::mutate(DOCID_ORIG = DOCID) |>
+    dplyr::mutate(DOCID = paste(CAMSID, SUBTRIP, sep = "_"))
 
-# NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
-
-
-# 4/13/22
-# need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future
-
-# 8/17/22 this may not be needed anymore..
-
-link3_na = c_o_dat |>
-	filter(!is.na(LINK1) & is.na(LINK3))
+  # NOTE: CAMSID_SUBTRIP being defined as DOCID so the discaRd functions don't have to change!! DOCID hard coded in the functions..
 
 
-# make these values 0 or NA or 'none' depending on the default for that field
-if(nrow(link3_na) > 0){
-link3_na = link3_na |>
-	mutate(LINK1 = NA
-				 , DISCARD = NA
-				 , DISCARD_PRORATE = NA
-				 , OBSRFLAG = NA
-				 , OBSVTR = NA
-				 , OBS_AREA = NA
-				 , OBS_GEAR = NA
-				 , OBS_HAUL_KALL_TRIP = 0
-				 , OBS_HAUL_KEPT = 0
-				 , OBS_KALL = 0
-				 , OBS_LINK1 = NA
-				 , OBSVTR = NA
-				 , OBS_MESH_CAT = 'none'
-				 , PRORATE = NA)
+  # 4/13/22
+  # need to make LINK1 NA when LINK3 is null.. this is due to data mismatches in putting hauls at the subtrip level. If we don't do this step, OBS trips will get values of 0 for any evaluated species. this may or may not be correct.. it's not possible to know without a haul to subtrip match. This is a hotfix that may change in the future
 
-# this was dropping full trips...
-# tidx = c_o_dat$CAMSID %in% link3_na$CAMSID
+  # 8/17/22 this may not be needed anymore..
+
+  link3_na = c_o_dat |>
+    dplyr::filter(!is.na(LINK1) & is.na(LINK3))
 
 
-# 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
+  # make these values 0 or NA or 'none' depending on the default for that field
+  if(nrow(link3_na) > 0){
+    link3_na = link3_na |>
+      dplyr::mutate(LINK1 = NA
+                    , DISCARD = NA
+                    , DISCARD_PRORATE = NA
+                    , OBSRFLAG = NA
+                    , OBSVTR = NA
+                    , OBS_AREA = NA
+                    , OBS_GEAR = NA
+                    , OBS_HAUL_KALL_TRIP = 0
+                    , OBS_HAUL_KEPT = 0
+                    , OBS_KALL = 0
+                    , OBS_LINK1 = NA
+                    , OBSVTR = NA
+                    , OBS_MESH_CAT = 'none'
+                    , PRORATE = NA)
 
-tidx = which(!is.na(c_o_dat$LINK1) & is.na(c_o_dat$LINK3))
-
-c_o_dat = c_o_dat[-tidx,]
-
-# c_o_dat = c_o_dat[tidx == F,]
-
-c_o_dat = c_o_dat |>
-	bind_rows(link3_na)
-
-}
-# continue the data import
-
-state_trips = c_o_dat |> filter(FED_OR_STATE == 'STATE')
-fed_trips = c_o_dat |> filter(FED_OR_STATE == 'FED')
-
-fed_trips = fed_trips |>
-	mutate(ROWID = dplyr::row_number()) |>
-	relocate(ROWID)
-
-# filter out link1 that are doubled on VTR
-
-multilink = fed_trips |>
-	filter(!is.na(LINK1)) |>
-	group_by(VTRSERNO) |>
-	dplyr::summarise(nlink1 = n_distinct(LINK1)) |>
-	arrange(desc(nlink1)) |>
-	filter(nlink1>1)
+    # this was dropping full trips...
+    # tidx = c_o_dat$CAMSID %in% link3_na$CAMSID
 
 
-remove_links = fed_trips |>
-	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) |>
-	dplyr::select(LINK1) |>
-	distinct()
+    # 8/17/22 Changing the method to remove only the records where link1 has no link3.. previously, this removed the entire trip which is probelmatic for multiple subtrip LINK1 trips
 
-remove_id = fed_trips |>
-	filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) |>
-	distinct(ROWID)
+    tidx = which(!is.na(c_o_dat$LINK1) & is.na(c_o_dat$LINK3))
 
-fed_trips =
-	fed_trips |>
-	filter(ROWID %!in% remove_id$ROWID)
+    c_o_dat = c_o_dat[-tidx,]
 
-non_gf_dat = fed_trips |>
-	filter(GF == 0) |>
-	bind_rows(state_trips) |>
-	mutate(GF = "0")
+    # c_o_dat = c_o_dat[tidx == F,]
 
-gf_dat = fed_trips|>
-	filter(GF == 1)
+    c_o_dat = c_o_dat |>
+      dplyr::bind_rows(link3_na)
+
+  }
+  # continue the data import
+
+  state_trips = c_o_dat |> dplyr::filter(FED_OR_STATE == 'STATE')
+  fed_trips = c_o_dat |> dplyr::filter(FED_OR_STATE == 'FED')
+
+  fed_trips = fed_trips |>
+    dplyr::mutate(ROWID = dplyr::row_number()) |>
+    dplyr::relocate(ROWID)
+
+  # filter out link1 that are doubled on VTR
+
+  multilink = fed_trips |>
+    dplyr::filter(!is.na(LINK1)) |>
+    dplyr::group_by(VTRSERNO) |>
+    dplyr::summarise(nlink1 = n_distinct(LINK1)) |>
+    dplyr::arrange(desc(nlink1)) |>
+    dplyr::filter(nlink1>1)
 
 
-# Add MREM adjustment View
-# mrem = ROracle::dbGetQuery(con, 'select distinct CAMSID, SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-# 										from cams_alloc_gf_mrem')
+  remove_links = fed_trips |>
+    dplyr::filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) |>
+    dplyr::select(LINK1) |>
+    dplyr::distinct()
 
-mrem = ROracle::dbGetQuery(con, "select distinct CAMSID||'_'|| SUBTRIP as CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+  remove_id = fed_trips |>
+    dplyr::filter(is.na(SPECIES_ITIS) & !is.na(LINK1) & VTRSERNO %in% multilink$VTRSERNO) |>
+    dplyr::distinct(ROWID)
+
+  fed_trips =
+    fed_trips |>
+    dplyr::filter(ROWID %!in% remove_id$ROWID)
+
+  non_gf_dat = fed_trips |>
+    dplyr::filter(GF == 0) |>
+    dplyr::bind_rows(state_trips) |>
+    dplyr::mutate(GF = "0")
+
+  gf_dat = fed_trips|>
+    dplyr::filter(GF == 1)
+
+
+  # Add MREM adjustment View
+  # mrem = ROracle::dbGetQuery(con, 'select distinct CAMSID, SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+  # 										from cams_alloc_gf_mrem')
+
+  mrem = ROracle::dbGetQuery(con, "select distinct CAMSID||'_'|| SUBTRIP as CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
 										from cams_alloc_gf_mrem")
 
-mrem <- mrem |>
-  mutate(DOCID = CAMS_SUBTRIP)
+  mrem <- mrem |>
+    dplyr::mutate(DOCID = CAMS_SUBTRIP)
 
-# make the MREM KALL adjustment
-gf_dat = gf_dat |>
-	left_join(x = .
-						, y = mrem
-						, by = join_by(CAMS_SUBTRIP)) |>
-	mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
-																	, is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
-				 ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
-				 											, is.na(KALL_MREM_ADJ) ~ OBS_KALL))
-
-
-# need this for anything not in the groundfish loop...
-all_dat = non_gf_dat |>
-	bind_rows(gf_dat)
-
-rm(c_o_dat, fed_trips, state_trips)
-
-gc()
-t2 = Sys.time()
-
-print(paste0("Took ", round(difftime(t2, t1, units = 'mins'), 2) , ' minutes'))
+  # make the MREM KALL adjustment
+  gf_dat = gf_dat |>
+    dplyr::left_join(mrem, by = join_by(CAMS_SUBTRIP)) |>
+    dplyr::mutate(
+      SUBTRIP_KALL = case_when(
+        !is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
+        , is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL
+      )
+      ,OBS_KALL = case_when(
+        !is.na(KALL_MREM_ADJ) ~ OBS_KALL * KALL_MREM_ADJ_RATIO
+        , is.na(KALL_MREM_ADJ) ~ OBS_KALL)
+    )
 
 
-return(list(gf_dat = gf_dat, non_gf_dat = non_gf_dat, all_dat = all_dat))
+  # need this for anything not in the groundfish loop...
+  all_dat = non_gf_dat |>
+    dplyr::bind_rows(gf_dat)
+
+  rm(c_o_dat, fed_trips, state_trips)
+
+  gc()
+  t2 = Sys.time()
+
+  print(paste0("Took ", round(difftime(t2, t1, units = 'mins'), 2) , ' minutes'))
+
+
+  return(list(gf_dat = gf_dat, non_gf_dat = non_gf_dat, all_dat = all_dat))
 
 }
 
