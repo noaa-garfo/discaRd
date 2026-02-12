@@ -117,10 +117,10 @@ calc_cochran_rate_strata <- function(bydat
   if(nrow(bydat) >0 ) {
     # C = ddply(bydat, "STRATA", function(x) cochran_calc_ss(x, x$N[1], targCV))
 
-    C = bydat |>
-      dplyr::group_by(STRATA) |>
-      dplyr::mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) |>
-      dplyr::group_modify(~ calc_cochran_rate(df = .x, n_trips = as.numeric(N[1]), n_obs = as.numeric(n_obs[1]), CV_targ = targCV) , .keep = T) |>
+    C = bydat %>%
+      dplyr::group_by(STRATA) %>%
+      dplyr::mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) %>%
+      dplyr::group_modify(~ calc_cochran_rate(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) |>
       ungroup()
     # dplyr::group_modify(.f = calc_cochran_rate(l_N = .$N[1], l_CVtarg = targCV))
     # dplyr::summarise(calc_cochran_rate(.$N[1], targCV))
