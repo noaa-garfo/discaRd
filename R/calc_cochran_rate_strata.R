@@ -29,7 +29,7 @@ calc_cochran_rate_strata <- function(bydat
 
 
   byout = bydat |>
-    dplyr::mutate(alln = nrow(.)
+    dplyr::mutate(alln = nrow()
            , allk = sum(KALL, na.rm = T)
     ) |>
     group_by(STRATA) |>
@@ -114,13 +114,13 @@ calc_cochran_rate_strata <- function(bydat
 
 
 
-  if(nrow(bydat)>0){
+  if(nrow(bydat) >0 ) {
     # C = ddply(bydat, "STRATA", function(x) cochran_calc_ss(x, x$N[1], targCV))
 
     C = bydat |>
       dplyr::group_by(STRATA) |>
       dplyr::mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) |>
-      group_modify(~ calc_cochran_rate(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) |>
+      dplyr::group_modify(~ calc_cochran_rate(df = .x, n_trips = as.numeric(N[1]), n_obs = as.numeric(n_obs[1]), CV_targ = targCV) , .keep = T) |>
       ungroup()
     # dplyr::group_modify(.f = calc_cochran_rate(l_N = .$N[1], l_CVtarg = targCV))
     # dplyr::summarise(calc_cochran_rate(.$N[1], targCV))
@@ -133,19 +133,21 @@ calc_cochran_rate_strata <- function(bydat
     # C$REQ_SEADAYS = C$REQ_SAMPLES*byout$avg_seadays
 
     # fill in missing strata from tout
-    C <- as.data.frame(C |> complete(STRATA = tout$STRATA, fill=list(n=0)))
+    C <- C |>
+      as.data.frame() |>
+      tidyr::complete(STRATA = tout$STRATA, fill=list(n=0))
 
     # fill in observed trips for tout
     tout$n <- C$n
 
     # calculate discard
-    C$D = tout$K*C$RE_mean
+    C$D = tout$K * C$RE_mean
     C$K = tout$K
     C$N = tout$N
 
     # calculate a TOTAL CV from individual results
-    if(sum(C$D, na.rm=T)>0){
-      CVTOT = sqrt(sum(tout$K^2*C$RE_var, na.rm=T))/sum(C$D, na.rm=T)
+    if(sum(C$D, na.rm=T) > 0) {
+      CVTOT = sqrt(sum(tout$K^2 * C$RE_var, na.rm=T))/sum(C$D, na.rm=T)
     } else {
       CVTOT = NA
     }
