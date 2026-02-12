@@ -15,10 +15,10 @@
 #' @examples calc_cochran_rate_strata
 
 calc_cochran_rate_strata <- function(bydat
-                                    , trips
-                                    , targCV = 0.3,
-                                    strata_name = "STRATA",
-                                    strata_complete = c('dredge','trawl')
+                                     , trips
+                                     , targCV = 0.3,
+                                     strata_name = "STRATA",
+                                     strata_complete = c('dredge','trawl')
 ){
 
   # standardize the strata names
@@ -30,7 +30,7 @@ calc_cochran_rate_strata <- function(bydat
 
   byout = bydat |>
     dplyr::mutate(alln = n()
-           , allk = sum(KALL, na.rm = T)
+                  , allk = sum(KALL, na.rm = T)
     ) |>
     group_by(STRATA) |>
     dplyr::summarise(alln = alln[1]
@@ -61,7 +61,7 @@ calc_cochran_rate_strata <- function(bydat
 
   tout = trips |>
     dplyr::mutate(allN = n_distinct(CAMSID)
-           , allK = sum(LIVE_POUNDS, na.rm=T)) |>
+                  , allK = sum(LIVE_POUNDS, na.rm=T)) |>
     group_by(STRATA) |>
     dplyr::summarise( allN = allN[1]
                       , allK = allK[1]
@@ -114,13 +114,20 @@ calc_cochran_rate_strata <- function(bydat
 
 
 
-  if(nrow(bydat) >0 ) {
+  if(nrow(bydat) > 0 ) {
     # C = ddply(bydat, "STRATA", function(x) cochran_calc_ss(x, x$N[1], targCV))
 
     C = bydat %>%
       dplyr::group_by(STRATA) %>%
       dplyr::mutate(n_obs = n_distinct(paste(CAMSID,SUBTRIP,sep="_"))) %>%
-      dplyr::group_modify(~ calc_cochran_rate(df = .x, n_trips = as.numeric(.$N[1]), n_obs = as.numeric(.$n_obs[1]), CV_targ = targCV) , .keep = T) |>
+      dplyr::group_modify(~ calc_cochran_rate(
+        df = .x,
+        n_trips = as.numeric(.x$N[1]),
+        n_obs = as.numeric(.x$n_obs[1]),
+        CV_targ = targCV
+      ),
+      .keep = T
+      ) %>%
       ungroup()
     # dplyr::group_modify(.f = calc_cochran_rate(l_N = .$N[1], l_CVtarg = targCV))
     # dplyr::summarise(calc_cochran_rate(.$N[1], targCV))
