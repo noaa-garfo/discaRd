@@ -248,10 +248,9 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
   # make the MREM KALL adjustment
   gf_dat = gf_dat |>
-    left_join(x = .
-              , y = mrem
+    left_join(y = mrem
               , by = c(CAMSID, SUBTRIP)) |>
-    mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
+    dplyr::mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
                                     , is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
            ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
                                  , is.na(KALL_MREM_ADJ) ~ OBS_KALL))

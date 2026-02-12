@@ -412,7 +412,7 @@ discard_groundfish_diagnostic <- function(con = con_maps
   joined_table = joined_table |>
   	dplyr::rename(STRATA_ASSUMED = STRATA) |>
   	left_join(y = trans_rate_df_pass2, by = c('STRATA_ASSUMED' = 'STRATA_a')) |>
-  	left_join(x =., y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION')) |>
+  	left_join(y = BROAD_STOCK_RATE_TABLE, by = c('FY', 'FY_TYPE', 'SPECIES_ESTIMATION_REGION')) |>
   	mutate(COAL_RATE = case_when(n_obs_trips_f >= 5 ~ final_rate  # this is an in season rate
   															 , n_obs_trips_f < 5 &
   															 	 n_obs_trips_p >=5 ~ final_rate  # this is a final IN SEASON rate taking transition into account
