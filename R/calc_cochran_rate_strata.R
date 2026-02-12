@@ -29,7 +29,7 @@ calc_cochran_rate_strata <- function(bydat
 
 
   byout = bydat |>
-    dplyr::mutate(alln = nrow()
+    dplyr::mutate(alln = n()
            , allk = sum(KALL, na.rm = T)
     ) |>
     group_by(STRATA) |>
