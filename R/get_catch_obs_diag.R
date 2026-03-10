@@ -4,6 +4,8 @@
 #' @param con database connection
 #' @param start_year start year (calendar year)
 #' @param end_year end year (calendar year)
+#' @param mrem_table table of MREM KALL adjustment. If working from NEFSC, this must be created by the NEFSC user
+
 #'
 #' @return a list with the elements needed for discard estimation:
 #' * gf_dat : a data frame of groundfish only trips. This is used only in \link{discard_groundfish.R}
@@ -28,7 +30,7 @@
 #' rm(dat)
 #' gc()
 #'
-get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 2022){
+get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 2022, mrem_table = mrem_table){
 
   t1 = Sys.time()
 
@@ -248,10 +250,10 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
 
   # Add MREM adjustment View
-  mrem = ROracle::dbGetQuery(con, 'select distinct CAMSID, SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-										from CAMS_GARFO.CAMS_alloc_gf_mrem')
-  mrem = ROracle::dbGetQuery(con, "select distinct CAMSID||'_'|| SUBTRIP as CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
-										from cams_alloc_gf_mrem")
+  #   mrem = ROracle::dbGetQuery(con, 'select distinct CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+  # 										from CAMS_GARFO.cams_alloc_gf_mrem')
+
+  mrem = mrem_table
 
   # make the MREM KALL adjustment
   gf_dat = gf_dat %>%
