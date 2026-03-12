@@ -4,7 +4,12 @@
 \alias{get_catch_obs_diag}
 \title{Get Catch OBS data}
 \usage{
-get_catch_obs_diag(con = con_maps, start_year = 2017, end_year = 2022)
+get_catch_obs_diag(
+  con = con_maps,
+  start_year = 2017,
+  end_year = 2022,
+  mrem_table = mrem_table
+)
 }
 \arguments{
 \item{con}{database connection}
@@ -12,6 +17,8 @@ get_catch_obs_diag(con = con_maps, start_year = 2017, end_year = 2022)
 \item{start_year}{start year (calendar year)}
 
 \item{end_year}{end year (calendar year)}
+
+\item{mrem_table}{table of MREM KALL adjustment. If working from NEFSC, this must be created by the NEFSC user}
 }
 \value{
 a list with the elements needed for discard estimation:
