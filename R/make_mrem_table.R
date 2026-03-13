@@ -15,7 +15,7 @@ make_mrem_table <- function(con){
 with cams_landings as (
 SELECT
     l.CAMSID,
-l.DOCID,
+    l.DOCID,
 l.VTRSERNO,
 s.RECORD_SAIL,
 s.RECORD_LAND,
