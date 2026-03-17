@@ -82,7 +82,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, NVL(round(max(subtrip_kall)),0) as subtrip_kall
 	, NVL(round(max(obs_kall)),0) as obs_kall
 	from CAMS_GARFO.CAMS_OBS_CATCH c
-	left join (select distinct camsid, subtrip, exempt_7130, scallop_area from CAMS_SUBTRIP) s
+	left join (select distinct camsid, subtrip, exempt_7130, scallop_area from CAMS_GARFO.CAMS_SUBTRIP) s
 	on c.SUBTRIP = s.SUBTRIP and c.camsid = s.camsid
 
 	where year >=", start_year , "
@@ -249,10 +249,10 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 
   mrem = mrem_table
 
-  # make the MREM KALL adjustment
+  # make the MREM KALL adjustment -- changed by call from object to quoted names
   gf_dat = gf_dat |>
     left_join(y = mrem
-              , by = c(CAMSID, SUBTRIP)) |>
+              , by = c("CAMSID", "SUBTRIP")) |>
     dplyr::mutate(SUBTRIP_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ KALL_MREM_ADJ
                                     , is.na(KALL_MREM_ADJ) ~ SUBTRIP_KALL)
            ,OBS_KALL = case_when(!is.na(KALL_MREM_ADJ) ~ OBS_KALL*KALL_MREM_ADJ_RATIO
