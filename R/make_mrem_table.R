@@ -30,7 +30,7 @@ l.PERMIT,
 l.DLR_STID,
 l.PERMIT_STATE_FED,
 s.GF,
-s.LOBSTER_CLASS,
+s.PERMIT_CLASS,  -- changed from s.LOBSTER_CLASS,
 s.MAIN_SPP_GRP,
 s.MAIN_PORT_GRP,
 l.STATE,
@@ -54,7 +54,7 @@ s.VTR_ACTIVITY,
 s.VTR_ACTIVITY_DESC,
 l.VTR_CATCHID,
 l.VTR_DLRID,
-l.VTR_DISCARD,
+l.VTR_DISCARD_LBS,  -- changed from l.VTR_DISCARD,
 --l.HULLID,
 s.VES_LEN,
 s.VES_GTONS,
@@ -116,6 +116,8 @@ LEFT JOIN
 
 , legal as (
     SELECT VTRSERNO
+    , camsid  -- added
+    , subtrip -- added
     , camsid||'_'||subtrip as cams_subtrip
     , ITIS_TSN
     , sum(case when (dlr_mkt <> 'X2' or dlr_mkt is null) then livlb else 0 end) as legal
@@ -129,6 +131,8 @@ LEFT JOIN
 
 , match as(
     select vtrserno
+    , camsid  -- added
+    , subtrip -- added
     , cams_subtrip
     , itis_tsn
     , legal
@@ -140,7 +144,9 @@ LEFT JOIN
 
  ,final as (
      select a.vtrserno
-     , a.cams_subtrip
+      , a.camsid  -- added
+      , a.subtrip -- added
+      , a.cams_subtrip
       ,a.itis_tsn
       ,a.legal
       ,a.sublegal
@@ -152,6 +158,8 @@ LEFT JOIN
 
   Select
     VTRSERNO
+    , camsid  -- added
+    , subtrip -- added
     , CAMS_SUBTRIP
     , ITIS_TSN,LEGAL
     , SUBLEGAL
