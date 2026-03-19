@@ -125,6 +125,8 @@ LEFT JOIN
     FROM cams_landings
     WHERE EM = 'MREM'
      group by VTRSERNO
+     , camsid  -- added
+     , subtrip -- added
      , camsid||'_'||subtrip
     , ITIS_TSN
 )
