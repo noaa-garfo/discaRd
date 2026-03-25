@@ -50,6 +50,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, docid
 	, nespp3
   , itis_tsn as SPECIES_ITIS
+  , itis_tsn
   , SECGEAR_MAPPED as GEARCODE
 	, NEGEAR
 	, GEARTYPE
@@ -105,7 +106,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, docid
 	, nespp3
   , itis_tsn
-    , SECGEAR_MAPPED
+  , SECGEAR_MAPPED
 	, NEGEAR
 	, GEARTYPE
 	, MESH_CAT

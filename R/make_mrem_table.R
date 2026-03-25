@@ -118,7 +118,7 @@ LEFT JOIN
     SELECT VTRSERNO
     , camsid  -- added
     , subtrip -- added
-    , camsid||'_'||subtrip as cams_subtrip
+ --   , camsid||'_'||subtrip as cams_subtrip
     , ITIS_TSN
     , sum(case when (dlr_mkt <> 'X2' or dlr_mkt is null) then livlb else 0 end) as legal
     , sum(case when dlr_mkt = 'X2' then livlb else 0 end) as sublegal
@@ -127,7 +127,7 @@ LEFT JOIN
      group by VTRSERNO
      , camsid  -- added
      , subtrip -- added
-     , camsid||'_'||subtrip
+    -- , camsid||'_'||subtrip
     , ITIS_TSN
 )
 
@@ -135,7 +135,8 @@ LEFT JOIN
     select vtrserno
     , camsid  -- added
     , subtrip -- added
-    , cams_subtrip
+  --  , cams_subtrip
+    , camsid||'_'||subtrip as cams_subtrip
     , itis_tsn
     , legal
     , sublegal
@@ -148,7 +149,7 @@ LEFT JOIN
      select a.vtrserno
       , a.camsid  -- added
       , a.subtrip -- added
-      , a.cams_subtrip
+   --   , a.cams_subtrip
       ,a.itis_tsn
       ,a.legal
       ,a.sublegal
@@ -158,11 +159,12 @@ LEFT JOIN
       FROM match a
       )
 
-  Select
+, cams_alloc_gf_mrem as
+( select
     VTRSERNO
     , camsid  -- added
     , subtrip -- added
-    , CAMS_SUBTRIP
+    ,  CAMSID||'_'||SUBTRIP as CAMS_SUBTRIP
     , ITIS_TSN,LEGAL
     , SUBLEGAL
     , PERCENT_LEGAL
@@ -179,10 +181,15 @@ LEFT JOIN
                    '172873',
                    '164791',
                    '166774')
+)
+
+select distinct CAMSID, SUBTRIP, CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+from cams_alloc_gf_mrem
 
                    "))
 
 mrem = mrem |>
+  mutate(DOCID = CAMS_SUBTRIP) |>
   collect()
 
 mrem
