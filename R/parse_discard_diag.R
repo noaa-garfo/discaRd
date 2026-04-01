@@ -33,7 +33,7 @@ parse_discard_diag <- function(joined_table
         dplyr::ungroup() |>
         dplyr::mutate(
           GF_STOCK_DEF = paste0(COMMON_NAME, '-', SPECIES_ESTIMATION_REGION)
-          , SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
+          # , SUBTRIP = stringr::str_extract(CAMS_SUBTRIP, "[^_]*$")
         ) |>
 
 

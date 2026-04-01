@@ -136,7 +136,7 @@ LEFT JOIN
     , camsid  -- added
     , subtrip -- added
   --  , cams_subtrip
-    , camsid||'_'||subtrip as cams_subtrip
+  --  , camsid||'_'||subtrip as cams_subtrip
     , itis_tsn
     , legal
     , sublegal
@@ -146,17 +146,20 @@ LEFT JOIN
     )
 
  ,final as (
-     select a.vtrserno
-      , a.camsid  -- added
-      , a.subtrip -- added
-   --   , a.cams_subtrip
-      ,a.itis_tsn
-      ,a.legal
-      ,a.sublegal
-      , case when a.legal > 0 and a.sublegal > 0 then nvl(a.legal/a.TOTAL,0) else 0 end as PERCENT_LEGAL
-      , SUM(a.legal) OVER(PARTITION BY a.cams_subtrip) as kall_mrem_adj
-      , SUM(a.total) OVER(PARTITION BY a.cams_subtrip) as kall
-      FROM match a
+SELECT a.vtrserno
+     , a.camsid
+     , a.subtrip
+     , a.itis_tsn
+     , a.legal
+     , a.sublegal
+     , CASE
+         WHEN a.legal > 0 AND a.sublegal > 0 THEN NVL(a.legal / a.TOTAL, 0)
+         ELSE 0
+       END AS PERCENT_LEGAL
+     -- Updated partitions below
+     , SUM(a.legal) OVER(PARTITION BY a.camsid, a.subtrip) AS kall_mrem_adj
+     , SUM(a.total) OVER(PARTITION BY a.camsid, a.subtrip) AS kall
+FROM match a
       )
 
 , cams_alloc_gf_mrem as
@@ -164,7 +167,7 @@ LEFT JOIN
     VTRSERNO
     , camsid  -- added
     , subtrip -- added
-    ,  CAMSID||'_'||SUBTRIP as CAMS_SUBTRIP
+ --   ,  CAMSID||'_'||SUBTRIP as CAMS_SUBTRIP
     , ITIS_TSN,LEGAL
     , SUBLEGAL
     , PERCENT_LEGAL
@@ -183,13 +186,16 @@ LEFT JOIN
                    '166774')
 )
 
-select distinct CAMSID, SUBTRIP, CAMS_SUBTRIP, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
+select distinct CAMSID, SUBTRIP
+, KALL_MREM_ADJ, KALL_MREM_ADJ_RATIO
 from cams_alloc_gf_mrem
+
+--, CAMS_SUBTRIP
 
                    "))
 
 mrem = mrem |>
-  mutate(DOCID = CAMS_SUBTRIP) |>
+  mutate(DOCID = paste(CAMSID, SUBTRIP, sep = '_')) |>
   collect()
 
 mrem
