@@ -39,7 +39,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, vtrserno
 	, c.camsid
 	, c.subtrip
-	, c.camsid||'_'||c.subtrip as cams_subtrip --as.CAMS_SUBTRIP
+	--, c.camsid||'_'||c.subtrip as cams_subtrip --as.CAMS_SUBTRIP
 	, link1 as link1
 	, source
 	, offwatch_link1
@@ -95,7 +95,7 @@ get_catch_obs_diag <- function(con = con_maps, start_year = 2017, end_year = 202
 	, vtrserno
 	, c.camsid
 	, c.subtrip
-	, c.camsid||'_'||c.subtrip
+	--, c.camsid||'_'||c.subtrip
 	, link1
 	, source
 	, offwatch_link1
