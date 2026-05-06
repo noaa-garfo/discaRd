@@ -135,7 +135,7 @@ discard_generic <- function(con = con_maps
     # make tables ----
 
     ddat_focal <- all_dat |>
-      dplyr::filter(DATE_TRIP >= start_date & DATE_TRIP < end_date) |> ## time element is here!!
+      dplyr::filter(DATE_TRIP >= start_date & DATE_TRIP <= end_date) |> ## time element is here!!
       dplyr::filter(AREA %in% STOCK_AREAS$AREA) |>
       dplyr::mutate(FY_TYPE = FY_TYPE
                     , FY = FY) |>
@@ -162,7 +162,7 @@ discard_generic <- function(con = con_maps
 
 
     ddat_prev <- all_dat |>
-      dplyr::filter(DATE_TRIP >= start_date_prev & DATE_TRIP < end_date_prev) |> ## time element is here!!
+      dplyr::filter(DATE_TRIP >= start_date_prev & DATE_TRIP <= end_date_prev) |> ## time element is here!!
       dplyr::filter(AREA %in% STOCK_AREAS$AREA) |>
       dplyr::mutate(FY_TYPE = FY_TYPE
                     , FY = FY) |>
