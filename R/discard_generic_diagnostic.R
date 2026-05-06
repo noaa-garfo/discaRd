@@ -200,7 +200,7 @@ discard_generic_diagnostic <- function(con = con_maps
 		# make tables ----
 
 		ddat_focal <- all_dat |>
-			filter(DATE_TRIP >= start_date & DATE_TRIP < end_date) |> ## time element is here!!
+			filter(DATE_TRIP >= start_date & DATE_TRIP <= end_date) |> ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) |>
 		  mutate(FY_TYPE = FY_TYPE
 		         , FY = FY) |>
@@ -229,7 +229,7 @@ discard_generic_diagnostic <- function(con = con_maps
 
 
 		ddat_prev <- all_dat |>
-			filter(DATE_TRIP >= start_date_prev & DATE_TRIP < end_date_prev) |> ## time element is here!!
+			filter(DATE_TRIP >= start_date_prev & DATE_TRIP <= end_date_prev) |> ## time element is here!!
 			filter(AREA %in% STOCK_AREAS$AREA) |>
 		  mutate(FY_TYPE = FY_TYPE
 		         , FY = FY) |>
