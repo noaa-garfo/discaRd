@@ -135,7 +135,9 @@ discard_generic <- function(con = con_maps
     # make tables ----
 
     ddat_focal <- all_dat |>
-      dplyr::filter(DATE_TRIP >= start_date & DATE_TRIP <= end_date) |> ## time element is here!!
+      mutate(TDATE = as.POSIXct(trunc(DATE_TRIP, 'day'))) |>
+      filter(TDATE >= start_date & TDATE <= end_date) |>
+      # dplyr::filter(DATE_TRIP >= start_date & DATE_TRIP <= end_date) |> ## time element is here!!
       dplyr::filter(AREA %in% STOCK_AREAS$AREA) |>
       dplyr::mutate(FY_TYPE = FY_TYPE
                     , FY = FY) |>
@@ -147,7 +149,7 @@ discard_generic <- function(con = con_maps
       dplyr::left_join(y = CAMS_DISCARD_MORTALITY_STOCK
                        , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) |>
-      dplyr::select(-GEARCODE.y, -NESPP3.y) |>
+      dplyr::select(-GEARCODE.y, -NESPP3.y, -TDATE) |>
       dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
                     GEARCODE = 'GEARCODE.x') |>
       dplyr::relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO') |>
@@ -162,7 +164,9 @@ discard_generic <- function(con = con_maps
 
 
     ddat_prev <- all_dat |>
-      dplyr::filter(DATE_TRIP >= start_date_prev & DATE_TRIP <= end_date_prev) |> ## time element is here!!
+      mutate(TDATE = as.POSIXct(trunc(DATE_TRIP, 'day'))) |>
+      filter(TDATE >= start_date_prev & TDATE <= end_date_prev) |>
+      # dplyr::filter(DATE_TRIP >= start_date_prev & DATE_TRIP <= end_date_prev) |> ## time element is here!!
       dplyr::filter(AREA %in% STOCK_AREAS$AREA) |>
       dplyr::mutate(FY_TYPE = FY_TYPE
                     , FY = FY) |>
@@ -174,7 +178,7 @@ discard_generic <- function(con = con_maps
       dplyr::left_join(y = CAMS_DISCARD_MORTALITY_STOCK
                        , by = c('SPECIES_ESTIMATION_REGION', 'CAMS_GEAR_GROUP')
       ) |>
-      dplyr::select(-NESPP3.y, -GEARCODE.y) |>
+      dplyr::select(-NESPP3.y, -GEARCODE.y, -TDATE) |>
       dplyr::rename(COMMON_NAME= 'COMMON_NAME.x',SPECIES_ITIS = 'SPECIES_ITIS', NESPP3 = 'NESPP3.x',
                     GEARCODE = 'GEARCODE.x') |>
       dplyr::relocate('COMMON_NAME','SPECIES_ITIS','NESPP3','SPECIES_ESTIMATION_REGION','CAMS_GEAR_GROUP','DISC_MORT_RATIO')|>
